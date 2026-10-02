@@ -8,6 +8,10 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  build: {
+    // Phaser alone is ~1.3 MB minified; the default 500 kB warning is just noise.
+    chunkSizeWarningLimit: 1600,
+  },
   preview: {
     host: true,
     port: 4173,
