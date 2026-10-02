@@ -6,7 +6,7 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 
 ## Comandos
 
-- `npm run dev` — servidor de desarrollo, accesible desde la red local (host: true)
+- `npm run dev` — servidor de desarrollo en el puerto 5180 (`strictPort`: si está ocupado, falla en vez de cambiar de puerto), accesible desde la red local (host: true)
 - `npm run build` — typecheck + build de producción en `dist/`
 - `npm run preview` — sirve `dist/` (también en la red local)
 - `npm test` — tests con Vitest

@@ -6,7 +6,9 @@ export default defineConfig({
   server: {
     // Listen on all interfaces so a phone on the same LAN can open the dev server.
     host: true,
-    port: 5173,
+    // Fixed port so it never collides with other Vite projects; fail instead of picking another.
+    port: 5180,
+    strictPort: true,
   },
   build: {
     // Phaser alone is ~1.3 MB minified; the default 500 kB warning is just noise.
