@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   countItems,
   createGame,
+  findItem,
   isWon,
   itemAt,
   LevelError,
@@ -60,6 +61,15 @@ describe('createGame', () => {
         ],
       }),
     ).toThrow(/empty front layer/);
+  });
+});
+
+describe('findItem', () => {
+  it('locates items in front and back layers, and returns null when gone', () => {
+    const state = createGame(testLevel);
+    const back = itemAt(state, { shelf: 0, layer: 1, slot: 2 })!;
+    expect(findItem(state, back.id)).toEqual({ shelf: 0, layer: 1, slot: 2 });
+    expect(findItem(state, 999)).toBeNull();
   });
 });
 

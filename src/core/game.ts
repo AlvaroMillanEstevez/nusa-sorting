@@ -4,6 +4,18 @@ export function itemAt(state: GameState, pos: Position): Item | null {
   return state.shelves[pos.shelf]?.layers[pos.layer]?.[pos.slot] ?? null;
 }
 
+/** Current position of an item by id, or null if it is no longer on the board. */
+export function findItem(state: GameState, itemId: number): Position | null {
+  for (let shelf = 0; shelf < state.shelves.length; shelf++) {
+    const layers = state.shelves[shelf]!.layers;
+    for (let layer = 0; layer < layers.length; layer++) {
+      const slot = layers[layer]!.findIndex((item) => item?.id === itemId);
+      if (slot !== -1) return { shelf, layer, slot };
+    }
+  }
+  return null;
+}
+
 export function countItems(state: GameState): number {
   let total = 0;
   for (const shelf of state.shelves) {
