@@ -22,31 +22,51 @@ export function validMoves(state: GameState): [Position, Position][] {
   return moves;
 }
 
+/** Canonical key: slot order inside a layer does not affect which triples can form. */
 function stateKey(state: GameState): string {
   return state.shelves
-    .map((shelf) => shelf.layers.map((layer) => layer.map((slot) => slot?.type ?? '.').join(',')).join('|'))
+    .map((shelf) =>
+      shelf.layers
+        .map((layer) =>
+          layer
+            .map((slot) => slot?.type ?? '.')
+            .sort()
+            .join(','),
+        )
+        .join('|'),
+    )
     .join('/');
 }
 
-/** Depth-first search for a winning move sequence; undefined if the level is unsolvable. */
-export function solve(start: GameState): [Position, Position][] | undefined {
-  const seen = new Set<string>();
-  const path: [Position, Position][] = [];
-  const dfs = (state: GameState): boolean => {
-    if (isWon(state)) return true;
-    const key = stateKey(state);
-    if (seen.has(key)) return false;
-    seen.add(key);
+/**
+ * Iterative depth-first search for a winning move sequence; undefined if the level is unsolvable.
+ * Only the first free slot of each target shelf is tried, and clearing moves are tried first.
+ */
+export function solve(start: GameState, maxStates = 200_000): [Position, Position][] | undefined {
+  type Node = { state: GameState; path: [Position, Position][] };
+  const seen = new Set<string>([stateKey(start)]);
+  const stack: Node[] = [{ state: start, path: [] }];
+  while (stack.length > 0) {
+    const { state, path } = stack.pop()!;
+    if (isWon(state)) return path;
+    if (seen.size > maxStates) return undefined;
+
+    const children: { node: Node; clears: number }[] = [];
     for (const [from, to] of validMoves(state)) {
+      if (freeFrontSlots(state, to.shelf)[0] !== to.slot) continue;
       const result = moveItem(state, from, to);
       if (!result.ok) continue;
-      path.push([from, to]);
-      if (dfs(result.state)) return true;
-      path.pop();
+      const key = stateKey(result.state);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const clears = result.events.filter((e) => e.kind === 'tripleCleared').length;
+      children.push({ node: { state: result.state, path: [...path, [from, to]] }, clears });
     }
-    return false;
-  };
-  return dfs(start) ? path : undefined;
+    // Stack is LIFO: push the most promising children last.
+    children.sort((a, b) => a.clears - b.clears);
+    for (const child of children) stack.push(child.node);
+  }
+  return undefined;
 }
 
 /** Small deterministic PRNG (mulberry32) so random tests are reproducible. */
