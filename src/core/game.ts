@@ -44,8 +44,8 @@ function isValidPosition(state: GameState, pos: Position): boolean {
 }
 
 /**
- * Moves the item at `from` to the empty slot `to`. Both must be in the front layer of different shelves.
- * Invalid moves return the reason and leave the state untouched.
+ * Moves the item at `from` to the empty slot `to`. Both must be in a front layer; `to` may be on the same
+ * shelf (reordering). Invalid moves return the reason and leave the state untouched.
  */
 export function moveItem(state: GameState, from: Position, to: Position): MoveResult {
   if (isWon(state)) return { ok: false, reason: 'gameOver' };
@@ -54,7 +54,6 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
     return { ok: false, reason: 'samePosition' };
   }
   if (from.layer !== 0 || to.layer !== 0) return { ok: false, reason: 'notFrontLayer' };
-  if (from.shelf === to.shelf) return { ok: false, reason: 'sameShelf' };
 
   const item = itemAt(state, from);
   if (!item) return { ok: false, reason: 'sourceEmpty' };

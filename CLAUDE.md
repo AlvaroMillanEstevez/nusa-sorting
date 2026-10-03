@@ -12,6 +12,10 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `npm test` — tests con Vitest
 - `npm run typecheck` — `tsc --noEmit`
 
+## Probar en el móvil
+
+WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP de Windows>:5180` en la misma red. No hace falta `portproxy`.
+
 ## Estructura
 
 - `src/core` — lógica del juego, TypeScript puro

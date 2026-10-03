@@ -77,7 +77,6 @@ describe('moveItem: invalid moves leave the state untouched', () => {
   const cases: [string, Position, Position, string][] = [
     ['target slot occupied', front(1, 0), front(2, 0), 'targetOccupied'],
     ['same position', front(1, 0), front(1, 0), 'samePosition'],
-    ['same shelf', front(1, 0), front(1, 2), 'sameShelf'],
     ['source in back layer', { shelf: 0, layer: 1, slot: 0 }, front(2, 1), 'notFrontLayer'],
     ['target in back layer', front(1, 0), { shelf: 0, layer: 1, slot: 0 }, 'notFrontLayer'],
     ['target shelf full', front(1, 0), front(0, 0), 'shelfFull'],
@@ -110,6 +109,21 @@ describe('moveItem: valid moves', () => {
     expect(itemAt(result.state, front(1, 0))).toBeNull();
     expect(itemAt(result.state, front(2, 1))).toEqual(moved);
     expect(result.events).toEqual([{ kind: 'moved', itemId: moved.id, from: front(1, 0), to: front(2, 1) }]);
+  });
+
+  it('reorders an item into another free slot of its own shelf', () => {
+    const state = createGame(testLevel);
+    const moved = itemAt(state, front(1, 0))!;
+    const result = apply(state, front(1, 0), front(1, 2));
+    expect(itemAt(result.state, front(1, 0))).toBeNull();
+    expect(itemAt(result.state, front(1, 2))).toEqual(moved);
+    expect(countItems(result.state)).toBe(countItems(state));
+    expect(result.events).toEqual([{ kind: 'moved', itemId: moved.id, from: front(1, 0), to: front(1, 2) }]);
+  });
+
+  it('rejects reordering inside a full shelf', () => {
+    const state = createGame(testLevel);
+    expect(moveItem(state, front(0, 0), front(0, 1))).toEqual({ ok: false, reason: 'shelfFull' });
   });
 
   it('solves the test level with a known sequence', () => {

@@ -7,14 +7,13 @@ export function itemIds(state: GameState): number[] {
   return state.shelves.flatMap((shelf) => shelf.layers.flatMap((layer) => layer.flatMap((slot) => (slot ? [slot.id] : []))));
 }
 
-/** Every valid move from a state (front item to a free front slot on another shelf). */
+/** Every valid move from a state (front item to any free front slot, including reordering in its shelf). */
 export function validMoves(state: GameState): [Position, Position][] {
   const moves: [Position, Position][] = [];
   state.shelves.forEach((shelf, s) => {
     shelf.layers[0]!.forEach((slot, i) => {
       if (!slot) return;
       state.shelves.forEach((_, t) => {
-        if (t === s) return;
         for (const j of freeFrontSlots(state, t)) moves.push([front(s, i), front(t, j)]);
       });
     });
@@ -53,6 +52,8 @@ export function solve(start: GameState, maxStates = 200_000): [Position, Positio
 
     const children: { node: Node; clears: number }[] = [];
     for (const [from, to] of validMoves(state)) {
+      // Reordering never changes which triples can form, so the solver skips it.
+      if (from.shelf === to.shelf) continue;
       if (freeFrontSlots(state, to.shelf)[0] !== to.slot) continue;
       const result = moveItem(state, from, to);
       if (!result.ok) continue;

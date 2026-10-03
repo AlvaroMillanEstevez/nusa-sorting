@@ -273,18 +273,23 @@ export class GameScene extends Phaser.Scene {
   private onDragEnd(pointer: Phaser.Input.Pointer, sprite: Phaser.GameObjects.Image): void {
     const id = this.spriteIds.get(sprite);
     const from = id === undefined ? null : findItem(this.state, id);
-    const to = this.dropTarget(pointer.x, pointer.y);
+    const to = from && this.dropTarget(pointer.x, pointer.y, from);
     if (from && to && this.tryMove(from, to)) return;
     // Invalid drop: the item returns to its slot.
     this.sync(MOVE_MS);
   }
 
-  /** Free slot on the shelf under the pointer, closest to it; an occupied slot if the shelf is full. */
-  private dropTarget(x: number, y: number): Position | null {
+  /**
+   * Free slot on the shelf under the pointer, closest to it; an occupied slot if the shelf is full.
+   * On the item's own shelf its original slot also counts, so letting go near it puts it back.
+   */
+  private dropTarget(x: number, y: number, from: Position): Position | null {
     const shelfIndex = shelfAt(this.layout, x, y);
     if (shelfIndex === -1) return null;
     const shelf = this.layout.shelves[shelfIndex]!;
-    const slot = nearestFreeSlot(shelf, freeFrontSlots(this.state, shelfIndex), x) ?? nearestSlot(shelf, x);
+    const candidates = freeFrontSlots(this.state, shelfIndex);
+    if (shelfIndex === from.shelf) candidates.push(from.slot);
+    const slot = nearestFreeSlot(shelf, candidates, x) ?? nearestSlot(shelf, x);
     return { shelf: shelfIndex, layer: 0, slot };
   }
 
@@ -293,7 +298,7 @@ export class GameScene extends Phaser.Scene {
     this.handleTap(pointer.x, pointer.y);
   }
 
-  /** Tap an item to select it (tap again to deselect); then tap an empty slot on another shelf to move it there. */
+  /** Tap an item to select it (tap again to deselect); then tap an empty slot (any shelf) to move it there. */
   private handleTap(x: number, y: number): void {
     const shelfIndex = shelfAt(this.layout, x, y);
     if (shelfIndex === -1) {

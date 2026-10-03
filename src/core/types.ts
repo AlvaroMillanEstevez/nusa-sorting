@@ -31,7 +31,6 @@ export interface Position {
 export type InvalidMoveReason =
   | 'invalidPosition'
   | 'samePosition'
-  | 'sameShelf'
   | 'notFrontLayer'
   | 'sourceEmpty'
   | 'shelfFull'
