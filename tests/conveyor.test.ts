@@ -15,7 +15,7 @@ import {
   type MechanicDefinition,
   type Position,
 } from '../src/core';
-import { front } from './helpers';
+import { applyMove, front, itemIds, rng, validMoves } from './helpers';
 
 const belt = (slots: (string | null)[], speed = 1): MechanicDefinition => ({ kind: 'conveyor', slots, speed });
 
@@ -221,5 +221,51 @@ describe('belt and the end of the game', () => {
     const state = createGame(level([belt(['A'])]));
     const result = pickAndDrop(state, 0, front(0, 2));
     expect(result.events.map((e) => e.kind)).toEqual(['beltItemPlaced', 'tripleCleared', 'layerAdvanced', 'tripleCleared', 'won']);
+  });
+});
+
+describe('invariants with a belt', () => {
+  it('items only disappear in threes and are never duplicated, with picks, returns and drops mixed in', () => {
+    const level: LevelDefinition = {
+      id: 'belt-random',
+      shelves: [
+        [
+          ['A', 'B', null],
+          ['C', 'D', 'A'],
+        ],
+        [['B', 'C', null]],
+        [['D', 'A', null]],
+        [['C', null, null]],
+      ],
+      mechanics: [belt(['B', null, 'D', 'A', null, 'A', 'A', null], 0.7)],
+    };
+    let totalCleared = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const random = rng(seed);
+      let state = createGame(level);
+      const allIds = new Set(itemIds(state));
+      for (let step = 0; step < 150 && state.status === 'playing'; step++) {
+        state = tick(state, random() * 3000).state;
+        // Sometimes pick something and put it straight back, as an invalid drop would.
+        const full = state.conveyor!.slots.flatMap((slot, b) => (slot ? [b] : []));
+        if (full.length > 0 && random() < 0.2) {
+          state = ok(returnHeld(ok(pickFromBelt(state, full[Math.floor(random() * full.length)]!)).state)).state;
+        }
+        const moves = validMoves(state);
+        if (moves.length === 0) break;
+        const before = countItems(state);
+        const result = applyMove(state, moves[Math.floor(random() * moves.length)]!);
+        if (!result.ok) throw new Error(result.reason);
+        state = result.state;
+
+        const ids = itemIds(state);
+        const cleared = result.events.filter((e) => e.kind === 'tripleCleared').length;
+        totalCleared += cleared;
+        expect(before - ids.length).toBe(cleared * 3);
+        expect(new Set(ids).size).toBe(ids.length);
+        for (const id of ids) expect(allIds.has(id)).toBe(true);
+      }
+    }
+    expect(totalCleared).toBeGreaterThan(0);
   });
 });

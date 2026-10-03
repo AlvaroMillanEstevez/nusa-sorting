@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { countItems, createGame, isWon, moveItem, tick, type GameState, type MechanicDefinition } from '../src/core';
+import { countItems, createGame, isWon, tick, type GameState, type MechanicDefinition } from '../src/core';
 import { BASE_LEVEL_COUNT, levels } from '../src/data/levels';
-import { greedyWinRate, simulate, solve } from './helpers';
+import { applyMove, greedyWinRate, simulate, solve } from './helpers';
 
 describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_id, level) => {
   it('is a valid, timed level', () => {
@@ -25,8 +25,8 @@ describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_i
 
     // Replay as the solver assumed: no clock, and every combo window runs out between moves.
     let state: GameState = { ...start, timeLeftMs: null };
-    for (const [from, to] of solution!) {
-      const result = moveItem(state, from, to);
+    for (const move of solution!) {
+      const result = applyMove(state, move);
       expect(result.ok).toBe(true);
       if (!result.ok) return;
       state = state.combo ? tick(result.state, state.combo.windowMs).state : result.state;

@@ -1,26 +1,71 @@
-import { freeFrontSlots, isShelfLocked, isWon, moveItem, tick, type GameState, type LoseReason, type Position } from '../src/core';
+import {
+  dropHeld,
+  freeFrontSlots,
+  isShelfLocked,
+  isWon,
+  moveItem,
+  pickFromBelt,
+  tick,
+  type GameState,
+  type LoseReason,
+  type MoveResult,
+  type Position,
+} from '../src/core';
 
 export const front = (shelf: number, slot: number): Position => ({ shelf, layer: 0, slot });
 
-/** All item ids currently on the board, in board order. */
+/** All item ids currently in play (shelves, then belt and held item), in board order. */
 export function itemIds(state: GameState): number[] {
-  return state.shelves.flatMap((shelf) => shelf.layers.flatMap((layer) => layer.flatMap((slot) => (slot ? [slot.id] : []))));
+  const shelves = state.shelves.flatMap((shelf) =>
+    shelf.layers.flatMap((layer) => layer.flatMap((slot) => (slot ? [slot.id] : []))),
+  );
+  const belt = state.conveyor?.slots.flatMap((slot) => (slot ? [slot.id] : [])) ?? [];
+  const held = state.conveyor?.held ? [state.conveyor.held.item.id] : [];
+  return [...shelves, ...belt, ...held];
+}
+
+/** A belt slot as the source of a move. */
+export interface BeltSource {
+  readonly belt: number;
+}
+export type Source = Position | BeltSource;
+/** A player action: move a shelf item, or take a belt item and drop it, into a front slot. */
+export type Move = readonly [Source, Position];
+
+export const isBeltSource = (source: Source): source is BeltSource => 'belt' in source;
+
+/** Applies a move; a belt move is pickFromBelt followed by dropHeld, reported as one result. */
+export function applyMove(state: GameState, [from, to]: Move): MoveResult {
+  if (!isBeltSource(from)) return moveItem(state, from, to);
+  const picked = pickFromBelt(state, from.belt);
+  if (!picked.ok) return picked;
+  const dropped = dropHeld(picked.state, to);
+  if (!dropped.ok) return dropped;
+  return { ok: true, state: dropped.state, events: [...picked.events, ...dropped.events] };
+}
+
+/** Type of the item a move would carry. */
+export function movedType(state: GameState, from: Source): string {
+  return isBeltSource(from)
+    ? state.conveyor!.slots[from.belt]!.type
+    : state.shelves[from.shelf]!.layers[0]![from.slot]!.type;
 }
 
 /**
- * Every valid move from a state: a front item on an unlocked shelf to any free front slot (blocked slots
- * and locked shelves excluded), including reordering in its own shelf.
+ * Every valid move from a state: a front item on an unlocked shelf, or any belt item, to any free front
+ * slot (blocked slots and locked shelves excluded), including reordering within a shelf.
  */
-export function validMoves(state: GameState): [Position, Position][] {
-  const moves: [Position, Position][] = [];
+export function validMoves(state: GameState): Move[] {
+  const moves: Move[] = [];
+  const targets = state.shelves.flatMap((_, t) => freeFrontSlots(state, t).map((j) => front(t, j)));
   state.shelves.forEach((shelf, s) => {
     if (isShelfLocked(state, s)) return;
     shelf.layers[0]!.forEach((slot, i) => {
-      if (!slot) return;
-      state.shelves.forEach((_, t) => {
-        for (const j of freeFrontSlots(state, t)) moves.push([front(s, i), front(t, j)]);
-      });
+      if (slot) for (const to of targets) moves.push([front(s, i), to]);
     });
+  });
+  state.conveyor?.slots.forEach((slot, b) => {
+    if (slot) for (const to of targets) moves.push([{ belt: b }, to]);
   });
   return moves;
 }
@@ -42,18 +87,22 @@ function stateKey(state: GameState): string {
     )
     .join('/');
   const blocker = state.blocker ? `${state.blocker.at.shelf}:${state.blocker.at.slot}:${state.blocker.rngState}` : '-';
-  return `${board}#${state.triplesCleared}#${blocker}`;
+  // The solver ignores time, so only which items remain on the belt matters, not where they are.
+  const belt = state.conveyor ? state.conveyor.slots.flatMap((slot) => (slot ? [slot.type] : [])).sort().join(',') : '-';
+  return `${board}#${state.triplesCleared}#${blocker}#${belt}`;
 }
 
 /**
  * Iterative depth-first search for a winning move sequence; undefined if none is found.
  * The clock is ignored. Combos are assumed to break between moves (worst case), so a blocker only
  * disappears if chained triples within a single move reach its threshold.
+ * Belt items are available at any moment (the belt's position is ignored); belt items of the same type
+ * are interchangeable, so only one per type is tried.
  * Clearing moves are tried first; reordering is skipped since it never changes which triples can form.
  */
-export function solve(start: GameState, maxStates = 200_000): [Position, Position][] | undefined {
+export function solve(start: GameState, maxStates = 200_000): Move[] | undefined {
   // Moves are stored as parent links so memory per state stays constant however deep the search goes.
-  type Step = { parent: number; move: [Position, Position] | null };
+  type Step = { parent: number; move: Move | null };
   const steps: Step[] = [{ parent: -1, move: null }];
   const untimed: GameState = { ...start, timeLeftMs: null };
   const seen = new Set<string>([stateKey(untimed)]);
@@ -61,24 +110,32 @@ export function solve(start: GameState, maxStates = 200_000): [Position, Positio
   while (stack.length > 0) {
     const { state, step } = stack.pop()!;
     if (isWon(state)) {
-      const path: [Position, Position][] = [];
+      const path: Move[] = [];
       for (let i = step; steps[i]!.move; i = steps[i]!.parent) path.push(steps[i]!.move!);
       return path.reverse();
     }
     if (seen.size > maxStates) return undefined;
 
     const children: { state: GameState; step: number; clears: number }[] = [];
-    for (const [from, to] of validMoves(state)) {
-      if (from.shelf === to.shelf) continue;
+    const beltTypesTried = new Set<string>();
+    for (const move of validMoves(state)) {
+      const [from, to] = move;
+      if (isBeltSource(from)) {
+        const key = `${movedType(state, from)}>${to.shelf}:${to.slot}`;
+        if (beltTypesTried.has(key)) continue;
+        beltTypesTried.add(key);
+      } else if (from.shelf === to.shelf) {
+        continue;
+      }
       // Without a blocker any free slot of a shelf is equivalent, so try only the first.
       if (!state.blocker && freeFrontSlots(state, to.shelf)[0] !== to.slot) continue;
-      const result = moveItem(state, from, to);
+      const result = applyMove(state, move);
       if (!result.ok) continue;
       const next = state.combo ? tick(result.state, state.combo.windowMs).state : result.state;
       const key = stateKey(next);
       if (seen.has(key)) continue;
       seen.add(key);
-      steps.push({ parent: step, move: [from, to] });
+      steps.push({ parent: step, move });
       const clears = result.events.filter((e) => e.kind === 'tripleCleared').length;
       children.push({ state: next, step: steps.length - 1, clears });
     }
@@ -103,6 +160,14 @@ export function rng(seed: number): () => number {
 /** Seconds a casual player needs per move; the level clock and combo window advance by this much per move. */
 export const SECONDS_PER_MOVE = 2.5;
 
+/**
+ * Estimated extra seconds to take an item from the belt: reaching for something moving, and sometimes
+ * waiting for it to come out from the faded ends. Grows with belt speed. A guess to be checked by playing.
+ */
+export function beltPickSeconds(speed: number): number {
+  return 0.5 + 0.75 * Math.abs(speed);
+}
+
 export interface GameOutcome {
   readonly won: boolean;
   readonly loseReason: LoseReason | null;
@@ -114,29 +179,32 @@ export interface GameOutcome {
 /**
  * Simulated casual player: completes a triple when it can, otherwise prefers moves that pair an item with a
  * matching one, otherwise moves at random. Never reorders and does not plan combos. Each move takes
- * SECONDS_PER_MOVE of game time, so the clock and combo windows behave as in a real game.
+ * SECONDS_PER_MOVE of game time (plus beltPickSeconds when taken from the belt), so the clock and combo
+ * windows behave as in a real game.
  */
 export function playGreedy(start: GameState, random: () => number, maxMoves = 400): GameOutcome {
   let state = start;
   let moves = 0;
   for (; moves < maxMoves && state.status === 'playing'; moves++) {
     const options = validMoves(state)
-      .filter(([from, to]) => from.shelf !== to.shelf)
-      .map(([from, to]) => {
-        const result = moveItem(state, from, to);
+      .filter(([from, to]) => isBeltSource(from) || from.shelf !== to.shelf)
+      .map((move) => {
+        const [from, to] = move;
+        const result = applyMove(state, move);
         if (!result.ok) return null;
-        const type = state.shelves[from.shelf]!.layers[0]![from.slot]!.type;
+        const type = movedType(state, from);
         const clears = result.events.some((e) => e.kind === 'tripleCleared');
         const pairs = state.shelves[to.shelf]!.layers[0]!.some((slot) => slot?.type === type);
-        return { result, score: clears ? 2 : pairs ? 1 : 0 };
+        const seconds = SECONDS_PER_MOVE + (isBeltSource(from) ? beltPickSeconds(state.conveyor!.speed) : 0);
+        return { result, seconds, score: clears ? 2 : pairs ? 1 : 0 };
       })
       .filter((option) => option !== null);
     if (options.length === 0) break;
     const best = Math.max(...options.map((o) => o.score));
     // Casual players miss things: a quarter of the time they take any move instead of the best one.
     const pool = random() < 0.25 ? options : options.filter((o) => o.score === best);
-    state = pool[Math.floor(random() * pool.length)]!.result.state;
-    state = tick(state, SECONDS_PER_MOVE * 1000).state;
+    const choice = pool[Math.floor(random() * pool.length)]!;
+    state = tick(choice.result.state, choice.seconds * 1000).state;
   }
   return {
     won: state.status === 'won',

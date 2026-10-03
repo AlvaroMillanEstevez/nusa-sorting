@@ -14,7 +14,7 @@ import {
   type LevelDefinition,
   type Position,
 } from '../src/core';
-import { front, itemIds, rng, validMoves } from './helpers';
+import { applyMove, front, itemIds, rng, validMoves } from './helpers';
 
 /**
  * S0: front [A A B], back [B C C]
@@ -224,9 +224,9 @@ describe('invariants under random play', () => {
       for (let step = 0; step < 200; step++) {
         const moves = validMoves(state);
         if (moves.length === 0) break;
-        const [from, to] = moves[Math.floor(random() * moves.length)]!;
         const before = countItems(state);
-        const result = apply(state, from, to);
+        const result = applyMove(state, moves[Math.floor(random() * moves.length)]!);
+        if (!result.ok) throw new Error(result.reason);
         state = result.state;
 
         const ids = itemIds(state);
