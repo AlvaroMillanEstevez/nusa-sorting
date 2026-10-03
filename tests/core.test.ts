@@ -3,6 +3,8 @@ import {
   countItems,
   createGame,
   findItem,
+  isBlocked,
+  tick,
   isWon,
   itemAt,
   LevelError,
@@ -95,7 +97,15 @@ describe('moveItem: invalid moves leave the state untouched', () => {
 
   it('rejects moves once the game is won', () => {
     const won = createGame({ id: 'empty', shelves: [[[null, null, null]], [[null, null, null]]] });
+    expect(won.status).toBe('won');
     expect(moveItem(won, front(0, 0), front(1, 0))).toEqual({ ok: false, reason: 'gameOver' });
+  });
+
+  it('rejects moves once the game is lost', () => {
+    const timed = createGame({ ...testLevel, timeLimitSeconds: 1 });
+    const lost = tick(timed, 1000).state;
+    expect(lost.status).toBe('lost');
+    expect(moveItem(lost, front(1, 0), front(2, 1))).toEqual({ ok: false, reason: 'gameOver' });
   });
 });
 
@@ -225,10 +235,123 @@ describe('invariants under random play', () => {
         expect(before - ids.length).toBe(cleared * 3);
         expect(new Set(ids).size).toBe(ids.length);
         for (const id of ids) expect(allIds.has(id)).toBe(true);
-        if (isWon(state)) break;
+        if (state.status !== 'playing') break;
       }
     }
     // Guard against a vacuous test: random play must actually clear triples.
     expect(totalCleared).toBeGreaterThan(0);
+  });
+});
+
+describe('timer', () => {
+  it('starts from the level time limit and counts down', () => {
+    let state = createGame({ ...testLevel, timeLimitSeconds: 10 });
+    expect(state.timeLeftMs).toBe(10_000);
+    const result = tick(state, 2500);
+    state = result.state;
+    expect(state.timeLeftMs).toBe(7500);
+    expect(state.status).toBe('playing');
+    expect(result.events).toEqual([]);
+  });
+
+  it('loses with timeUp exactly once when reaching zero', () => {
+    const state = createGame({ ...testLevel, timeLimitSeconds: 2 });
+    const result = tick(state, 5000);
+    expect(result.state).toMatchObject({ timeLeftMs: 0, status: 'lost', loseReason: 'timeUp' });
+    expect(result.events).toEqual([{ kind: 'lost', reason: 'timeUp' }]);
+    expect(tick(result.state, 1000)).toEqual({ state: result.state, events: [] });
+  });
+
+  it('ignores untimed levels, finished games and bad elapsed values', () => {
+    const untimed = createGame(testLevel);
+    expect(untimed.timeLeftMs).toBeNull();
+    expect(tick(untimed, 1e9).state).toBe(untimed);
+
+    const timed = createGame({ ...testLevel, timeLimitSeconds: 5 });
+    expect(tick(timed, -100).state).toBe(timed);
+    expect(tick(timed, Number.NaN).state).toBe(timed);
+  });
+
+  it('stops counting once the level is won', () => {
+    let state = createGame({ ...testLevel, timeLimitSeconds: 60 });
+    for (const [from, to] of [
+      [front(0, 2), front(1, 2)],
+      [front(1, 1), front(0, 2)],
+      [front(0, 0), front(1, 1)],
+      [front(2, 0), front(0, 0)],
+    ] as const) {
+      state = apply(state, from, to).state;
+    }
+    expect(state.status).toBe('won');
+    expect(tick(state, 120_000).state).toBe(state);
+  });
+
+  it('rejects non-positive time limits', () => {
+    expect(() => createGame({ ...testLevel, timeLimitSeconds: 0 })).toThrow(LevelError);
+  });
+});
+
+describe('blocked detection', () => {
+  /*
+   * S0: front [D . .], back [A B C]
+   * S1: front [A B .]
+   * S2: front [C A B]
+   * S3: front [C D D]
+   */
+  const blockingLevel: LevelDefinition = {
+    id: 'blocking',
+    shelves: [
+      [
+        ['D', null, null],
+        ['A', 'B', 'C'],
+      ],
+      [['A', 'B', null]],
+      [['C', 'A', 'B']],
+      [['C', 'D', 'D']],
+    ],
+  };
+
+  it('loses when the board fills up with no triple, emitting lost once', () => {
+    const state = createGame(blockingLevel);
+    expect(isBlocked(state)).toBe(false);
+    // D leaves S0 empty, its full back layer advances, and S1's last free slot is taken: no free slot anywhere.
+    const result = apply(state, front(0, 0), front(1, 2));
+    expect(result.state).toMatchObject({ status: 'lost', loseReason: 'blocked' });
+    expect(result.events.map((e) => e.kind)).toEqual(['moved', 'layerAdvanced', 'lost']);
+    expect(moveItem(result.state, front(1, 0), front(1, 1))).toEqual({ ok: false, reason: 'gameOver' });
+  });
+
+  it('keeps playing when the same board still has a free slot', () => {
+    const state = createGame(blockingLevel);
+    // Reordering inside S0 changes nothing structural.
+    const result = apply(state, front(0, 0), front(0, 2));
+    expect(result.state.status).toBe('playing');
+  });
+
+  it('counts a board where only reordering is possible as blocked', () => {
+    // Free slots exist, but all items share the only shelf: reordering does not get out of it.
+    const reorderOnly: GameState = {
+      shelves: [
+        {
+          layers: [
+            [{ id: 1, type: 'A' }, { id: 2, type: 'B' }, null],
+            [{ id: 3, type: 'A' }, { id: 4, type: 'A' }, { id: 5, type: 'B' }],
+            [{ id: 6, type: 'B' }, null, null],
+          ],
+        },
+      ],
+      status: 'playing',
+      loseReason: null,
+      timeLeftMs: null,
+    };
+    expect(isBlocked(reorderOnly)).toBe(true);
+  });
+
+  it('is never blocked with no items left', () => {
+    expect(isBlocked(createGame({ id: 'empty', shelves: [[[null, null, null]]] }))).toBe(false);
+  });
+
+  it('rejects levels that start blocked', () => {
+    expect(() => createGame({ id: 'x', shelves: [[['A', 'A', 'B']], [['B', 'B', 'A']]] })).toThrow(/starts blocked/);
   });
 });

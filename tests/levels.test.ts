@@ -35,7 +35,19 @@ describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_i
 
 describe('solver sanity check', () => {
   it('reports an unsolvable level as unsolvable', () => {
-    const stuck = createGame({ id: 'stuck', shelves: [[['A', 'A', 'B']], [['B', 'B', 'A']]] });
-    expect(solve(stuck)).toBeUndefined();
+    // Two of each type are in front and the third is behind S1. Emptying S1 uses every free slot,
+    // and its back layer then fills the board without a triple.
+    const doomed = createGame({
+      id: 'doomed',
+      shelves: [
+        [['C', null, 'B']],
+        [
+          ['B', 'A', 'C'],
+          ['A', 'B', 'C'],
+        ],
+        [[null, null, 'A']],
+      ],
+    });
+    expect(solve(doomed)).toBeUndefined();
   });
 });

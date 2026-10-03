@@ -1,4 +1,4 @@
-import type { GameEvent, GameState, Item, Layer, MoveResult, Position, Shelf } from './types';
+import type { GameEvent, GameState, Item, Layer, MoveResult, Position, Shelf, TickResult } from './types';
 
 export function itemAt(state: GameState, pos: Position): Item | null {
   return state.shelves[pos.shelf]?.layers[pos.layer]?.[pos.slot] ?? null;
@@ -26,8 +26,32 @@ export function countItems(state: GameState): number {
   return total;
 }
 
+/** True when the board has no items left. */
 export function isWon(state: GameState): boolean {
   return countItems(state) === 0;
+}
+
+/**
+ * True when items remain but none can move to another shelf: every front slot is full (so no triple can
+ * form), or the only free slots are on the shelf holding the last items. Reordering does not count.
+ */
+export function isBlocked(state: GameState): boolean {
+  if (isWon(state)) return false;
+  const hasFrontItem = state.shelves.map((shelf) => shelf.layers[0]!.some((slot) => slot !== null));
+  const canMoveInto = (target: number) =>
+    freeFrontSlots(state, target).length > 0 && hasFrontItem.some((has, source) => has && source !== target);
+  return !state.shelves.some((_, target) => canMoveInto(target));
+}
+
+/** Advances the level timer. Running out of time while playing loses the level. */
+export function tick(state: GameState, elapsedMs: number): TickResult {
+  if (state.status !== 'playing' || state.timeLeftMs === null || !(elapsedMs > 0)) return { state, events: [] };
+  const timeLeftMs = Math.max(0, state.timeLeftMs - elapsedMs);
+  if (timeLeftMs > 0) return { state: { ...state, timeLeftMs }, events: [] };
+  return {
+    state: { ...state, timeLeftMs, status: 'lost', loseReason: 'timeUp' },
+    events: [{ kind: 'lost', reason: 'timeUp' }],
+  };
 }
 
 /** Indices of empty slots in a shelf's front layer. */
@@ -48,7 +72,7 @@ function isValidPosition(state: GameState, pos: Position): boolean {
  * shelf (reordering). Invalid moves return the reason and leave the state untouched.
  */
 export function moveItem(state: GameState, from: Position, to: Position): MoveResult {
-  if (isWon(state)) return { ok: false, reason: 'gameOver' };
+  if (state.status !== 'playing') return { ok: false, reason: 'gameOver' };
   if (!isValidPosition(state, from) || !isValidPosition(state, to)) return { ok: false, reason: 'invalidPosition' };
   if (from.shelf === to.shelf && from.layer === to.layer && from.slot === to.slot) {
     return { ok: false, reason: 'samePosition' };
@@ -69,8 +93,14 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
   shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, events);
   shelves[from.shelf] = settleShelf(shelves[from.shelf]!, from.shelf, events);
 
-  const next: GameState = { shelves };
-  if (isWon(next)) events.push({ kind: 'won' });
+  let next: GameState = { ...state, shelves };
+  if (isWon(next)) {
+    next = { ...next, status: 'won' };
+    events.push({ kind: 'won' });
+  } else if (isBlocked(next)) {
+    next = { ...next, status: 'lost', loseReason: 'blocked' };
+    events.push({ kind: 'lost', reason: 'blocked' });
+  }
   return { ok: true, state: next, events };
 }
 

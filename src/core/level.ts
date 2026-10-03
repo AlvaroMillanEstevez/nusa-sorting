@@ -1,8 +1,11 @@
+import { isBlocked } from './game';
 import { SLOTS_PER_LAYER, type GameState, type ItemType, type Layer, type Shelf } from './types';
 
 /** Level data: shelves[shelf][layer][slot], layer 0 is the front. null is an empty slot. */
 export interface LevelDefinition {
   readonly id: string;
+  /** Time to clear the level; omit for an untimed level. */
+  readonly timeLimitSeconds?: number;
   readonly shelves: readonly (readonly (readonly (ItemType | null)[])[])[];
 }
 
@@ -11,6 +14,10 @@ export class LevelError extends Error {}
 /** Validates a level definition and builds its initial state, giving every item a unique id. */
 export function createGame(level: LevelDefinition): GameState {
   if (level.shelves.length === 0) throw new LevelError(`${level.id}: level has no shelves`);
+  const { timeLimitSeconds } = level;
+  if (timeLimitSeconds !== undefined && !(timeLimitSeconds > 0)) {
+    throw new LevelError(`${level.id}: time limit must be positive`);
+  }
 
   const counts = new Map<ItemType, number>();
   let nextId = 1;
@@ -49,5 +56,12 @@ export function createGame(level: LevelDefinition): GameState {
     if (count % 3 !== 0) throw new LevelError(`${level.id}: item "${type}" appears ${count} times, not a multiple of 3`);
   }
 
-  return { shelves };
+  const state: GameState = {
+    shelves,
+    status: counts.size === 0 ? 'won' : 'playing',
+    loseReason: null,
+    timeLeftMs: timeLimitSeconds === undefined ? null : timeLimitSeconds * 1000,
+  };
+  if (isBlocked(state)) throw new LevelError(`${level.id}: level starts blocked`);
+  return state;
 }

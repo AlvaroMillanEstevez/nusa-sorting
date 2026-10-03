@@ -18,8 +18,17 @@ export interface Shelf {
   readonly layers: readonly Layer[];
 }
 
+export type GameStatus = 'playing' | 'won' | 'lost';
+
+export type LoseReason = 'timeUp' | 'blocked';
+
 export interface GameState {
   readonly shelves: readonly Shelf[];
+  readonly status: GameStatus;
+  /** Set only when status is 'lost'. */
+  readonly loseReason: LoseReason | null;
+  /** Remaining time, or null if the level has no time limit. */
+  readonly timeLeftMs: number | null;
 }
 
 export interface Position {
@@ -46,8 +55,14 @@ export type GameEvent =
       readonly itemIds: readonly number[];
     }
   | { readonly kind: 'layerAdvanced'; readonly shelf: number; readonly remainingLayers: number }
-  | { readonly kind: 'won' };
+  | { readonly kind: 'won' }
+  | { readonly kind: 'lost'; readonly reason: LoseReason };
 
 export type MoveResult =
   | { readonly ok: true; readonly state: GameState; readonly events: readonly GameEvent[] }
   | { readonly ok: false; readonly reason: InvalidMoveReason };
+
+export interface TickResult {
+  readonly state: GameState;
+  readonly events: readonly GameEvent[];
+}
