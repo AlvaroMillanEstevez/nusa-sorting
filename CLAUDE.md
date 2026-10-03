@@ -16,6 +16,14 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 
 WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP de Windows>:5180` en la misma red. No hace falta `portproxy`.
 
+## Parámetros de desarrollo
+
+Solo en `npm run dev`; el build de producción no los incluye.
+
+- `?level=N` — abre el nivel N (1-based) aunque esté bloqueado; el progreso se sigue guardando con normalidad.
+- `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
+- `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
+
 ## Estructura
 
 - `src/core` — lógica del juego, TypeScript puro
