@@ -12,12 +12,9 @@ import {
 import type { SoundService } from '../services/SoundService';
 import { beltPose, beltSlotAt, isOnBelt, type BeltLayout, type BeltPose, type BoardLayout } from '../ui/boardLayout';
 import { BeltView, DEPTH_BELT_ITEM } from './BeltView';
-import { ITEM_TEXTURE_SIZE } from './itemTextures';
 
-/** Item size relative to the belt pitch. */
-const BELT_ITEM_FILL = 0.8;
-/** A held item is at least this much bigger than on the belt. */
-const HELD_SCALE = 1.2;
+/** A held item grows like a picked-up shelf item. */
+const HELD_SCALE = 1.18;
 const RETURN_MS = 220;
 const DEPTH_HELD = 100;
 
@@ -97,11 +94,12 @@ export class BeltController {
   }
 
   private heldScale(): number {
-    return Math.max(this.itemScale() * HELD_SCALE, this.host.shelfItemScale());
+    return this.itemScale() * HELD_SCALE;
   }
 
+  /** Belt items are drawn exactly like shelf items: the belt pitch is the shelves' slot size. */
   private itemScale(): number {
-    return ((this.belt?.pitch ?? 0) * BELT_ITEM_FILL) / ITEM_TEXTURE_SIZE;
+    return this.host.shelfItemScale();
   }
 
   /** Per frame: plates and belt items follow the belt; returning items fly back to their moving slot. */

@@ -81,6 +81,10 @@ describe('conveyor strip', () => {
     const layout = computeBoardLayout(width, height, 7, 3, true, 8);
     const belt = layout.belt!;
 
+    it('draws belt items exactly as big as shelf items', () => {
+      expect(belt.pitch).toBe(layout.slotSize);
+    });
+
     it('gets its own strip below every shelf, inside the viewport', () => {
       expect(belt.slots).toBe(8);
       for (const { rect } of layout.shelves) expect(rect.y + rect.height).toBeLessThanOrEqual(belt.rect.y);

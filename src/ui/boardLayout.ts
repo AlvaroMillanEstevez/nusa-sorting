@@ -82,29 +82,35 @@ export function computeBoardLayout(
     ? { x: 0, y: hudRowHeight, width, height: Math.round(hudRowHeight * STATUS_ROW) }
     : null;
   const hud: Rect = { x: 0, y: 0, width, height: hudRowHeight + (statusRow?.height ?? 0) };
-  const belt = beltSlots > 0 ? layoutBelt(width, height, beltSlots) : null;
-  // The belt takes its own strip at the bottom, near the thumbs, in every orientation.
-  const beltSpace = belt ? belt.rect.height + MARGIN : 0;
-  const area: Rect = {
-    x: MARGIN,
-    y: hud.height + MARGIN,
-    width: Math.max(1, width - MARGIN * 2),
-    height: Math.max(1, height - hud.height - MARGIN * 2 - beltSpace),
-  };
   const shelfW = SHELF_WIDTH_UNITS(slotsPerLayer);
   const shelfH = SHELF_HEIGHT_UNITS;
+  const contentWidth = Math.max(1, width - MARGIN * 2);
+  // Height for the shelves plus, with a belt, its strip and the margin above it.
+  const contentHeight = Math.max(1, height - hud.height - MARGIN * 2 - (beltSlots > 0 ? MARGIN : 0));
+  // The belt strip is sized in slots too, so belt items are exactly as big as shelf items.
+  const beltUnits = beltSlots > 0 ? BELT_STRIP : 0;
 
   let best = { cols: 1, rows: shelfCount, size: 0 };
   for (let cols = 1; cols <= Math.max(1, shelfCount); cols++) {
     const rows = Math.ceil(shelfCount / cols);
     const size = Math.min(
-      area.width / (cols * shelfW + (cols - 1) * GAP),
-      area.height / (rows * shelfH + (rows - 1) * GAP),
+      contentWidth / (cols * shelfW + (cols - 1) * GAP),
+      contentHeight / (rows * shelfH + (rows - 1) * GAP + beltUnits),
     );
     if (size > best.size) best = { cols, rows, size };
   }
 
-  const s = Math.min(MAX_SLOT_SIZE, best.size);
+  // K belt slots must fit across the screen; the rollers sit over the loop's faded ends, not beside them.
+  const beltWidthCap = beltSlots > 0 ? (width - BELT_SIDE_MARGIN * 2) / beltSlots : Number.POSITIVE_INFINITY;
+  const s = Math.min(MAX_SLOT_SIZE, best.size, beltWidthCap);
+  const belt = beltSlots > 0 ? layoutBelt(width, height, beltSlots, s) : null;
+  // The belt takes its own strip at the bottom, near the thumbs, in every orientation.
+  const area: Rect = {
+    x: MARGIN,
+    y: hud.height + MARGIN,
+    width: contentWidth,
+    height: Math.max(1, contentHeight - (belt ? belt.rect.height : 0)),
+  };
   const gridH = best.rows * shelfH * s + (best.rows - 1) * GAP * s;
   const top = area.y + (area.height - gridH) / 2;
 
@@ -134,21 +140,17 @@ export function computeBoardLayout(
   return { slotSize: s, hud, hudRowHeight, statusRow, belt, shelves };
 }
 
-/** Strip height relative to the belt pitch (room for the rail and a lifted item). */
+/** Strip height in slots: a full-size item plus room for the rail around it. */
 const BELT_STRIP = 1.3;
+/** The belt may run closer to the screen edges than the shelves. */
+const BELT_SIDE_MARGIN = 8;
 
-function layoutBelt(width: number, height: number, slots: number): BeltLayout {
-  // Room for the rollers at both ends, half a pitch each.
-  const pitch = Math.min(MAX_SLOT_SIZE, height * 0.1, (width - MARGIN * 2) / (slots + 1));
+/** The belt pitch is the shelves' slot size, so items keep their size when they move between the two. */
+function layoutBelt(width: number, height: number, slots: number, pitch: number): BeltLayout {
   const stripHeight = pitch * BELT_STRIP;
   const loopWidth = slots * pitch;
   const loopX = (width - loopWidth) / 2;
-  const rect: Rect = {
-    x: loopX - pitch / 2,
-    y: height - MARGIN - stripHeight,
-    width: loopWidth + pitch,
-    height: stripHeight,
-  };
+  const rect: Rect = { x: loopX, y: height - MARGIN - stripHeight, width: loopWidth, height: stripHeight };
   return { rect, loopX, pitch, slots, y: rect.y + stripHeight / 2 };
 }
 

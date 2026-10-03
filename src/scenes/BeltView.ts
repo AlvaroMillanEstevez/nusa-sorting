@@ -50,9 +50,10 @@ export class BeltView {
     const { rect, pitch } = layout;
     const railHeight = pitch * 0.92;
     const railY = layout.y - railHeight / 2;
-    this.rail.fillStyle(theme.beltRail, 1).fillRoundedRect(rect.x, railY, rect.width, railHeight, railHeight / 2);
-    const rollerRadius = railHeight / 2;
-    for (const x of [rect.x + rollerRadius, rect.x + rect.width - rollerRadius]) {
+    this.rail.fillStyle(theme.beltRail, 1).fillRect(rect.x, railY, rect.width, railHeight);
+    // Rollers are centred on the loop's ends, covering the half slot where items fade out and back in.
+    const rollerRadius = Math.max(railHeight / 2, pitch * 0.5);
+    for (const x of [rect.x, rect.x + rect.width]) {
       this.rollers.fillStyle(theme.beltRoller, 1).fillCircle(x, layout.y, rollerRadius);
       this.rollers.fillStyle(theme.beltRail, 1).fillCircle(x, layout.y, rollerRadius * 0.35);
     }
