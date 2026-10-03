@@ -41,6 +41,18 @@ describe.each(viewports)('computeBoardLayout on %s', (_name, width, height) => {
   });
 });
 
+describe('status row', () => {
+  it('adds a second HUD row and keeps shelves below it', () => {
+    const plain = computeBoardLayout(390, 844, 7);
+    const withStatus = computeBoardLayout(390, 844, 7, 3, true);
+    expect(plain.statusRow).toBeNull();
+    expect(withStatus.statusRow).not.toBeNull();
+    expect(withStatus.hud.height).toBe(withStatus.hudRowHeight + withStatus.statusRow!.height);
+    expect(withStatus.statusRow!.y).toBe(withStatus.hudRowHeight);
+    for (const { rect } of withStatus.shelves) expect(rect.y).toBeGreaterThanOrEqual(withStatus.hud.height);
+  });
+});
+
 describe('layout orientation', () => {
   it('uses more columns in landscape than in portrait', () => {
     const cols = (w: number, h: number) =>

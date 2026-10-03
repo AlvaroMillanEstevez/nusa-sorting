@@ -1,4 +1,16 @@
-export type SoundEffect = 'pick' | 'drop' | 'invalid' | 'clear' | 'advance' | 'tick' | 'win' | 'lose';
+export type SoundEffect =
+  | 'pick'
+  | 'drop'
+  | 'invalid'
+  | 'clear'
+  | 'advance'
+  | 'tick'
+  | 'win'
+  | 'lose'
+  | 'combo'
+  | 'unlock'
+  | 'blockerMove'
+  | 'blockerGone';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {

@@ -29,6 +29,10 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   tick: [note(0, 1200, 0.03, 'square', 0.05)],
   win: [note(0, 523), note(0.1, 659), note(0.2, 784), note(0.3, 1047, 0.35)],
   lose: [note(0, 392, 0.18, 'sawtooth', 0.1), note(0.18, 330, 0.18, 'sawtooth', 0.1), note(0.36, 262, 0.4, 'sawtooth', 0.1)],
+  combo: [{ at: 0, duration: 0.18, freq: 700, freqEnd: 1400, wave: 'square', gain: 0.07 }, note(0.12, 1760, 0.12, 'sine', 0.1)],
+  unlock: [note(0, 880, 0.06, 'square', 0.08), note(0.07, 1175, 0.06, 'square', 0.08), note(0.14, 1568, 0.2, 'triangle', 0.18)],
+  blockerMove: [{ at: 0, duration: 0.12, freq: 180, freqEnd: 320, wave: 'square', gain: 0.06 }],
+  blockerGone: [{ at: 0, duration: 0.3, freq: 300, freqEnd: 1200, wave: 'triangle', gain: 0.2 }, note(0.25, 1600, 0.2, 'sine', 0.1)],
 };
 
 export class WebAudioSoundService implements SoundService {

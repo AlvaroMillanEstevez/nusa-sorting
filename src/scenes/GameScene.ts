@@ -3,9 +3,11 @@ import {
   createGame,
   findItem,
   freeFrontSlots,
+  isShelfLocked,
   itemAt,
   moveItem,
   tick,
+  triplesToUnlock,
   type GameEvent,
   type GameState,
   type Item,
@@ -14,11 +16,13 @@ import {
   type Position,
 } from '../core';
 import { levels } from '../data/levels';
+import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { SoundService } from '../services/SoundService';
 import { BACK_SCALE, computeBoardLayout, nearestFreeSlot, nearestSlot, shelfAt, type BoardLayout } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
 import { theme } from '../ui/theme';
+import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
 import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
 import { ResultOverlay } from './ResultOverlay';
@@ -46,6 +50,7 @@ const FADE_MS = 220;
 const DEPTH_BACK = 5;
 const DEPTH_FRONT = 10;
 const DEPTH_DRAG = 100;
+const DEPTH_POPUP = 120;
 
 const LOSE_TITLES: Record<LoseReason, MessageKey> = {
   timeUp: 'result.lost.timeUp',
@@ -74,8 +79,11 @@ export class GameScene extends Phaser.Scene {
   private board!: Phaser.GameObjects.Graphics;
   private hud!: Hud;
   private overlay!: ResultOverlay;
+  private locks!: LockOverlays;
+  private blocker!: BlockerView;
 
   private readonly sprites = new Map<number, Phaser.GameObjects.Image>();
+  private readonly popups = new Set<Phaser.GameObjects.Text>();
   private readonly spriteIds = new WeakMap<Phaser.GameObjects.GameObject, number>();
 
   private selectedId: number | null = null;
@@ -90,6 +98,8 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.board = this.add.graphics();
+    this.locks = new LockOverlays(this);
+    this.blocker = new BlockerView(this);
     this.hud = new Hud(this, {
       onRestart: () => this.transitionTo(this.levelIndex),
       onToggleMute: () => {
@@ -116,7 +126,9 @@ export class GameScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
     });
 
-    this.loadLevel(0);
+    // Development only: ?level=N opens level N directly. Production builds drop this branch.
+    const start = import.meta.env.DEV ? (parseLevelParam(window.location.search, levels.length) ?? 0) : 0;
+    this.loadLevel(start);
   }
 
   override update(_time: number, delta: number): void {
@@ -125,6 +137,8 @@ export class GameScene extends Phaser.Scene {
     this.state = result.state;
     this.hud.setTime(this.state.timeLeftMs);
     this.warnTicks();
+    const combo = this.state.combo;
+    if (combo) this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
     if (result.events.some((e) => e.kind === 'lost')) this.endLevel(0);
   }
 
@@ -146,6 +160,8 @@ export class GameScene extends Phaser.Scene {
     this.time.removeAllEvents();
     for (const sprite of this.sprites.values()) sprite.destroy();
     this.sprites.clear();
+    for (const popup of this.popups) popup.destroy();
+    this.popups.clear();
     this.selectedId = null;
     this.draggingId = null;
     this.lastWarningSecond = null;
@@ -161,6 +177,13 @@ export class GameScene extends Phaser.Scene {
     }
     this.hud.setLevel(index + 1);
     this.hud.setTime(this.state.timeLeftMs);
+    this.hud.setScore(this.state.combo?.score ?? 0, false);
+    this.hud.setCombo(0, 0, 0);
+    const locked = new Map<number, number>();
+    this.state.shelves.forEach((_, shelf) => {
+      if (isShelfLocked(this.state, shelf)) locked.set(shelf, triplesToUnlock(this.state, shelf));
+    });
+    this.locks.reset(locked);
     this.relayout();
     this.sync(0);
   }
@@ -175,13 +198,18 @@ export class GameScene extends Phaser.Scene {
   private endLevel(delay: number): void {
     const { status, loseReason, timeLeftMs } = this.state;
     this.selectedId = null;
+    this.hud.setCombo(0, 0, 0);
     this.time.delayedCall(delay, () => {
       if (status === 'won') {
         this.sfx.play('win');
         const isLast = this.levelIndex === levels.length - 1;
+        const lines = [
+          timeLeftMs === null ? null : t('result.won.timeLeft', { time: formatTime(timeLeftMs) }),
+          this.state.combo ? t('result.won.score', { score: this.state.combo.score }) : null,
+        ];
         this.overlay.show({
           title: t(isLast ? 'result.allDone.title' : 'result.won.title'),
-          subtitle: timeLeftMs === null ? '' : t('result.won.timeLeft', { time: formatTime(timeLeftMs) }),
+          subtitle: lines.filter((line) => line !== null).join('\n'),
           button: t(isLast ? 'result.playAgain' : 'result.next'),
           onButton: () => this.transitionTo(isLast ? 0 : this.levelIndex + 1),
         });
@@ -217,10 +245,17 @@ export class GameScene extends Phaser.Scene {
   private relayout(): void {
     const { width, height } = this.scale.gameSize;
     this.cameras.main.setSize(width, height);
-    this.layout = computeBoardLayout(width, height, this.level.shelves.length);
-    this.hud.layout(width, this.layout.hud.height);
+    this.layout = computeBoardLayout(width, height, this.level.shelves.length, 3, this.state.combo !== null);
+    this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow);
     this.overlay.layout(width, height);
+    this.locks.relayout(this.layout);
+    this.placeBlocker();
     this.drawBoard();
+  }
+
+  private placeBlocker(): void {
+    const at = this.state.blocker?.at;
+    this.blocker.place(at ? this.layout.shelves[at.shelf]!.slots[at.slot]! : null, this.layout.slotSize);
   }
 
   private drawBoard(): void {
@@ -289,7 +324,9 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
       const target = this.targetFor(id, pos);
-      if (sprite.input) sprite.input.enabled = target.front && this.state.status === 'playing';
+      if (sprite.input) {
+        sprite.input.enabled = target.front && this.state.status === 'playing' && !isShelfLocked(this.state, pos.shelf);
+      }
       const { x, y, scale, alpha } = target;
       if (sprite.x === x && sprite.y === y && sprite.scale === scale && sprite.alpha === alpha) {
         sprite.setDepth(target.depth);
@@ -384,6 +421,8 @@ export class GameScene extends Phaser.Scene {
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
     if (this.dragOccurred || this.overlay.visible || this.state.status !== 'playing') return;
+    // A press that travelled (e.g. a drag attempt on a locked shelf) is not a tap where it ended.
+    if (pointer.getDistance() > this.input.dragDistanceThreshold) return;
     this.handleTap(pointer.x, pointer.y);
   }
 
@@ -392,6 +431,12 @@ export class GameScene extends Phaser.Scene {
     const shelfIndex = shelfAt(this.layout, x, y);
     if (shelfIndex === -1) {
       this.select(null);
+      return;
+    }
+    if (isShelfLocked(this.state, shelfIndex)) {
+      // Locked shelves ignore taps; a pending selection gets the usual "can't go there" shake.
+      this.sfx.play('invalid');
+      if (this.selectedId !== null) this.rejectFeedback(this.selectedId);
       return;
     }
     const tapped: Position = { shelf: shelfIndex, layer: 0, slot: nearestSlot(this.layout.shelves[shelfIndex]!, x) };
@@ -493,7 +538,92 @@ export class GameScene extends Phaser.Scene {
 
     // Advance: items behind slide forward after the pop; everything else settles immediately.
     this.sync(ADVANCE_MS, (pos) => (advancedShelves.has(pos.shelf) ? ADVANCE_DELAY_MS : 0), moved?.itemId);
+    this.playMechanics(events);
 
     if (this.state.status !== 'playing') this.endLevel(RESULT_DELAY_MS);
+  }
+
+  /** Score and combo popups, shelf unlocks and blocker hops, timed to land with the triple pop. */
+  private playMechanics(events: readonly GameEvent[]): void {
+    const popAt = CLEAR_DELAY_MS;
+    let combo = 0;
+    let blockerTo: { shelf: number; slot: number } | null = null;
+    for (const event of events) {
+      switch (event.kind) {
+        case 'comboChanged':
+          combo = event.combo;
+          break;
+        case 'scoreChanged': {
+          const { rect } = this.layout.shelves[event.shelf]!;
+          const x = rect.x + rect.width / 2;
+          this.popup(x, rect.y + rect.height * 0.35, t('popup.points', { points: event.delta }), theme.textColor, popAt);
+          if (combo >= 2) {
+            this.popup(x, rect.y, t('popup.combo', { n: combo }), theme.comboColor, popAt + 60);
+            this.time.delayedCall(popAt, () => {
+              this.sfx.play('combo');
+              this.hud.pulseCombo();
+            });
+          }
+          this.time.delayedCall(popAt, () => this.hud.setScore(event.score, true));
+          break;
+        }
+        case 'shelfUnlocked': {
+          const { rect } = this.layout.shelves[event.shelf]!;
+          this.time.delayedCall(popAt + 120, () => {
+            this.locks.unlock(event.shelf);
+            this.sfx.play('unlock');
+            // The shelf's items become draggable now.
+            this.sync(0);
+          });
+          this.popup(rect.x + rect.width / 2, rect.y + rect.height / 2, t('popup.unlocked'), theme.titleColor, popAt + 120);
+          break;
+        }
+        case 'blockerMoved':
+          blockerTo = event.to;
+          break;
+        case 'blockerRemoved': {
+          const slot = this.layout.shelves[event.at.shelf]!.slots[event.at.slot]!;
+          this.blocker.remove(popAt);
+          this.popup(slot.x, slot.y - this.layout.slotSize * 0.6, t('popup.blockerRemoved'), theme.comboColor, popAt);
+          this.time.delayedCall(popAt, () => this.sfx.play('blockerGone'));
+          break;
+        }
+        default:
+          break;
+      }
+    }
+    if (blockerTo) {
+      // Several triples in one move mean several jumps; animate straight to the last slot.
+      const slot = this.layout.shelves[blockerTo.shelf]!.slots[blockerTo.slot]!;
+      this.blocker.hop(slot, popAt + CLEAR_MS);
+      this.time.delayedCall(popAt + CLEAR_MS, () => this.sfx.play('blockerMove'));
+    }
+    this.state.shelves.forEach((_, shelf) => {
+      if (isShelfLocked(this.state, shelf)) this.locks.setRemaining(shelf, triplesToUnlock(this.state, shelf));
+    });
+  }
+
+  /** Floating text that rises and fades. */
+  private popup(x: number, y: number, text: string, color: string, delay: number): void {
+    const label = this.add
+      .text(x, y, text, { fontFamily: theme.fontFamily, fontStyle: 'bold', color, stroke: '#1b2a3a', strokeThickness: 4 })
+      .setOrigin(0.5)
+      .setResolution(window.devicePixelRatio || 1)
+      .setFontSize(Math.round(Math.max(16, this.layout.slotSize * 0.32)))
+      .setDepth(DEPTH_POPUP)
+      .setAlpha(0);
+    this.popups.add(label);
+    this.tweens.add({
+      targets: label,
+      alpha: { from: 1, to: 0 },
+      y: y - this.layout.slotSize * 0.6,
+      delay,
+      duration: 900,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.popups.delete(label);
+        label.destroy();
+      },
+    });
   }
 }

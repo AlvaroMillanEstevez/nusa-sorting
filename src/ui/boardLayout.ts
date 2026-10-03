@@ -21,7 +21,12 @@ export interface ShelfLayout {
 export interface BoardLayout {
   /** Size of one slot in px; items are drawn slightly smaller. */
   readonly slotSize: number;
+  /** Whole HUD area (both rows when there is a status row). */
   readonly hud: Rect;
+  /** Height of the main HUD row (level, clock, buttons). */
+  readonly hudRowHeight: number;
+  /** Second HUD row (score and combo), or null when the level has none. */
+  readonly statusRow: Rect | null;
   readonly shelves: readonly ShelfLayout[];
 }
 
@@ -46,8 +51,21 @@ export function hudHeight(height: number): number {
  * Lays out shelves in the grid (columns × rows) that gives the largest slots for the viewport,
  * so it works in both portrait and landscape. Incomplete last rows are centered.
  */
-export function computeBoardLayout(width: number, height: number, shelfCount: number, slotsPerLayer = 3): BoardLayout {
-  const hud: Rect = { x: 0, y: 0, width, height: hudHeight(height) };
+/** The status row (score and combo) is this fraction of the main HUD row. */
+const STATUS_ROW = 0.75;
+
+export function computeBoardLayout(
+  width: number,
+  height: number,
+  shelfCount: number,
+  slotsPerLayer = 3,
+  withStatusRow = false,
+): BoardLayout {
+  const hudRowHeight = hudHeight(height);
+  const statusRow: Rect | null = withStatusRow
+    ? { x: 0, y: hudRowHeight, width, height: Math.round(hudRowHeight * STATUS_ROW) }
+    : null;
+  const hud: Rect = { x: 0, y: 0, width, height: hudRowHeight + (statusRow?.height ?? 0) };
   const area: Rect = {
     x: MARGIN,
     y: hud.height + MARGIN,
@@ -94,7 +112,7 @@ export function computeBoardLayout(width: number, height: number, shelfCount: nu
     });
   }
 
-  return { slotSize: s, hud, shelves };
+  return { slotSize: s, hud, hudRowHeight, statusRow, shelves };
 }
 
 /** Index of the shelf containing the point (with half a gap of tolerance), or -1. */
