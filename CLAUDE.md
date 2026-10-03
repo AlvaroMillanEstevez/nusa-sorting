@@ -21,7 +21,7 @@ WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP d
 - `src/core` — lógica del juego, TypeScript puro
 - `src/scenes` — escenas de Phaser
 - `src/ui` — utilidades de presentación (layout, tema)
-- `src/services` — fronteras con el exterior (guardado, anuncios)
+- `src/services` — fronteras con el exterior (guardado, anuncios, sonido)
 - `src/data/levels` — definiciones de niveles
 - `src/i18n` — textos y catálogos (`en`, `id`)
 - `tests` — tests de Vitest
@@ -31,7 +31,7 @@ WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP d
 - La lógica del juego vive en `src/core`, en TypeScript puro, sin dependencias de Phaser, y se cubre con tests.
 - Las escenas solo dibujan el estado y envían acciones al núcleo.
 - Sin backend, sin cuentas propias, sin APIs de IA en partida, sin dependencias nuevas sin justificarlas.
-- Guardado detrás de la interfaz `SaveService`; anuncios detrás de `AdService` (implementación vacía: `NoopAdService`).
+- Guardado detrás de la interfaz `SaveService`; anuncios detrás de `AdService` (implementación vacía: `NoopAdService`); sonido detrás de `SoundService` (implementación `WebAudioSoundService`, con `NoopSoundService` para tests).
 - Textos visibles siempre a través de i18n (`en`, `id`).
 - Cambios pequeños, un commit por paso coherente con mensaje claro.
 - Al terminar cada tarea, informar de: qué cambió, qué tests se ejecutaron, qué NO se ha probado, y una lista de pruebas manuales para Koke.
