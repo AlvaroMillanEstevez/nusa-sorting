@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseLevelParam } from '../src/dev/levelParam';
+import { wantsSaveReset } from '../src/dev/saveParams';
 
 describe('parseLevelParam (dev only)', () => {
   it('turns a 1-based level number into an index', () => {
@@ -11,5 +12,14 @@ describe('parseLevelParam (dev only)', () => {
     for (const search of ['', '?level=', '?level=0', '?level=8', '?level=-1', '?level=2.5', '?level=abc']) {
       expect(parseLevelParam(search, 7)).toBeNull();
     }
+  });
+});
+
+describe('wantsSaveReset (dev only)', () => {
+  it('is set by ?resetSave, with or without a value, alongside other parameters', () => {
+    expect(wantsSaveReset('?resetSave')).toBe(true);
+    expect(wantsSaveReset('?level=3&resetSave=1')).toBe(true);
+    expect(wantsSaveReset('?level=3')).toBe(false);
+    expect(wantsSaveReset('')).toBe(false);
   });
 });
