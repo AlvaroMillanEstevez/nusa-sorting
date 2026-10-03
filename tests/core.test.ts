@@ -343,6 +343,10 @@ describe('blocked detection', () => {
       status: 'playing',
       loseReason: null,
       timeLeftMs: null,
+      triplesCleared: 0,
+      unlockAt: [null],
+      combo: null,
+      blocker: null,
     };
     expect(isBlocked(reorderOnly)).toBe(true);
   });
