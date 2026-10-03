@@ -19,6 +19,7 @@ import { levels } from '../data/levels';
 import { applyBeltOverrides } from '../dev/beltOverrides';
 import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
+import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { BACK_SCALE, computeBoardLayout, nearestFreeSlot, nearestSlot, shelfAt, type BoardLayout } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
@@ -27,6 +28,7 @@ import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
 import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
+import type { LevelSelectData } from './LevelSelectScene';
 import { ResultOverlay } from './ResultOverlay';
 
 /** Item size relative to its slot. */
@@ -95,7 +97,10 @@ export class GameScene extends Phaser.Scene {
   private dragOccurred = false;
   private lastWarningSecond: number | null = null;
 
-  constructor(private readonly sfx: SoundService) {
+  constructor(
+    private readonly sfx: SoundService,
+    private readonly store: ProgressStore,
+  ) {
     super('Game');
   }
 
@@ -120,7 +125,10 @@ export class GameScene extends Phaser.Scene {
       onToggleMute: () => {
         this.sfx.setMuted(!this.sfx.muted);
         this.hud.setMuted(this.sfx.muted);
+        // Settings are saved when they change.
+        this.store.setMuted(this.sfx.muted);
       },
+      onLevels: () => this.openLevelList(),
     });
     this.hud.setMuted(this.sfx.muted);
     this.overlay = new ResultOverlay(this);
@@ -143,9 +151,30 @@ export class GameScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
     });
 
-    // Development only: ?level=N opens level N directly. Production builds drop this branch.
-    const start = import.meta.env.DEV ? (parseLevelParam(window.location.search, levels.length) ?? 0) : 0;
-    this.loadLevel(start);
+    // Straight into play: the first level not completed yet (level 1 on a first visit). With everything
+    // completed, show the list over the last level. Dev builds can force a level with ?level=N.
+    const ids = levels.map((level) => level.id);
+    const devLevel = import.meta.env.DEV ? parseLevelParam(window.location.search, levels.length) : null;
+    const next = this.store.firstIncomplete(ids);
+    this.loadLevel(devLevel ?? next ?? levels.length - 1);
+    if (devLevel === null && next === null) this.openLevelList();
+  }
+
+  /** Pauses the game (clock and belt included) and shows the level list on top. */
+  private openLevelList(): void {
+    if (this.scene.isPaused()) return;
+    if (this.belt.holding) this.belt.sendBack(false);
+    this.select(null);
+    const data: LevelSelectData = {
+      currentIndex: this.levelIndex,
+      onChoose: (index) => {
+        this.scene.resume();
+        this.transitionTo(index);
+      },
+      onClose: () => this.scene.resume(),
+    };
+    this.scene.launch('LevelSelect', data);
+    this.scene.pause();
   }
 
   override update(_time: number, delta: number): void {
@@ -219,29 +248,42 @@ export class GameScene extends Phaser.Scene {
   /** Shows the win or defeat panel once the final animations have had time to play. */
   private endLevel(delay: number): void {
     const { status, loseReason, timeLeftMs } = this.state;
+    const score = this.state.combo?.score ?? null;
     this.selectedId = null;
     this.hud.setCombo(0, 0, 0);
+    // Saved right away, when the level ends, not when the panel appears.
+    const record = status === 'won' ? this.store.recordWin(this.level.id, score) : null;
+    const levelsButton = { label: t('result.levels'), onPress: () => this.openLevelList() };
     this.time.delayedCall(delay, () => {
-      if (status === 'won') {
+      if (record) {
         this.sfx.play('win');
         const isLast = this.levelIndex === levels.length - 1;
+        const bestLine = record.newBest
+          ? t('result.newBest')
+          : record.best !== null && score !== null && record.best > score
+            ? t('result.best', { score: record.best })
+            : null;
         const lines = [
           timeLeftMs === null ? null : t('result.won.timeLeft', { time: formatTime(timeLeftMs) }),
-          this.state.combo ? t('result.won.score', { score: this.state.combo.score }) : null,
+          score === null ? null : t('result.won.score', { score }),
+          bestLine,
         ];
         this.overlay.show({
           title: t(isLast ? 'result.allDone.title' : 'result.won.title'),
           subtitle: lines.filter((line) => line !== null).join('\n'),
-          button: t(isLast ? 'result.playAgain' : 'result.next'),
-          onButton: () => this.transitionTo(isLast ? 0 : this.levelIndex + 1),
+          primary: {
+            label: t(isLast ? 'result.playAgain' : 'result.next'),
+            onPress: () => this.transitionTo(isLast ? 0 : this.levelIndex + 1),
+          },
+          secondary: levelsButton,
         });
       } else {
         this.sfx.play('lose');
         this.overlay.show({
           title: t(LOSE_TITLES[loseReason ?? 'blocked']),
           subtitle: t('result.lost.hint'),
-          button: t('result.retry'),
-          onButton: () => this.transitionTo(this.levelIndex),
+          primary: { label: t('result.retry'), onPress: () => this.transitionTo(this.levelIndex) },
+          secondary: levelsButton,
         });
       }
     });

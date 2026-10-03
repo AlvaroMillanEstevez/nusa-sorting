@@ -11,10 +11,11 @@ export const WARNING_MS = 10_000;
 export interface HudHandlers {
   onRestart(): void;
   onToggleMute(): void;
+  onLevels(): void;
 }
 
 /**
- * Top bar: level number, countdown, mute toggle and restart button. Levels with combos get a second row
+ * Top bar: level number, countdown, level list, mute toggle and restart button. Levels with combos get a second row
  * with the score and the combo, plus a bar showing how much of the combo window is left.
  */
 export class Hud {
@@ -23,6 +24,8 @@ export class Hud {
   private readonly restartButton: Phaser.GameObjects.Text;
   private readonly muteIcon: Phaser.GameObjects.Graphics;
   private readonly muteZone: Phaser.GameObjects.Zone;
+  private readonly levelsIcon: Phaser.GameObjects.Graphics;
+  private readonly levelsZone: Phaser.GameObjects.Zone;
   private iconSize = 24;
   private width = 0;
   private hudHeight = 0;
@@ -63,6 +66,9 @@ export class Hud {
     this.muteIcon = scene.add.graphics().setDepth(DEPTH_HUD);
     this.muteZone = scene.add.zone(0, 0, 1, 1).setDepth(DEPTH_HUD).setInteractive({ useHandCursor: true });
     this.muteZone.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => handlers.onToggleMute());
+    this.levelsIcon = scene.add.graphics().setDepth(DEPTH_HUD);
+    this.levelsZone = scene.add.zone(0, 0, 1, 1).setDepth(DEPTH_HUD).setInteractive({ useHandCursor: true });
+    this.levelsZone.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => handlers.onLevels());
 
     this.scoreText = scene.add
       .text(0, 0, '', { ...style, color: theme.textColor })
@@ -89,25 +95,34 @@ export class Hud {
       this.comboText.setFontSize(size).setPosition(width - 12 - this.barWidth() - 10, cy);
     }
 
-    this.width = width;
     this.hudHeight = hudHeight;
     const cy = hudHeight / 2;
-    const pad = Math.round(hudHeight * 0.2);
-    // Narrow (phone) screens get slightly smaller HUD text so everything fits in one row.
+    // Text and padding follow the bar height, but never more than the width allows: on a tall, narrow
+    // phone the bar is high while everything still has to fit in one row.
+    const base = Math.min(hudHeight, width / 7.5);
+    const pad = Math.round(base * 0.2);
     const narrow = width < 480;
-    this.levelText.setFontSize(Math.round(hudHeight * (narrow ? 0.32 : 0.38))).setPosition(16, cy);
-    this.timerText.setFontSize(Math.round(hudHeight * (narrow ? 0.4 : 0.46)));
+    // The level list icon opens the row on the left; the level label follows it.
+    this.iconSize = Math.round(hudHeight * 0.42);
+    const levelsX = 12 + this.iconSize / 2;
+    this.levelsIcon.setPosition(levelsX, cy);
+    this.levelsZone.setPosition(levelsX, cy).setSize(hudHeight * 0.9, hudHeight);
+    this.drawLevelsIcon();
+    this.levelText
+      .setFontSize(Math.round(base * (narrow ? 0.32 : 0.38)))
+      .setPosition(levelsX + this.iconSize / 2 + (narrow ? 10 : 14), cy);
+    this.timerText.setFontSize(Math.round(base * (narrow ? 0.4 : 0.46)));
     this.restartButton
-      .setFontSize(Math.round(hudHeight * (narrow ? 0.26 : 0.3)))
+      .setFontSize(Math.round(base * (narrow ? 0.26 : 0.3)))
       .setPadding(pad * (narrow ? 1 : 1.4), pad, pad * (narrow ? 1 : 1.4), pad)
       .setPosition(width - 12, cy);
 
-    this.iconSize = Math.round(hudHeight * 0.42);
     const muteX = this.restartButton.x - this.restartButton.width - hudHeight * 0.55;
     this.muteIcon.setPosition(muteX, cy);
-    // Generous touch target around the small icon.
+    // Generous touch targets around the small icons.
     this.muteZone.setPosition(muteX, cy).setSize(hudHeight, hudHeight);
     this.drawMuteIcon();
+
     this.placeTimer();
   }
 
@@ -197,6 +212,23 @@ export class Hud {
   setMuted(muted: boolean): void {
     this.muted = muted;
     this.drawMuteIcon();
+  }
+
+  /** A 2×2 grid of rounded squares: the level list. */
+  private drawLevelsIcon(): void {
+    const s = this.iconSize;
+    const g = this.levelsIcon.clear();
+    const color = Phaser.Display.Color.HexStringToColor(theme.textColor).color;
+    const cell = s * 0.4;
+    const gap = s * 0.12;
+    g.fillStyle(color, 1);
+    for (const dx of [-1, 1]) {
+      for (const dy of [-1, 1]) {
+        const x = dx < 0 ? -cell - gap / 2 : gap / 2;
+        const y = dy < 0 ? -cell - gap / 2 : gap / 2;
+        g.fillRoundedRect(x, y, cell, cell, cell * 0.25);
+      }
+    }
   }
 
   /** Speaker icon with sound waves, or with a cross when muted. */

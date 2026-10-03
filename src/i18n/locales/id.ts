@@ -21,4 +21,10 @@ export const id: Record<MessageKey, string> = {
   'result.next': 'Level berikutnya',
   'result.playAgain': 'Main lagi',
   'result.retry': 'Coba lagi',
+  'result.levels': 'Pilih level',
+  'result.newBest': 'Rekor baru!',
+  'result.best': 'Terbaik: {score}',
+  'levels.title': 'Pilih level',
+  'levels.back': 'Kembali',
+  'levels.best': 'Terbaik {score}',
 };

@@ -19,6 +19,12 @@ export const en = {
   'result.next': 'Next level',
   'result.playAgain': 'Play again',
   'result.retry': 'Retry',
+  'result.levels': 'Levels',
+  'result.newBest': 'New best!',
+  'result.best': 'Best: {score}',
+  'levels.title': 'Levels',
+  'levels.back': 'Back',
+  'levels.best': 'Best {score}',
 } as const;
 
 export type MessageKey = keyof typeof en;
