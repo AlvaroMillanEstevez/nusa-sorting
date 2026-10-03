@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { countItems, createGame, isWon, moveItem } from '../src/core';
-import { levels } from '../src/data/levels';
-import { greedyWinRate, solve } from './helpers';
+import { countItems, createGame, isWon, moveItem, tick, type GameState, type MechanicDefinition } from '../src/core';
+import { BASE_LEVEL_COUNT, levels } from '../src/data/levels';
+import { greedyWinRate, simulate, solve } from './helpers';
 
 describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_id, level) => {
   it('is a valid, timed level', () => {
@@ -18,34 +18,54 @@ describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_i
     expect(level.shelves.some((layers) => layers.length > 1)).toBe(true);
   });
 
-  it('is solvable', () => {
+  it('is solvable even if the player never chains a combo', () => {
     const start = createGame(level);
     const solution = solve(start);
     expect(solution).toBeDefined();
 
-    let state = start;
+    // Replay as the solver assumed: no clock, and every combo window runs out between moves.
+    let state: GameState = { ...start, timeLeftMs: null };
     for (const [from, to] of solution!) {
       const result = moveItem(state, from, to);
       expect(result.ok).toBe(true);
-      if (result.ok) state = result.state;
+      if (!result.ok) return;
+      state = state.combo ? tick(result.state, state.combo.windowMs).state : result.state;
     }
     expect(isWon(state)).toBe(true);
     expect(countItems(state)).toBe(0);
-  });
+  }, 60_000);
 });
 
+const kindsOf = (index: number) => (levels[index]!.mechanics ?? []).map((m: MechanicDefinition) => m.kind).sort();
+
 describe('level progression', () => {
-  it('has three levels with unique ids', () => {
-    expect(levels).toHaveLength(3);
+  it('has unique ids', () => {
     expect(new Set(levels.map((l) => l.id)).size).toBe(levels.length);
   });
 
-  it('gets harder: a simulated player wins less often on each level', () => {
-    const rates = levels.map((level) => greedyWinRate(createGame(level)));
+  it('starts with base levels, then one demo per mechanic, then both obstacles combined', () => {
+    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 4);
+    for (let i = 0; i < BASE_LEVEL_COUNT; i++) expect(kindsOf(i)).toEqual([]);
+    expect(kindsOf(3)).toEqual(['combo']);
+    expect(kindsOf(4)).toEqual(['lockedShelves']);
+    // The blocker is removed by reaching a combo, so it always comes with the combo mechanic.
+    expect(kindsOf(5)).toEqual(['combo', 'roamingBlocker']);
+    expect(kindsOf(6)).toEqual(['combo', 'lockedShelves', 'roamingBlocker']);
+  });
+
+  it('base levels get harder: a simulated player wins less often on each one', () => {
+    const rates = levels.slice(0, BASE_LEVEL_COUNT).map((level) => greedyWinRate(createGame(level)));
     for (let i = 1; i < rates.length; i++) expect(rates[i]).toBeLessThan(rates[i - 1]!);
     // The hardest level must still be beatable by the simulated player sometimes.
     expect(rates.at(-1)).toBeGreaterThan(0.2);
   }, 30_000);
+
+  it('obstacles make running out of space a real way to lose', () => {
+    const blocked = levels.map((level) => simulate(createGame(level)).blockedRate);
+    const baseWorst = Math.max(...blocked.slice(0, BASE_LEVEL_COUNT));
+    // Locked shelves and the roaming blocker each cause more blocked defeats than any base level.
+    for (const index of [4, 5, 6]) expect(blocked[index]).toBeGreaterThan(baseWorst);
+  }, 60_000);
 });
 
 describe('solver sanity check', () => {

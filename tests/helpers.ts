@@ -52,16 +52,22 @@ function stateKey(state: GameState): string {
  * Clearing moves are tried first; reordering is skipped since it never changes which triples can form.
  */
 export function solve(start: GameState, maxStates = 200_000): [Position, Position][] | undefined {
-  type Node = { state: GameState; path: [Position, Position][] };
+  // Moves are stored as parent links so memory per state stays constant however deep the search goes.
+  type Step = { parent: number; move: [Position, Position] | null };
+  const steps: Step[] = [{ parent: -1, move: null }];
   const untimed: GameState = { ...start, timeLeftMs: null };
   const seen = new Set<string>([stateKey(untimed)]);
-  const stack: Node[] = [{ state: untimed, path: [] }];
+  const stack: { state: GameState; step: number }[] = [{ state: untimed, step: 0 }];
   while (stack.length > 0) {
-    const { state, path } = stack.pop()!;
-    if (isWon(state)) return path;
+    const { state, step } = stack.pop()!;
+    if (isWon(state)) {
+      const path: [Position, Position][] = [];
+      for (let i = step; steps[i]!.move; i = steps[i]!.parent) path.push(steps[i]!.move!);
+      return path.reverse();
+    }
     if (seen.size > maxStates) return undefined;
 
-    const children: { node: Node; clears: number }[] = [];
+    const children: { state: GameState; step: number; clears: number }[] = [];
     for (const [from, to] of validMoves(state)) {
       if (from.shelf === to.shelf) continue;
       // Without a blocker any free slot of a shelf is equivalent, so try only the first.
@@ -72,12 +78,13 @@ export function solve(start: GameState, maxStates = 200_000): [Position, Positio
       const key = stateKey(next);
       if (seen.has(key)) continue;
       seen.add(key);
+      steps.push({ parent: step, move: [from, to] });
       const clears = result.events.filter((e) => e.kind === 'tripleCleared').length;
-      children.push({ node: { state: next, path: [...path, [from, to]] }, clears });
+      children.push({ state: next, step: steps.length - 1, clears });
     }
     // Stack is LIFO: push the most promising children last.
     children.sort((a, b) => a.clears - b.clears);
-    for (const child of children) stack.push(child.node);
+    for (const child of children) stack.push(child);
   }
   return undefined;
 }
