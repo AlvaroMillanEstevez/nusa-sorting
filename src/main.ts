@@ -1,12 +1,16 @@
 import * as Phaser from 'phaser';
-import { resolveLocale, setLocale } from './i18n';
+import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
+import { WebAudioSoundService } from './services/WebAudioSoundService';
 import { preventPageGestures } from './ui/preventPageGestures';
 import { theme } from './ui/theme';
 
 setLocale(resolveLocale(navigator.languages));
+document.title = t('game.title');
 preventPageGestures();
+
+const sound = new WebAudioSoundService();
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -22,5 +26,5 @@ new Phaser.Game({
     width: '100%',
     height: '100%',
   },
-  scene: [BootScene, GameScene],
+  scene: [BootScene, new GameScene(sound)],
 });
