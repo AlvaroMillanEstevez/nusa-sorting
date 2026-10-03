@@ -32,6 +32,7 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   combo: [{ at: 0, duration: 0.18, freq: 700, freqEnd: 1400, wave: 'square', gain: 0.07 }, note(0.12, 1760, 0.12, 'sine', 0.1)],
   unlock: [note(0, 880, 0.06, 'square', 0.08), note(0.07, 1175, 0.06, 'square', 0.08), note(0.14, 1568, 0.2, 'triangle', 0.18)],
   blockerMove: [{ at: 0, duration: 0.12, freq: 180, freqEnd: 320, wave: 'square', gain: 0.06 }],
+  beltPick: [{ at: 0, duration: 0.05, freq: 520, freqEnd: 1040, wave: 'square', gain: 0.07 }, note(0.04, 1320, 0.05, 'sine', 0.12)],
   blockerGone: [{ at: 0, duration: 0.3, freq: 300, freqEnd: 1200, wave: 'triangle', gain: 0.2 }, note(0.25, 1600, 0.2, 'sine', 0.1)],
 };
 

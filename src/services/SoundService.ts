@@ -10,7 +10,8 @@ export type SoundEffect =
   | 'combo'
   | 'unlock'
   | 'blockerMove'
-  | 'blockerGone';
+  | 'blockerGone'
+  | 'beltPick';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {

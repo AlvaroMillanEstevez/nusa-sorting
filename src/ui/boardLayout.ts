@@ -18,6 +18,19 @@ export interface ShelfLayout {
   readonly backSlots: readonly Point[];
 }
 
+export interface BeltLayout {
+  /** The whole strip, including its rollers. */
+  readonly rect: Rect;
+  /** Left end of the loop; belt offset o (in slots) is drawn at loopX + o * pitch. */
+  readonly loopX: number;
+  /** Distance between belt slots, in px. */
+  readonly pitch: number;
+  /** Number of belt slots K; the loop is K * pitch wide. */
+  readonly slots: number;
+  /** Vertical center of the items. */
+  readonly y: number;
+}
+
 export interface BoardLayout {
   /** Size of one slot in px; items are drawn slightly smaller. */
   readonly slotSize: number;
@@ -27,6 +40,8 @@ export interface BoardLayout {
   readonly hudRowHeight: number;
   /** Second HUD row (score and combo), or null when the level has none. */
   readonly statusRow: Rect | null;
+  /** Conveyor strip below the shelves, or null when the level has no belt. */
+  readonly belt: BeltLayout | null;
   readonly shelves: readonly ShelfLayout[];
 }
 
@@ -60,17 +75,21 @@ export function computeBoardLayout(
   shelfCount: number,
   slotsPerLayer = 3,
   withStatusRow = false,
+  beltSlots = 0,
 ): BoardLayout {
   const hudRowHeight = hudHeight(height);
   const statusRow: Rect | null = withStatusRow
     ? { x: 0, y: hudRowHeight, width, height: Math.round(hudRowHeight * STATUS_ROW) }
     : null;
   const hud: Rect = { x: 0, y: 0, width, height: hudRowHeight + (statusRow?.height ?? 0) };
+  const belt = beltSlots > 0 ? layoutBelt(width, height, beltSlots) : null;
+  // The belt takes its own strip at the bottom, near the thumbs, in every orientation.
+  const beltSpace = belt ? belt.rect.height + MARGIN : 0;
   const area: Rect = {
     x: MARGIN,
     y: hud.height + MARGIN,
     width: Math.max(1, width - MARGIN * 2),
-    height: Math.max(1, height - hud.height - MARGIN * 2),
+    height: Math.max(1, height - hud.height - MARGIN * 2 - beltSpace),
   };
   const shelfW = SHELF_WIDTH_UNITS(slotsPerLayer);
   const shelfH = SHELF_HEIGHT_UNITS;
@@ -112,7 +131,69 @@ export function computeBoardLayout(
     });
   }
 
-  return { slotSize: s, hud, hudRowHeight, statusRow, shelves };
+  return { slotSize: s, hud, hudRowHeight, statusRow, belt, shelves };
+}
+
+/** Strip height relative to the belt pitch (room for the rail and a lifted item). */
+const BELT_STRIP = 1.3;
+
+function layoutBelt(width: number, height: number, slots: number): BeltLayout {
+  // Room for the rollers at both ends, half a pitch each.
+  const pitch = Math.min(MAX_SLOT_SIZE, height * 0.1, (width - MARGIN * 2) / (slots + 1));
+  const stripHeight = pitch * BELT_STRIP;
+  const loopWidth = slots * pitch;
+  const loopX = (width - loopWidth) / 2;
+  const rect: Rect = {
+    x: loopX - pitch / 2,
+    y: height - MARGIN - stripHeight,
+    width: loopWidth + pitch,
+    height: stripHeight,
+  };
+  return { rect, loopX, pitch, slots, y: rect.y + stripHeight / 2 };
+}
+
+export interface BeltPose {
+  x: number;
+  y: number;
+  /** 0 at the loop's ends, 1 once half a slot inside, so wrapping around is never visible. */
+  alpha: number;
+}
+
+/** Where an item at belt `offset` (slots, in [0, K)) is drawn. Writes into `out` to avoid allocations per frame. */
+export function beltPose(belt: BeltLayout, offset: number, out: BeltPose = { x: 0, y: 0, alpha: 0 }): BeltPose {
+  out.x = belt.loopX + offset * belt.pitch;
+  out.y = belt.y;
+  const toEnd = Math.min(offset, belt.slots - offset);
+  out.alpha = Math.max(0, Math.min(1, toEnd / 0.5));
+  return out;
+}
+
+/**
+ * The belt slot to pick for a press at (x, y), among slots holding items (`offsets[i]` is null when slot i
+ * is empty). The touch area is generous: anywhere on the strip or half a pitch around it, nearest item
+ * within one pitch horizontally. Items fading at the ends can still be taken.
+ */
+export function beltSlotAt(belt: BeltLayout, offsets: readonly (number | null)[], x: number, y: number): number | null {
+  if (!isOnBelt(belt, x, y)) return null;
+  let best: number | null = null;
+  let bestDistance = belt.pitch;
+  const pose: BeltPose = { x: 0, y: 0, alpha: 0 };
+  offsets.forEach((offset, i) => {
+    if (offset === null) return;
+    const distance = Math.abs(beltPose(belt, offset, pose).x - x);
+    if (distance <= bestDistance) {
+      bestDistance = distance;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/** True when a point is on (or right around) the belt strip. */
+export function isOnBelt(belt: BeltLayout, x: number, y: number): boolean {
+  const slack = belt.pitch / 2;
+  const { rect } = belt;
+  return x >= rect.x - slack && x <= rect.x + rect.width + slack && y >= rect.y - slack && y <= rect.y + rect.height + slack;
 }
 
 /** Index of the shelf containing the point (with half a gap of tolerance), or -1. */

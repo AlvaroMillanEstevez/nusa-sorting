@@ -16,12 +16,14 @@ import {
   type Position,
 } from '../core';
 import { levels } from '../data/levels';
+import { applyBeltOverrides } from '../dev/beltOverrides';
 import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { SoundService } from '../services/SoundService';
 import { BACK_SCALE, computeBoardLayout, nearestFreeSlot, nearestSlot, shelfAt, type BoardLayout } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
 import { theme } from '../ui/theme';
+import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
 import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
@@ -81,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private overlay!: ResultOverlay;
   private locks!: LockOverlays;
   private blocker!: BlockerView;
+  private belt!: BeltController;
 
   private readonly sprites = new Map<number, Phaser.GameObjects.Image>();
   private readonly popups = new Set<Phaser.GameObjects.Text>();
@@ -100,6 +103,18 @@ export class GameScene extends Phaser.Scene {
     this.board = this.add.graphics();
     this.locks = new LockOverlays(this);
     this.blocker = new BlockerView(this);
+    this.belt = new BeltController({
+      scene: this,
+      sfx: this.sfx,
+      getState: () => this.state,
+      setState: (state) => (this.state = state),
+      getLayout: () => this.layout,
+      shelfItemScale: () => this.baseScale(),
+      spriteFor: (itemId) => this.sprites.get(itemId),
+      dropTarget: (x, y) => this.dropTarget(x, y, null),
+      onPlaced: (events) => this.play(events),
+      onPick: () => this.select(null),
+    });
     this.hud = new Hud(this, {
       onRestart: () => this.transitionTo(this.levelIndex),
       onToggleMute: () => {
@@ -112,10 +127,12 @@ export class GameScene extends Phaser.Scene {
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     this.input.dragDistanceThreshold = 8;
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.dragOccurred = false;
       this.sfx.unlock();
+      if (!this.overlay.visible) this.belt.onPointerDown(pointer);
     });
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.belt.onPointerMove(pointer));
     this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
     this.input.on(Phaser.Input.Events.DRAG_START, this.onDragStart, this);
     this.input.on(Phaser.Input.Events.DRAG, this.onDrag, this);
@@ -132,6 +149,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    // The belt is drawn every frame; it only moves while playing because tick() is what advances it.
+    this.belt.update();
     if (this.state.status !== 'playing') return;
     const result = tick(this.state, delta);
     this.state = result.state;
@@ -168,13 +187,16 @@ export class GameScene extends Phaser.Scene {
     this.overlay.hide();
 
     this.levelIndex = index;
-    this.level = levels[index]!;
+    // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor while playing.
+    this.level = import.meta.env.DEV ? applyBeltOverrides(levels[index]!, window.location.search) : levels[index]!;
     this.state = createGame(this.level);
     for (const shelf of this.state.shelves) {
       for (const layer of shelf.layers) {
         for (const item of layer) if (item) this.createSprite(item);
       }
     }
+    for (const item of this.state.conveyor?.slots ?? []) if (item) this.createSprite(item);
+    this.belt.reset(this.state);
     this.hud.setLevel(index + 1);
     this.hud.setTime(this.state.timeLeftMs);
     this.hud.setScore(this.state.combo?.score ?? 0, false);
@@ -245,11 +267,19 @@ export class GameScene extends Phaser.Scene {
   private relayout(): void {
     const { width, height } = this.scale.gameSize;
     this.cameras.main.setSize(width, height);
-    this.layout = computeBoardLayout(width, height, this.level.shelves.length, 3, this.state.combo !== null);
+    this.layout = computeBoardLayout(
+      width,
+      height,
+      this.level.shelves.length,
+      3,
+      this.state.combo !== null,
+      this.state.conveyor?.slots.length ?? 0,
+    );
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow);
     this.overlay.layout(width, height);
     this.locks.relayout(this.layout);
     this.placeBlocker();
+    this.belt.relayout();
     this.drawBoard();
   }
 
@@ -317,6 +347,11 @@ export class GameScene extends Phaser.Scene {
   private sync(duration: number, delayFor: (pos: Position) => number = () => 0, skip?: number): void {
     for (const [id, sprite] of this.sprites) {
       if (id === this.draggingId || id === skip) continue;
+      if (this.belt.owns(id)) {
+        // Belt items are positioned every frame by the belt and are taken with its own touch handling.
+        if (sprite.input) sprite.input.enabled = false;
+        continue;
+      }
       const pos = findItem(this.state, id);
       if (!pos) {
         this.sprites.delete(id);
@@ -364,6 +399,8 @@ export class GameScene extends Phaser.Scene {
   private onDragStart(_pointer: Phaser.Input.Pointer, sprite: Phaser.GameObjects.Image): void {
     const id = this.spriteIds.get(sprite);
     if (id === undefined || this.state.status !== 'playing') return;
+    // Starting something else while a belt item waits for a destination sends it back to the belt.
+    if (this.belt.holding) this.belt.sendBack(false);
     this.dragOccurred = true;
     this.draggingId = id;
     if (this.selectedId !== null) this.select(null);
@@ -408,18 +445,21 @@ export class GameScene extends Phaser.Scene {
   /**
    * Free slot on the shelf under the pointer, closest to it; an occupied slot if the shelf is full.
    * On the item's own shelf its original slot also counts, so letting go near it puts it back.
+   * `from` is null for an item coming from the belt.
    */
-  private dropTarget(x: number, y: number, from: Position): Position | null {
+  private dropTarget(x: number, y: number, from: Position | null): Position | null {
     const shelfIndex = shelfAt(this.layout, x, y);
     if (shelfIndex === -1) return null;
     const shelf = this.layout.shelves[shelfIndex]!;
     const candidates = freeFrontSlots(this.state, shelfIndex);
-    if (shelfIndex === from.shelf) candidates.push(from.slot);
+    if (from && shelfIndex === from.shelf) candidates.push(from.slot);
     const slot = nearestFreeSlot(shelf, candidates, x) ?? nearestSlot(shelf, x);
     return { shelf: shelfIndex, layer: 0, slot };
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
+    // Presses that began on the belt are the belt's to finish, whatever the game state.
+    if (this.belt.onPointerUp(pointer)) return;
     if (this.dragOccurred || this.overlay.visible || this.state.status !== 'playing') return;
     // A press that travelled (e.g. a drag attempt on a locked shelf) is not a tap where it ended.
     if (pointer.getDistance() > this.input.dragDistanceThreshold) return;
@@ -428,6 +468,8 @@ export class GameScene extends Phaser.Scene {
 
   /** Tap an item to select it (tap again to deselect); then tap an empty slot (any shelf) to move it there. */
   private handleTap(x: number, y: number): void {
+    // With a belt item lifted by a tap, this tap says where it goes (or sends it back).
+    if (this.belt.onTapWhileHolding(x, y)) return;
     const shelfIndex = shelfAt(this.layout, x, y);
     if (shelfIndex === -1) {
       this.select(null);
@@ -492,7 +534,7 @@ export class GameScene extends Phaser.Scene {
     const advancedShelves = new Set<number>();
     const cleared: number[] = [];
     for (const event of events) {
-      if (event.kind === 'moved') moved = event;
+      if (event.kind === 'moved' || event.kind === 'beltItemPlaced') moved = event;
       else if (event.kind === 'layerAdvanced') advancedShelves.add(event.shelf);
       else if (event.kind === 'tripleCleared') cleared.push(...event.itemIds);
     }
