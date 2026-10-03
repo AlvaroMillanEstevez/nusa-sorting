@@ -101,7 +101,7 @@ export class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.restartButton.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.restart());
     this.wonText = this.add
-      .text(0, 0, t('game.won'), { fontFamily: theme.fontFamily, fontStyle: 'bold', color: theme.titleColor })
+      .text(0, 0, t('result.won.title'), { fontFamily: theme.fontFamily, fontStyle: 'bold', color: theme.titleColor })
       .setOrigin(0.5)
       .setResolution(resolution)
       .setDepth(DEPTH_WON)

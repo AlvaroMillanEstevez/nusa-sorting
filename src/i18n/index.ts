@@ -29,6 +29,11 @@ export function getLocale(): Locale {
   return currentLocale;
 }
 
-export function t(key: MessageKey): string {
-  return catalogs[currentLocale][key];
+export type MessageParams = Readonly<Record<string, string | number>>;
+
+/** Translated text for `key`, replacing `{name}` placeholders with `params.name`. */
+export function t(key: MessageKey, params?: MessageParams): string {
+  const text = catalogs[currentLocale][key];
+  if (!params) return text;
+  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match));
 }

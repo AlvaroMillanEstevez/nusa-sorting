@@ -29,6 +29,22 @@ describe('t', () => {
     expect(t('game.title')).toBe('Nusa Sorting');
   });
 
+  it('fills in parameters and leaves unknown placeholders alone', () => {
+    setLocale('en');
+    expect(t('hud.level', { n: 3 })).toBe('Level 3');
+    expect(t('result.won.timeLeft', { time: '0:42' })).toBe('Time left: 0:42');
+    expect(t('hud.level')).toBe('Level {n}');
+    setLocale('id');
+    expect(t('result.won.timeLeft', { time: '0:42' })).toBe('Sisa waktu: 0:42');
+  });
+
+  it('uses the same placeholders in every catalog', () => {
+    const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+    for (const key of Object.keys(en) as (keyof typeof en)[]) {
+      expect(placeholders(id[key])).toEqual(placeholders(en[key]));
+    }
+  });
+
   it('has the same keys in every catalog', () => {
     expect(Object.keys(id).sort()).toEqual(Object.keys(en).sort());
   });
