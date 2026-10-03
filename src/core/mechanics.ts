@@ -4,7 +4,7 @@ import type { SlotRef } from './types';
  * Optional rules a level can switch on. A level without mechanics plays exactly like the base game.
  * Each kind may appear at most once per level.
  */
-export type MechanicDefinition = ComboMechanic | LockedShelvesMechanic | RoamingBlockerMechanic;
+export type MechanicDefinition = ComboMechanic | LockedShelvesMechanic | RoamingBlockerMechanic | ConveyorMechanic;
 
 /** Every triple scores; triples cleared within the window of the previous one grow a combo multiplier. */
 export interface ComboMechanic {
@@ -34,6 +34,23 @@ export interface RoamingBlockerMechanic {
   /** Default 7. */
   readonly removeAtCombo?: number;
 }
+
+/**
+ * A horizontal conveyor belt: a loop of single slots moving at constant speed. Items can only be taken
+ * from it, never put on it, and no triples form on it. The number of slots K is `slots.length`.
+ */
+export interface ConveyorMechanic {
+  readonly kind: 'conveyor';
+  /** Belt contents, one entry per slot (null = empty). These items count for the multiple-of-3 rule. */
+  readonly slots: readonly (string | null)[];
+  /** Belt slots per second; positive moves right, negative left. */
+  readonly speed: number;
+}
+
+export const CONVEYOR_LIMITS = {
+  maxSlots: 12,
+  maxSpeed: 4,
+} as const;
 
 export const COMBO_DEFAULTS = {
   windowSeconds: 5,

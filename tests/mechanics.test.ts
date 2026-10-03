@@ -41,6 +41,7 @@ describe('level format', () => {
       const state = createGame(level);
       expect(state.combo).toBeNull();
       expect(state.blocker).toBeNull();
+      expect(state.conveyor).toBeNull();
       expect(state.unlockAt).toEqual([null, null, null]);
       expect(state.triplesCleared).toBe(0);
     }

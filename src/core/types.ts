@@ -52,6 +52,23 @@ export interface BlockerState {
   readonly removeAtCombo: number;
 }
 
+/** A belt item lifted by the player and not yet placed. Its belt slot stays empty while held. */
+export interface HeldBeltItem {
+  readonly item: Item;
+  readonly beltSlot: number;
+}
+
+/** Conveyor belt: a loop of single slots moving sideways; present only with the conveyor mechanic. */
+export interface ConveyorState {
+  /** Items by belt slot. Slot identity is fixed; its on-screen position moves with time. */
+  readonly slots: readonly (Item | null)[];
+  /** Belt slots per second; positive moves right. */
+  readonly speed: number;
+  /** Game time the belt has run, in ms; it only advances while playing. */
+  readonly elapsedMs: number;
+  readonly held: HeldBeltItem | null;
+}
+
 export interface GameState {
   readonly shelves: readonly Shelf[];
   readonly status: GameStatus;
@@ -65,6 +82,7 @@ export interface GameState {
   readonly unlockAt: readonly (number | null)[];
   readonly combo: ComboState | null;
   readonly blocker: BlockerState | null;
+  readonly conveyor: ConveyorState | null;
 }
 
 export interface Position {
@@ -82,6 +100,10 @@ export type InvalidMoveReason =
   | 'targetOccupied'
   | 'shelfLocked'
   | 'slotBlocked'
+  | 'noConveyor'
+  | 'beltSlotEmpty'
+  | 'alreadyHolding'
+  | 'nothingHeld'
   | 'gameOver';
 
 export type GameEvent =
@@ -99,7 +121,10 @@ export type GameEvent =
   | { readonly kind: 'scoreChanged'; readonly score: number; readonly delta: number; readonly shelf: number }
   | { readonly kind: 'shelfUnlocked'; readonly shelf: number }
   | { readonly kind: 'blockerMoved'; readonly from: SlotRef; readonly to: SlotRef }
-  | { readonly kind: 'blockerRemoved'; readonly at: SlotRef };
+  | { readonly kind: 'blockerRemoved'; readonly at: SlotRef }
+  | { readonly kind: 'beltItemTaken'; readonly itemId: number; readonly beltSlot: number }
+  | { readonly kind: 'beltItemReturned'; readonly itemId: number; readonly beltSlot: number }
+  | { readonly kind: 'beltItemPlaced'; readonly itemId: number; readonly beltSlot: number; readonly to: Position };
 
 export type MoveResult =
   | { readonly ok: true; readonly state: GameState; readonly events: readonly GameEvent[] }

@@ -1,10 +1,12 @@
 import { isBlocked } from './game';
-import { COMBO_DEFAULTS, ROAMING_BLOCKER_DEFAULTS, type MechanicDefinition } from './mechanics';
+import { COMBO_DEFAULTS, CONVEYOR_LIMITS, ROAMING_BLOCKER_DEFAULTS, type MechanicDefinition } from './mechanics';
 import {
   SLOTS_PER_LAYER,
   type BlockerState,
   type ComboState,
+  type ConveyorState,
   type GameState,
+  type Item,
   type ItemType,
   type Layer,
   type Shelf,
@@ -63,13 +65,21 @@ export function createGame(level: LevelDefinition): GameState {
     }
   });
 
+  // Belt items count for the multiple-of-3 rule; their ids come after the shelves' so those never change.
+  const beltDefinition = level.mechanics?.find((m) => m.kind === 'conveyor');
+  const beltItems = beltDefinition?.slots.map((type): Item | null => {
+    if (type === null) return null;
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+    return { id: nextId++, type };
+  });
+
   let totalItems = 0;
   for (const [type, count] of counts) {
     if (count % 3 !== 0) throw new LevelError(`${level.id}: item "${type}" appears ${count} times, not a multiple of 3`);
     totalItems += count;
   }
 
-  const mechanics = parseMechanics(level, shelves, totalItems / 3);
+  const mechanics = parseMechanics(level, shelves, totalItems / 3, beltItems ?? null);
   const state: GameState = {
     shelves,
     status: counts.size === 0 ? 'won' : 'playing',
@@ -82,10 +92,15 @@ export function createGame(level: LevelDefinition): GameState {
   return state;
 }
 
-type MechanicState = Pick<GameState, 'unlockAt' | 'combo' | 'blocker'>;
+type MechanicState = Pick<GameState, 'unlockAt' | 'combo' | 'blocker' | 'conveyor'>;
 
 /** Validates the level's mechanics against its board and builds their initial state. */
-function parseMechanics(level: LevelDefinition, shelves: readonly Shelf[], totalTriples: number): MechanicState {
+function parseMechanics(
+  level: LevelDefinition,
+  shelves: readonly Shelf[],
+  totalTriples: number,
+  beltItems: readonly (Item | null)[] | null,
+): MechanicState {
   const fail = (message: string): never => {
     throw new LevelError(`${level.id}: ${message}`);
   };
@@ -96,6 +111,7 @@ function parseMechanics(level: LevelDefinition, shelves: readonly Shelf[], total
   const unlockAt: (number | null)[] = shelves.map(() => null);
   let combo: ComboState | null = null;
   let blocker: BlockerState | null = null;
+  let conveyor: ConveyorState | null = null;
 
   for (const mechanic of list) {
     switch (mechanic.kind) {
@@ -144,6 +160,19 @@ function parseMechanics(level: LevelDefinition, shelves: readonly Shelf[], total
         blocker = { at: { shelf: start.shelf, slot: start.slot }, rngState: seed, removeAtCombo };
         break;
       }
+      case 'conveyor': {
+        const slots = beltItems ?? [];
+        const { speed } = mechanic;
+        if (slots.length < 1 || slots.length > CONVEYOR_LIMITS.maxSlots) {
+          fail(`conveyor needs between 1 and ${CONVEYOR_LIMITS.maxSlots} slots`);
+        }
+        if (slots.every((slot) => slot === null)) fail('conveyor needs at least one item');
+        if (!Number.isFinite(speed) || speed === 0 || Math.abs(speed) > CONVEYOR_LIMITS.maxSpeed) {
+          fail(`conveyor speed must be non-zero and at most ${CONVEYOR_LIMITS.maxSpeed} slots per second`);
+        }
+        conveyor = { slots, speed, elapsedMs: 0, held: null };
+        break;
+      }
     }
   }
 
@@ -152,5 +181,5 @@ function parseMechanics(level: LevelDefinition, shelves: readonly Shelf[], total
     if (unlockAt[blocker.at.shelf] !== null) fail('blocker cannot start on a locked shelf');
   }
   if (unlockAt.every((value) => value !== null)) fail('at least one shelf must start unlocked');
-  return { unlockAt, combo, blocker };
+  return { unlockAt, combo, blocker, conveyor };
 }

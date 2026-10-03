@@ -2,8 +2,10 @@ import { nextRandom } from './random';
 import type {
   BlockerState,
   ComboState,
+  ConveyorState,
   GameEvent,
   GameState,
+  InvalidMoveReason,
   Item,
   Layer,
   MoveResult,
@@ -36,7 +38,30 @@ export function countItems(state: GameState): number {
       for (const slot of layer) if (slot) total++;
     }
   }
-  return total;
+  return total + countBeltItems(state);
+}
+
+/** Items on the conveyor, including one the player is holding. */
+export function countBeltItems(state: GameState): number {
+  const belt = state.conveyor;
+  if (!belt) return 0;
+  return belt.slots.filter((slot) => slot !== null).length + (belt.held ? 1 : 0);
+}
+
+/**
+ * Where a belt slot currently is along the belt, in slot units in [0, K): slot i starts at i and moves
+ * `speed` slots per second of game time, wrapping around. Pure function of the belt's elapsed time.
+ */
+export function beltSlotOffset(belt: ConveyorState, slot: number): number {
+  const k = belt.slots.length;
+  const raw = slot + (belt.speed * belt.elapsedMs) / 1000;
+  return ((raw % k) + k) % k;
+}
+
+/** Belt slot holding an item (not counting a held item), or null. */
+export function findBeltItem(state: GameState, itemId: number): number | null {
+  const index = state.conveyor?.slots.findIndex((item) => item?.id === itemId) ?? -1;
+  return index === -1 ? null : index;
 }
 
 /** True when the board has no items left. */
@@ -80,8 +105,11 @@ export function isBlocked(state: GameState): boolean {
   const canGive = state.shelves.map(
     (shelf, s) => !isShelfLocked(state, s) && shelf.layers[0]!.some((slot) => slot !== null),
   );
+  // Belt items can go to any shelf, but the belt itself never counts as free space.
+  const beltGives = countBeltItems(state) > 0;
   const canMoveInto = (target: number) =>
-    freeFrontSlots(state, target).length > 0 && canGive.some((gives, source) => gives && source !== target);
+    freeFrontSlots(state, target).length > 0 &&
+    (beltGives || canGive.some((gives, source) => gives && source !== target));
   return !state.shelves.some((_, target) => canMoveInto(target));
 }
 
@@ -90,6 +118,9 @@ export function tick(state: GameState, elapsedMs: number): TickResult {
   if (state.status !== 'playing' || !(elapsedMs > 0)) return { state, events: [] };
   const events: GameEvent[] = [];
   let next = state;
+
+  const belt = state.conveyor;
+  if (belt) next = { ...next, conveyor: { ...belt, elapsedMs: belt.elapsedMs + elapsedMs } };
 
   const combo = state.combo;
   if (combo && combo.windowLeftMs > 0) {
@@ -131,9 +162,8 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
 
   const item = itemAt(state, from);
   if (!item) return { ok: false, reason: 'sourceEmpty' };
-  if (isSlotBlocked(state, to.shelf, to.slot)) return { ok: false, reason: 'slotBlocked' };
-  if (freeFrontSlots(state, to.shelf).length === 0) return { ok: false, reason: 'shelfFull' };
-  if (itemAt(state, to)) return { ok: false, reason: 'targetOccupied' };
+  const invalid = checkTargetSlot(state, to);
+  if (invalid) return { ok: false, reason: invalid };
 
   const shelves = state.shelves.slice();
   shelves[from.shelf] = setFrontSlot(shelves[from.shelf]!, from.slot, null);
@@ -143,8 +173,20 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
   // Destination first: that is where a triple can form.
   shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, events);
   shelves[from.shelf] = settleShelf(shelves[from.shelf]!, from.shelf, events);
+  return { ok: true, ...finishMove({ ...state, shelves }, events) };
+}
 
-  let next = applyTriples({ ...state, shelves }, events);
+/** Why an item cannot be placed in the (valid, front, unlocked) slot `to`, or null if it can. */
+function checkTargetSlot(state: GameState, to: Position): InvalidMoveReason | null {
+  if (isSlotBlocked(state, to.shelf, to.slot)) return 'slotBlocked';
+  if (freeFrontSlots(state, to.shelf).length === 0) return 'shelfFull';
+  if (itemAt(state, to)) return 'targetOccupied';
+  return null;
+}
+
+/** Triples' consequences, then the win or blocked check, shared by every action that places an item. */
+function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
+  let next = applyTriples(state, events);
   if (isWon(next)) {
     next = { ...next, status: 'won' };
     events.push({ kind: 'won' });
@@ -152,7 +194,67 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
     next = { ...next, status: 'lost', loseReason: 'blocked' };
     events.push({ kind: 'lost', reason: 'blocked' });
   }
-  return { ok: true, state: next, events };
+  return { state: next, events };
+}
+
+/**
+ * Lifts the item in a belt slot into the player's hand. The slot stays empty and keeps moving.
+ * Only one belt item can be held at a time.
+ */
+export function pickFromBelt(state: GameState, beltSlot: number): MoveResult {
+  if (state.status !== 'playing') return { ok: false, reason: 'gameOver' };
+  const belt = state.conveyor;
+  if (!belt) return { ok: false, reason: 'noConveyor' };
+  if (!Number.isInteger(beltSlot) || beltSlot < 0 || beltSlot >= belt.slots.length) {
+    return { ok: false, reason: 'invalidPosition' };
+  }
+  if (belt.held) return { ok: false, reason: 'alreadyHolding' };
+  const item = belt.slots[beltSlot];
+  if (!item) return { ok: false, reason: 'beltSlotEmpty' };
+
+  const slots = belt.slots.slice();
+  slots[beltSlot] = null;
+  return {
+    ok: true,
+    state: { ...state, conveyor: { ...belt, slots, held: { item, beltSlot } } },
+    events: [{ kind: 'beltItemTaken', itemId: item.id, beltSlot }],
+  };
+}
+
+/** Puts the held belt item back in its own belt slot, wherever the belt has moved it. */
+export function returnHeld(state: GameState): MoveResult {
+  const belt = state.conveyor;
+  if (!belt?.held) return { ok: false, reason: 'nothingHeld' };
+  const { item, beltSlot } = belt.held;
+  const slots = belt.slots.slice();
+  slots[beltSlot] = item;
+  return {
+    ok: true,
+    state: { ...state, conveyor: { ...belt, slots, held: null } },
+    events: [{ kind: 'beltItemReturned', itemId: item.id, beltSlot }],
+  };
+}
+
+/**
+ * Places the held belt item into a free front slot, with the same rules as a shelf-to-shelf move.
+ * Invalid targets leave the state untouched (still holding); the caller then returns it with returnHeld.
+ */
+export function dropHeld(state: GameState, to: Position): MoveResult {
+  if (state.status !== 'playing') return { ok: false, reason: 'gameOver' };
+  const belt = state.conveyor;
+  if (!belt?.held) return { ok: false, reason: 'nothingHeld' };
+  if (!isValidPosition(state, to)) return { ok: false, reason: 'invalidPosition' };
+  if (to.layer !== 0) return { ok: false, reason: 'notFrontLayer' };
+  if (isShelfLocked(state, to.shelf)) return { ok: false, reason: 'shelfLocked' };
+  const invalid = checkTargetSlot(state, to);
+  if (invalid) return { ok: false, reason: invalid };
+
+  const { item, beltSlot } = belt.held;
+  const shelves = state.shelves.slice();
+  shelves[to.shelf] = setFrontSlot(shelves[to.shelf]!, to.slot, item);
+  const events: GameEvent[] = [{ kind: 'beltItemPlaced', itemId: item.id, beltSlot, to }];
+  shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, events);
+  return { ok: true, ...finishMove({ ...state, shelves, conveyor: { ...belt, held: null } }, events) };
 }
 
 function setFrontSlot(shelf: Shelf, slot: number, value: Item | null): Shelf {
