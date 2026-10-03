@@ -80,3 +80,45 @@ export function rng(seed: number): () => number {
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/**
+ * Simulated casual player: completes a triple when it can, otherwise prefers moves that pair an item
+ * with a matching one, otherwise moves at random. Never reorders. Returns true if it clears the board.
+ */
+export function playGreedy(start: GameState, random: () => number, maxMoves = 400): boolean {
+  let state = start;
+  for (let n = 0; n < maxMoves && state.status === 'playing'; n++) {
+    const options = validMoves(state)
+      .filter(([from, to]) => from.shelf !== to.shelf)
+      .map(([from, to]) => {
+        const result = moveItem(state, from, to);
+        if (!result.ok) return null;
+        const type = state.shelves[from.shelf]!.layers[0]![from.slot]!.type;
+        const clears = result.events.some((e) => e.kind === 'tripleCleared');
+        const pairs = state.shelves[to.shelf]!.layers[0]!.some((slot) => slot?.type === type);
+        return { result, score: clears ? 2 : pairs ? 1 : 0 };
+      })
+      .filter((option) => option !== null);
+    if (options.length === 0) return false;
+    const best = Math.max(...options.map((o) => o.score));
+    // Casual players miss things: a quarter of the time they take any move instead of the best one.
+    const pool = random() < 0.25 ? options : options.filter((o) => o.score === best);
+    state = pool[Math.floor(random() * pool.length)]!.result.state;
+  }
+  return state.status === 'won';
+}
+
+/** Seconds a casual player needs per move; turns a level's time limit into a move budget. */
+export const SECONDS_PER_MOVE = 2.5;
+
+/**
+ * Share of simulated games won out of `runs`, with a fixed seed so it is reproducible.
+ * Players get as many moves as fit in the level's time limit.
+ */
+export function greedyWinRate(start: GameState, runs = 200, seed = 1): number {
+  const random = rng(seed);
+  const maxMoves = start.timeLeftMs === null ? 400 : Math.floor(start.timeLeftMs / 1000 / SECONDS_PER_MOVE);
+  let wins = 0;
+  for (let i = 0; i < runs; i++) if (playGreedy(start, random, maxMoves)) wins++;
+  return wins / runs;
+}

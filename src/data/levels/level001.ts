@@ -1,21 +1,18 @@
 import type { LevelDefinition } from '../../core';
 
-/** First prototype level: 7 shelves, 5 item types, two shelves with a back layer. */
+/** First level: 6 shelves, 4 item types, plenty of free space. */
 export const level001: LevelDefinition = {
   id: 'level001',
+  timeLimitSeconds: 90,
   shelves: [
     [
-      ['apple', 'banana', 'grape'],
-      ['lime', 'lime', 'blueberry'],
+      ['apple', null, 'lime'],
+      ['grape', 'apple', 'grape'],
     ],
-    [['banana', 'apple', null]],
-    [
-      ['grape', null, 'apple'],
-      ['apple', 'blueberry', 'grape'],
-    ],
-    [['lime', 'banana', null]],
-    [['grape', null, 'blueberry']],
-    [['apple', 'grape', null]],
-    [['apple', 'grape', null]],
+    [['grape', null, 'banana']],
+    [['lime', null, 'apple']],
+    [['lime', 'apple', null]],
+    [['apple', null, 'apple']],
+    [['banana', null, 'banana']],
   ],
 };

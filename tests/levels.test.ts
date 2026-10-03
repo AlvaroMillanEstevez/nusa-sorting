@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { countItems, createGame, isWon, moveItem } from '../src/core';
 import { levels } from '../src/data/levels';
-import { solve } from './helpers';
+import { greedyWinRate, solve } from './helpers';
 
 describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_id, level) => {
-  it('is a valid level', () => {
+  it('is a valid, timed level', () => {
     expect(() => createGame(level)).not.toThrow();
+    expect(level.timeLimitSeconds).toBeGreaterThan(0);
   });
 
   it('has 6-8 shelves, 4-5 item types and at least one back layer', () => {
@@ -31,6 +32,20 @@ describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_i
     expect(isWon(state)).toBe(true);
     expect(countItems(state)).toBe(0);
   });
+});
+
+describe('level progression', () => {
+  it('has three levels with unique ids', () => {
+    expect(levels).toHaveLength(3);
+    expect(new Set(levels.map((l) => l.id)).size).toBe(levels.length);
+  });
+
+  it('gets harder: a simulated player wins less often on each level', () => {
+    const rates = levels.map((level) => greedyWinRate(createGame(level)));
+    for (let i = 1; i < rates.length; i++) expect(rates[i]).toBeLessThan(rates[i - 1]!);
+    // The hardest level must still be beatable by the simulated player sometimes.
+    expect(rates.at(-1)).toBeGreaterThan(0.2);
+  }, 30_000);
 });
 
 describe('solver sanity check', () => {
