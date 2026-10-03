@@ -44,13 +44,23 @@ describe('level progression', () => {
   });
 
   it('starts with base levels, then one demo per mechanic, then both obstacles combined', () => {
-    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 4);
+    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 6);
     for (let i = 0; i < BASE_LEVEL_COUNT; i++) expect(kindsOf(i)).toEqual([]);
     expect(kindsOf(3)).toEqual(['combo']);
     expect(kindsOf(4)).toEqual(['lockedShelves']);
     // The blocker is removed by reaching a combo, so it always comes with the combo mechanic.
     expect(kindsOf(5)).toEqual(['combo', 'roamingBlocker']);
     expect(kindsOf(6)).toEqual(['combo', 'lockedShelves', 'roamingBlocker']);
+    expect(kindsOf(7)).toEqual(['conveyor']);
+    expect(kindsOf(8)).toEqual(['conveyor', 'lockedShelves']);
+  });
+
+  it('runs the second conveyor faster than the first', () => {
+    const speedOf = (index: number) => {
+      const belt = levels[index]!.mechanics!.find((m) => m.kind === 'conveyor');
+      return belt?.kind === 'conveyor' ? Math.abs(belt.speed) : 0;
+    };
+    expect(speedOf(8)).toBeGreaterThan(speedOf(7));
   });
 
   it('base levels get harder: a simulated player wins less often on each one', () => {
@@ -63,8 +73,9 @@ describe('level progression', () => {
   it('obstacles make running out of space a real way to lose', () => {
     const blocked = levels.map((level) => simulate(createGame(level)).blockedRate);
     const baseWorst = Math.max(...blocked.slice(0, BASE_LEVEL_COUNT));
-    // Locked shelves and the roaming blocker each cause more blocked defeats than any base level.
-    for (const index of [4, 5, 6]) expect(blocked[index]).toBeGreaterThan(baseWorst);
+    // Locked shelves, the roaming blocker and the tight conveyor level each cause more blocked defeats
+    // than any base level.
+    for (const index of [4, 5, 6, 8]) expect(blocked[index]).toBeGreaterThan(baseWorst);
   }, 60_000);
 });
 
