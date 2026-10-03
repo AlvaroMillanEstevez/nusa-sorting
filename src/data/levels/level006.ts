@@ -15,9 +15,9 @@ export const level006: LevelDefinition = {
     ],
     [['grape', 'lime', 'banana']],
     [['banana', 'grape', 'lime']],
-    [['banana', 'banana', 'apple']],
+    [['banana', null, 'apple']],
     [
-      ['grape', null, null],
+      ['grape', null, 'banana'],
       ['apple', 'lime', 'banana'],
     ],
     [['lime', null, 'grape']],

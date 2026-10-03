@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { countItems, createGame, isWon, tick, type GameState, type MechanicDefinition } from '../src/core';
+import { countItems, createGame, isWon, tick, validateLevel, type GameState, type MechanicDefinition } from '../src/core';
 import { BASE_LEVEL_COUNT, levels } from '../src/data/levels';
 import { applyMove, greedyWinRate, simulate, solve } from './helpers';
 
 describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_id, level) => {
-  it('is a valid, timed level', () => {
-    expect(() => createGame(level)).not.toThrow();
+  it('is a valid, timed level with no first move that loses on the spot', () => {
+    expect(() => validateLevel(level)).not.toThrow();
     expect(level.timeLimitSeconds).toBeGreaterThan(0);
   });
 

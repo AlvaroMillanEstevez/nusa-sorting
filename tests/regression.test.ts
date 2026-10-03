@@ -48,6 +48,7 @@ describe.each(fixture.map((entry, i) => [entry.level, i] as const))('regression:
  * Second golden recording (tests/fixtures/regression-v2.json), made before the conveyor existed: the mechanic
  * levels 4-7 played by a greedy and a random player with 2.5 s or 1.2 s ticks. Besides events, statuses and
  * timers it pins triple counts, combo/score state and the blocker, so new mechanics cannot change these levels.
+ * Levels 5 and 6 were re-recorded after a one-item change that removed their one-move traps; 4 and 7 are original.
  */
 interface StepV2 extends Step {
   tickMs: number;

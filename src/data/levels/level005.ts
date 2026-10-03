@@ -12,13 +12,13 @@ export const level005: LevelDefinition = {
   ],
   shelves: [
     [
-      ['apple', 'apple', 'grape'],
+      [null, 'apple', 'grape'],
       ['grape', 'apple', 'banana'],
     ],
     [['lime', null, 'banana']],
     [['grape', 'lime', 'blueberry']],
     [
-      [null, null, 'banana'],
+      [null, 'apple', 'banana'],
       ['banana', 'banana', 'apple'],
     ],
     [['grape', 'lime', 'grape']],
