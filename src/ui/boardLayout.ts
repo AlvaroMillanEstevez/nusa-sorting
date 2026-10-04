@@ -210,6 +210,23 @@ export function shelfAt(layout: BoardLayout, x: number, y: number): number {
   );
 }
 
+/**
+ * Front slot under a point, from the layout alone: the slot's cell (a slot wide, from a little above the
+ * item to the plank). Uses where the slot is, never where its sprite is drawn, so items still sliding in
+ * from a back layer can be grabbed at once.
+ */
+export function frontSlotAt(layout: BoardLayout, x: number, y: number): { shelf: number; slot: number } | null {
+  const s = layout.slotSize;
+  for (let shelf = 0; shelf < layout.shelves.length; shelf++) {
+    const slots = layout.shelves[shelf]!.slots;
+    for (let slot = 0; slot < slots.length; slot++) {
+      const centre = slots[slot]!;
+      if (Math.abs(x - centre.x) <= s / 2 && y >= centre.y - s * 0.65 && y <= centre.y + s / 2) return { shelf, slot };
+    }
+  }
+  return null;
+}
+
 /** Index of the slot whose column is horizontally closest to x. */
 export function nearestSlot(shelf: ShelfLayout, x: number): number {
   let best = 0;

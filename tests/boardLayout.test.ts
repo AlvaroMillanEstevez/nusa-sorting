@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { beltPose, beltSlotAt, computeBoardLayout, isOnBelt, nearestFreeSlot, nearestSlot, shelfAt, type Rect } from '../src/ui/boardLayout';
+import { beltPose, beltSlotAt, computeBoardLayout, frontSlotAt, isOnBelt, nearestFreeSlot, nearestSlot, shelfAt, type Rect } from '../src/ui/boardLayout';
 
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -64,6 +64,20 @@ describe('layout orientation', () => {
 describe('hit testing helpers', () => {
   const layout = computeBoardLayout(800, 600, 7);
   const shelf = layout.shelves[0]!;
+
+  it('finds the front slot under a point from the layout, wherever its sprite is drawn', () => {
+    layout.shelves.forEach((sh, i) =>
+      sh.slots.forEach((slot, j) => {
+        expect(frontSlotAt(layout, slot.x, slot.y)).toEqual({ shelf: i, slot: j });
+        // The top of the cell covers a lifted item; the plank below the slot does not count.
+        expect(frontSlotAt(layout, slot.x, slot.y - layout.slotSize * 0.6)).toEqual({ shelf: i, slot: j });
+      }),
+    );
+    // Where a back-layer item is drawn while it slides forward is above the cell: not the front slot.
+    const back = shelf.backSlots[1]!;
+    expect(frontSlotAt(layout, back.x, back.y - layout.slotSize * 0.3)).toBeNull();
+    expect(frontSlotAt(layout, -10, -10)).toBeNull();
+  });
 
   it('returns -1 outside every shelf', () => {
     expect(shelfAt(layout, -100, -100)).toBe(-1);

@@ -21,7 +21,15 @@ import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
-import { BACK_SCALE, computeBoardLayout, nearestFreeSlot, nearestSlot, shelfAt, type BoardLayout } from '../ui/boardLayout';
+import {
+  BACK_SCALE,
+  computeBoardLayout,
+  frontSlotAt,
+  nearestFreeSlot,
+  nearestSlot,
+  shelfAt,
+  type BoardLayout,
+} from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
 import { theme } from '../ui/theme';
 import { BeltController } from './BeltController';
@@ -89,10 +97,11 @@ export class GameScene extends Phaser.Scene {
 
   private readonly sprites = new Map<number, Phaser.GameObjects.Image>();
   private readonly popups = new Set<Phaser.GameObjects.Text>();
-  private readonly spriteIds = new WeakMap<Phaser.GameObjects.GameObject, number>();
 
   private selectedId: number | null = null;
   private draggingId: number | null = null;
+  /** A press on a shelf item that may turn into a drag once the pointer travels past the threshold. */
+  private shelfPress: { pointerId: number; itemId: number; dragging: boolean } | null = null;
   /** Set when the current pointer press turned into a drag, so its pointerup is not a tap. */
   private dragOccurred = false;
   private lastWarningSecond: number | null = null;
@@ -135,16 +144,9 @@ export class GameScene extends Phaser.Scene {
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     this.input.dragDistanceThreshold = 8;
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      this.dragOccurred = false;
-      this.sfx.unlock();
-      if (!this.overlay.visible) this.belt.onPointerDown(pointer);
-    });
-    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.belt.onPointerMove(pointer));
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
     this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
-    this.input.on(Phaser.Input.Events.DRAG_START, this.onDragStart, this);
-    this.input.on(Phaser.Input.Events.DRAG, this.onDrag, this);
-    this.input.on(Phaser.Input.Events.DRAG_END, this.onDragEnd, this);
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -212,6 +214,7 @@ export class GameScene extends Phaser.Scene {
     this.popups.clear();
     this.selectedId = null;
     this.draggingId = null;
+    this.shelfPress = null;
     this.lastWarningSecond = null;
     this.overlay.hide();
 
@@ -240,9 +243,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createSprite(item: Item): void {
-    const sprite = this.add.image(0, 0, ensureItemTexture(this, item.type)).setInteractive({ draggable: true });
+    // Not interactive: presses are matched to slots by layout (see onPointerDown), not to sprites.
+    const sprite = this.add.image(0, 0, ensureItemTexture(this, item.type));
     this.sprites.set(item.id, sprite);
-    this.spriteIds.set(sprite, item.id);
   }
 
   /** Shows the win or defeat panel once the final animations have had time to play. */
@@ -389,11 +392,8 @@ export class GameScene extends Phaser.Scene {
   private sync(duration: number, delayFor: (pos: Position) => number = () => 0, skip?: number): void {
     for (const [id, sprite] of this.sprites) {
       if (id === this.draggingId || id === skip) continue;
-      if (this.belt.owns(id)) {
-        // Belt items are positioned every frame by the belt and are taken with its own touch handling.
-        if (sprite.input) sprite.input.enabled = false;
-        continue;
-      }
+      // Belt items are positioned every frame by the belt and are taken with its own touch handling.
+      if (this.belt.owns(id)) continue;
       const pos = findItem(this.state, id);
       if (!pos) {
         this.sprites.delete(id);
@@ -401,9 +401,6 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
       const target = this.targetFor(id, pos);
-      if (sprite.input) {
-        sprite.input.enabled = target.front && this.state.status === 'playing' && !isShelfLocked(this.state, pos.shelf);
-      }
       const { x, y, scale, alpha } = target;
       if (sprite.x === x && sprite.y === y && sprite.scale === scale && sprite.alpha === alpha) {
         sprite.setDepth(target.depth);
@@ -438,9 +435,42 @@ export class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- input
 
-  private onDragStart(_pointer: Phaser.Input.Pointer, sprite: Phaser.GameObjects.Image): void {
-    const id = this.spriteIds.get(sprite);
-    if (id === undefined || this.state.status !== 'playing') return;
+  /**
+   * A press on a front slot holding an item, on an unlocked shelf, may become a drag. The slot is found from
+   * the layout, so an item still sliding forward from a back layer can be grabbed right away.
+   */
+  private onPointerDown(pointer: Phaser.Input.Pointer): void {
+    this.dragOccurred = false;
+    this.sfx.unlock();
+    if (this.overlay.visible) return;
+    if (this.belt.onPointerDown(pointer)) return;
+    if (this.state.status !== 'playing' || this.shelfPress) return;
+    const hit = frontSlotAt(this.layout, pointer.x, pointer.y);
+    if (!hit || isShelfLocked(this.state, hit.shelf)) return;
+    const item = itemAt(this.state, { shelf: hit.shelf, layer: 0, slot: hit.slot });
+    if (item) this.shelfPress = { pointerId: pointer.id, itemId: item.id, dragging: false };
+  }
+
+  private onPointerMove(pointer: Phaser.Input.Pointer): void {
+    this.belt.onPointerMove(pointer);
+    const press = this.shelfPress;
+    if (!press || pointer.id !== press.pointerId || !pointer.isDown) return;
+    if (!press.dragging) {
+      if (pointer.getDistance() <= this.input.dragDistanceThreshold) return;
+      press.dragging = this.startDrag(press.itemId);
+      if (!press.dragging) {
+        this.shelfPress = null;
+        return;
+      }
+    }
+    this.sprites.get(press.itemId)?.setPosition(pointer.x, pointer.y);
+  }
+
+  /** Lifts a shelf item to follow the pointer. Returns false if it can no longer be dragged. */
+  private startDrag(id: number): boolean {
+    const sprite = this.sprites.get(id);
+    const from = findItem(this.state, id);
+    if (!sprite || !from || from.layer !== 0 || this.state.status !== 'playing') return false;
     // Starting something else while a belt item waits for a destination sends it back to the belt.
     if (this.belt.holding) this.belt.sendBack(false);
     this.dragOccurred = true;
@@ -451,16 +481,12 @@ export class GameScene extends Phaser.Scene {
     sprite.setDepth(DEPTH_DRAG);
     this.tweens.add({ targets: sprite, scale: this.baseScale() * PICKUP_SCALE, duration: PICKUP_MS, ease: 'Quad.easeOut' });
     this.sfx.play('pick');
+    return true;
   }
 
-  private onDrag(_pointer: Phaser.Input.Pointer, sprite: Phaser.GameObjects.Image, dragX: number, dragY: number): void {
-    if (this.spriteIds.get(sprite) !== this.draggingId) return;
-    sprite.setPosition(dragX, dragY);
-  }
-
-  private onDragEnd(pointer: Phaser.Input.Pointer, sprite: Phaser.GameObjects.Image): void {
-    const id = this.spriteIds.get(sprite);
-    if (id === undefined || id !== this.draggingId) return;
+  private endDrag(pointer: Phaser.Input.Pointer, id: number): void {
+    const sprite = this.sprites.get(id);
+    if (!sprite || id !== this.draggingId) return;
     this.draggingId = null;
     const from = findItem(this.state, id);
     const to = from && this.dropTarget(pointer.x, pointer.y, from);
@@ -502,6 +528,14 @@ export class GameScene extends Phaser.Scene {
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
     // Presses that began on the belt are the belt's to finish, whatever the game state.
     if (this.belt.onPointerUp(pointer)) return;
+    const press = this.shelfPress;
+    if (press && pointer.id === press.pointerId) {
+      this.shelfPress = null;
+      if (press.dragging) {
+        this.endDrag(pointer, press.itemId);
+        return;
+      }
+    }
     if (this.dragOccurred || this.overlay.visible || this.state.status !== 'playing') return;
     // A press that travelled (e.g. a drag attempt on a locked shelf) is not a tap where it ended.
     if (pointer.getDistance() > this.input.dragDistanceThreshold) return;
