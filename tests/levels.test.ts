@@ -52,7 +52,7 @@ describe('level progression', () => {
   });
 
   it('starts with base levels, then one demo per mechanic, then both obstacles combined', () => {
-    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 9);
+    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 11);
     for (let i = 0; i < BASE_LEVEL_COUNT; i++) expect(kindsOf(i)).toEqual([]);
     expect(kindsOf(3)).toEqual(['combo']);
     expect(kindsOf(4)).toEqual(['lockedShelves']);
@@ -64,6 +64,17 @@ describe('level progression', () => {
     expect(kindsOf(9)).toEqual(['tracks']);
     expect(kindsOf(10)).toEqual(['tracks']);
     expect(kindsOf(11)).toEqual(['lockedShelves', 'tracks']);
+    expect(kindsOf(12)).toEqual(['tracks']);
+    expect(kindsOf(13)).toEqual(['lockedShelves', 'roamingBlocker', 'tracks']);
+  });
+
+  it('gives levels 13-14 tracks of shelves, with a locked one in level 14', () => {
+    const columns = (index: number) => levels[index]!.layout!.columns.map((c) => c.kind);
+    expect(columns(12)).toEqual(['shelves', 'shelfTrack']);
+    expect(columns(13)).toEqual(['track', 'shelfTrack', 'shelves']);
+    const state = createGame(levels[13]!);
+    const carried = state.tracks[1]!.carriers.map((c) => (c.kind === 'shelf' ? c.shelf : -1));
+    expect(carried.some((shelf) => state.unlockAt[shelf] !== null)).toBe(true);
   });
 
   it('gives levels 10-12 the requested column layouts', () => {
