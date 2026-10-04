@@ -2,14 +2,15 @@ import * as Phaser from 'phaser';
 import { theme } from '../ui/theme';
 import { RENDER_RATIO } from './view';
 
-/** Over the board and its popups, under the HUD. */
-const DEPTH_TOAST = 130;
+/** Over the board, its popups and the HUD (in landscape it sits on the HUD bar). */
+const DEPTH_TOAST = 160;
 const SHOW_MS = 4500;
 const FADE_MS = 180;
 
 /**
- * One-line explanations of a mechanic the first time a level has it: a panel just under the HUD that closes by
- * itself after a few seconds or when tapped. Several queue up and show one after another.
+ * One-line explanations of a mechanic the first time a level has it: a panel that closes by itself after a few
+ * seconds or when tapped, just under the HUD in portrait and over the HUD bar in landscape (where the board
+ * takes the whole height). Several queue up and show one after another.
  */
 export class IntroToast {
   private queue: string[] = [];
@@ -17,12 +18,15 @@ export class IntroToast {
   private timer: Phaser.Time.TimerEvent | null = null;
   private width = 0;
   private top = 0;
+  /** Tallest the panel may be, when it has to fit a given band (the HUD bar); 0 for no limit. */
+  private maxHeight = 0;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
-  layout(width: number, top: number): void {
+  layout(width: number, top: number, maxHeight = 0): void {
     this.width = width;
     this.top = top;
+    this.maxHeight = maxHeight;
     if (this.panel) {
       const text = this.panel.getData('text') as string;
       this.panel.destroy();
@@ -84,7 +88,8 @@ export class IntroToast {
   private build(line: string): Phaser.GameObjects.Container {
     const maxWidth = Math.min(this.width - 24, 520);
     let fontSize = Math.round(Math.max(14, Math.min(18, this.width / 24)));
-    const pad = Math.round(fontSize * 0.7);
+    if (this.maxHeight > 0) fontSize = Math.min(fontSize, Math.floor(this.maxHeight * 0.42));
+    const pad = Math.round(this.maxHeight > 0 ? Math.max(4, (this.maxHeight - fontSize * 1.25) / 2) : fontSize * 0.7);
     const text = this.scene.add
       .text(0, 0, line, { fontFamily: theme.fontFamily, fontStyle: 'bold', fontSize: `${fontSize}px`, color: theme.textColor })
       .setOrigin(0.5, 0)

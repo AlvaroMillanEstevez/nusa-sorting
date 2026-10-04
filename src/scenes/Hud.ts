@@ -26,6 +26,12 @@ export class Hud {
   private readonly muteIcon: Phaser.GameObjects.Graphics;
   private readonly muteZone: Phaser.GameObjects.Zone;
   private readonly levelsIcon: Phaser.GameObjects.Graphics;
+  /** A star before the level label marks a special level. */
+  private readonly starIcon: Phaser.GameObjects.Graphics;
+  private levelNumber = 1;
+  private special = false;
+  /** Where the level label (or the star of a special level) starts. */
+  private labelX = 0;
   private readonly levelsZone: Phaser.GameObjects.Zone;
   private iconSize = 24;
   /** The level label's size before it shrinks to make room for the clock. */
@@ -75,6 +81,7 @@ export class Hud {
     this.muteZone = scene.add.zone(0, 0, 1, 1).setDepth(DEPTH_HUD).setInteractive({ useHandCursor: true });
     this.muteZone.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => handlers.onToggleMute());
     this.levelsIcon = scene.add.graphics().setDepth(DEPTH_HUD);
+    this.starIcon = scene.add.graphics().setDepth(DEPTH_HUD);
     this.levelsZone = scene.add.zone(0, 0, 1, 1).setDepth(DEPTH_HUD).setInteractive({ useHandCursor: true });
     this.levelsZone.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => handlers.onLevels());
 
@@ -116,9 +123,9 @@ export class Hud {
     this.levelsZone.setPosition(levelsX, cy).setSize(hudHeight * 0.9, hudHeight);
     this.drawLevelsIcon();
     this.levelFont = Math.round(base * (narrow ? 0.32 : 0.38));
-    this.levelText
-      .setFontSize(this.levelFont)
-      .setPosition(levelsX + this.iconSize / 2 + (narrow ? 10 : 14), cy);
+    this.labelX = levelsX + this.iconSize / 2 + (narrow ? 10 : 14);
+    this.levelText.setY(cy);
+    this.placeLevelLabel();
     this.timerText.setFontSize(Math.round(base * (narrow ? 0.4 : 0.46)));
     this.restartButton
       .setFontSize(Math.round(base * (narrow ? 0.26 : 0.3)))
@@ -174,13 +181,34 @@ export class Hud {
     this.timerText.setPosition(x, this.hudHeight / 2);
   }
 
-  /** The level label; special levels say so, in the combo colour. */
+  /** The level label; a special level gets a star and the combo colour, and says so in full where it fits. */
   setLevel(levelNumber: number, special = false): void {
-    this.levelText
-      .setText(t(special ? 'hud.specialLevel' : 'hud.level', { n: levelNumber }))
-      .setColor(special ? theme.comboColor : theme.titleColor)
-      .setFontSize(this.levelFont);
+    this.levelNumber = levelNumber;
+    this.special = special;
+    this.placeLevelLabel();
     this.placeTimer();
+  }
+
+  private placeLevelLabel(): void {
+    const special = this.special;
+    const size = this.levelFont;
+    // "Special level 10" only where there is room for it at full size (landscape, tablets); a star says it on
+    // narrow phones.
+    const spelledOut = special && this.width >= 480;
+    this.levelText
+      .setText(t(spelledOut ? 'hud.specialLevel' : 'hud.level', { n: this.levelNumber }))
+      .setColor(special ? theme.comboColor : theme.titleColor)
+      .setFontSize(size)
+      .setX(special ? this.labelX + size * 1.2 : this.labelX);
+    this.starIcon.clear().setVisible(special).setPosition(this.labelX + size * 0.5, this.levelText.y);
+    if (special) {
+      const points = Array.from({ length: 10 }, (_, i) => {
+        const r = (i % 2 === 0 ? 0.62 : 0.27) * size;
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        return new Phaser.Math.Vector2(Math.cos(a) * r, Math.sin(a) * r);
+      });
+      this.starIcon.fillStyle(Phaser.Display.Color.HexStringToColor(theme.comboColor).color, 1).fillPoints(points, true);
+    }
   }
 
   setTime(timeLeftMs: number | null): void {

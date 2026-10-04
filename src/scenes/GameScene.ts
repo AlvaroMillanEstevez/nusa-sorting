@@ -469,7 +469,9 @@ export class GameScene extends Phaser.Scene {
     this.refreshLive();
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
     this.overlay.layout(width, height);
-    this.intro.layout(width, this.layout.hud.height + 6);
+    // In landscape the board takes the whole height: the note goes over the HUD bar instead (the clock waits).
+    if (this.layout.statusInline) this.intro.layout(width, 2, this.layout.hudRowHeight - 4);
+    else this.intro.layout(width, this.layout.hud.height + 6);
     this.locks.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
