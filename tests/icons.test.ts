@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_ITEM_TYPES, ITEM_KINDS, STARTER_KINDS, VARIANTS } from '../src/data/itemCatalog';
+import { ALL_ITEM_TYPES, ITEM_KINDS, VARIANTS } from '../src/data/itemCatalog';
 import { WOOD } from '../src/ui/art/wood';
 import {
   colorDistance,
@@ -11,12 +11,9 @@ import {
   simulateVision,
 } from '../src/ui/icons/color';
 import {
-  DRAWN_KINDS,
   ICON_TEMPLATES,
-  placeholderLook,
   renderIcon,
   renderItemSvg,
-  renderPlaceholder,
   renderSilhouette,
   tintedMaterials,
   tones,
@@ -78,11 +75,11 @@ describe('colour helpers', () => {
 });
 
 describe('icon templates', () => {
-  it('draws the ten starter kinds', () => {
-    expect([...DRAWN_KINDS].sort()).toEqual([...STARTER_KINDS].sort());
+  it('draws every kind of the catalogue', () => {
+    expect(Object.keys(ICON_TEMPLATES).sort()).toEqual(ITEM_KINDS.map((k) => k.id).sort());
   });
 
-  it.each(DRAWN_KINDS)('renders %s as valid SVG without text, in every variant', (kind) => {
+  it.each(ITEM_KINDS.map((k) => k.id))('renders %s as valid SVG without text, in every variant', (kind) => {
     for (const variant of VARIANTS) {
       const svg = renderIcon(kind, variant);
       expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"')).toBe(true);
@@ -155,22 +152,13 @@ describe('icon templates', () => {
   });
 });
 
-describe('placeholders', () => {
-  it('gives every kind a unique shape, colour and initial', () => {
-    const looks = ITEM_KINDS.map((k) => placeholderLook(k));
-    expect(new Set(looks.map((l) => `${l.shape}|${l.color}|${l.initial}`)).size).toBe(ITEM_KINDS.length);
-    // Kinds that share colour and initial must differ in shape.
-    for (const [i, a] of looks.entries())
-      for (const b of looks.slice(i + 1)) if (a.color === b.color && a.initial === b.initial) expect(a.shape).not.toBe(b.shape);
-  });
-
-  it('renders every catalogue type, drawn or not', () => {
+describe('every item type', () => {
+  it('renders, drawn, for every kind and variant', () => {
     for (const type of ALL_ITEM_TYPES) {
       const svg = renderItemSvg(type);
       expect(balanced(svg), type).toBe(true);
       expect(svg).not.toContain('undefined');
     }
-    expect(renderPlaceholder('tempe', 'original')).toContain('>T</text>');
     expect(() => renderItemSvg('apple')).toThrow();
   });
 });

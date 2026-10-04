@@ -4,7 +4,7 @@ import { getLocale, t, type MessageKey } from '../i18n';
 import { SHELF_HEIGHT_UNITS, shelfLayoutAt } from '../ui/boardLayout';
 import { mapWood } from '../ui/art/wood';
 import { simulateSvg, simulateVision, type Vision } from '../ui/icons/color';
-import { DRAWN_KINDS, renderItemSvg } from '../ui/icons/icons';
+import { renderItemSvg } from '../ui/icons/icons';
 import { ITEM_FILL } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
 import { makeWoodArt } from '../scenes/art/woodArt';
@@ -14,9 +14,22 @@ import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from '../scenes/view';
 
 /**
  * Development only (`?gallery`): every item kind in its three variants at real in-game sizes, on the wooden
- * shelves, with colour-blindness and greyscale simulations applied to icons and shelves alike. Kinds without
- * art show their placeholder.
+ * shelves, with colour-blindness and greyscale simulations applied to icons and shelves alike, and the kinds
+ * most likely to be mixed up side by side.
  */
+
+/** Kinds to compare side by side: confusable groups of the catalogue and other pairs that might look alike. */
+const LOOK_ALIKES: readonly (readonly string[])[] = [
+  ['tempe', 'tahu-goreng', 'martabak-manis'],
+  ['klepon', 'dadar-gulung', 'onde-onde'],
+  ['cabai', 'rambutan', 'salak'],
+  ['bakso', 'mie-goreng', 'nasi-goreng'],
+  ['ayam-goreng', 'pisang-goreng', 'sate'],
+  ['es-teh-manis', 'jamu', 'es-cendol'],
+  ['gado-gado', 'rendang', 'ketupat'],
+  ['es-kelapa-muda', 'manggis', 'durian'],
+  ['kerupuk-udang', 'ikan-bakar', 'tempe'],
+];
 
 const SIZES = [36, 40, 52] as const;
 const TOGETHER_PX = 40;
@@ -28,9 +41,11 @@ const TAP_SLOP = 10;
 
 interface Section {
   readonly title: string;
-  readonly kinds: readonly ItemKind[];
-  /** Also show the kinds side by side on shelves, as in a level. */
-  readonly together: boolean;
+  /** Kinds side by side on shelves of three, as in a level (item type ids; 'blocker' and 'locked' too). */
+  readonly shelves: readonly (readonly (string | null)[])[];
+  readonly shelvesLabel: string;
+  /** Kinds with a card each: their three variants at every size. */
+  readonly cards: readonly ItemKind[];
 }
 
 export class GalleryScene extends Phaser.Scene {
@@ -77,9 +92,12 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private sections(): Section[] {
+    const all: (string | null)[][] = [];
+    for (let i = 0; i < ITEM_KINDS.length; i += 3) all.push(ITEM_KINDS.slice(i, i + 3).map((k) => k.id));
+    all.push(['blocker', null, null], ['locked', null, null]);
     return [
-      { title: t('gallery.icons'), kinds: DRAWN_KINDS.map((id) => ITEM_KINDS.find((k) => k.id === id)!), together: true },
-      { title: t('gallery.placeholders'), kinds: ITEM_KINDS.filter((k) => !DRAWN_KINDS.includes(k.id)), together: false },
+      { title: t('gallery.icons'), shelves: all, shelvesLabel: t('gallery.together'), cards: ITEM_KINDS },
+      { title: t('gallery.lookAlikes'), shelves: LOOK_ALIKES, shelvesLabel: t('gallery.together'), cards: [] },
     ];
   }
 
@@ -95,7 +113,7 @@ export class GalleryScene extends Phaser.Scene {
     this.drawHeader(true);
     const jobs: Promise<void>[] = [];
     for (const section of this.sections())
-      for (const kind of section.kinds)
+      for (const kind of section.cards)
         for (const variant of VARIANTS) {
           const type = itemTypeId(kind.id, variant);
           const svg = simulateSvg(renderItemSvg(type, this.marks), vision);
@@ -116,17 +134,15 @@ export class GalleryScene extends Phaser.Scene {
     for (const section of this.sections()) {
       this.content.add(this.label(PAD, y, section.title, 20, theme.titleColor));
       y += 34;
-      if (section.together) {
-        this.content.add(this.label(PAD, y, t('gallery.together'), 14, theme.textColor));
-        y = this.drawTogether(section.kinds, y + 24, width) + GAP * 2;
-      }
+      this.content.add(this.label(PAD, y, section.shelvesLabel, 14, theme.textColor));
+      y = this.drawTogether(section.shelves, y + 24, width) + GAP * 2;
 
       // Cards: the kind's name, then one shelf per size with its three variants.
       const s = SIZES[SIZES.length - 1]! / ITEM_FILL;
       const cardW = LABEL_W + shelfLayoutAt(0, 0, s).rect.width;
       const columns = Math.max(1, Math.floor((width - 2 * PAD + GAP) / (cardW + GAP)));
       let rowBottom = y;
-      section.kinds.forEach((kind, i) => {
+      section.cards.forEach((kind, i) => {
         const col = i % columns;
         if (col === 0) y = rowBottom;
         const bottom = this.drawCard(kind, PAD + col * (cardW + GAP), y);
@@ -138,14 +154,11 @@ export class GalleryScene extends Phaser.Scene {
     this.setScroll(this.scroll);
   }
 
-  /** The kinds in their original colours on shelves of three, plus a locked shelf and the blocker crate. */
-  private drawTogether(kinds: readonly ItemKind[], top: number, width: number): number {
+  /** Kinds in their original colours on shelves of three; 'blocker' shows the crate, 'locked' a locked shelf. */
+  private drawTogether(groups: readonly (readonly (string | null)[])[], top: number, width: number): number {
     const s = TOGETHER_PX / ITEM_FILL;
     const shelfW = shelfLayoutAt(0, 0, s).rect.width;
     const columns = Math.max(1, Math.floor((width - 2 * PAD + GAP) / (shelfW + GAP)));
-    const groups: (string | null)[][] = [];
-    for (let i = 0; i < kinds.length; i += 3) groups.push(kinds.slice(i, i + 3).map((k) => itemTypeId(k.id)));
-    groups.push(['blocker', null, null], ['locked', null, null]);
     let bottom = top;
     groups.forEach((group, i) => {
       const shelf = shelfLayoutAt(PAD + (i % columns) * (shelfW + GAP), top + Math.floor(i / columns) * (s * SHELF_HEIGHT_UNITS + GAP * 1.5), s);
