@@ -28,6 +28,8 @@ export class Hud {
   private readonly levelsIcon: Phaser.GameObjects.Graphics;
   private readonly levelsZone: Phaser.GameObjects.Zone;
   private iconSize = 24;
+  /** The level label's size before it shrinks to make room for the clock. */
+  private levelFont = 16;
   private width = 0;
   private hudHeight = 0;
   private muted = false;
@@ -113,8 +115,9 @@ export class Hud {
     this.levelsIcon.setPosition(levelsX, cy);
     this.levelsZone.setPosition(levelsX, cy).setSize(hudHeight * 0.9, hudHeight);
     this.drawLevelsIcon();
+    this.levelFont = Math.round(base * (narrow ? 0.32 : 0.38));
     this.levelText
-      .setFontSize(Math.round(base * (narrow ? 0.32 : 0.38)))
+      .setFontSize(this.levelFont)
       .setPosition(levelsX + this.iconSize / 2 + (narrow ? 10 : 14), cy);
     this.timerText.setFontSize(Math.round(base * (narrow ? 0.4 : 0.46)));
     this.restartButton
@@ -157,9 +160,17 @@ export class Hud {
     const right = inlineStatus
       ? this.barEnd - this.barWidth() - 10 - this.reserved(this.comboText, 8)
       : this.muteIcon.x - this.hudHeight / 2;
+    // A long level label ("Special level 10") shrinks until the clock fits beside it.
+    if (!inlineStatus) {
+      let size = Number(this.levelText.style.fontSize.toString().replace('px', ''));
+      while (size > 11 && this.levelText.x + this.levelText.width + this.timerText.width + 16 > right) {
+        this.levelText.setFontSize(--size);
+      }
+    }
+    const fitLeft = inlineStatus ? left : this.levelText.x + this.levelText.width;
     const half = this.timerText.width / 2;
     const centered = this.width / 2;
-    const x = centered - half > left + 8 && centered + half < right - 8 ? centered : (left + right) / 2;
+    const x = centered - half > fitLeft + 8 && centered + half < right - 8 ? centered : (fitLeft + right) / 2;
     this.timerText.setPosition(x, this.hudHeight / 2);
   }
 
@@ -167,7 +178,8 @@ export class Hud {
   setLevel(levelNumber: number, special = false): void {
     this.levelText
       .setText(t(special ? 'hud.specialLevel' : 'hud.level', { n: levelNumber }))
-      .setColor(special ? theme.comboColor : theme.titleColor);
+      .setColor(special ? theme.comboColor : theme.titleColor)
+      .setFontSize(this.levelFont);
     this.placeTimer();
   }
 
