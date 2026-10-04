@@ -36,10 +36,10 @@ const twoTriples: LevelDefinition = {
 };
 
 describe('level format', () => {
-  it('a level without mechanics, or with an empty list, has no mechanic state', () => {
+  it('a level without mechanics, or with an empty list, has only the default combo', () => {
     for (const level of [twoTriples, { ...twoTriples, mechanics: [] }]) {
       const state = createGame(level);
-      expect(state.combo).toBeNull();
+      expect(state.combo).toMatchObject({ combo: 0, score: 0, windowMs: 5000, pointsPerTriple: 100 });
       expect(state.blocker).toBeNull();
       expect(state.tracks).toEqual([]);
       expect(state.held).toBeNull();
@@ -48,10 +48,11 @@ describe('level format', () => {
     }
   });
 
-  it('counts triples even without mechanics, with no extra events', () => {
+  it('counts and scores triples in a level without mechanics, with the default combo', () => {
     let state = createGame(twoTriples);
     const first = apply(state, front(1, 0), front(0, 2));
-    expect(kinds(first.events)).toEqual(['moved', 'tripleCleared']);
+    expect(kinds(first.events)).toEqual(['moved', 'tripleCleared', 'comboChanged', 'scoreChanged']);
+    expect(first.state.combo.score).toBe(100);
     state = first.state;
     expect(state.triplesCleared).toBe(1);
   });
@@ -65,7 +66,6 @@ describe('level format', () => {
     ['shelf locked twice', [{ kind: 'lockedShelves', shelves: [{ shelf: 0, triplesRequired: 1 }, { shelf: 0, triplesRequired: 1 }] }], /twice/],
     ['too many triples required', [{ kind: 'lockedShelves', shelves: [{ shelf: 2, triplesRequired: 3 }] }], /between 1 and 2/],
     ['all shelves locked', [{ kind: 'lockedShelves', shelves: [0, 1, 2].map((shelf) => ({ shelf, triplesRequired: 1 })) }], /at least one shelf/],
-    ['blocker without combo', [{ kind: 'roamingBlocker', start: { shelf: 2, slot: 1 }, seed: 1 }], /requires the combo/],
     ['blocker on an item', [COMBO, { kind: 'roamingBlocker', start: { shelf: 0, slot: 0 }, seed: 1 }], /empty slot/],
     ['blocker off the board', [COMBO, { kind: 'roamingBlocker', start: { shelf: 0, slot: 5 }, seed: 1 }], /outside/],
     ['blocker removed too early', [COMBO, { kind: 'roamingBlocker', start: { shelf: 2, slot: 1 }, seed: 1, removeAtCombo: 1 }], /at least 2/],
@@ -172,7 +172,7 @@ describe('locked shelves', () => {
   it('unlocks once the required triples are cleared, then plays normally to a win', () => {
     let state = createGame(level);
     const first = apply(state, front(1, 0), front(0, 2));
-    expect(kinds(first.events)).toEqual(['moved', 'tripleCleared', 'shelfUnlocked']);
+    expect(kinds(first.events)).toEqual(['moved', 'tripleCleared', 'comboChanged', 'scoreChanged', 'shelfUnlocked']);
     state = first.state;
     expect(isShelfLocked(state, 2)).toBe(false);
 
@@ -302,5 +302,24 @@ describe('roaming blocker', () => {
         mechanics: [COMBO, { kind: 'roamingBlocker', start: { shelf: 1, slot: 2 }, seed: 1 }],
       }),
     ).toThrow(/starts blocked/);
+  });
+});
+
+describe('mechanics stack freely', () => {
+  it('runs a roaming blocker without declaring the combo mechanic, removed by the default combo', () => {
+    const level = (seed: number): LevelDefinition => ({
+      id: 'blocker-default-combo',
+      mechanics: [{ kind: 'roamingBlocker', start: { shelf: 3, slot: 0 }, seed, removeAtCombo: 2 }],
+      shelves: [[['A', 'A', null]], [['A', 'B', 'B']], [['B', null, null]], [[null, null, null]]],
+    });
+    // A seed whose first jump keeps S1 slot 0 free for the second triple.
+    const seed = Array.from({ length: 50 }, (_, s) => s).find((s) => {
+      const at = apply(createGame(level(s)), front(1, 0), front(0, 2)).state.blocker!.at;
+      return !(at.shelf === 1 && at.slot === 0);
+    })!;
+    const first = apply(createGame(level(seed)), front(1, 0), front(0, 2));
+    const second = apply(first.state, front(2, 0), front(1, 0));
+    expect(second.events).toContainEqual({ kind: 'blockerRemoved', at: first.state.blocker!.at });
+    expect(second.state.blocker).toBeNull();
   });
 });

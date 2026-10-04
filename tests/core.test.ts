@@ -14,7 +14,7 @@ import {
   type LevelDefinition,
   type Position,
 } from '../src/core';
-import { applyMove, front, itemIds, rng, validMoves } from './helpers';
+import { applyMove, boardKinds, front, itemIds, rng, validMoves } from './helpers';
 
 /**
  * S0: front [A A B], back [B C C]
@@ -153,7 +153,7 @@ describe('moveItem: valid moves', () => {
     }
     expect(isWon(state)).toBe(true);
     expect(countItems(state)).toBe(0);
-    expect(events.map((e) => e.kind)).toEqual([
+    expect(boardKinds(events)).toEqual([
       'moved',
       'moved',
       'tripleCleared',
@@ -180,7 +180,7 @@ describe('moveItem: valid moves', () => {
       ],
     });
     const result = apply(state, front(0, 0), front(1, 2));
-    expect(result.events.map((e) => e.kind)).toEqual([
+    expect(boardKinds(result.events)).toEqual([
       'moved',
       'tripleCleared',
       'layerAdvanced',
@@ -317,7 +317,7 @@ describe('blocked detection', () => {
     // D leaves S0 empty, its full back layer advances, and S1's last free slot is taken: no free slot anywhere.
     const result = apply(state, front(0, 0), front(1, 2));
     expect(result.state).toMatchObject({ status: 'lost', loseReason: 'blocked' });
-    expect(result.events.map((e) => e.kind)).toEqual(['moved', 'layerAdvanced', 'lost']);
+    expect(boardKinds(result.events)).toEqual(['moved', 'layerAdvanced', 'lost']);
     expect(moveItem(result.state, front(1, 0), front(1, 1))).toEqual({ ok: false, reason: 'gameOver' });
   });
 
@@ -345,7 +345,7 @@ describe('blocked detection', () => {
       timeLeftMs: null,
       triplesCleared: 0,
       unlockAt: [null],
-      combo: null,
+      combo: { combo: 0, maxCombo: 0, windowLeftMs: 0, windowMs: 5000, pointsPerTriple: 100, multipliers: [1], score: 0 },
       blocker: null,
       tracks: [],
       trackTimeMs: 0,

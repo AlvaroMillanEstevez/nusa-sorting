@@ -28,7 +28,7 @@ export interface SlotRef {
   readonly slot: number;
 }
 
-/** Combo and score tracking; present only when the level has the combo mechanic. */
+/** Combo and score tracking. */
 export interface ComboState {
   /** Triples cleared in the current chain; 0 when there is no chain. */
   readonly combo: number;
@@ -100,7 +100,8 @@ export interface GameState {
   readonly triplesCleared: number;
   /** Per shelf: triples needed to unlock it, or null if it never was locked. Locked while triplesCleared < value. */
   readonly unlockAt: readonly (number | null)[];
-  readonly combo: ComboState | null;
+  /** Combo and score: a base rule of every level (the 'combo' mechanic only tunes window and multipliers). */
+  readonly combo: ComboState;
   readonly blocker: BlockerState | null;
   /** Conveyor tracks; empty in levels without one. */
   readonly tracks: readonly TrackState[];

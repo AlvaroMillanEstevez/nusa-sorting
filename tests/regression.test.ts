@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame, moveItem, tick, type GameEvent, type LevelDefinition } from '../src/core';
 import { levels } from '../src/data/levels';
 import fixture from './fixtures/regression-v1.json';
+import { boardEvents, hadCombo } from './helpers';
 import fixtureV2 from './fixtures/regression-v2.json';
 
 /**
@@ -20,6 +21,7 @@ interface Step {
 
 const untimed = ({ id, shelves }: LevelDefinition): LevelDefinition => ({ id, shelves });
 
+
 describe.each(fixture.map((entry, i) => [entry.level, i] as const))('regression: %s', (_id, index) => {
   const level = levels[index]!;
   const games = fixture[index]!.games as unknown as Step[][];
@@ -34,9 +36,9 @@ describe.each(fixture.map((entry, i) => [entry.level, i] as const))('regression:
       );
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      expect(result.events).toEqual(step.events);
+      expect(boardEvents(result.events, level)).toEqual(step.events);
       const ticked = tick(result.state, 2500);
-      expect(ticked.events).toEqual(step.tickEvents);
+      expect(boardEvents(ticked.events, level)).toEqual(step.tickEvents);
       state = ticked.state;
       expect(state.status).toBe(step.status);
       expect(state.timeLeftMs).toBe(step.timeLeftMs);
@@ -71,15 +73,35 @@ describe.each(fixtureV2.map((entry) => [entry.level, entry] as const))('regressi
       );
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      expect(result.events).toEqual(step.events);
+      expect(boardEvents(result.events, level)).toEqual(step.events);
       const ticked = tick(result.state, step.tickMs);
-      expect(ticked.events).toEqual(step.tickEvents);
+      expect(boardEvents(ticked.events, level)).toEqual(step.tickEvents);
       state = ticked.state;
       expect(state.status).toBe(step.status);
       expect(state.timeLeftMs).toBe(step.timeLeftMs);
       expect(state.triplesCleared).toBe(step.triplesCleared);
-      expect(state.combo).toEqual(step.combo);
+      // Recorded as null for levels without combos then; they all have one now.
+      if (hadCombo(level)) expect(state.combo).toEqual(step.combo);
       expect(state.blocker).toEqual(step.blocker);
     }
+  });
+});
+
+describe('combo and score in every level', () => {
+  it('emits score events in a level that had no combo mechanic when it was recorded', () => {
+    const level = levels[0]!;
+    expect(hadCombo(level)).toBe(false);
+    const steps = fixture[0]!.games[0] as unknown as Step[];
+    let state = createGame(untimed(level));
+    const kinds = new Set<string>();
+    for (const step of steps) {
+      const result = moveItem(state, { shelf: step.from[0], layer: 0, slot: step.from[1] }, { shelf: step.to[0], layer: 0, slot: step.to[1] });
+      if (!result.ok) throw new Error(result.reason);
+      for (const e of result.events) kinds.add(e.kind);
+      state = tick(result.state, 2500).state;
+    }
+    expect(kinds.has('scoreChanged')).toBe(true);
+    expect(kinds.has('comboChanged')).toBe(true);
+    expect(state.combo.score).toBeGreaterThan(0);
   });
 });

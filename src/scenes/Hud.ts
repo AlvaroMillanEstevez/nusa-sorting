@@ -35,6 +35,9 @@ export class Hud {
   private readonly comboText: Phaser.GameObjects.Text;
   private readonly comboBar: Phaser.GameObjects.Graphics;
   private statusRow: Rect | null = null;
+  private inline = false;
+  /** Right end of the combo bar. */
+  private barEnd = 0;
   private shownScore = 0;
   private scoreTween: Phaser.Tweens.Tween | null = null;
 
@@ -84,17 +87,15 @@ export class Hud {
   }
 
   /** Lays out the main row and, when given, the score/combo row below it. */
-  layout(width: number, hudHeight: number, statusRow: Rect | null): void {
+  /**
+   * Lays out the main row and the score/combo status: in its own row below (`inline` false, portrait) or
+   * inside the main row (`inline` true, landscape): score after the level label, combo before the mute icon.
+   */
+  layout(width: number, hudHeight: number, statusRow: Rect | null, inline = false): void {
     this.width = width;
     this.statusRow = statusRow;
+    this.inline = inline;
     for (const part of [this.scoreText, this.comboText, this.comboBar]) part.setVisible(statusRow !== null);
-    if (statusRow) {
-      const cy = statusRow.y + statusRow.height / 2;
-      const size = Math.round(statusRow.height * 0.48);
-      this.scoreText.setFontSize(size).setPosition(16, cy);
-      this.comboText.setFontSize(size).setPosition(width - 12 - this.barWidth() - 10, cy);
-    }
-
     this.hudHeight = hudHeight;
     const cy = hudHeight / 2;
     // Text and padding follow the bar height, but never more than the width allows: on a tall, narrow
@@ -123,13 +124,34 @@ export class Hud {
     this.muteZone.setPosition(muteX, cy).setSize(hudHeight, hudHeight);
     this.drawMuteIcon();
 
+    if (statusRow) {
+      const rowY = statusRow.y + statusRow.height / 2;
+      const size = Math.round((inline ? base * 0.3 : statusRow.height * 0.48));
+      this.scoreText.setFontSize(size);
+      this.comboText.setFontSize(size);
+      this.barEnd = inline ? muteX - hudHeight * 0.6 : width - 12;
+      const scoreX = inline ? this.levelText.x + this.levelText.width + 16 : 16;
+      this.scoreText.setPosition(scoreX, rowY);
+      this.comboText.setPosition(this.barEnd - this.barWidth() - 10, rowY);
+    }
     this.placeTimer();
+  }
+
+  /** Room kept for texts that change while playing, so the clock does not shift as they grow. */
+  private reserved(text: Phaser.GameObjects.Text, chars: number): number {
+    return Number(text.style.fontSize.toString().replace('px', '')) * 0.6 * chars;
   }
 
   /** Centers the clock on screen if it fits, otherwise in the gap between the level label and the buttons. */
   private placeTimer(): void {
-    const left = this.levelText.x + this.levelText.width;
-    const right = this.muteIcon.x - this.hudHeight / 2;
+    const inlineStatus = this.inline && this.statusRow !== null;
+    // With the status inline, the clock sits between the score ("Score 99999") and the combo label and bar.
+    const left = inlineStatus
+      ? this.scoreText.x + this.reserved(this.scoreText, 11)
+      : this.levelText.x + this.levelText.width;
+    const right = inlineStatus
+      ? this.barEnd - this.barWidth() - 10 - this.reserved(this.comboText, 8)
+      : this.muteIcon.x - this.hudHeight / 2;
     const half = this.timerText.width / 2;
     const centered = this.width / 2;
     const x = centered - half > left + 8 && centered + half < right - 8 ? centered : (left + right) / 2;
@@ -161,7 +183,7 @@ export class Hud {
   }
 
   private barWidth(): number {
-    return Math.min(140, Math.round(this.width * 0.28));
+    return this.inline ? Math.min(110, Math.round(this.width * 0.11)) : Math.min(140, Math.round(this.width * 0.28));
   }
 
   /** Shows the score; counts up to it when `animate` is set. */
@@ -191,8 +213,8 @@ export class Hud {
     this.comboText.setText(combo >= 2 ? t('hud.combo', { n: combo }) : '');
     const g = this.comboBar.clear();
     const w = this.barWidth();
-    const h = Math.max(6, Math.round(row.height * 0.22));
-    const x = this.width - 12 - w;
+    const h = Math.max(6, Math.round(row.height * (this.inline ? 0.14 : 0.22)));
+    const x = this.barEnd - w;
     const y = row.y + (row.height - h) / 2;
     g.fillStyle(theme.slotGuide, 1).fillRoundedRect(x, y, w, h, h / 2);
     const share = windowMs > 0 && combo > 0 ? Math.max(0, Math.min(1, windowLeftMs / windowMs)) : 0;

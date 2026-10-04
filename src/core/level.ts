@@ -155,7 +155,8 @@ function parseMechanics(
   if (kinds.size !== list.length) fail('each mechanic may appear only once');
 
   const unlockAt: (number | null)[] = shelves.map(() => null);
-  let combo: ComboState | null = null;
+  // Combo and score are a base rule of every level; the 'combo' mechanic only tunes them.
+  let combo: ComboState = newCombo(COMBO_DEFAULTS.windowSeconds, COMBO_DEFAULTS.pointsPerTriple, COMBO_DEFAULTS.multipliers);
   let blocker: BlockerState | null = null;
   const tracks: TrackState[] = [];
   const checkSpeed = (speed: number, what: string) => {
@@ -176,15 +177,7 @@ function parseMechanics(
         if (multipliers.length === 0 || multipliers.some((m) => !(m > 0))) {
           fail('combo multipliers must be a non-empty list of positive numbers');
         }
-        combo = {
-          combo: 0,
-          maxCombo: 0,
-          windowLeftMs: 0,
-          windowMs: windowSeconds * 1000,
-          pointsPerTriple,
-          multipliers,
-          score: 0,
-        };
+        combo = newCombo(windowSeconds, pointsPerTriple, multipliers);
         break;
       }
       case 'lockedShelves': {
@@ -247,12 +240,13 @@ function parseMechanics(
     }
   }
 
-  if (blocker) {
-    if (!combo) fail('roamingBlocker requires the combo mechanic (it is removed by reaching a combo)');
-    if (unlockAt[blocker.at.shelf] !== null) fail('blocker cannot start on a locked shelf');
-  }
+  if (blocker && unlockAt[blocker.at.shelf] !== null) fail('blocker cannot start on a locked shelf');
   if (unlockAt.every((value) => value !== null)) fail('at least one shelf must start unlocked');
   return { unlockAt, combo, blocker, tracks };
+}
+
+function newCombo(windowSeconds: number, pointsPerTriple: number, multipliers: readonly number[]): ComboState {
+  return { combo: 0, maxCombo: 0, windowLeftMs: 0, windowMs: windowSeconds * 1000, pointsPerTriple, multipliers, score: 0 };
 }
 
 function toTrack(orientation: TrackState['orientation'], speed: number, stacks: readonly (readonly Item[])[]): TrackState {

@@ -186,7 +186,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.setTime(this.state.timeLeftMs);
     this.warnTicks();
     const combo = this.state.combo;
-    if (combo) this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
+    this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
     if (result.events.some((e) => e.kind === 'lost')) this.endLevel(0);
   }
 
@@ -231,7 +231,7 @@ export class GameScene extends Phaser.Scene {
     this.belt.reset(this.state);
     this.hud.setLevel(index + 1);
     this.hud.setTime(this.state.timeLeftMs);
-    this.hud.setScore(this.state.combo?.score ?? 0, false);
+    this.hud.setScore(this.state.combo.score, false);
     this.hud.setCombo(0, 0, 0);
     const locked = new Map<number, number>();
     this.state.shelves.forEach((_, shelf) => {
@@ -251,7 +251,7 @@ export class GameScene extends Phaser.Scene {
   /** Shows the win or defeat panel once the final animations have had time to play. */
   private endLevel(delay: number): void {
     const { status, loseReason, timeLeftMs } = this.state;
-    const score = this.state.combo?.score ?? null;
+    const score = this.state.combo.score;
     this.selectedId = null;
     this.hud.setCombo(0, 0, 0);
     // Saved right away, when the level ends, not when the panel appears.
@@ -313,7 +313,7 @@ export class GameScene extends Phaser.Scene {
     const { width, height } = this.scale.gameSize;
     this.cameras.main.setSize(width, height);
     this.layout = layoutForLevel(this.level, this.state, width, height);
-    this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow);
+    this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
     this.overlay.layout(width, height);
     this.locks.relayout(this.layout);
     this.placeBlocker();

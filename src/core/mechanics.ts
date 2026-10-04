@@ -11,7 +11,10 @@ export type MechanicDefinition =
   | ConveyorMechanic
   | TracksMechanic;
 
-/** Every triple scores; triples cleared within the window of the previous one grow a combo multiplier. */
+/**
+ * Tunes the combo, which every level has: each triple scores, and triples cleared within the window of the
+ * previous one grow a multiplier. Without this mechanic a level uses COMBO_DEFAULTS.
+ */
 export interface ComboMechanic {
   readonly kind: 'combo';
   /** Seconds after a triple during which the next one extends the combo. Default 5. */
@@ -30,7 +33,7 @@ export interface LockedShelvesMechanic {
 
 /**
  * One empty front slot is blocked. After each triple it jumps to another empty slot, picked
- * deterministically from `seed`. Reaching `removeAtCombo` removes it. Requires the combo mechanic.
+ * deterministically from `seed`. Reaching a combo of `removeAtCombo` removes it.
  */
 export interface RoamingBlockerMechanic {
   readonly kind: 'roamingBlocker';

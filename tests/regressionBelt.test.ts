@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult } from '../src/core';
 import { levels } from '../src/data/levels';
-import { computeBoardLayout } from '../src/ui/boardLayout';
+import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
-import layoutsFixture from './fixtures/layouts-v1.json';
+import { boardEvents } from './helpers';
+import layoutsFixture from './fixtures/layouts-v2.json';
 
 /**
  * Golden recordings made before the belt became a set of tracks with stacks (tests/fixtures/regression-v3.json):
@@ -72,7 +73,8 @@ describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regre
       expect(result.ok).toBe(ok);
       if (result.ok) {
         state = result.state;
-        expect(belt.events(result.events)).toEqual(events);
+        // Levels 8-9 had no combos when recorded: only the board's events are compared (see regression.test.ts).
+        expect(belt.events(boardEvents(result.events, level))).toEqual(events);
       } else {
         expect([result.reason]).toEqual(events);
       }
@@ -81,14 +83,18 @@ describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regre
   });
 });
 
-/** Layouts of levels 1-9 as they were before column layouts existed (tests/fixtures/layouts-v1.json). */
+/**
+ * Layouts of levels 1-9 (tests/fixtures/layouts-v2.json), recorded when score and combo became part of every
+ * level: portrait gained a status row for levels that had none, and landscape moved it into the main HUD row.
+ * The earlier snapshot (before column layouts) was replaced then; see the commit message for the size changes.
+ */
 describe('automatic layout is unchanged', () => {
   it.each(layoutsFixture.map((entry) => [entry.level, entry] as const))('%s', (id, entry) => {
     const level = levels.find((l) => l.id === id)!;
     const state = createGame(level);
     for (const { w, h, layout } of entry.layouts) {
-      const now = computeBoardLayout(w, h, level.shelves.length, 3, state.combo !== null, state.tracks[0]?.carriers.length ?? 0);
-      // Fields added since the snapshot (e.g. the generic track list) are not compared.
+      const now = layoutForLevel(level, state, w, h);
+      // Fields added after the snapshot are not compared.
       const current = JSON.parse(JSON.stringify(now)) as Record<string, unknown>;
       const recorded = layout as Record<string, unknown>;
       for (const key of Object.keys(recorded)) expect(current[key]).toEqual(recorded[key]);

@@ -1,14 +1,12 @@
 import {
   GAP,
-  hudHeight,
+  hudArea,
   MARGIN,
   MAX_SLOT_SIZE,
   SHELF_HEIGHT_UNITS,
   SHELF_WIDTH_UNITS,
   shelfLayoutAt,
-  STATUS_ROW,
   type BoardLayout,
-  type Rect,
   type ShelfLayout,
   type TrackLayout,
 } from './boardLayout';
@@ -53,11 +51,7 @@ export function computeColumnLayout(
   trackCount: number,
   withStatusRow = false,
 ): BoardLayout {
-  const hudRowHeight = hudHeight(height);
-  const statusRow: Rect | null = withStatusRow
-    ? { x: 0, y: hudRowHeight, width, height: Math.round(hudRowHeight * STATUS_ROW) }
-    : null;
-  const hud: Rect = { x: 0, y: 0, width, height: hudRowHeight + (statusRow?.height ?? 0) };
+  const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow);
   const areaTop = hud.height + MARGIN;
   const areaHeight = Math.max(1, height - hud.height - MARGIN * 2);
 
@@ -89,5 +83,5 @@ export function computeColumnLayout(
     }
     x += columnWidth + COLUMN_GAP_UNITS * s;
   }
-  return { slotSize: s, hud, hudRowHeight, statusRow, belt: null, tracks, shelves };
+  return { slotSize: s, hud, hudRowHeight, statusRow, statusInline, belt: null, tracks, shelves };
 }

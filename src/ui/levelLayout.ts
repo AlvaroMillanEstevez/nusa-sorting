@@ -19,7 +19,8 @@ export const CHECKED_SCREENS: readonly (readonly [number, number])[] = [
  * the (single, horizontal) track as a strip below.
  */
 export function layoutForLevel(level: LevelDefinition, state: GameState, width: number, height: number): BoardLayout {
-  const withStatusRow = state.combo !== null;
+  // Score and combo are shown in every level.
+  const withStatusRow = true;
   if (!level.layout) {
     return computeBoardLayout(width, height, level.shelves.length, 3, withStatusRow, state.tracks[0]?.carriers.length ?? 0);
   }

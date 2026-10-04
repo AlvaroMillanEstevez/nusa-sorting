@@ -52,8 +52,10 @@ export interface BoardLayout {
   readonly hud: Rect;
   /** Height of the main HUD row (level, clock, buttons). */
   readonly hudRowHeight: number;
-  /** Second HUD row (score and combo), or null when the level has none. */
+  /** Where score and combo go: a second HUD row, or the main row itself when `statusInline`. */
   readonly statusRow: Rect | null;
+  /** True in landscape, where score and combo share the main HUD row so the board keeps its height. */
+  readonly statusInline: boolean;
   /** Conveyor strip below the shelves in the automatic layout, or null. */
   readonly belt: BeltLayout | null;
   /** Every track of the level on screen, in the level's track order. */
@@ -93,11 +95,7 @@ export function computeBoardLayout(
   withStatusRow = false,
   beltSlots = 0,
 ): BoardLayout {
-  const hudRowHeight = hudHeight(height);
-  const statusRow: Rect | null = withStatusRow
-    ? { x: 0, y: hudRowHeight, width, height: Math.round(hudRowHeight * STATUS_ROW) }
-    : null;
-  const hud: Rect = { x: 0, y: 0, width, height: hudRowHeight + (statusRow?.height ?? 0) };
+  const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow);
   const shelfW = SHELF_WIDTH_UNITS(slotsPerLayer);
   const shelfH = SHELF_HEIGHT_UNITS;
   const contentWidth = Math.max(1, width - MARGIN * 2);
@@ -141,7 +139,27 @@ export function computeBoardLayout(
     shelves.push(shelfLayoutAt(left + col * (shelfW + GAP) * s, top + row * (shelfH + GAP) * s, s, slotsPerLayer));
   }
 
-  return { slotSize: s, hud, hudRowHeight, statusRow, belt, tracks: belt ? [trackFromBelt(belt)] : [], shelves };
+  return { slotSize: s, hud, hudRowHeight, statusRow, statusInline, belt, tracks: belt ? [trackFromBelt(belt)] : [], shelves };
+}
+
+/**
+ * The HUD area: the main row, plus the score/combo status. In portrait the status gets its own row below; in
+ * landscape (wider than tall) it shares the main row, since height is what limits the board there.
+ */
+export function hudArea(
+  width: number,
+  height: number,
+  withStatusRow: boolean,
+): { hud: Rect; hudRowHeight: number; statusRow: Rect | null; statusInline: boolean } {
+  const hudRowHeight = hudHeight(height);
+  const statusInline = withStatusRow && width > height;
+  const statusRow: Rect | null = !withStatusRow
+    ? null
+    : statusInline
+      ? { x: 0, y: 0, width, height: hudRowHeight }
+      : { x: 0, y: hudRowHeight, width, height: Math.round(hudRowHeight * STATUS_ROW) };
+  const hud: Rect = { x: 0, y: 0, width, height: hudRowHeight + (statusRow && !statusInline ? statusRow.height : 0) };
+  return { hud, hudRowHeight, statusRow, statusInline };
 }
 
 /** The automatic layout's horizontal strip as a generic track. */

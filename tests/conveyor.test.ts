@@ -15,7 +15,7 @@ import {
   type MechanicDefinition,
   type Position,
 } from '../src/core';
-import { applyMove, front, itemIds, rng, validMoves } from './helpers';
+import { applyMove, boardKinds, front, itemIds, rng, validMoves } from './helpers';
 
 const belt = (slots: (string | null)[], speed = 1): MechanicDefinition => ({ kind: 'conveyor', slots, speed });
 
@@ -139,11 +139,11 @@ describe('taking items from the belt', () => {
 
   it('places the held item like a normal move, forming triples, and wins when the belt is empty too', () => {
     const first = pickAndDrop(createGame(basic), 0, front(0, 2));
-    expect(first.events.map((e) => e.kind)).toEqual(['beltItemPlaced', 'tripleCleared']);
+    expect(boardKinds(first.events)).toEqual(['beltItemPlaced', 'tripleCleared']);
     expect(first.events[0]).toEqual({ kind: 'beltItemPlaced', itemId: 5, from: slot(0), to: front(0, 2) });
     expect(first.state.status).toBe('playing');
     const second = pickAndDrop(first.state, 2, front(1, 2));
-    expect(second.events.map((e) => e.kind)).toEqual(['beltItemPlaced', 'tripleCleared', 'won']);
+    expect(boardKinds(second.events)).toEqual(['beltItemPlaced', 'tripleCleared', 'won']);
   });
 
   it('keeps holding after an invalid drop, then returns the item to its slot wherever the belt is', () => {
@@ -228,7 +228,7 @@ describe('belt and the end of the game', () => {
     });
     const state = createGame(level([belt(['A'])]));
     const result = pickAndDrop(state, 0, front(0, 2));
-    expect(result.events.map((e) => e.kind)).toEqual(['beltItemPlaced', 'tripleCleared', 'layerAdvanced', 'tripleCleared', 'won']);
+    expect(boardKinds(result.events)).toEqual(['beltItemPlaced', 'tripleCleared', 'layerAdvanced', 'tripleCleared', 'won']);
   });
 });
 

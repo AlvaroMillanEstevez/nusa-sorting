@@ -8,7 +8,9 @@ import {
   pickFromTrack,
   type CarrierRef,
   tick,
+  type GameEvent,
   type GameState,
+  type LevelDefinition,
   type LoseReason,
   type MoveResult,
   type Position,
@@ -250,4 +252,24 @@ export function simulate(start: GameState, runs = 200, seed = 1): SimulationStat
 
 export function greedyWinRate(start: GameState, runs = 200, seed = 1): number {
   return simulate(start, runs, seed).winRate;
+}
+
+/**
+ * Combo and score became a base rule of every level after these recordings were made. Levels that did not
+ * have the combo mechanic then now also emit comboChanged and scoreChanged; those are left out of the
+ * comparison so the recordings keep proving the board itself (moves, triples, layers, unlocks, blocker, wins,
+ * defeats and timers) behaves exactly as before. Levels that already had combos compare every event.
+ */
+export function hadCombo(level: LevelDefinition): boolean {
+  return (level.mechanics ?? []).some((m) => m.kind === 'combo');
+}
+
+export function boardEvents(events: readonly GameEvent[], level: LevelDefinition): GameEvent[] {
+  if (hadCombo(level)) return [...events];
+  return events.filter((e) => e.kind !== 'comboChanged' && e.kind !== 'scoreChanged');
+}
+
+/** Event kinds without the score and combo ones, for tests about how the board itself behaves. */
+export function boardKinds(events: readonly GameEvent[]): string[] {
+  return events.filter((e) => e.kind !== 'comboChanged' && e.kind !== 'scoreChanged').map((e) => e.kind);
 }
