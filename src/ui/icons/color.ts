@@ -50,10 +50,10 @@ export function rotateHue(hex: string, degrees: number): string {
   return rgbToHex(hslToRgb((((h + degrees) % 360) + 360) % 360, s, l));
 }
 
-export type Vision = 'normal' | 'deuteranopia' | 'protanopia';
+export type Vision = 'normal' | 'deuteranopia' | 'protanopia' | 'grayscale';
 
 // Viénot, Brettel & Mollon (1999), applied in linear RGB: how dichromats see a colour.
-const CVD: Record<Exclude<Vision, 'normal'>, readonly number[]> = {
+const CVD: Record<'deuteranopia' | 'protanopia', readonly number[]> = {
   protanopia: [0.11238, 0.88762, 0, 0.11238, 0.88762, 0, 0.00401, -0.00401, 1],
   deuteranopia: [0.29275, 0.70725, 0, 0.29275, 0.70725, 0, -0.02234, 0.02234, 1],
 };
@@ -64,9 +64,31 @@ const toLinear = (v: number) => {
 };
 const toSrgb = (v: number) => 255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055);
 
-/** How a colour looks with a colour vision deficiency. */
+/** Relative luminance (0-1) of a colour, as WCAG defines it. */
+export function luminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex).map(toLinear) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** CIE L* lightness (0-100): how light a colour looks, in steps that look even. */
+export function lightness(hex: string): number {
+  const y = luminance(hex);
+  return y > 216 / 24389 ? 116 * Math.cbrt(y) - 16 : (24389 / 27) * y;
+}
+
+/** WCAG contrast ratio between two colours (1-21). */
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** How a colour looks with a colour vision deficiency, or with no colour at all ('grayscale'). */
 export function simulateVision(hex: string, vision: Vision): string {
   if (vision === 'normal') return hex;
+  if (vision === 'grayscale') {
+    const grey = toSrgb(luminance(hex));
+    return rgbToHex([grey, grey, grey]);
+  }
   const m = CVD[vision];
   const [r, g, b] = hexToRgb(hex).map(toLinear) as [number, number, number];
   return rgbToHex([
