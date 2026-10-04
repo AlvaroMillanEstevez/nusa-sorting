@@ -30,8 +30,11 @@ function columnWidthUnits(column: ColumnSpec): number {
   return column.kind === 'shelves' ? SHELF_WIDTH_UNITS(3) : TRACK_COLUMN_UNITS;
 }
 
+/** Room at each end of a vertical track for its roller (half a slot). */
+const ROLLER_UNITS = 0.5;
+
 function columnHeightUnits(column: ColumnSpec): number {
-  if (column.kind === 'track') return column.slots;
+  if (column.kind === 'track') return column.slots + ROLLER_UNITS * 2;
   const n = column.shelves.length;
   return n * SHELF_HEIGHT_UNITS + (n - 1) * GAP;
 }
@@ -39,7 +42,8 @@ function columnHeightUnits(column: ColumnSpec): number {
 /**
  * Lays out up to three columns side by side, centred, with one slot size for every shelf and track so items
  * look the same everywhere. The slot size is the largest that fits the widest row and the tallest column.
- * Each column is centred vertically; a vertical track's loop is K slots tall.
+ * Each column is centred vertically; a vertical track's loop is K slots tall, plus half a slot at each end for
+ * its rollers.
  */
 export function computeColumnLayout(
   width: number,
@@ -73,10 +77,11 @@ export function computeColumnLayout(
       });
     } else {
       const cross = x + columnWidth / 2;
+      const loopStart = top + ROLLER_UNITS * s;
       tracks[column.track] = {
         orientation: 'vertical',
-        rect: { x, y: top, width: columnWidth, height: column.slots * s },
-        loopStart: top,
+        rect: { x, y: loopStart, width: columnWidth, height: column.slots * s },
+        loopStart,
         pitch: s,
         slots: column.slots,
         cross,

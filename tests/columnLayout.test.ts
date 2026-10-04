@@ -29,6 +29,11 @@ describe.each(examples)('column layout %s', (_name, columns, shelfCount, trackCo
         expect(r.y).toBeGreaterThanOrEqual(layout.hud.height);
         expect(r.y + r.height).toBeLessThanOrEqual(height);
       }
+      // The rollers at both ends of a vertical track (half a slot each) stay clear of the HUD and the screen edge.
+      for (const t of layout.tracks) {
+        expect(t.rect.y - t.pitch / 2).toBeGreaterThanOrEqual(layout.hud.height);
+        expect(t.rect.y + t.rect.height + t.pitch / 2).toBeLessThanOrEqual(height);
+      }
       rects.forEach((a, i) => rects.forEach((b, j) => i < j && expect(overlaps(a, b)).toBe(false)));
     });
 
