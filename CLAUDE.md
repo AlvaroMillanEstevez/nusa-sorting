@@ -23,6 +23,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?level=N` — abre el nivel N (1-based) aunque esté bloqueado; el progreso se sigue guardando con normalidad.
 - `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
+- `?gallery` — abre la galería de iconos (tamaños reales, variantes, estilos y simulación de daltonismo) en vez del juego.
 
 ## Estructura
 
