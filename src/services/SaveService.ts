@@ -11,6 +11,8 @@ export interface SaveData {
   readonly version: number;
   readonly progress: Progress;
   readonly settings: Settings;
+  /** Mechanic intros already shown (IntroId values), so each is explained only once. */
+  readonly introsSeen: readonly string[];
 }
 
 /** Persistence boundary. The game never touches storage APIs directly. */

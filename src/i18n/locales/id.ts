@@ -42,4 +42,9 @@ export const id: Record<MessageKey, string> = {
   'gallery.placeholders': 'Sementara (belum ada gambar)',
   'gallery.px': '{n} px',
   'gallery.loading': 'Menggambar…',
+  'intro.backLayers': 'Ada barang lain di belakang barang depan.',
+  'intro.lockedShelves': 'Rak terkunci terbuka setelah beberapa trio.',
+  'intro.roamingBlocker': 'Peti menutup slot dan pindah setelah trio.',
+  'intro.stackTracks': 'Ambil barang dari ban berjalan untuk rakmu.',
+  'intro.shelfTracks': 'Rak yang bergerak juga bisa diisi dan diambil.',
 };

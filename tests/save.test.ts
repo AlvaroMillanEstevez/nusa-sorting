@@ -36,6 +36,7 @@ const sample: SaveData = {
   version: SAVE_VERSION,
   progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 } },
   settings: { muted: true, colorBlindMode: true },
+  introsSeen: ['backLayers'],
 };
 
 describe('save format', () => {
@@ -64,17 +65,20 @@ describe('save format', () => {
         bestScores: { level004: 900, level005: -1, level006: 'lots', level007: null },
       },
       settings: { muted: 'yes', colorBlindMode: 1 },
+      introsSeen: ['backLayers', 3, '', 'backLayers', 'lockedShelves'],
     });
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
       progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 } },
       settings: { muted: false, colorBlindMode: false },
+      introsSeen: ['backLayers', 'lockedShelves'],
     });
   });
 
-  it('reads saves from before colour-blind mode existed with the mode off', () => {
+  it('reads saves from before colour-blind mode and intros existed: mode off, nothing seen', () => {
     const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: { muted: true } });
     expect(parseSave(old).settings).toEqual({ muted: true, colorBlindMode: false });
+    expect(parseSave(old).introsSeen).toEqual([]);
   });
 
   it('survives missing sections', () => {
@@ -157,6 +161,16 @@ describe('ProgressStore', () => {
     const reloaded = new ProgressStore(new LocalSaveService(storage));
     expect(reloaded.bestScore('level004')).toBe(1500);
     expect(reloaded.muted).toBe(false);
+  });
+
+  it('remembers mechanic intros once shown, saving only the first time', () => {
+    const storage = new FakeStorage();
+    const store = new ProgressStore(new LocalSaveService(storage));
+    expect(store.introsSeen).toEqual([]);
+    store.markIntroSeen('backLayers');
+    store.markIntroSeen('backLayers');
+    expect(storage.writes).toBe(1);
+    expect(new ProgressStore(new LocalSaveService(storage)).introsSeen).toEqual(['backLayers']);
   });
 
   it('keeps colour-blind mode off by default, and saves it when it changes', () => {

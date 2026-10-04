@@ -20,6 +20,17 @@ export class ProgressStore {
     return this.data.settings.muted;
   }
 
+  get introsSeen(): readonly string[] {
+    return this.data.introsSeen;
+  }
+
+  /** Remembers that a mechanic intro was shown. */
+  markIntroSeen(id: string): void {
+    if (this.data.introsSeen.includes(id)) return;
+    this.data = { ...this.data, introsSeen: [...this.data.introsSeen, id] };
+    this.saves.save(this.data);
+  }
+
   get colorBlindMode(): boolean {
     return this.data.settings.colorBlindMode;
   }

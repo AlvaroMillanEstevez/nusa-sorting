@@ -6,7 +6,7 @@ export const SAVE_VERSION = 1;
 const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false };
 
 export function emptySave(): SaveData {
-  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS };
+  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, introsSeen: [] };
 }
 
 /**
@@ -41,7 +41,12 @@ export function parseSave(raw: string | null): SaveData {
     data = { ...migrate(data), version: version + 1 };
   }
   if (data.version !== SAVE_VERSION) return emptySave();
-  return { version: SAVE_VERSION, progress: parseProgress(data.progress), settings: parseSettings(data.settings) };
+  return {
+    version: SAVE_VERSION,
+    progress: parseProgress(data.progress),
+    settings: parseSettings(data.settings),
+    introsSeen: parseIdList(data.introsSeen),
+  };
 }
 
 function parseProgress(value: unknown): Progress {
@@ -56,6 +61,11 @@ function parseProgress(value: unknown): Progress {
     }
   }
   return { completed, bestScores };
+}
+
+/** A list of non-empty ids, without duplicates; anything else is dropped (missing in older saves: empty). */
+function parseIdList(value: unknown): string[] {
+  return Array.isArray(value) ? [...new Set(value.filter((id): id is string => typeof id === 'string' && id.length > 0))] : [];
 }
 
 function parseSettings(value: unknown): Settings {

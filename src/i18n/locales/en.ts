@@ -40,6 +40,11 @@ export const en = {
   'gallery.placeholders': 'Placeholders (no art yet)',
   'gallery.px': '{n} px',
   'gallery.loading': 'Drawing…',
+  'intro.backLayers': 'More items wait behind the front ones.',
+  'intro.lockedShelves': 'Locked shelves open after a few triples.',
+  'intro.roamingBlocker': 'A crate blocks a slot and hops after triples.',
+  'intro.stackTracks': 'Grab items from the belt for your shelves.',
+  'intro.shelfTracks': 'Moving shelves take and give items too.',
 } as const;
 
 export type MessageKey = keyof typeof en;
