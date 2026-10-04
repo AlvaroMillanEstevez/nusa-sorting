@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { carrierOffset, type GameState, stackOf } from '../core';
+import { carrierOffset, carriesShelves, type GameState, stackOf } from '../core';
 import { trackPose, type BeltPose, type TrackLayout } from '../ui/boardLayout';
 import { theme } from '../ui/theme';
 
@@ -27,6 +27,7 @@ export class BeltView {
   private plates: Phaser.GameObjects.Image[][] = [];
   private pips: Phaser.GameObjects.Image[][] = [];
   private layouts: readonly TrackLayout[] = [];
+  private shelfTracks: readonly boolean[] = [];
   private readonly pose: BeltPose = { x: 0, y: 0, alpha: 0 };
 
   constructor(private readonly scene: Phaser.Scene) {
@@ -55,12 +56,16 @@ export class BeltView {
   reset(state: GameState): void {
     for (const plate of this.plates.flat()) plate.destroy();
     for (const pip of this.pips.flat()) pip.destroy();
+    // Shelf tracks have no plates: the shelves themselves ride them (see MovingShelves).
     this.plates = state.tracks.map((track) =>
-      track.carriers.map(() => this.scene.add.image(0, 0, PLATE_TEXTURE).setDepth(DEPTH_PLATE)),
+      carriesShelves(track) ? [] : track.carriers.map(() => this.scene.add.image(0, 0, PLATE_TEXTURE).setDepth(DEPTH_PLATE)),
     );
     this.pips = state.tracks.map((track) =>
-      track.carriers.map(() => this.scene.add.image(0, 0, PIPS_TEXTURE(1)).setDepth(DEPTH_PIPS).setVisible(false)),
+      carriesShelves(track)
+        ? []
+        : track.carriers.map(() => this.scene.add.image(0, 0, PIPS_TEXTURE(1)).setDepth(DEPTH_PIPS).setVisible(false)),
     );
+    this.shelfTracks = state.tracks.map(carriesShelves);
   }
 
   relayout(layouts: readonly TrackLayout[]): void {
@@ -68,6 +73,10 @@ export class BeltView {
     this.rails.clear();
     this.rollers.clear();
     layouts.forEach((layout, t) => {
+      if (this.shelfTracks[t]) {
+        this.drawShelfTrack(layout);
+        return;
+      }
       const { rect, pitch, cross } = layout;
       const railThickness = pitch * 0.92;
       const rollerRadius = Math.max(railThickness / 2, pitch * 0.5);
@@ -96,6 +105,23 @@ export class BeltView {
       for (const plate of this.plates[t] ?? []) plate.setScale(plateScale);
       for (const pip of this.pips[t] ?? []) pip.setScale((pitch * 0.42) / (MAX_PIPS * 16));
     });
+  }
+
+  /**
+   * A track of shelves: two thin guides along the column and a cap at each end of the loop, where shelves
+   * fade out and come back in.
+   */
+  private drawShelfTrack(layout: TrackLayout): void {
+    const { rect } = layout;
+    const s = layout.pitch / 1.95;
+    const guide = Math.max(3, s * 0.08);
+    this.rails.fillStyle(theme.beltRail, 1);
+    this.rails.fillRect(rect.x - guide * 1.5, rect.y, guide, rect.height);
+    this.rails.fillRect(rect.x + rect.width + guide * 0.5, rect.y, guide, rect.height);
+    const capHeight = s * 0.32;
+    for (const y of [rect.y, rect.y + rect.height]) {
+      this.rollers.fillStyle(theme.beltRoller, 1).fillRoundedRect(rect.x - guide * 2, y - capHeight / 2, rect.width + guide * 4, capHeight, capHeight / 2);
+    }
   }
 
   /** Moves plates and depth dots to the tracks' current positions. Called every frame; allocates nothing. */

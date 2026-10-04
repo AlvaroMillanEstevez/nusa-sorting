@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import {
   carrierOffset,
+  carriesShelves,
   dropHeld,
   findTrackItem,
   pickFromTrack,
@@ -97,6 +98,11 @@ export class BeltController {
     return findTrackItem(state, itemId) !== null || state.held?.item.id === itemId;
   }
 
+  /** True while a belt item is being dragged (not just held after a tap). */
+  get dragging(): boolean {
+    return this.press?.dragging ?? false;
+  }
+
   get holding(): boolean {
     return this.host.getState().held !== null;
   }
@@ -169,7 +175,10 @@ export class BeltController {
     const state = this.host.getState();
     if (state.tracks.length === 0 || state.status !== 'playing' || this.press) return false;
     const layouts = this.host.getLayout().tracks;
-    const t = layouts.findIndex((layout) => layout && isOnTrack(layout, pointer.x, pointer.y));
+    // Presses on shelves riding a track are ordinary shelf presses, not the belt's.
+    const t = layouts.findIndex(
+      (layout, i) => layout && !carriesShelves(state.tracks[i]!) && isOnTrack(layout, pointer.x, pointer.y),
+    );
     if (t === -1) return false;
 
     // A second press on a track while holding something sends the held item back first.
@@ -281,7 +290,10 @@ export class BeltController {
       return;
     }
     // Released over nothing useful: back to its track, without a buzz if it never left the track.
-    const onATrack = this.host.getLayout().tracks.some((layout) => layout && isOnTrack(layout, x, y));
+    const state = this.host.getState();
+    const onATrack = this.host
+      .getLayout()
+      .tracks.some((layout, i) => layout && !carriesShelves(state.tracks[i]!) && isOnTrack(layout, x, y));
     this.sendBack(!onATrack);
   }
 }

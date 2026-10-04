@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { t } from '../i18n';
 import type { BoardLayout } from '../ui/boardLayout';
+import type { LiveBoard } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
 
 /** Above the dimmed back layer (depth < 5), below front items (10). */
@@ -47,6 +48,20 @@ export class LockOverlays {
       veil.fillStyle(theme.lockVeil, 0.62).fillRoundedRect(-rect.width / 2, -rect.height / 2, rect.width, rect.height, s * 0.12);
       drawPadlock(veil, -s * 0.45, 0, s * 0.42);
       this.labels.get(shelf)?.setFontSize(Math.round(s * 0.3)).setPosition(cx - s * 0.12, cy);
+    }
+  }
+
+  /** Per frame: veils of shelves riding tracks move and fade with them. */
+  follow(live: LiveBoard): void {
+    const s = live.layout.slotSize;
+    for (const [shelf, veil] of this.veils) {
+      if (!live.moving[shelf]) continue;
+      const { rect } = live.layout.shelves[shelf]!;
+      const cx = rect.x + rect.width / 2;
+      const cy = rect.y + rect.height / 2;
+      const alpha = live.shelfAlpha[shelf]!;
+      veil.setPosition(cx, cy).setAlpha(alpha);
+      this.labels.get(shelf)?.setPosition(cx - s * 0.12, cy).setAlpha(alpha);
     }
   }
 
@@ -100,16 +115,25 @@ export class BlockerView {
   /** Shows the blocker at a point (or hides it with null), without animation. */
   place(point: { x: number; y: number } | null, slotSize: number): void {
     this.scene.tweens.killTweensOf(this.plate);
+    this.hopping = false;
     if (slotSize !== this.size) this.draw(slotSize);
     this.plate.setVisible(point !== null).setAlpha(1).setScale(1);
     if (point) this.plate.setPosition(point.x, point.y);
   }
 
   /** Hops to a new slot in an arc. */
-  hop(to: { x: number; y: number }, delay: number): void {
-    const from = { x: this.plate.x, y: this.plate.y };
+  /** True while a hop is scheduled or running; follow() leaves the plate alone meanwhile. */
+  private hopping = false;
+
+  /**
+   * Hops in an arc to `target`, read every frame, so it lands on a slot of a moving shelf where that slot is
+   * by then, not where it was when the hop started.
+   */
+  hop(target: () => { x: number; y: number }, delay: number): void {
     const lift = this.size * 0.8;
     const progress = { t: 0 };
+    let from = { x: this.plate.x, y: this.plate.y };
+    this.hopping = true;
     this.scene.tweens.killTweensOf(this.plate);
     this.scene.tweens.add({
       targets: progress,
@@ -117,16 +141,31 @@ export class BlockerView {
       delay,
       duration: 320,
       ease: 'Sine.easeInOut',
+      onStart: () => {
+        from = { x: this.plate.x, y: this.plate.y };
+      },
       onUpdate: () => {
         const k = progress.t;
+        const to = target();
         this.plate.setPosition(from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k - Math.sin(Math.PI * k) * lift);
       },
+      onComplete: () => {
+        this.hopping = false;
+      },
     });
+  }
+
+  /** Per frame, for a blocker on a shelf riding a track: stay on its slot as the shelf moves. */
+  follow(point: { x: number; y: number }, alpha: number): void {
+    if (this.hopping || !this.plate.visible) return;
+    this.plate.setPosition(point.x, point.y).setAlpha(alpha);
   }
 
   /** Shrinks away for good. */
   remove(delay: number): void {
     this.scene.tweens.killTweensOf(this.plate);
+    // Leave it to the removal animation from now on.
+    this.hopping = true;
     this.scene.tweens.add({
       targets: this.plate,
       scale: 1.4,

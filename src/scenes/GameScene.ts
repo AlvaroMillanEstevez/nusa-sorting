@@ -4,6 +4,7 @@ import {
   findItem,
   freeFrontSlots,
   isShelfLocked,
+  isSlotBlocked,
   itemAt,
   moveItem,
   tick,
@@ -31,14 +32,16 @@ import {
   type BoardLayout,
 } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
-import { ITEM_FILL, layoutForLevel } from '../ui/levelLayout';
+import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
 import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
+import { MovingShelves } from './MovingShelves';
 import { ResultOverlay } from './ResultOverlay';
+import { drawShelf } from './shelfArt';
 
 const BACK_TINT = 0x777777;
 const SELECTED_LIFT = 0.15;
@@ -61,6 +64,10 @@ const FADE_MS = 220;
 const DEPTH_BACK = 5;
 const DEPTH_FRONT = 10;
 const DEPTH_DRAG = 100;
+/** The drop-target outline: over shelves and empty slots, under items. */
+const DEPTH_DROP_MARK = 9;
+/** Shelves riding a track this faded out (at the ends of their loop) take no taps and no drops. */
+const MIN_INTERACTIVE_ALPHA = 0.3;
 const DEPTH_POPUP = 120;
 
 const LOSE_TITLES: Record<LoseReason, MessageKey> = {
@@ -85,6 +92,11 @@ export class GameScene extends Phaser.Scene {
   private levelIndex = 0;
   private level!: LevelDefinition;
   private state!: GameState;
+  /** The board as laid out for the screen; shelves riding tracks at their time-0 place. */
+  private base!: BoardLayout;
+  /** The board right now (shelves riding tracks where they are), refreshed every frame. */
+  private live!: LiveBoard;
+  /** Same as live.layout: what drawing, hit tests and drop targets use. */
   private layout!: BoardLayout;
 
   private board!: Phaser.GameObjects.Graphics;
@@ -93,6 +105,15 @@ export class GameScene extends Phaser.Scene {
   private locks!: LockOverlays;
   private blocker!: BlockerView;
   private belt!: BeltController;
+  private movingShelves!: MovingShelves;
+  private dropMark!: Phaser.GameObjects.Graphics;
+  /** Last pointer position, for the drop-target outline while dragging. */
+  private pointerPos: { x: number; y: number } | null = null;
+  /** Items on moving shelves animating toward a slot that keeps moving: lerped every frame to its live place. */
+  private readonly flights = new Map<
+    number,
+    { fromX: number; fromY: number; fromScale: number; fromAlpha: number; start: number; delay: number; duration: number }
+  >();
 
   private readonly sprites = new Map<number, Phaser.GameObjects.Image>();
   private readonly popups = new Set<Phaser.GameObjects.Text>();
@@ -114,6 +135,8 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.board = this.add.graphics();
+    this.movingShelves = new MovingShelves(this);
+    this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
     this.locks = new LockOverlays(this);
     this.blocker = new BlockerView(this);
     this.belt = new BeltController({
@@ -179,16 +202,101 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
-    // The belt is drawn every frame; it only moves while playing because tick() is what advances it.
+    if (this.state.status === 'playing') {
+      const result = tick(this.state, delta);
+      this.state = result.state;
+      this.hud.setTime(this.state.timeLeftMs);
+      this.warnTicks();
+      const combo = this.state.combo;
+      this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
+      if (result.events.some((e) => e.kind === 'lost')) this.endLevel(0);
+    }
+    // Tracks are drawn every frame; they only move while playing because tick() is what advances them.
+    this.refreshLive();
+    this.movingShelves.update(this.live);
+    this.locks.follow(this.live);
+    this.followBlocker();
+    this.followMovingItems();
+    this.updateDropMark();
     this.belt.update();
-    if (this.state.status !== 'playing') return;
-    const result = tick(this.state, delta);
-    this.state = result.state;
-    this.hud.setTime(this.state.timeLeftMs);
-    this.warnTicks();
-    const combo = this.state.combo;
-    this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
-    if (result.events.some((e) => e.kind === 'lost')) this.endLevel(0);
+  }
+
+  /** Recomputes where shelves riding tracks are now; everything else reads this.layout. */
+  private refreshLive(): void {
+    this.live = liveBoard(this.base, this.state);
+    this.layout = this.live.layout;
+  }
+
+  /** A shelf under (x, y) that can take taps and drops now, or -1 (shelves faded out at a loop end cannot). */
+  private interactiveShelfAt(x: number, y: number): number {
+    const shelf = shelfAt(this.layout, x, y);
+    return shelf !== -1 && this.live.shelfAlpha[shelf]! >= MIN_INTERACTIVE_ALPHA ? shelf : -1;
+  }
+
+  private followBlocker(): void {
+    const at = this.state.blocker?.at;
+    if (!at || !this.live.moving[at.shelf]) return;
+    this.blocker.follow(this.layout.shelves[at.shelf]!.slots[at.slot]!, this.live.shelfAlpha[at.shelf]!);
+  }
+
+  /** Items on moving shelves are placed every frame, gliding there when a flight is under way. */
+  private followMovingItems(): void {
+    if (!this.live.moving.some(Boolean)) return;
+    const now = this.time.now;
+    for (const [id, sprite] of this.sprites) {
+      if (id === this.draggingId || this.belt.owns(id) || this.tweens.isTweening(sprite)) continue;
+      const pos = findItem(this.state, id);
+      if (!pos || !this.live.moving[pos.shelf]) continue;
+      const target = this.targetFor(id, pos);
+      let { x, y, scale } = target;
+      let alpha = target.alpha * this.live.shelfAlpha[pos.shelf]!;
+      const flight = this.flights.get(id);
+      if (flight) {
+        const t = (now - flight.start - flight.delay) / flight.duration;
+        const k = Phaser.Math.Easing.Cubic.Out(Phaser.Math.Clamp(t, 0, 1));
+        x = Phaser.Math.Linear(flight.fromX, x, k);
+        y = Phaser.Math.Linear(flight.fromY, y, k);
+        scale = Phaser.Math.Linear(flight.fromScale, scale, k);
+        alpha = Phaser.Math.Linear(flight.fromAlpha, alpha, k);
+        if (t >= 1) this.flights.delete(id);
+      }
+      sprite.setPosition(x, y).setScale(scale).setAlpha(alpha);
+    }
+  }
+
+  /** Starts a glide toward an item's (moving) slot from wherever its sprite is now. */
+  private fly(id: number, sprite: Phaser.GameObjects.Image, duration: number, delay = 0): void {
+    this.tweens.killTweensOf(sprite);
+    this.flights.set(id, {
+      fromX: sprite.x,
+      fromY: sprite.y,
+      fromScale: sprite.scale,
+      fromAlpha: sprite.alpha,
+      start: this.time.now,
+      delay,
+      duration,
+    });
+  }
+
+  /**
+   * While dragging (a shelf item or a belt item), outlines the slot the item would land in if released now.
+   * On a moving shelf the outline rides along with it; releasing uses the same slot.
+   */
+  private updateDropMark(): void {
+    const g = this.dropMark.clear();
+    const dragging = this.draggingId !== null || this.belt.dragging;
+    if (!dragging || !this.pointerPos || this.state.status !== 'playing') return;
+    const from = this.draggingId !== null ? findItem(this.state, this.draggingId) : null;
+    const target = this.dropTarget(this.pointerPos.x, this.pointerPos.y, from);
+    if (!target) return;
+    const backHome = from !== null && from.shelf === target.shelf && from.slot === target.slot;
+    if (backHome || itemAt(this.state, target) || isSlotBlocked(this.state, target.shelf, target.slot)) return;
+    if (isShelfLocked(this.state, target.shelf)) return;
+    const slot = this.layout.shelves[target.shelf]!.slots[target.slot]!;
+    const s = this.layout.slotSize;
+    const size = s * 0.96;
+    const color = Phaser.Display.Color.HexStringToColor(theme.comboColor).color;
+    g.lineStyle(Math.max(3, s * 0.07), color, 1).strokeRoundedRect(slot.x - size / 2, slot.y - size / 2, size, size, s * 0.14);
   }
 
   // ---------------------------------------------------------------- level lifecycle
@@ -214,6 +322,8 @@ export class GameScene extends Phaser.Scene {
     this.selectedId = null;
     this.draggingId = null;
     this.shelfPress = null;
+    this.flights.clear();
+    this.dropMark.clear();
     this.lastWarningSecond = null;
     this.overlay.hide();
 
@@ -313,10 +423,12 @@ export class GameScene extends Phaser.Scene {
   private relayout(): void {
     const { width, height } = this.scale.gameSize;
     this.cameras.main.setSize(width, height);
-    this.layout = layoutForLevel(this.level, this.state, width, height);
+    this.base = layoutForLevel(this.level, this.state, width, height);
+    this.refreshLive();
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
     this.overlay.layout(width, height);
     this.locks.relayout(this.layout);
+    this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
     this.belt.relayout();
     this.drawBoard();
@@ -327,24 +439,12 @@ export class GameScene extends Phaser.Scene {
     this.blocker.place(at ? this.layout.shelves[at.shelf]!.slots[at.slot]! : null, this.layout.slotSize);
   }
 
+  /** Fixed shelves; shelves riding tracks are drawn and moved by MovingShelves. */
   private drawBoard(): void {
     const g = this.board.clear();
-    const s = this.layout.slotSize;
-    for (const shelf of this.layout.shelves) {
-      const { rect } = shelf;
-      g.fillStyle(theme.shelfBack, 1);
-      g.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, s * 0.12);
-
-      const guide = s * 0.9;
-      g.fillStyle(theme.slotGuide, 1);
-      for (const slot of shelf.slots) {
-        g.fillRoundedRect(slot.x - guide / 2, slot.y - guide / 2, guide, guide, s * 0.1);
-      }
-
-      const plankTop = shelf.slots[0]!.y + s / 2;
-      g.fillStyle(theme.shelfPlank, 1);
-      g.fillRoundedRect(rect.x, plankTop, rect.width, rect.y + rect.height - plankTop, s * 0.05);
-    }
+    this.base.shelves.forEach((shelf, i) => {
+      if (!this.live.moving[i]) drawShelf(g, shelf, this.base.slotSize);
+    });
   }
 
   private baseScale(): number {
@@ -396,6 +496,18 @@ export class GameScene extends Phaser.Scene {
       }
       const target = this.targetFor(id, pos);
       const { x, y, scale, alpha } = target;
+      const applyLook = () => {
+        sprite.setDepth(target.depth);
+        if (target.front) sprite.clearTint();
+        else sprite.setTint(BACK_TINT);
+      };
+      if (this.live.moving[pos.shelf]) {
+        // Placed every frame by followMovingItems; animations become glides toward the moving slot.
+        applyLook();
+        if (duration > 0) this.fly(id, sprite, duration, delayFor(pos));
+        else this.flights.delete(id);
+        continue;
+      }
       if (sprite.x === x && sprite.y === y && sprite.scale === scale && sprite.alpha === alpha) {
         sprite.setDepth(target.depth);
         continue;
@@ -403,11 +515,6 @@ export class GameScene extends Phaser.Scene {
 
       this.tweens.killTweensOf(sprite);
       const delay = duration > 0 ? delayFor(pos) : 0;
-      const applyLook = () => {
-        sprite.setDepth(target.depth);
-        if (target.front) sprite.clearTint();
-        else sprite.setTint(BACK_TINT);
-      };
       if (duration > 0) {
         this.tweens.add({
           targets: sprite,
@@ -439,13 +546,15 @@ export class GameScene extends Phaser.Scene {
     if (this.overlay.visible) return;
     if (this.belt.onPointerDown(pointer)) return;
     if (this.state.status !== 'playing' || this.shelfPress) return;
+    this.pointerPos = { x: pointer.x, y: pointer.y };
     const hit = frontSlotAt(this.layout, pointer.x, pointer.y);
-    if (!hit || isShelfLocked(this.state, hit.shelf)) return;
+    if (!hit || isShelfLocked(this.state, hit.shelf) || this.live.shelfAlpha[hit.shelf]! < MIN_INTERACTIVE_ALPHA) return;
     const item = itemAt(this.state, { shelf: hit.shelf, layer: 0, slot: hit.slot });
     if (item) this.shelfPress = { pointerId: pointer.id, itemId: item.id, dragging: false };
   }
 
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
+    this.pointerPos = { x: pointer.x, y: pointer.y };
     this.belt.onPointerMove(pointer);
     const press = this.shelfPress;
     if (!press || pointer.id !== press.pointerId || !pointer.isDown) return;
@@ -489,7 +598,11 @@ export class GameScene extends Phaser.Scene {
     // Invalid drop: the item returns to its slot. Dropping it back where it was is not a mistake.
     const backHome = from !== null && to !== null && from.shelf === to.shelf && from.slot === to.slot;
     if (!backHome) this.sfx.play('invalid');
-    if (from) {
+    if (from && this.live.moving[from.shelf]) {
+      // Its shelf kept moving while it was dragged: glide back to where the slot is now.
+      sprite.setDepth(this.targetFor(id, from).depth);
+      this.fly(id, sprite, RETURN_MS);
+    } else if (from) {
       const target = this.targetFor(id, from);
       this.tweens.killTweensOf(sprite);
       this.tweens.add({
@@ -510,7 +623,7 @@ export class GameScene extends Phaser.Scene {
    * `from` is null for an item coming from the belt.
    */
   private dropTarget(x: number, y: number, from: Position | null): Position | null {
-    const shelfIndex = shelfAt(this.layout, x, y);
+    const shelfIndex = this.interactiveShelfAt(x, y);
     if (shelfIndex === -1) return null;
     const shelf = this.layout.shelves[shelfIndex]!;
     const candidates = freeFrontSlots(this.state, shelfIndex);
@@ -540,7 +653,8 @@ export class GameScene extends Phaser.Scene {
   private handleTap(x: number, y: number): void {
     // With a belt item lifted by a tap, this tap says where it goes (or sends it back).
     if (this.belt.onTapWhileHolding(x, y)) return;
-    const shelfIndex = shelfAt(this.layout, x, y);
+    // The slot under the finger at the moment of the tap, moving shelves included.
+    const shelfIndex = this.interactiveShelfAt(x, y);
     if (shelfIndex === -1) {
       this.select(null);
       return;
@@ -551,8 +665,18 @@ export class GameScene extends Phaser.Scene {
       if (this.selectedId !== null) this.rejectFeedback(this.selectedId);
       return;
     }
-    const tapped: Position = { shelf: shelfIndex, layer: 0, slot: nearestSlot(this.layout.shelves[shelfIndex]!, x) };
-    const item = itemAt(this.state, tapped);
+    const shelfLayout = this.layout.shelves[shelfIndex]!;
+    let tapped: Position = { shelf: shelfIndex, layer: 0, slot: nearestSlot(shelfLayout, x) };
+    let item = itemAt(this.state, tapped);
+    // A moving shelf is hard to hit exactly: with an item selected, a tap anywhere on it means "put it here",
+    // in its free slot nearest to the finger (if it has none, the tap selects as usual).
+    if (item && this.selectedId !== null && item.id !== this.selectedId && this.live.moving[shelfIndex]) {
+      const free = nearestFreeSlot(shelfLayout, freeFrontSlots(this.state, shelfIndex), x);
+      if (free !== undefined) {
+        tapped = { shelf: shelfIndex, layer: 0, slot: free };
+        item = null;
+      }
+    }
     if (item) {
       const deselect = item.id === this.selectedId;
       this.select(deselect ? null : item.id);
@@ -612,7 +736,11 @@ export class GameScene extends Phaser.Scene {
     // Snap: the moved item drops into its slot with a slight overshoot.
     if (moved) {
       const sprite = this.sprites.get(moved.itemId);
-      if (sprite) {
+      if (sprite && this.live.moving[moved.to.shelf]) {
+        // Onto a moving shelf: glide to the slot where it is on each frame, not where it was at the drop.
+        sprite.setDepth(this.targetFor(moved.itemId, moved.to).depth);
+        this.fly(moved.itemId, sprite, SNAP_MS);
+      } else if (sprite) {
         const target = this.targetFor(moved.itemId, moved.to);
         this.tweens.killTweensOf(sprite);
         sprite.setDepth(DEPTH_DRAG);
@@ -706,8 +834,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (blockerTo) {
       // Several triples in one move mean several jumps; animate straight to the last slot.
-      const slot = this.layout.shelves[blockerTo.shelf]!.slots[blockerTo.slot]!;
-      this.blocker.hop(slot, popAt + CLEAR_MS);
+      const to = blockerTo;
+      // Read every frame: on a moving shelf the slot keeps moving while the plate is in the air.
+      this.blocker.hop(() => this.layout.shelves[to.shelf]!.slots[to.slot]!, popAt + CLEAR_MS);
       this.time.delayedCall(popAt + CLEAR_MS, () => this.sfx.play('blockerMove'));
     }
     this.state.shelves.forEach((_, shelf) => {
