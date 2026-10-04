@@ -23,7 +23,6 @@ import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import {
   BACK_SCALE,
-  computeBoardLayout,
   frontSlotAt,
   nearestFreeSlot,
   nearestSlot,
@@ -31,6 +30,7 @@ import {
   type BoardLayout,
 } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
+import { ITEM_FILL, layoutForLevel } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
@@ -39,8 +39,6 @@ import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { ResultOverlay } from './ResultOverlay';
 
-/** Item size relative to its slot. */
-const ITEM_FILL = 0.86;
 const BACK_TINT = 0x777777;
 const SELECTED_LIFT = 0.15;
 const SELECTED_SCALE = 1.12;
@@ -314,14 +312,7 @@ export class GameScene extends Phaser.Scene {
   private relayout(): void {
     const { width, height } = this.scale.gameSize;
     this.cameras.main.setSize(width, height);
-    this.layout = computeBoardLayout(
-      width,
-      height,
-      this.level.shelves.length,
-      3,
-      this.state.combo !== null,
-      this.state.tracks[0]?.carriers.length ?? 0,
-    );
+    this.layout = layoutForLevel(this.level, this.state, width, height);
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow);
     this.overlay.layout(width, height);
     this.locks.relayout(this.layout);

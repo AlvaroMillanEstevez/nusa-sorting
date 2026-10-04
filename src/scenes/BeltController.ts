@@ -5,34 +5,40 @@ import {
   findTrackItem,
   pickFromTrack,
   returnHeld,
+  type CarrierRef,
   type GameEvent,
   type GameState,
   type Position,
 } from '../core';
 import type { SoundService } from '../services/SoundService';
-import { beltPose, beltSlotAt, isOnBelt, type BeltLayout, type BeltPose, type BoardLayout } from '../ui/boardLayout';
+import { BACK_SCALE, isOnTrack, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
 import { BeltView, DEPTH_BELT_ITEM } from './BeltView';
 
 /** A held item grows like a picked-up shelf item. */
 const HELD_SCALE = 1.18;
 const RETURN_MS = 220;
+/** How long the next item of a stack takes to come forward once the top one is taken. */
+const PROMOTE_MS = 160;
 const DEPTH_HELD = 100;
+/** The second item of a stack peeks out behind the top one: up and to the left, smaller and dimmed. */
+const BEHIND_OFFSET = 0.2;
+const BEHIND_TINT = 0x777777;
 
-/** What the conveyor needs from the game scene. Everything else about the belt lives here. */
+/** What the conveyor needs from the game scene. Everything else about the tracks lives here. */
 export interface BeltHost {
   readonly scene: Phaser.Scene;
   readonly sfx: SoundService;
   getState(): GameState;
   setState(state: GameState): void;
   getLayout(): BoardLayout;
-  /** Scale of an item sitting on a shelf; a held belt item grows to it so it reads like any other item. */
+  /** Scale of an item sitting on a shelf; items on tracks are drawn at the same size. */
   shelfItemScale(): number;
   spriteFor(itemId: number): Phaser.GameObjects.Image | undefined;
   /** Front slot a held item would go to if released at (x, y), or null. */
   dropTarget(x: number, y: number): Position | null;
   /** Animates the events of a successful placement (snap, triples, unlocks...). */
   onPlaced(events: readonly GameEvent[]): void;
-  /** Called when the player takes something from the belt, so a shelf selection can be cleared. */
+  /** Called when the player takes something from a track, so a shelf selection can be cleared. */
   onPick(): void;
 }
 
@@ -42,7 +48,7 @@ interface Press {
   dragging: boolean;
 }
 
-interface Returning {
+interface Flight {
   startedAt: number;
   fromX: number;
   fromY: number;
@@ -50,40 +56,41 @@ interface Returning {
 }
 
 /**
- * Conveyor input and animation. Pressing anywhere near an item on the belt takes it at once (core
- * pickFromBelt): drag it to a shelf, or release and then tap a free slot. Invalid drops send it back to its
- * slot, which has kept moving (returnHeld). Items on the belt are repositioned every frame from game time.
+ * Conveyor input and animation for every track. Pressing anywhere near a carrier takes its top item at once
+ * (core pickFromTrack): drag it to a shelf, or release and then tap a free slot. Invalid drops send it back
+ * to its carrier, which has kept moving (returnHeld). Each frame, every carrier's top item is drawn on it,
+ * the next one dimmed behind, and deeper ones hidden.
  */
 export class BeltController {
   private readonly view: BeltView;
   private press: Press | null = null;
-  /** Held item waiting for a destination tap, lifted above the belt. */
+  /** Held item waiting for a destination tap, lifted off its track. */
   private tapHeldId: number | null = null;
-  private readonly returning = new Map<number, Returning>();
+  /** Items flying back to their carrier after an invalid drop. */
+  private readonly returning = new Map<number, Flight>();
+  /** Items moving from second place to the top of their stack. */
+  private readonly promoting = new Map<number, number>();
   private readonly pose: BeltPose = { x: 0, y: 0, alpha: 0 };
 
   constructor(private readonly host: BeltHost) {
     this.view = new BeltView(host.scene);
   }
 
-  private get belt(): BeltLayout | null {
-    return this.host.getLayout().belt;
-  }
-
-  /** New level: rebuild the strip and forget any held or returning item. */
+  /** New level: rebuild the tracks and forget any held, returning or promoting item. */
   reset(state: GameState): void {
     this.press = null;
     this.tapHeldId = null;
     this.returning.clear();
-    this.view.reset(state.tracks[0] ?? null);
+    this.promoting.clear();
+    this.view.reset(state);
   }
 
   relayout(): void {
-    this.view.relayout(this.belt);
+    this.view.relayout(this.host.getLayout().tracks);
     this.update();
   }
 
-  /** True for items that are on the belt or held from it; the scene leaves those sprites to the belt. */
+  /** True for items on a track or held from one; the scene leaves those sprites to the tracks. */
   owns(itemId: number): boolean {
     const state = this.host.getState();
     return findTrackItem(state, itemId) !== null || state.held?.item.id === itemId;
@@ -93,83 +100,104 @@ export class BeltController {
     return this.host.getState().held !== null;
   }
 
-  private heldScale(): number {
-    return this.itemScale() * HELD_SCALE;
-  }
-
-  /** Belt items are drawn exactly like shelf items: the belt pitch is the shelves' slot size. */
+  /** Items on tracks are drawn exactly like shelf items: a track's pitch is the shelves' slot size. */
   private itemScale(): number {
     return this.host.shelfItemScale();
   }
 
-  /** Per frame: plates and belt items follow the belt; returning items fly back to their moving slot. */
+  /** Per frame: plates follow their tracks; items follow their carrier by depth in its stack. */
   update(): void {
-    const belt = this.belt;
     const state = this.host.getState();
-    const track = state.tracks[0] ?? null;
-    this.view.update(track, state.trackTimeMs);
-    if (!belt || !track) return;
+    this.view.update(state);
+    const layouts = this.host.getLayout().tracks;
     const now = this.host.scene.time.now;
     const scale = this.itemScale();
-    for (let i = 0; i < track.carriers.length; i++) {
-      const stack = track.carriers[i]!.stack;
-      // Only the top of a stack is shown on the belt for now.
-      for (let depth = 1; depth < stack.length; depth++) this.host.spriteFor(stack[depth]!.id)?.setAlpha(0);
-      const item = stack[0];
-      if (!item) continue;
-      const sprite = this.host.spriteFor(item.id);
-      if (!sprite) continue;
-      const pose = beltPose(belt, carrierOffset(track, i, state.trackTimeMs), this.pose);
-      const flight = this.returning.get(item.id);
-      if (flight) {
-        const t = Math.min(1, (now - flight.startedAt) / RETURN_MS);
-        const k = Phaser.Math.Easing.Cubic.Out(t);
-        sprite
-          .setPosition(Phaser.Math.Linear(flight.fromX, pose.x, k), Phaser.Math.Linear(flight.fromY, pose.y, k))
-          .setScale(Phaser.Math.Linear(flight.fromScale, scale, k))
-          .setAlpha(Phaser.Math.Linear(1, pose.alpha, k));
-        if (t >= 1) {
-          this.returning.delete(item.id);
-          sprite.setDepth(DEPTH_BELT_ITEM);
+    for (let t = 0; t < state.tracks.length; t++) {
+      const track = state.tracks[t]!;
+      const layout = layouts[t];
+      if (!layout) continue;
+      const behind = layout.pitch * BEHIND_OFFSET;
+      for (let c = 0; c < track.carriers.length; c++) {
+        const stack = track.carriers[c]!.stack;
+        if (stack.length === 0) continue;
+        const pose = trackPose(layout, carrierOffset(track, c, state.trackTimeMs), this.pose);
+        for (let depth = 0; depth < stack.length; depth++) {
+          const id = stack[depth]!.id;
+          const sprite = this.host.spriteFor(id);
+          if (!sprite) continue;
+          if (depth >= 2) {
+            // Deeper items stay hidden until they come up to second place.
+            if (sprite.visible) sprite.setVisible(false);
+            continue;
+          }
+          let x = depth === 0 ? pose.x : pose.x - behind;
+          let y = depth === 0 ? pose.y : pose.y - behind;
+          let itemScale = depth === 0 ? scale : scale * BACK_SCALE;
+          let alpha = pose.alpha;
+          sprite.setVisible(true).setDepth(DEPTH_BELT_ITEM - depth);
+          if (depth === 0) sprite.clearTint();
+          else sprite.setTint(BEHIND_TINT);
+
+          const flight = this.returning.get(id);
+          const promotedAt = this.promoting.get(id);
+          if (depth === 0 && flight) {
+            const k = Phaser.Math.Easing.Cubic.Out(Math.min(1, (now - flight.startedAt) / RETURN_MS));
+            x = Phaser.Math.Linear(flight.fromX, x, k);
+            y = Phaser.Math.Linear(flight.fromY, y, k);
+            itemScale = Phaser.Math.Linear(flight.fromScale, itemScale, k);
+            alpha = Phaser.Math.Linear(1, alpha, k);
+            if (k >= 1) this.returning.delete(id);
+            sprite.setDepth(k >= 1 ? DEPTH_BELT_ITEM : DEPTH_HELD);
+          } else if (depth === 0 && promotedAt !== undefined) {
+            const k = Phaser.Math.Easing.Quadratic.Out(Math.min(1, (now - promotedAt) / PROMOTE_MS));
+            x = Phaser.Math.Linear(pose.x - behind, x, k);
+            y = Phaser.Math.Linear(pose.y - behind, y, k);
+            itemScale = Phaser.Math.Linear(scale * BACK_SCALE, itemScale, k);
+            if (k >= 1) this.promoting.delete(id);
+          }
+          sprite.setPosition(x, y).setScale(itemScale).setAlpha(alpha);
         }
-        continue;
       }
-      sprite.setPosition(pose.x, pose.y).setScale(scale).setAlpha(pose.alpha).setDepth(DEPTH_BELT_ITEM);
     }
   }
 
   // ---------------------------------------------------------------- input
 
-  /** Pointer down: takes the nearest belt item if the press is on the belt. Returns true if it handled it. */
+  /** Pointer down: takes the top item of the nearest carrier if the press is on a track. True if handled. */
   onPointerDown(pointer: Phaser.Input.Pointer): boolean {
-    const belt = this.belt;
     const state = this.host.getState();
-    if (!belt || state.tracks.length === 0 || state.status !== 'playing' || this.press) return false;
-    if (!isOnBelt(belt, pointer.x, pointer.y)) return false;
+    if (state.tracks.length === 0 || state.status !== 'playing' || this.press) return false;
+    const layouts = this.host.getLayout().tracks;
+    const t = layouts.findIndex((layout) => layout && isOnTrack(layout, pointer.x, pointer.y));
+    if (t === -1) return false;
 
-    // A second belt press while holding something sends the held item back first.
+    // A second press on a track while holding something sends the held item back first.
     if (this.holding) this.sendBack(false);
     const now = this.host.getState();
-    const track = now.tracks[0]!;
-    const offsets = track.carriers.map((carrier, i) => (carrier.stack.length ? carrierOffset(track, i, now.trackTimeMs) : null));
-    const slot = beltSlotAt(belt, offsets, pointer.x, pointer.y);
-    if (slot === null) return true;
+    const track = now.tracks[t]!;
+    const offsets = track.carriers.map((carrier, c) => (carrier.stack.length ? carrierOffset(track, c, now.trackTimeMs) : null));
+    const carrier = trackCarrierAt(layouts[t]!, offsets, pointer.x, pointer.y);
+    if (carrier === null) return true;
 
-    const result = pickFromTrack(this.host.getState(), { track: 0, carrier: slot });
+    const from: CarrierRef = { track: t, carrier };
+    const result = pickFromTrack(now, from);
     if (!result.ok) return true;
     this.host.setState(result.state);
     const itemId = result.state.held!.item.id;
     this.returning.delete(itemId);
+    // The next item of this stack, if any, comes forward.
+    const next = result.state.tracks[t]!.carriers[carrier]!.stack[0];
+    if (next) this.promoting.set(next.id, this.host.scene.time.now);
     this.press = { pointerId: pointer.id, itemId, dragging: false };
     this.host.onPick();
     this.host.sfx.play('beltPick');
 
-    // The item leaves the belt at once, under the finger.
+    // The item leaves the track at once, under the finger.
     const sprite = this.host.spriteFor(itemId);
     if (sprite) {
       this.host.scene.tweens.killTweensOf(sprite);
-      sprite.setDepth(DEPTH_HELD).setAlpha(1).setPosition(pointer.x, pointer.y);
-      this.host.scene.tweens.add({ targets: sprite, scale: this.heldScale(), duration: 80, ease: 'Quad.easeOut' });
+      sprite.setDepth(DEPTH_HELD).setAlpha(1).clearTint().setVisible(true).setPosition(pointer.x, pointer.y);
+      this.host.scene.tweens.add({ targets: sprite, scale: this.itemScale() * HELD_SCALE, duration: 80, ease: 'Quad.easeOut' });
     }
     return true;
   }
@@ -181,27 +209,31 @@ export class BeltController {
     this.host.spriteFor(press.itemId)?.setPosition(pointer.x, pointer.y);
   }
 
-  /** Pointer up for a press that began on the belt. Returns true if it handled it. */
+  /** Pointer up for a press that began on a track. Returns true if it handled it. */
   onPointerUp(pointer: Phaser.Input.Pointer): boolean {
     const press = this.press;
     if (!press || pointer.id !== press.pointerId) return false;
     this.press = null;
     if (press.dragging) {
       this.placeOrReturn(pointer.x, pointer.y);
-    } else {
-      // A tap: keep it lifted above the belt until the player taps where it should go.
-      this.tapHeldId = press.itemId;
-      const sprite = this.host.spriteFor(press.itemId);
-      const belt = this.belt;
-      if (sprite && belt) {
-        this.host.scene.tweens.add({
-          targets: sprite,
-          x: Phaser.Math.Clamp(pointer.x, belt.rect.x, belt.rect.x + belt.rect.width),
-          y: belt.rect.y - belt.pitch * 0.45,
-          duration: 120,
-          ease: 'Back.easeOut',
-        });
-      }
+      return true;
+    }
+    // A tap: keep it lifted off the track until the player taps where it should go.
+    this.tapHeldId = press.itemId;
+    const sprite = this.host.spriteFor(press.itemId);
+    const held = this.host.getState().held;
+    const layout = held ? this.host.getLayout().tracks[held.from.track] : undefined;
+    if (sprite && layout) {
+      const { rect, pitch } = layout;
+      const target =
+        layout.orientation === 'horizontal'
+          ? { x: Phaser.Math.Clamp(pointer.x, rect.x, rect.x + rect.width), y: rect.y - pitch * 0.45 }
+          : {
+              // Beside a vertical track, on the side facing the middle of the screen.
+              x: layout.cross + (layout.cross < this.host.scene.scale.gameSize.width / 2 ? 1 : -1) * pitch * 0.95,
+              y: Phaser.Math.Clamp(pointer.y, rect.y, rect.y + rect.height),
+            };
+      this.host.scene.tweens.add({ targets: sprite, ...target, duration: 120, ease: 'Back.easeOut' });
     }
     return true;
   }
@@ -213,7 +245,7 @@ export class BeltController {
     return true;
   }
 
-  /** Sends a held item back to its slot (e.g. when the player starts doing something else). */
+  /** Sends a held item back to its carrier (e.g. when the player starts doing something else). */
   sendBack(withFeedback: boolean): void {
     const state = this.host.getState();
     const held = state.held;
@@ -222,6 +254,9 @@ export class BeltController {
     if (!result.ok) return;
     this.host.setState(result.state);
     this.tapHeldId = null;
+    // The item that had come forward goes back behind it.
+    const below = result.state.tracks[held.from.track]!.carriers[held.from.carrier]!.stack[1];
+    if (below) this.promoting.delete(below.id);
     const sprite = this.host.spriteFor(held.item.id);
     if (sprite) {
       this.host.scene.tweens.killTweensOf(sprite);
@@ -244,8 +279,8 @@ export class BeltController {
       this.host.onPlaced(result.events);
       return;
     }
-    // Released over nothing useful: back to the belt, without a buzz if it never left the strip.
-    const belt = this.belt;
-    this.sendBack(!(belt && isOnBelt(belt, x, y)));
+    // Released over nothing useful: back to its track, without a buzz if it never left the track.
+    const onATrack = this.host.getLayout().tracks.some((layout) => layout && isOnTrack(layout, x, y));
+    this.sendBack(!onATrack);
   }
 }
