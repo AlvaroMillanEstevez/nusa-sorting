@@ -1,8 +1,10 @@
 import * as Phaser from 'phaser';
 import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
+import { wantsArtV2 } from './dev/artParam';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
+import { setArt } from './scenes/art/ArtSet';
 import { GameScene } from './scenes/GameScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { LocalSaveService } from './services/LocalSaveService';
@@ -41,9 +43,17 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
   });
 }
 
-// Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
+const gameScenes = () => [BootScene, new GameScene(sound, store), new LevelSelectScene(sound, store)];
+
+// Development only: ?gallery opens the icon gallery, ?art=v2 plays with the new art. Production builds drop
+// these branches along with the gallery and the new art's code.
 if (import.meta.env.DEV && wantsGallery(window.location.search)) {
   void import('./dev/GalleryScene').then(({ GalleryScene }) => startGame([GalleryScene]));
+} else if (import.meta.env.DEV && wantsArtV2(window.location.search)) {
+  void import('./scenes/art/woodArt').then(({ woodArt }) => {
+    setArt(woodArt);
+    startGame(gameScenes());
+  });
 } else {
-  startGame([BootScene, new GameScene(sound, store), new LevelSelectScene(sound, store)]);
+  startGame(gameScenes());
 }
