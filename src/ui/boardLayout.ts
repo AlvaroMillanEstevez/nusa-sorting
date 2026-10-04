@@ -179,6 +179,11 @@ export function shelfLayoutAt(x: number, y: number, s: number, slotsPerLayer = 3
   };
 }
 
+/** A shelf whose centre is at (cx, cy): how shelves riding a track are placed. */
+export function shelfLayoutCentred(cx: number, cy: number, s: number, slotsPerLayer = 3): ShelfLayout {
+  return shelfLayoutAt(cx - (SHELF_WIDTH_UNITS(slotsPerLayer) * s) / 2, cy - (SHELF_HEIGHT_UNITS * s) / 2, s, slotsPerLayer);
+}
+
 /** Where a carrier at `offset` (carriers, in [0, K)) is drawn on a track. Writes into `out` to avoid allocations. */
 export function trackPose(track: TrackLayout, offset: number, out: BeltPose = { x: 0, y: 0, alpha: 0 }): BeltPose {
   const along = track.loopStart + offset * track.pitch;

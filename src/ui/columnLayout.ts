@@ -1,6 +1,7 @@
 import {
   GAP,
   hudArea,
+  shelfLayoutCentred,
   MARGIN,
   MAX_SLOT_SIZE,
   SHELF_HEIGHT_UNITS,
@@ -14,7 +15,9 @@ import {
 /** A column as the layout needs it: shelves (by index, top to bottom), or a vertical track with K carriers. */
 export type ColumnSpec =
   | { readonly kind: 'shelves'; readonly shelves: readonly number[] }
-  | { readonly kind: 'track'; readonly track: number; readonly slots: number };
+  | { readonly kind: 'track'; readonly track: number; readonly slots: number }
+  /** A vertical track of shelves; `shelves` are the carried shelves in carrier order. */
+  | { readonly kind: 'shelfTrack'; readonly track: number; readonly shelves: readonly number[] };
 
 // Sizes in slots.
 /** Width of a vertical track column: a carrier plus its rail. */
@@ -24,15 +27,19 @@ export const COLUMN_GAP_UNITS = 0.3;
 /** Columns may run closer to the screen edges than the automatic grid. */
 const SIDE_MARGIN = 8;
 
-function columnWidthUnits(column: ColumnSpec): number {
-  return column.kind === 'shelves' ? SHELF_WIDTH_UNITS(3) : TRACK_COLUMN_UNITS;
-}
 
 /** Room at each end of a vertical track for its roller (half a slot). */
 const ROLLER_UNITS = 0.5;
+/** Distance between shelves riding a track, in slots: a shelf and the gap to the next one. */
+export const SHELF_TRACK_PITCH_UNITS = SHELF_HEIGHT_UNITS + GAP;
+
+function columnWidthUnitsOf(column: ColumnSpec): number {
+  return column.kind === 'track' ? TRACK_COLUMN_UNITS : SHELF_WIDTH_UNITS(3);
+}
 
 function columnHeightUnits(column: ColumnSpec): number {
   if (column.kind === 'track') return column.slots + ROLLER_UNITS * 2;
+  if (column.kind === 'shelfTrack') return column.shelves.length * SHELF_TRACK_PITCH_UNITS + ROLLER_UNITS * 2;
   const n = column.shelves.length;
   return n * SHELF_HEIGHT_UNITS + (n - 1) * GAP;
 }
@@ -55,7 +62,7 @@ export function computeColumnLayout(
   const areaTop = hud.height + MARGIN;
   const areaHeight = Math.max(1, height - hud.height - MARGIN * 2);
 
-  const widthUnits = columns.reduce((sum, c) => sum + columnWidthUnits(c), 0) + (columns.length - 1) * COLUMN_GAP_UNITS;
+  const widthUnits = columns.reduce((sum, c) => sum + columnWidthUnitsOf(c), 0) + (columns.length - 1) * COLUMN_GAP_UNITS;
   const heightUnits = Math.max(...columns.map(columnHeightUnits));
   const s = Math.min(MAX_SLOT_SIZE, (width - SIDE_MARGIN * 2) / widthUnits, areaHeight / heightUnits);
 
@@ -63,11 +70,27 @@ export function computeColumnLayout(
   const tracks: TrackLayout[] = Array<TrackLayout>(trackCount);
   let x = (width - widthUnits * s) / 2;
   for (const column of columns) {
-    const columnWidth = columnWidthUnits(column) * s;
+    const columnWidth = columnWidthUnitsOf(column) * s;
     const top = areaTop + (areaHeight - columnHeightUnits(column) * s) / 2;
     if (column.kind === 'shelves') {
       column.shelves.forEach((shelf, i) => {
         shelves[shelf] = shelfLayoutAt(x, top + i * (SHELF_HEIGHT_UNITS + GAP) * s, s);
+      });
+    } else if (column.kind === 'shelfTrack') {
+      // Shelves ride the track centred on it; layout.shelves holds where each is at time 0 (its carrier index).
+      const pitch = SHELF_TRACK_PITCH_UNITS * s;
+      const loopStart = top + ROLLER_UNITS * s;
+      const cross = x + columnWidth / 2;
+      tracks[column.track] = {
+        orientation: 'vertical',
+        rect: { x, y: loopStart, width: columnWidth, height: column.shelves.length * pitch },
+        loopStart,
+        pitch,
+        slots: column.shelves.length,
+        cross,
+      };
+      column.shelves.forEach((shelf, c) => {
+        shelves[shelf] = shelfLayoutCentred(cross, loopStart + c * pitch, s);
       });
     } else {
       const cross = x + columnWidth / 2;

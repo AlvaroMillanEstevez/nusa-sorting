@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, type LevelDefinition } from '../src/core';
+import { createGame, tick, type LevelDefinition } from '../src/core';
 import { levels } from '../src/data/levels';
 import { computeBoardLayout, trackCarrierAt, trackPose, type Rect } from '../src/ui/boardLayout';
 import { computeColumnLayout, type ColumnSpec } from '../src/ui/columnLayout';
-import { CHECKED_SCREENS, itemSize, layoutForLevel, MIN_ITEM_PX, validateLevelLayout } from '../src/ui/levelLayout';
+import { CHECKED_SCREENS, itemSize, layoutForLevel, liveBoard, MIN_ITEM_PX, validateLevelLayout } from '../src/ui/levelLayout';
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 const shelvesCol = (...shelves: number[]): ColumnSpec => ({ kind: 'shelves', shelves });
@@ -93,5 +93,69 @@ describe('layouts per level', () => {
       layout: { columns: [{ kind: 'shelves', shelves: [0, 1, 2] }, { kind: 'track', track: 0 }] },
     };
     expect(() => validateLevelLayout(cramped)).toThrow(/px on a 844x390 screen \(minimum 36 px\)/);
+  });
+});
+
+describe('shelf track columns', () => {
+  const shelfTrackCol = (track: number, ...shelves: number[]): ColumnSpec => ({ kind: 'shelfTrack', track, shelves });
+  const configs: [string, ColumnSpec[], number, number][] = [
+    ['shelves | shelf track', [shelvesCol(0, 1, 2), shelfTrackCol(0, 3, 4, 5)], 6, 1],
+    ['track | shelf track | shelves', [trackCol(0, 6), shelfTrackCol(1, 0, 1, 2), shelvesCol(3, 4, 5)], 6, 2],
+  ];
+
+  describe.each(configs)('%s', (_name, columns, shelfCount, trackCount) => {
+    it.each(CHECKED_SCREENS.map(([w, h]) => [`${w}x${h}`, w, h] as const))('fits %s with finger-sized items', (_s, w, h) => {
+      const layout = computeColumnLayout(w, h, columns, shelfCount, trackCount, true);
+      expect(itemSize(layout)).toBeGreaterThanOrEqual(MIN_ITEM_PX);
+      const track = layout.tracks.find((t) => t.pitch > layout.slotSize)!;
+      // The loop of shelves, with half a slot at each end, stays below the HUD and on screen.
+      expect(track.rect.y - layout.slotSize / 2).toBeGreaterThanOrEqual(layout.hud.height);
+      expect(track.rect.y + track.rect.height + layout.slotSize / 2).toBeLessThanOrEqual(h);
+      expect(track.rect.x + track.rect.width).toBeLessThanOrEqual(w);
+    });
+  });
+
+  it('rejects three shelf-wide columns on a 390 px phone (items under 36 px)', () => {
+    const wide = computeColumnLayout(390, 844, [shelvesCol(0, 1, 2), shelfTrackCol(0, 3, 4, 5), shelvesCol(6, 7, 8)], 9, 1, true);
+    expect(itemSize(wide)).toBeLessThan(MIN_ITEM_PX);
+  });
+});
+
+describe('live board: shelves riding tracks', () => {
+  const level: LevelDefinition = {
+    id: 'live',
+    shelves: [[['A', 'A', null]], [['A', 'B', 'B']], [['B', null, null]], [[null, null, null]], [[null, null, null]]],
+    mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'vertical', speed: 0.5, carriers: [{ shelf: 2 }, { shelf: 3 }, { shelf: 4 }] }] }],
+    layout: { columns: [{ kind: 'shelves', shelves: [0, 1] }, { kind: 'shelfTrack', track: 0 }] },
+  };
+
+  it('moves carried shelves with game time and leaves fixed ones alone', () => {
+    const state = createGame(level);
+    const base = layoutForLevel(level, state, 390, 844);
+    const now = liveBoard(base, state);
+    const later = liveBoard(base, tick(state, 1000).state);
+    const track = base.tracks[0]!;
+    expect(later.layout.shelves[0]).toEqual(base.shelves[0]);
+    expect(later.moving).toEqual([false, false, true, true, true]);
+    // 0.5 carriers per second, one carrier = one pitch.
+    expect(later.layout.shelves[3]!.rect.y - now.layout.shelves[3]!.rect.y).toBeCloseTo(track.pitch / 2);
+    expect(later.layout.shelves[3]!.slots[1]!.y - now.layout.shelves[3]!.slots[1]!.y).toBeCloseTo(track.pitch / 2);
+  });
+
+  it('wraps carried shelves around and fades them at the ends of the loop', () => {
+    const state = createGame(level);
+    const base = layoutForLevel(level, state, 390, 844);
+    expect(liveBoard(base, state).shelfAlpha[2]).toBe(0);
+    expect(liveBoard(base, state).shelfAlpha[3]).toBe(1);
+    // After a full loop (3 carriers at 0.5/s = 6 s) everything is back where it started.
+    const loop = liveBoard(base, tick(state, 6000).state);
+    expect(loop.layout.shelves[3]!.rect.y).toBeCloseTo(liveBoard(base, state).layout.shelves[3]!.rect.y);
+  });
+
+  it('returns the layout as is for boards without shelf tracks', () => {
+    const plain = levels[0]!;
+    const state = createGame(plain);
+    const base = layoutForLevel(plain, state, 390, 844);
+    expect(liveBoard(base, state).layout).toBe(base);
   });
 });
