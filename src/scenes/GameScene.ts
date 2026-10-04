@@ -25,6 +25,8 @@ import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import {
   BACK_SCALE,
+  SILHOUETTE_ALPHA,
+  SILHOUETTE_TINT,
   frontSlotAt,
   nearestFreeSlot,
   nearestSlot,
@@ -40,13 +42,12 @@ import { BakedLayer } from './art/BakedLayer';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
-import { ITEM_TEXTURE_SIZE, itemTextureKey } from './itemTextures';
+import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
 import { ResultOverlay } from './ResultOverlay';
 import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
 
-const BACK_TINT = 0x777777;
 const SELECTED_LIFT = 0.15;
 const SELECTED_SCALE = 1.12;
 const PICKUP_SCALE = 1.18;
@@ -149,6 +150,7 @@ export class GameScene extends Phaser.Scene {
       setState: (state) => (this.state = state),
       getLayout: () => this.layout,
       shelfItemScale: () => this.baseScale(),
+      setLook: (sprite, front) => this.setLook(sprite, front),
       spriteFor: (itemId) => this.sprites.get(itemId),
       dropTarget: (x, y) => this.dropTarget(x, y, null),
       onPlaced: (events) => this.play(events),
@@ -364,10 +366,25 @@ export class GameScene extends Phaser.Scene {
     this.sprites.set(item.id, sprite);
   }
 
-  /** Colour-blind mode adds a colour-free mark to item variants: swaps every item's texture. */
+  /**
+   * An item in front (its icon; in colour-blind mode with the variant mark), or behind another one (a dark,
+   * blurred silhouette).
+   */
+  private setLook(sprite: Phaser.GameObjects.Image, front: boolean): void {
+    const type = sprite.getData('type') as string;
+    const key = front ? itemTextureKey(type, this.store.colorBlindMode) : itemBackTextureKey(type);
+    // Called every frame for items on belts: nothing to do when the look is already right.
+    if (sprite.texture.key === key) return;
+    sprite.setTexture(key);
+    if (front) sprite.clearTint();
+    else sprite.setTint(SILHOUETTE_TINT);
+  }
+
+  /** Colour-blind mode adds a colour-free mark to item variants: swaps the texture of every item in front. */
   private applyColorBlindMode(): void {
-    const marks = this.store.colorBlindMode;
-    for (const sprite of this.sprites.values()) sprite.setTexture(itemTextureKey(sprite.getData('type') as string, marks));
+    for (const sprite of this.sprites.values()) {
+      if (sprite.texture.key !== itemBackTextureKey(sprite.getData('type') as string)) this.setLook(sprite, true);
+    }
   }
 
   /** Shows the win or defeat panel once the final animations have had time to play. */
@@ -481,13 +498,14 @@ export class GameScene extends Phaser.Scene {
         front: true,
       };
     }
-    // Only the layer right behind the front is visible (dimmed); deeper layers wait hidden behind it.
-    const slot = shelf.backSlots[pos.slot]!;
+    // The layer right behind the front sits under it, a silhouette seen only through an empty front slot;
+    // deeper layers wait hidden.
+    const slot = shelf.slots[pos.slot]!;
     return {
       x: slot.x,
       y: slot.y,
       scale: this.baseScale() * BACK_SCALE,
-      alpha: pos.layer === 1 ? 1 : 0,
+      alpha: pos.layer === 1 ? SILHOUETTE_ALPHA : 0,
       depth: DEPTH_BACK - pos.layer,
       front: false,
     };
@@ -512,8 +530,7 @@ export class GameScene extends Phaser.Scene {
       const { x, y, scale, alpha } = target;
       const applyLook = () => {
         sprite.setDepth(target.depth);
-        if (target.front) sprite.clearTint();
-        else sprite.setTint(BACK_TINT);
+        this.setLook(sprite, target.front);
       };
       if (this.live.moving[pos.shelf]) {
         // Placed every frame by followMovingItems; animations become glides toward the moving slot.

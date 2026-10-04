@@ -1,7 +1,7 @@
 import type * as Phaser from 'phaser';
 import { createGame, stackOf, type ItemType } from '../core';
 import { levels } from '../data/levels';
-import { renderItemSvg } from '../ui/icons/icons';
+import { renderItemSvg, renderSilhouette } from '../ui/icons/icons';
 import { addSvgTexture } from './svgTexture';
 
 /**
@@ -12,6 +12,9 @@ export const ITEM_TEXTURE_SIZE = 256;
 
 /** Texture of an item type; `marks` is the colour-blind version, with the variant badge. */
 export const itemTextureKey = (type: ItemType, marks: boolean) => `item:${type}${marks ? ':marked' : ''}`;
+
+/** Texture of an item seen from behind the one in front of it (see renderSilhouette). */
+export const itemBackTextureKey = (type: ItemType) => `item:${type}:back`;
 
 /** Every item type the levels use. */
 function levelItemTypes(): Set<ItemType> {
@@ -30,8 +33,11 @@ function levelItemTypes(): Set<ItemType> {
  */
 export async function prepareItemTextures(scene: Phaser.Scene): Promise<void> {
   const jobs: Promise<void>[] = [];
-  for (const type of levelItemTypes())
+  for (const type of levelItemTypes()) {
     for (const marks of [false, true])
       jobs.push(addSvgTexture(scene.textures, itemTextureKey(type, marks), renderItemSvg(type, marks), ITEM_TEXTURE_SIZE));
+    // Same size as the icon, so a sprite keeps its scale when it switches between the two.
+    jobs.push(addSvgTexture(scene.textures, itemBackTextureKey(type), renderSilhouette(type), ITEM_TEXTURE_SIZE));
+  }
   await Promise.all(jobs);
 }

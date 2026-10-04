@@ -13,7 +13,7 @@ import {
   stackOf,
 } from '../core';
 import type { SoundService } from '../services/SoundService';
-import { BACK_SCALE, isOnTrack, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
+import { BACK_SCALE, isOnTrack, SILHOUETTE_ALPHA, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
 import { BeltView, DEPTH_BELT_ITEM } from './BeltView';
 import { pointerAt, viewSize } from './view';
 
@@ -23,9 +23,6 @@ const RETURN_MS = 220;
 /** How long the next item of a stack takes to come forward once the top one is taken. */
 const PROMOTE_MS = 160;
 const DEPTH_HELD = 100;
-/** The second item of a stack peeks out behind the top one: up and to the left, smaller and dimmed. */
-const BEHIND_OFFSET = 0.2;
-const BEHIND_TINT = 0x777777;
 
 /** What the conveyor needs from the game scene. Everything else about the tracks lives here. */
 export interface BeltHost {
@@ -37,6 +34,8 @@ export interface BeltHost {
   /** Scale of an item sitting on a shelf; items on tracks are drawn at the same size. */
   shelfItemScale(): number;
   spriteFor(itemId: number): Phaser.GameObjects.Image | undefined;
+  /** Shows an item as the one in front, or as the silhouette of one behind it. */
+  setLook(sprite: Phaser.GameObjects.Image, front: boolean): void;
   /** Front slot a held item would go to if released at (x, y), or null. */
   dropTarget(x: number, y: number): Position | null;
   /** Animates the events of a successful placement (snap, triples, unlocks...). */
@@ -62,7 +61,7 @@ interface Flight {
  * Conveyor input and animation for every track. Pressing anywhere near a carrier takes its top item at once
  * (core pickFromTrack): drag it to a shelf, or release and then tap a free slot. Invalid drops send it back
  * to its carrier, which has kept moving (returnHeld). Each frame, every carrier's top item is drawn on it,
- * the next one dimmed behind, and deeper ones hidden.
+ * the next one as a silhouette under it, and deeper ones hidden.
  */
 export class BeltController {
   private readonly view: BeltView;
@@ -124,7 +123,6 @@ export class BeltController {
       const track = state.tracks[t]!;
       const layout = layouts[t];
       if (!layout) continue;
-      const behind = layout.pitch * BEHIND_OFFSET;
       for (let c = 0; c < track.carriers.length; c++) {
         const stack = stackOf(track.carriers[c]!);
         if (stack.length === 0) continue;
@@ -138,13 +136,13 @@ export class BeltController {
             if (sprite.visible) sprite.setVisible(false);
             continue;
           }
-          let x = depth === 0 ? pose.x : pose.x - behind;
-          let y = depth === 0 ? pose.y : pose.y - behind;
+          // The second item sits under the top one as a silhouette, like a shelf's back layer.
+          let x = pose.x;
+          let y = pose.y;
           let itemScale = depth === 0 ? scale : scale * BACK_SCALE;
-          let alpha = pose.alpha;
+          let alpha = depth === 0 ? pose.alpha : pose.alpha * SILHOUETTE_ALPHA;
           sprite.setVisible(true).setDepth(DEPTH_BELT_ITEM - depth);
-          if (depth === 0) sprite.clearTint();
-          else sprite.setTint(BEHIND_TINT);
+          this.host.setLook(sprite, depth === 0);
 
           const flight = this.returning.get(id);
           const promotedAt = this.promoting.get(id);
@@ -158,9 +156,8 @@ export class BeltController {
             sprite.setDepth(k >= 1 ? DEPTH_BELT_ITEM : DEPTH_HELD);
           } else if (depth === 0 && promotedAt !== undefined) {
             const k = Phaser.Math.Easing.Quadratic.Out(Math.min(1, (now - promotedAt) / PROMOTE_MS));
-            x = Phaser.Math.Linear(pose.x - behind, x, k);
-            y = Phaser.Math.Linear(pose.y - behind, y, k);
             itemScale = Phaser.Math.Linear(scale * BACK_SCALE, itemScale, k);
+            alpha = Phaser.Math.Linear(pose.alpha * SILHOUETTE_ALPHA, alpha, k);
             if (k >= 1) this.promoting.delete(id);
           }
           sprite.setPosition(x, y).setScale(itemScale).setAlpha(alpha);
@@ -206,7 +203,8 @@ export class BeltController {
     const sprite = this.host.spriteFor(itemId);
     if (sprite) {
       this.host.scene.tweens.killTweensOf(sprite);
-      sprite.setDepth(DEPTH_HELD).setAlpha(1).clearTint().setVisible(true).setPosition(at.x, at.y);
+      this.host.setLook(sprite, true);
+      sprite.setDepth(DEPTH_HELD).setAlpha(1).setVisible(true).setPosition(at.x, at.y);
       this.host.scene.tweens.add({ targets: sprite, scale: this.itemScale() * HELD_SCALE, duration: 80, ease: 'Quad.easeOut' });
     }
     return true;

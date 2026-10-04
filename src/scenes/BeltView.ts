@@ -17,7 +17,7 @@ const PIPS_TEXTURE = (n: number) => `stack-pips-${n}`;
 /**
  * The conveyor tracks: a static rail per track, one plate per carrier moving with it (so motion shows even
  * where carriers are empty), rollers at both ends covering where carriers fade out and back in, and on each
- * carrier a few dots telling how many items are hidden below the two visible ones.
+ * carrier a few dots telling how many items are hidden below the top one.
  * Items are positioned by the controller with the same trackPose.
  */
 export class BeltView {
@@ -95,8 +95,8 @@ export class BeltView {
       for (let c = 0; c < plates.length; c++) {
         const pose = trackPose(layout, carrierOffset(track, c, state.trackTimeMs), this.pose);
         plates[c]!.setPosition(pose.x, pose.y).setAlpha(pose.alpha);
-        // Dots for items hidden below the top two: the stack's depth at a glance.
-        const hidden = Math.min(MAX_PIPS, stackOf(track.carriers[c]!).length - 2);
+        // Dots for items hidden below the top one: the stack's depth at a glance.
+        const hidden = Math.min(MAX_PIPS, stackOf(track.carriers[c]!).length - 1);
         const pip = pips[c]!;
         if (hidden > 0) {
           const key = PIPS_TEXTURE(hidden);

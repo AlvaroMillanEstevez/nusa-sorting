@@ -17,6 +17,7 @@ import {
   renderIcon,
   renderItemSvg,
   renderPlaceholder,
+  renderSilhouette,
   tintedMaterials,
   tones,
   variantPalette,
@@ -171,5 +172,15 @@ describe('placeholders', () => {
     }
     expect(renderPlaceholder('tempe', 'original')).toContain('>T</text>');
     expect(() => renderItemSvg('apple')).toThrow();
+  });
+});
+
+describe('silhouettes of items behind others', () => {
+  it('blurs the whole icon, without the variant mark', () => {
+    const svg = renderSilhouette('sate:alt1');
+    expect(balanced(svg)).toBe(true);
+    expect(svg).toContain('<feGaussianBlur');
+    expect(svg).toMatch(/<\/defs><g filter="url\(#silhouette\)">.*<\/g><\/svg>$/);
+    expect(svg).not.toContain('r="15.5"');
   });
 });

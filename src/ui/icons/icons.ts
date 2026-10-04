@@ -493,3 +493,14 @@ export function renderItemSvg(type: string, marks = false): string {
     ? renderIcon(parsed.kind.id, parsed.variant, marks)
     : renderPlaceholder(parsed.kind.id, parsed.variant, marks);
 }
+
+/**
+ * What an item looks like from behind another one: its icon blurred into a soft blob, so an empty front slot
+ * shows that something waits there and roughly how big it is, but not what it is. Drawn dark in the game.
+ */
+export function renderSilhouette(type: string): string {
+  const svg = renderItemSvg(type);
+  const open = svg.indexOf('</defs>') + '</defs>'.length;
+  const blur = '<filter id="silhouette" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="6"/></filter>';
+  return svg.slice(0, open - '</defs>'.length) + blur + '</defs><g filter="url(#silhouette)">' + svg.slice(open, -'</svg>'.length) + '</g></svg>';
+}
