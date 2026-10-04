@@ -19,6 +19,7 @@ import {
   type LevelDefinition,
   type TrackDefinition,
   stackOf,
+  startClock,
 } from '../src/core';
 import { front } from './helpers';
 
@@ -155,7 +156,7 @@ describe('stacks', () => {
 
 describe('several tracks moving', () => {
   it('moves each track with its own speed and direction, from the same game clock', () => {
-    const state: GameState = tick(createGame(twoTracks), 1000).state;
+    const state: GameState = tick(startClock(createGame(twoTracks)), 1000).state;
     const [upTrack, downTrack] = state.tracks;
     // Up at 0.5 carriers/s: carrier 0 of 2 moves from 0 back to 1.5; down at 0.5: carrier 0 moves to 0.5.
     expect(carrierOffset(upTrack!, 0, state.trackTimeMs)).toBeCloseTo(1.5);

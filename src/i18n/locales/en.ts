@@ -4,6 +4,7 @@ export const en = {
   'hud.restart': 'Restart',
   'hud.score': 'Score {score}',
   'hud.combo': 'Combo x{n}',
+  'hud.tapToStart': 'Tap to start',
   'shelf.locked': '{n} more',
   'popup.combo': 'Combo x{n}!',
   'popup.points': '+{points}',

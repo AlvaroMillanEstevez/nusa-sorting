@@ -15,6 +15,7 @@ import {
   type MechanicDefinition,
   type Position,
   stackOf,
+  startClock,
 } from '../src/core';
 import { applyMove, boardKinds, front, itemIds, rng, validMoves } from './helpers';
 
@@ -81,7 +82,7 @@ describe('conveyor level format', () => {
 
 describe('belt movement', () => {
   it('is a deterministic function of game time, looping around', () => {
-    let state = createGame({ ...basic, mechanics: [belt(['A', null, 'B', null], 0.5)] });
+    let state = startClock(createGame({ ...basic, mechanics: [belt(['A', null, 'B', null], 0.5)] }));
     expect(offset(state, 0)).toBe(0);
     state = tick(state, 1000).state;
     expect(offset(state, 0)).toBeCloseTo(0.5);
@@ -92,7 +93,7 @@ describe('belt movement', () => {
   });
 
   it('moves left with a negative speed and wraps the other way', () => {
-    const state = tick(createGame({ ...basic, mechanics: [belt(['A', null, 'B', null], -1)] }), 1500).state;
+    const state = tick(startClock(createGame({ ...basic, mechanics: [belt(['A', null, 'B', null], -1)] })), 1500).state;
     expect(offset(state, 0)).toBeCloseTo(2.5);
     expect(offset(state, 2)).toBeCloseTo(0.5);
   });
@@ -102,7 +103,7 @@ describe('belt movement', () => {
     expect(won.status).toBe('won');
     expect(tick(won, 5000).state).toBe(won);
 
-    const timed = createGame({ ...basic, timeLimitSeconds: 1 });
+    const timed = startClock(createGame({ ...basic, timeLimitSeconds: 1 }));
     const lost = tick(timed, 1000).state;
     expect(lost.status).toBe('lost');
     expect(tick(lost, 5000).state.trackTimeMs).toBe(lost.trackTimeMs);
@@ -276,5 +277,39 @@ describe('invariants with a belt', () => {
       }
     }
     expect(totalCleared).toBeGreaterThan(0);
+  });
+});
+
+describe('the clock waits for the first interaction', () => {
+  const level: LevelDefinition = { ...basic, timeLimitSeconds: 30, mechanics: [belt(['A', null, 'B', null], 0.5)] };
+
+  it('lets no game time pass before the clock starts: timer, tracks and combo window stand still', () => {
+    const fresh = createGame(level);
+    expect(fresh.clockStarted).toBe(false);
+    const waited = tick(fresh, 60_000);
+    expect(waited.state).toBe(fresh);
+    expect(waited.events).toEqual([]);
+  });
+
+  it('runs once started, by startClock (touching an item) or by the first move or pick', () => {
+    const started = startClock(createGame(level));
+    expect(startClock(started)).toBe(started);
+    const later = tick(started, 1000).state;
+    expect(later.timeLeftMs).toBe(29_000);
+    expect(later.trackTimeMs).toBe(1000);
+
+    const picked = pickFromTrack(createGame(level), { track: 0, carrier: 0 });
+    expect(picked.ok && picked.state.clockStarted).toBe(true);
+    const moved = moveItem(createGame(level), front(0, 0), front(0, 2));
+    expect(moved.ok && moved.state.clockStarted).toBe(true);
+  });
+
+  it('starts the combo window only with the clock running', () => {
+    const triple: LevelDefinition = { id: 'triple', shelves: [[['A', 'A', null]], [['A', 'B', 'B']], [['B', null, null]]] };
+    const first = moveItem(createGame(triple), front(1, 0), front(0, 2));
+    expect(first.ok && first.state.combo.windowLeftMs).toBeGreaterThan(0);
+    if (!first.ok) return;
+    const windowMs = first.state.combo.windowLeftMs;
+    expect(tick(first.state, 1000).state.combo.windowLeftMs).toBe(windowMs - 1000);
   });
 });

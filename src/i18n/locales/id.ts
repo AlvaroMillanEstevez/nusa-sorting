@@ -6,6 +6,7 @@ export const id: Record<MessageKey, string> = {
   'hud.restart': 'Ulangi',
   'hud.score': 'Skor {score}',
   'hud.combo': 'Kombo x{n}',
+  'hud.tapToStart': 'Ketuk untuk mulai',
   'shelf.locked': '{n} lagi',
   'popup.combo': 'Kombo x{n}!',
   'popup.points': '+{points}',

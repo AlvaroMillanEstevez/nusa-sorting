@@ -16,6 +16,7 @@ import {
   type LevelDefinition,
   type MechanicDefinition,
   type Position,
+  startClock,
 } from '../src/core';
 import { boardKinds, front, movingShelfCost, movingShelfSeconds } from './helpers';
 
@@ -119,7 +120,7 @@ describe('shelves riding a track: rules', () => {
   });
 
   it('moves shelves along the track with game time, and stops when not playing', () => {
-    const state = tick(createGame(shelfTrack()), 2000).state;
+    const state = tick(startClock(createGame(shelfTrack())), 2000).state;
     expect(carrierOffset(state.tracks[0]!, 0, state.trackTimeMs)).toBeCloseTo(0.6);
   });
 

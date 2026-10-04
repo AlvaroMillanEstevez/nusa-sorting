@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, tick, type LevelDefinition } from '../src/core';
+import { createGame, tick, type LevelDefinition, startClock } from '../src/core';
 import { levels } from '../src/data/levels';
 import { computeBoardLayout, trackCarrierAt, trackPose, type Rect } from '../src/ui/boardLayout';
 import { computeColumnLayout, type ColumnSpec } from '../src/ui/columnLayout';
@@ -136,7 +136,7 @@ describe('live board: shelves riding tracks', () => {
   };
 
   it('moves carried shelves with game time and leaves fixed ones alone', () => {
-    const state = createGame(level);
+    const state = startClock(createGame(level));
     const base = layoutForLevel(level, state, 390, 844);
     const now = liveBoard(base, state);
     const later = liveBoard(base, tick(state, 1000).state);

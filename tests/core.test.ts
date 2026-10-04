@@ -13,6 +13,7 @@ import {
   type GameState,
   type LevelDefinition,
   type Position,
+  startClock,
 } from '../src/core';
 import { applyMove, boardKinds, front, itemIds, rng, validMoves } from './helpers';
 
@@ -102,7 +103,7 @@ describe('moveItem: invalid moves leave the state untouched', () => {
   });
 
   it('rejects moves once the game is lost', () => {
-    const timed = createGame({ ...testLevel, timeLimitSeconds: 1 });
+    const timed = startClock(createGame({ ...testLevel, timeLimitSeconds: 1 }));
     const lost = tick(timed, 1000).state;
     expect(lost.status).toBe('lost');
     expect(moveItem(lost, front(1, 0), front(2, 1))).toEqual({ ok: false, reason: 'gameOver' });
@@ -245,7 +246,7 @@ describe('invariants under random play', () => {
 
 describe('timer', () => {
   it('starts from the level time limit and counts down', () => {
-    let state = createGame({ ...testLevel, timeLimitSeconds: 10 });
+    let state = startClock(createGame({ ...testLevel, timeLimitSeconds: 10 }));
     expect(state.timeLeftMs).toBe(10_000);
     const result = tick(state, 2500);
     state = result.state;
@@ -255,7 +256,7 @@ describe('timer', () => {
   });
 
   it('loses with timeUp exactly once when reaching zero', () => {
-    const state = createGame({ ...testLevel, timeLimitSeconds: 2 });
+    const state = startClock(createGame({ ...testLevel, timeLimitSeconds: 2 }));
     const result = tick(state, 5000);
     expect(result.state).toMatchObject({ timeLeftMs: 0, status: 'lost', loseReason: 'timeUp' });
     expect(result.events).toEqual([{ kind: 'lost', reason: 'timeUp' }]);
@@ -350,6 +351,7 @@ describe('blocked detection', () => {
       tracks: [],
       trackTimeMs: 0,
       held: null,
+      clockStarted: true,
     };
     expect(isBlocked(reorderOnly)).toBe(true);
   });

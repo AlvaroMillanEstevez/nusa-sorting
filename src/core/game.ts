@@ -141,9 +141,20 @@ export function isBlocked(state: GameState): boolean {
   return !state.shelves.some((_, target) => canMoveInto(target));
 }
 
-/** Advances the level timer and the combo window. Running out of time while playing loses the level. */
+/**
+ * Starts game time: called on the player's first interaction with the board (touching or dragging an item).
+ * Every move or pick starts it too. Does nothing once started.
+ */
+export function startClock(state: GameState): GameState {
+  return state.clockStarted ? state : { ...state, clockStarted: true };
+}
+
+/**
+ * Advances game time: the level timer, the tracks and the combo window. Running out of time while playing
+ * loses the level. Nothing moves before the clock has started.
+ */
 export function tick(state: GameState, elapsedMs: number): TickResult {
-  if (state.status !== 'playing' || !(elapsedMs > 0)) return { state, events: [] };
+  if (state.status !== 'playing' || !state.clockStarted || !(elapsedMs > 0)) return { state, events: [] };
   const events: GameEvent[] = [];
   let next = state;
 
@@ -181,6 +192,7 @@ function isValidPosition(state: GameState, pos: Position): boolean {
 export function moveItem(state: GameState, from: Position, to: Position): MoveResult {
   if (state.status !== 'playing') return { ok: false, reason: 'gameOver' };
   if (!isValidPosition(state, from) || !isValidPosition(state, to)) return { ok: false, reason: 'invalidPosition' };
+  state = startClock(state);
   if (from.shelf === to.shelf && from.layer === to.layer && from.slot === to.slot) {
     return { ok: false, reason: 'samePosition' };
   }
@@ -242,7 +254,7 @@ export function pickFromTrack(state: GameState, from: CarrierRef): MoveResult {
   const ref = { track: from.track, carrier: from.carrier };
   return {
     ok: true,
-    state: { ...setStack(state, ref, carrier.stack.slice(1)), held: { item, from: ref } },
+    state: { ...setStack(startClock(state), ref, carrier.stack.slice(1)), held: { item, from: ref } },
     events: [{ kind: 'beltItemTaken', itemId: item.id, from: ref }],
   };
 }

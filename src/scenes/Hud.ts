@@ -32,6 +32,8 @@ export class Hud {
   private hudHeight = 0;
   private muted = false;
   private warning = false;
+  /** Waiting for the first touch on the board: the clock is paused and a hint replaces the combo label. */
+  private waiting = false;
   private readonly scoreText: Phaser.GameObjects.Text;
   private readonly comboText: Phaser.GameObjects.Text;
   private readonly comboBar: Phaser.GameObjects.Graphics;
@@ -96,7 +98,8 @@ export class Hud {
     this.width = width;
     this.statusRow = statusRow;
     this.inline = inline;
-    for (const part of [this.scoreText, this.comboText, this.comboBar]) part.setVisible(statusRow !== null);
+    for (const part of [this.scoreText, this.comboText]) part.setVisible(statusRow !== null);
+    this.comboBar.setVisible(statusRow !== null && !this.waiting);
     this.hudHeight = hudHeight;
     const cy = hudHeight / 2;
     // Text and padding follow the bar height, but never more than the width allows: on a tall, narrow
@@ -133,7 +136,8 @@ export class Hud {
       this.barEnd = inline ? muteX - hudHeight * 0.6 : width - 12;
       const scoreX = inline ? this.levelText.x + this.levelText.width + 16 : 16;
       this.scoreText.setPosition(scoreX, rowY);
-      this.comboText.setPosition(this.barEnd - this.barWidth() - 10, rowY);
+      this.comboText.setY(rowY);
+      this.placeComboText();
     }
     this.placeTimer();
   }
@@ -211,7 +215,7 @@ export class Hud {
   setCombo(combo: number, windowLeftMs: number, windowMs: number): void {
     const row = this.statusRow;
     if (!row) return;
-    this.comboText.setText(combo >= 2 ? t('hud.combo', { n: combo }) : '');
+    if (!this.waiting) this.comboText.setText(combo >= 2 ? t('hud.combo', { n: combo }) : '');
     const g = this.comboBar.clear();
     const w = this.barWidth();
     const h = Math.max(6, Math.round(row.height * (this.inline ? 0.14 : 0.22)));
@@ -223,6 +227,25 @@ export class Hud {
       const color = Phaser.Display.Color.HexStringToColor(theme.comboColor).color;
       g.fillStyle(color, 1).fillRoundedRect(x, y, Math.max(h, w * share), h, h / 2);
     }
+  }
+
+  /** Before the first touch on the board: dims the clock and shows a short hint where the combo goes. */
+  setWaiting(waiting: boolean): void {
+    if (waiting === this.waiting) return;
+    this.waiting = waiting;
+    this.timerText.setAlpha(waiting ? 0.55 : 1);
+    this.comboText
+      .setColor(waiting ? theme.textColor : theme.comboColor)
+      .setAlpha(waiting ? 0.8 : 1)
+      .setText(waiting ? t('hud.tapToStart') : '');
+    this.comboBar.setVisible(!waiting && this.statusRow !== null);
+    this.placeComboText();
+  }
+
+  /** The combo label sits left of its bar; the waiting hint, longer, takes the bar's place. */
+  private placeComboText(): void {
+    if (!this.statusRow) return;
+    this.comboText.setX(this.waiting ? this.barEnd : this.barEnd - this.barWidth() - 10);
   }
 
   /** Little bump on the combo label when the combo grows. */

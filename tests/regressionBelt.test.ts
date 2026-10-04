@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult, stackOf } from '../src/core';
+import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult, stackOf, startClock } from '../src/core';
 import { levels } from '../src/data/levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
@@ -58,7 +58,8 @@ interface Step {
 describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regression: %s', (id, entry) => {
   const level = levels.find((l) => l.id === id)!;
   it.each((entry.games as unknown as Step[][]).map((game, g) => [g, game] as const))('game %i replays identically', (_g, steps) => {
-    let state = createGame(level);
+    // Recorded when game time ran from the start: the clock is started before replaying.
+    let state = startClock(createGame(level));
     for (const { action, ok, events, after } of steps) {
       let result: MoveResult;
       if (action.kind === 'move') {

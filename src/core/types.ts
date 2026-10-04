@@ -118,6 +118,11 @@ export interface GameState {
   readonly trackTimeMs: number;
   /** Item taken from a track and not yet placed. */
   readonly held: HeldTrackItem | null;
+  /**
+   * False until the player's first interaction with the board (see startClock): until then no game time
+   * passes, so the level can be studied before it starts. The timer, tracks and combo window all wait.
+   */
+  readonly clockStarted: boolean;
 }
 
 export interface Position {

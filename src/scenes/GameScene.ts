@@ -16,6 +16,7 @@ import {
   type LoseReason,
   type Position,
   stackOf,
+  startClock,
 } from '../core';
 import { levels } from '../data/levels';
 import { applyBeltOverrides } from '../dev/beltOverrides';
@@ -209,6 +210,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    this.hud.setWaiting(this.state.status === 'playing' && !this.state.clockStarted);
     if (this.state.status === 'playing') {
       const result = tick(this.state, delta);
       this.state = result.state;
@@ -579,8 +581,11 @@ export class GameScene extends Phaser.Scene {
     if (this.state.status !== 'playing' || this.shelfPress) return;
     this.pointerPos = pointerAt(pointer);
     const hit = frontSlotAt(this.layout, this.pointerPos.x, this.pointerPos.y);
-    if (!hit || isShelfLocked(this.state, hit.shelf) || this.live.shelfAlpha[hit.shelf]! < MIN_INTERACTIVE_ALPHA) return;
+    if (!hit || this.live.shelfAlpha[hit.shelf]! < MIN_INTERACTIVE_ALPHA) return;
     const item = itemAt(this.state, { shelf: hit.shelf, layer: 0, slot: hit.slot });
+    // Touching an item starts the level's time (picking from a belt does it in the core).
+    if (item) this.state = startClock(this.state);
+    if (isShelfLocked(this.state, hit.shelf)) return;
     if (item) this.shelfPress = { pointerId: pointer.id, itemId: item.id, dragging: false };
   }
 
