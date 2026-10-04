@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "levelgen": "node tools/levelgen/run.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"
