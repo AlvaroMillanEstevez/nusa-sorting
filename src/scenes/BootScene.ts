@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { art } from './art/ArtSet';
 import { generateItemTextures } from './itemTextures';
 
 /** Prepares shared resources and hands over to the game. */
@@ -8,7 +9,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    generateItemTextures(this);
-    this.scene.start('Game');
+    void art()
+      .prepareItems(this)
+      .then(() => {
+        generateItemTextures(this);
+        this.scene.start('Game');
+      });
   }
 }

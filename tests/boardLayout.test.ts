@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { beltPose, beltSlotAt, computeBoardLayout, frontSlotAt, isOnBelt, nearestFreeSlot, nearestSlot, shelfAt, type Rect } from '../src/ui/boardLayout';
+import { beltPose, beltSlotAt, boundsAround, computeBoardLayout, frontSlotAt, isOnBelt, nearestFreeSlot, nearestSlot, shelfAt, type Rect } from '../src/ui/boardLayout';
 
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -139,5 +139,20 @@ describe('conveyor strip', () => {
     expect(beltSlotAt(belt, offsets, at(6), belt.y)).toBeNull();
     expect(beltSlotAt(belt, offsets, at(1), belt.rect.y - belt.pitch)).toBeNull();
     expect(isOnBelt(belt, at(6), belt.y)).toBe(true);
+  });
+});
+
+describe('boundsAround', () => {
+  it('wraps rectangles plus a margin in whole pixels, or gives null for none', () => {
+    expect(boundsAround([], 5)).toBeNull();
+    expect(
+      boundsAround(
+        [
+          { x: 10.5, y: 20, width: 30, height: 10 },
+          { x: 50, y: 5.2, width: 10, height: 10 },
+        ],
+        2,
+      ),
+    ).toEqual({ x: 8, y: 3, width: 54, height: 29 });
   });
 });

@@ -3,6 +3,7 @@ import { t } from '../i18n';
 import type { BoardLayout } from '../ui/boardLayout';
 import type { LiveBoard } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
+import { art } from './art/ArtSet';
 
 /** Above the dimmed back layer (depth < 5), below front items (10). */
 const DEPTH_BLOCKER = 7;
@@ -45,8 +46,7 @@ export class LockOverlays {
       const cx = rect.x + rect.width / 2;
       const cy = rect.y + rect.height / 2;
       veil.clear().setPosition(cx, cy);
-      veil.fillStyle(theme.lockVeil, 0.62).fillRoundedRect(-rect.width / 2, -rect.height / 2, rect.width, rect.height, s * 0.12);
-      drawPadlock(veil, -s * 0.45, 0, s * 0.42);
+      art().drawLockVeil(veil, rect.width, rect.height, s);
       this.labels.get(shelf)?.setFontSize(Math.round(s * 0.3)).setPosition(cx - s * 0.12, cy);
     }
   }
@@ -91,16 +91,6 @@ export class LockOverlays {
     this.veils.clear();
     this.labels.clear();
   }
-}
-
-function drawPadlock(g: Phaser.GameObjects.Graphics, x: number, y: number, size: number): void {
-  const color = Phaser.Display.Color.HexStringToColor(theme.textColor).color;
-  g.lineStyle(Math.max(2, size * 0.12), color, 1);
-  g.beginPath();
-  g.arc(x, y - size * 0.1, size * 0.26, Math.PI, 0);
-  g.strokePath();
-  g.fillStyle(color, 1).fillRoundedRect(x - size * 0.4, y - size * 0.1, size * 0.8, size * 0.62, size * 0.1);
-  g.fillStyle(theme.lockVeil, 1).fillCircle(x, y + size * 0.16, size * 0.09);
 }
 
 /** The roaming blocker: a striped plate sitting in the slot it blocks. */
@@ -180,12 +170,6 @@ export class BlockerView {
 
   private draw(slotSize: number): void {
     this.size = slotSize;
-    const half = slotSize * 0.42;
-    const g = this.plate.clear();
-    g.fillStyle(theme.blockerColor, 1).fillRoundedRect(-half, -half, half * 2, half * 2, slotSize * 0.1);
-    g.lineStyle(Math.max(3, slotSize * 0.08), theme.blockerStripe, 1);
-    g.lineBetween(-half * 0.6, -half * 0.6, half * 0.6, half * 0.6);
-    g.lineBetween(-half * 0.6, half * 0.6, half * 0.6, -half * 0.6);
-    g.lineStyle(Math.max(2, slotSize * 0.04), theme.blockerStripe, 1).strokeRoundedRect(-half, -half, half * 2, half * 2, slotSize * 0.1);
+    art().drawBlocker(this.plate.clear(), slotSize);
   }
 }

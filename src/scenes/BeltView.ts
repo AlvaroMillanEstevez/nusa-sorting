@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser';
 import { carrierOffset, carriesShelves, type GameState, stackOf } from '../core';
-import { trackPose, type BeltPose, type TrackLayout } from '../ui/boardLayout';
-import { theme } from '../ui/theme';
+import { boundsAround, trackPose, type BeltPose, type TrackLayout } from '../ui/boardLayout';
+import { art } from './art/ArtSet';
+import { BakedLayer } from './art/BakedLayer';
 
 const DEPTH_RAIL = 3;
 const DEPTH_PLATE = 4;
@@ -9,8 +10,6 @@ const DEPTH_PLATE = 4;
 export const DEPTH_BELT_ITEM = 11;
 const DEPTH_PIPS = 12;
 const DEPTH_ROLLER = 13;
-const PLATE_TEXTURE = 'belt-plate';
-const PLATE_TEXTURE_SIZE = 64;
 /** Most dots shown for the items hidden deeper in a stack. */
 export const MAX_PIPS = 3;
 const PIPS_TEXTURE = (n: number) => `stack-pips-${n}`;
@@ -22,25 +21,19 @@ const PIPS_TEXTURE = (n: number) => `stack-pips-${n}`;
  * Items are positioned by the controller with the same trackPose.
  */
 export class BeltView {
-  private readonly rails: Phaser.GameObjects.Graphics;
-  private readonly rollers: Phaser.GameObjects.Graphics;
+  private readonly rails: BakedLayer;
+  private readonly rollers: BakedLayer;
   private plates: Phaser.GameObjects.Image[][] = [];
   private pips: Phaser.GameObjects.Image[][] = [];
   private layouts: readonly TrackLayout[] = [];
   private shelfTracks: readonly boolean[] = [];
   private readonly pose: BeltPose = { x: 0, y: 0, alpha: 0 };
+  private readonly plate: { key: string; size: number };
 
   constructor(private readonly scene: Phaser.Scene) {
-    this.rails = scene.add.graphics().setDepth(DEPTH_RAIL);
-    this.rollers = scene.add.graphics().setDepth(DEPTH_ROLLER);
-    if (!scene.textures.exists(PLATE_TEXTURE)) {
-      const g = scene.add.graphics();
-      const s = PLATE_TEXTURE_SIZE;
-      g.fillStyle(theme.beltPlate, 1).fillRoundedRect(4, 4, s - 8, s - 8, 10);
-      g.lineStyle(3, theme.beltRail, 1).strokeRoundedRect(4, 4, s - 8, s - 8, 10);
-      g.generateTexture(PLATE_TEXTURE, s, s);
-      g.destroy();
-    }
+    this.rails = new BakedLayer(scene, DEPTH_RAIL);
+    this.rollers = new BakedLayer(scene, DEPTH_ROLLER);
+    this.plate = art().plateTexture(scene);
     for (let n = 1; n <= MAX_PIPS; n++) {
       if (scene.textures.exists(PIPS_TEXTURE(n))) continue;
       // A short row of dots, 16 px per dot, drawn once and scaled with the slot.
@@ -58,7 +51,7 @@ export class BeltView {
     for (const pip of this.pips.flat()) pip.destroy();
     // Shelf tracks have no plates: the shelves themselves ride them (see MovingShelves).
     this.plates = state.tracks.map((track) =>
-      carriesShelves(track) ? [] : track.carriers.map(() => this.scene.add.image(0, 0, PLATE_TEXTURE).setDepth(DEPTH_PLATE)),
+      carriesShelves(track) ? [] : track.carriers.map(() => this.scene.add.image(0, 0, this.plate.key).setDepth(DEPTH_PLATE)),
     );
     this.pips = state.tracks.map((track) =>
       carriesShelves(track)
@@ -70,58 +63,25 @@ export class BeltView {
 
   relayout(layouts: readonly TrackLayout[]): void {
     this.layouts = layouts;
-    this.rails.clear();
-    this.rollers.clear();
+    // Rollers and poles reach a little beyond each track's area.
+    const bounds = boundsAround(
+      layouts.map((layout) => layout.rect),
+      Math.max(0, ...layouts.map((layout) => layout.pitch * 0.6)),
+    );
+    // Rails sit under the carriers and rollers over them, so they are two layers drawn together.
+    this.rails.draw(bounds, (rails) =>
+      this.rollers.draw(bounds, (rollers) =>
+        layouts.forEach((layout, t) => {
+          if (this.shelfTracks[t]) art().drawShelfTrack(rails, rollers, layout);
+          else art().drawStackTrack(rails, rollers, layout);
+        }),
+      ),
+    );
     layouts.forEach((layout, t) => {
-      if (this.shelfTracks[t]) {
-        this.drawShelfTrack(layout);
-        return;
-      }
-      const { rect, pitch, cross } = layout;
-      const railThickness = pitch * 0.92;
-      const rollerRadius = Math.max(railThickness / 2, pitch * 0.5);
-      this.rails.fillStyle(theme.beltRail, 1);
-      if (layout.orientation === 'horizontal') {
-        this.rails.fillRect(rect.x, cross - railThickness / 2, rect.width, railThickness);
-      } else {
-        this.rails.fillRect(cross - railThickness / 2, rect.y, railThickness, rect.height);
-      }
-      // Rollers are centred on the loop's ends, covering the half carrier where items fade out and back in.
-      const ends: [number, number][] =
-        layout.orientation === 'horizontal'
-          ? [
-              [rect.x, cross],
-              [rect.x + rect.width, cross],
-            ]
-          : [
-              [cross, rect.y],
-              [cross, rect.y + rect.height],
-            ];
-      for (const [x, y] of ends) {
-        this.rollers.fillStyle(theme.beltRoller, 1).fillCircle(x, y, rollerRadius);
-        this.rollers.fillStyle(theme.beltRail, 1).fillCircle(x, y, rollerRadius * 0.35);
-      }
-      const plateScale = (pitch * 0.9) / PLATE_TEXTURE_SIZE;
+      const plateScale = (layout.pitch * 0.9) / this.plate.size;
       for (const plate of this.plates[t] ?? []) plate.setScale(plateScale);
-      for (const pip of this.pips[t] ?? []) pip.setScale((pitch * 0.42) / (MAX_PIPS * 16));
+      for (const pip of this.pips[t] ?? []) pip.setScale((layout.pitch * 0.42) / (MAX_PIPS * 16));
     });
-  }
-
-  /**
-   * A track of shelves: two thin guides along the column and a cap at each end of the loop, where shelves
-   * fade out and come back in.
-   */
-  private drawShelfTrack(layout: TrackLayout): void {
-    const { rect } = layout;
-    const s = layout.pitch / 1.95;
-    const guide = Math.max(3, s * 0.08);
-    this.rails.fillStyle(theme.beltRail, 1);
-    this.rails.fillRect(rect.x - guide * 1.5, rect.y, guide, rect.height);
-    this.rails.fillRect(rect.x + rect.width + guide * 0.5, rect.y, guide, rect.height);
-    const capHeight = s * 0.32;
-    for (const y of [rect.y, rect.y + rect.height]) {
-      this.rollers.fillStyle(theme.beltRoller, 1).fillRoundedRect(rect.x - guide * 2, y - capHeight / 2, rect.width + guide * 4, capHeight, capHeight / 2);
-    }
   }
 
   /** Moves plates and depth dots to the tracks' current positions. Called every frame; allocates nothing. */

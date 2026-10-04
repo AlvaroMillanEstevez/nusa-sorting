@@ -6,7 +6,7 @@ import { simulateSvg, type Vision } from '../ui/icons/color';
 import { DRAWN_KINDS, ICON_STYLES, renderItemSvg, type IconStyle } from '../ui/icons/icons';
 import { ITEM_FILL } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
-import { drawShelf } from '../scenes/shelfArt';
+import { classicArt } from '../scenes/art/classicArt';
 import { addSvgTexture } from '../scenes/svgTexture';
 
 /**
@@ -102,7 +102,7 @@ export class GalleryScene extends Phaser.Scene {
         for (const variant of VARIANTS) {
           const type = itemTypeId(kind.id, variant);
           const svg = simulateSvg(renderItemSvg(type, section.style), vision);
-          for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, section.style, px), svg, px));
+          for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, section.style, px), svg, px * (window.devicePixelRatio || 1)));
         }
     await Promise.all(jobs);
     if (run === this.drawing) this.redraw();
@@ -142,7 +142,7 @@ export class GalleryScene extends Phaser.Scene {
     const count = section.kinds.length;
     const shelf = shelfLayoutAt(PAD, top, s, count);
     const g = this.add.graphics();
-    drawShelf(g, shelf, s);
+    classicArt.drawShelf(g, shelf, s);
     this.content.add(g);
     section.kinds.forEach((kind, i) => {
       const slot = shelf.slots[i]!;
@@ -158,7 +158,7 @@ export class GalleryScene extends Phaser.Scene {
       const s = px / ITEM_FILL;
       const shelf = shelfLayoutAt(x + LABEL_W, y, s);
       const g = this.add.graphics();
-      drawShelf(g, shelf, s);
+      classicArt.drawShelf(g, shelf, s);
       this.content.add(g);
       this.content.add(this.label(x, shelf.slots[0]!.y - 8, t('gallery.px', { n: px }), 12, theme.textColor));
       VARIANTS.forEach((variant, i) => {

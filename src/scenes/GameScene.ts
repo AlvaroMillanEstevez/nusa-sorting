@@ -29,11 +29,14 @@ import {
   nearestFreeSlot,
   nearestSlot,
   shelfAt,
+  boundsAround,
   type BoardLayout,
 } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
+import { art } from './art/ArtSet';
+import { BakedLayer } from './art/BakedLayer';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
@@ -41,7 +44,6 @@ import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
 import { ResultOverlay } from './ResultOverlay';
-import { drawShelf } from './shelfArt';
 
 const BACK_TINT = 0x777777;
 const SELECTED_LIFT = 0.15;
@@ -99,7 +101,7 @@ export class GameScene extends Phaser.Scene {
   /** Same as live.layout: what drawing, hit tests and drop targets use. */
   private layout!: BoardLayout;
 
-  private board!: Phaser.GameObjects.Graphics;
+  private board!: BakedLayer;
   private hud!: Hud;
   private overlay!: ResultOverlay;
   private locks!: LockOverlays;
@@ -134,7 +136,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.board = this.add.graphics();
+    this.board = new BakedLayer(this, 0);
     this.movingShelves = new MovingShelves(this);
     this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
     this.locks = new LockOverlays(this);
@@ -441,10 +443,13 @@ export class GameScene extends Phaser.Scene {
 
   /** Fixed shelves; shelves riding tracks are drawn and moved by MovingShelves. */
   private drawBoard(): void {
-    const g = this.board.clear();
-    this.base.shelves.forEach((shelf, i) => {
-      if (!this.live.moving[i]) drawShelf(g, shelf, this.base.slotSize);
-    });
+    const fixed = this.base.shelves.filter((_, i) => !this.live.moving[i]).map((shelf) => shelf.rect);
+    // Room for the brackets under each board.
+    this.board.draw(boundsAround(fixed, this.base.slotSize * 0.3), (g) =>
+      this.base.shelves.forEach((shelf, i) => {
+        if (!this.live.moving[i]) art().drawShelf(g, shelf, this.base.slotSize);
+      }),
+    );
   }
 
   private baseScale(): number {

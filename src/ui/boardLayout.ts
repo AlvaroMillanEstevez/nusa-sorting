@@ -332,3 +332,13 @@ export function nearestFreeSlot(shelf: ShelfLayout, freeSlots: readonly number[]
   }
   return best;
 }
+
+/** The smallest whole-pixel rectangle around `rects`, each grown by `margin`; null for none. */
+export function boundsAround(rects: readonly Rect[], margin: number): Rect | null {
+  if (rects.length === 0) return null;
+  const x0 = Math.floor(Math.min(...rects.map((r) => r.x)) - margin);
+  const y0 = Math.floor(Math.min(...rects.map((r) => r.y)) - margin);
+  const x1 = Math.ceil(Math.max(...rects.map((r) => r.x + r.width)) + margin);
+  const y1 = Math.ceil(Math.max(...rects.map((r) => r.y + r.height)) + margin);
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}

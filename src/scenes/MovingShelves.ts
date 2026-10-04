@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser';
 import type { BoardLayout } from '../ui/boardLayout';
 import type { LiveBoard } from '../ui/levelLayout';
-import { drawShelf } from './shelfArt';
+import { art } from './art/ArtSet';
+import { BakedLayer } from './art/BakedLayer';
 
 /** Under every item (back-layer items start at depth 1). */
 const DEPTH_MOVING_SHELF = 0.5;
@@ -11,7 +12,7 @@ const DEPTH_MOVING_SHELF = 0.5;
  * liveBoard puts it, fading at the ends of its loop. Fixed shelves are drawn by the scene's board graphics.
  */
 export class MovingShelves {
-  private readonly shelves = new Map<number, Phaser.GameObjects.Graphics>();
+  private readonly shelves = new Map<number, BakedLayer>();
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -22,9 +23,14 @@ export class MovingShelves {
     moving.forEach((isMoving, shelf) => {
       if (!isMoving) return;
       const layout = base.shelves[shelf]!;
-      const g = this.scene.add.graphics().setDepth(DEPTH_MOVING_SHELF);
-      drawShelf(g, layout, base.slotSize, -layout.rect.x, -layout.rect.y);
-      this.shelves.set(shelf, g);
+      const s = base.slotSize;
+      const { width, height } = layout.rect;
+      // Drawn at its own origin; the bounds leave room for the brackets under the board.
+      const layer = new BakedLayer(this.scene, DEPTH_MOVING_SHELF);
+      layer.draw({ x: -s * 0.1, y: -s * 0.05, width: width + s * 0.2, height: height + s * 0.3 }, (g) =>
+        art().drawShelf(g, layout, s, -layout.rect.x, -layout.rect.y),
+      );
+      this.shelves.set(shelf, layer);
     });
   }
 
