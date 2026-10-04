@@ -6,6 +6,7 @@ import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { clampScroll, computeLevelGrid, scrollToShow, tileAt, type LevelGrid } from '../ui/levelGrid';
 import { theme } from '../ui/theme';
+import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
 
 /** Passed by the game when it opens the list. */
 export interface LevelSelectData {
@@ -49,7 +50,7 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   create(): void {
-    const resolution = window.devicePixelRatio || 1;
+    const resolution = RENDER_RATIO;
     const style = { fontFamily: theme.fontFamily, fontStyle: 'bold' };
     this.background = this.add.rectangle(0, 0, 1, 1, Phaser.Display.Color.HexStringToColor(theme.background).color).setOrigin(0);
     this.content = this.add.container(0, 0);
@@ -69,11 +70,11 @@ export class LevelSelectScene extends Phaser.Scene {
     this.backButton.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.close(() => this.data_.onClose()));
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      this.press = { y: pointer.y, scroll: this.scroll, moved: false };
+      this.press = { y: pointerAt(pointer).y, scroll: this.scroll, moved: false };
     });
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
       if (!this.press || !pointer.isDown) return;
-      const dy = pointer.y - this.press.y;
+      const dy = pointerAt(pointer).y - this.press.y;
       if (Math.abs(dy) > TAP_SLOP) this.press.moved = true;
       if (this.press.moved) this.setScroll(this.press.scroll - dy);
     });
@@ -81,7 +82,8 @@ export class LevelSelectScene extends Phaser.Scene {
       const press = this.press;
       this.press = null;
       if (!press || press.moved) return;
-      const index = tileAt(this.grid, pointer.x, pointer.y, this.scroll);
+      const at = pointerAt(pointer);
+      const index = tileAt(this.grid, at.x, at.y, this.scroll);
       if (index !== null) this.choose(index);
     });
     this.input.on(
@@ -97,8 +99,8 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private relayout(): void {
-    const { width, height } = this.scale.gameSize;
-    this.cameras.main.setSize(width, height);
+    fitCamera(this);
+    const { width, height } = viewSize(this);
     this.grid = computeLevelGrid(width, height, levels.length);
     const { header } = this.grid;
     this.background.setSize(width, height);
@@ -116,7 +118,7 @@ export class LevelSelectScene extends Phaser.Scene {
   private buildTiles(): void {
     for (const tile of this.tiles) tile.destroy();
     const ids = levels.map((level) => level.id);
-    const resolution = window.devicePixelRatio || 1;
+    const resolution = RENDER_RATIO;
     this.tiles = this.grid.tiles.map((rect, index) => {
       const id = ids[index]!;
       const unlocked = this.store.isUnlocked(ids, index);

@@ -10,6 +10,7 @@ import { theme } from '../ui/theme';
 import { makeWoodArt } from '../scenes/art/woodArt';
 import type { ArtSet } from '../scenes/art/ArtSet';
 import { addSvgTexture } from '../scenes/svgTexture';
+import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from '../scenes/view';
 
 /**
  * Development only (`?gallery`): every item kind in its three variants at real in-game sizes, on the wooden
@@ -48,16 +49,17 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   create(): void {
+    fitCamera(this);
     this.cameras.main.setBackgroundColor(theme.background);
     this.content = this.add.container(0, 0);
     this.header = this.add.container(0, 0).setDepth(10);
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      this.press = { y: pointer.y, scroll: this.scroll, moved: false };
+      this.press = { y: pointerAt(pointer).y, scroll: this.scroll, moved: false };
     });
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
       if (!this.press || !pointer.isDown) return;
-      const dy = pointer.y - this.press.y;
+      const dy = pointerAt(pointer).y - this.press.y;
       if (Math.abs(dy) > TAP_SLOP) this.press.moved = true;
       if (this.press.moved) this.setScroll(this.press.scroll - dy);
     });
@@ -95,16 +97,16 @@ export class GalleryScene extends Phaser.Scene {
         for (const variant of VARIANTS) {
           const type = itemTypeId(kind.id, variant);
           const svg = simulateSvg(renderItemSvg(type), vision);
-          // The game canvas renders at CSS pixels, so icons are rasterized at exactly the size they show at.
-          for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px), svg, px));
+          // Rasterized at exactly the size they show at, in device pixels.
+          for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px), svg, px * RENDER_RATIO));
         }
     await Promise.all(jobs);
     if (run === this.drawing) this.redraw();
   }
 
   private redraw(): void {
-    const { width } = this.scale.gameSize;
-    this.cameras.main.setSize(width, this.scale.gameSize.height);
+    fitCamera(this);
+    const { width } = viewSize(this);
     this.drawHeader(false);
     this.content.removeAll(true);
 
@@ -196,12 +198,12 @@ export class GalleryScene extends Phaser.Scene {
   private label(x: number, y: number, text: string, size: number, color: string): Phaser.GameObjects.Text {
     return this.add
       .text(x, y, text, { fontFamily: theme.fontFamily, fontStyle: 'bold', fontSize: `${size}px`, color })
-      .setResolution(window.devicePixelRatio || 1);
+      .setResolution(RENDER_RATIO);
   }
 
   /** Title and vision buttons, wrapping onto more rows on narrow screens. */
   private drawHeader(loading: boolean): void {
-    const { width } = this.scale.gameSize;
+    const { width } = viewSize(this);
     this.header.removeAll(true);
     const background = this.add.rectangle(0, 0, width, 1, theme.panelColor).setOrigin(0);
     this.header.add(background);
@@ -219,7 +221,7 @@ export class GalleryScene extends Phaser.Scene {
           backgroundColor: active ? theme.accentButtonColor : theme.buttonColor,
           padding: { x: 10, y: 7 },
         })
-        .setResolution(window.devicePixelRatio || 1)
+        .setResolution(RENDER_RATIO)
         .setInteractive({ useHandCursor: true });
       if (x > PAD && x + button.width > width - PAD) {
         x = PAD;
@@ -237,7 +239,7 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private setScroll(scroll: number): void {
-    const visible = this.scale.gameSize.height - this.headerHeight;
+    const visible = viewSize(this).height - this.headerHeight;
     this.scroll = Math.max(0, Math.min(scroll, this.contentHeight - visible));
     this.content.setY(this.headerHeight - this.scroll);
   }

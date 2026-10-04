@@ -15,6 +15,7 @@ import {
 import type { SoundService } from '../services/SoundService';
 import { BACK_SCALE, isOnTrack, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
 import { BeltView, DEPTH_BELT_ITEM } from './BeltView';
+import { pointerAt, viewSize } from './view';
 
 /** A held item grows like a picked-up shelf item. */
 const HELD_SCALE = 1.18;
@@ -175,10 +176,9 @@ export class BeltController {
     const state = this.host.getState();
     if (state.tracks.length === 0 || state.status !== 'playing' || this.press) return false;
     const layouts = this.host.getLayout().tracks;
+    const at = pointerAt(pointer);
     // Presses on shelves riding a track are ordinary shelf presses, not the belt's.
-    const t = layouts.findIndex(
-      (layout, i) => layout && !carriesShelves(state.tracks[i]!) && isOnTrack(layout, pointer.x, pointer.y),
-    );
+    const t = layouts.findIndex((layout, i) => layout && !carriesShelves(state.tracks[i]!) && isOnTrack(layout, at.x, at.y));
     if (t === -1) return false;
 
     // A second press on a track while holding something sends the held item back first.
@@ -186,7 +186,7 @@ export class BeltController {
     const now = this.host.getState();
     const track = now.tracks[t]!;
     const offsets = track.carriers.map((carrier, c) => (stackOf(carrier).length ? carrierOffset(track, c, now.trackTimeMs) : null));
-    const carrier = trackCarrierAt(layouts[t]!, offsets, pointer.x, pointer.y);
+    const carrier = trackCarrierAt(layouts[t]!, offsets, at.x, at.y);
     if (carrier === null) return true;
 
     const from: CarrierRef = { track: t, carrier };
@@ -206,7 +206,7 @@ export class BeltController {
     const sprite = this.host.spriteFor(itemId);
     if (sprite) {
       this.host.scene.tweens.killTweensOf(sprite);
-      sprite.setDepth(DEPTH_HELD).setAlpha(1).clearTint().setVisible(true).setPosition(pointer.x, pointer.y);
+      sprite.setDepth(DEPTH_HELD).setAlpha(1).clearTint().setVisible(true).setPosition(at.x, at.y);
       this.host.scene.tweens.add({ targets: sprite, scale: this.itemScale() * HELD_SCALE, duration: 80, ease: 'Quad.easeOut' });
     }
     return true;
@@ -216,7 +216,8 @@ export class BeltController {
     const press = this.press;
     if (!press || pointer.id !== press.pointerId || !pointer.isDown) return;
     if (!press.dragging && pointer.getDistance() > this.host.scene.input.dragDistanceThreshold) press.dragging = true;
-    this.host.spriteFor(press.itemId)?.setPosition(pointer.x, pointer.y);
+    const at = pointerAt(pointer);
+    this.host.spriteFor(press.itemId)?.setPosition(at.x, at.y);
   }
 
   /** Pointer up for a press that began on a track. Returns true if it handled it. */
@@ -224,8 +225,9 @@ export class BeltController {
     const press = this.press;
     if (!press || pointer.id !== press.pointerId) return false;
     this.press = null;
+    const at = pointerAt(pointer);
     if (press.dragging) {
-      this.placeOrReturn(pointer.x, pointer.y);
+      this.placeOrReturn(at.x, at.y);
       return true;
     }
     // A tap: keep it lifted off the track until the player taps where it should go.
@@ -237,11 +239,11 @@ export class BeltController {
       const { rect, pitch } = layout;
       const target =
         layout.orientation === 'horizontal'
-          ? { x: Phaser.Math.Clamp(pointer.x, rect.x, rect.x + rect.width), y: rect.y - pitch * 0.45 }
+          ? { x: Phaser.Math.Clamp(at.x, rect.x, rect.x + rect.width), y: rect.y - pitch * 0.45 }
           : {
               // Beside a vertical track, on the side facing the middle of the screen.
-              x: layout.cross + (layout.cross < this.host.scene.scale.gameSize.width / 2 ? 1 : -1) * pitch * 0.95,
-              y: Phaser.Math.Clamp(pointer.y, rect.y, rect.y + rect.height),
+              x: layout.cross + (layout.cross < viewSize(this.host.scene).width / 2 ? 1 : -1) * pitch * 0.95,
+              y: Phaser.Math.Clamp(at.y, rect.y, rect.y + rect.height),
             };
       this.host.scene.tweens.add({ targets: sprite, ...target, duration: 120, ease: 'Back.easeOut' });
     }

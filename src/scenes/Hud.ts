@@ -3,6 +3,7 @@ import { t } from '../i18n';
 import type { Rect } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
 import { theme } from '../ui/theme';
+import { RENDER_RATIO } from './view';
 
 const DEPTH_HUD = 150;
 /** Below this many ms the clock turns red and pulses. */
@@ -45,7 +46,7 @@ export class Hud {
     private readonly scene: Phaser.Scene,
     handlers: HudHandlers,
   ) {
-    const resolution = window.devicePixelRatio || 1;
+    const resolution = RENDER_RATIO;
     const style = { fontFamily: theme.fontFamily, fontStyle: 'bold' };
 
     this.levelText = scene.add

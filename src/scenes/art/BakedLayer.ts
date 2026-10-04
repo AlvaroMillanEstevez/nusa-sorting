@@ -1,5 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { Rect } from '../../ui/boardLayout';
+import { RENDER_RATIO } from '../view';
 import { art } from './ArtSet';
 
 /**
@@ -30,17 +31,22 @@ export class BakedLayer {
     this.g.clear().setVisible(true);
     paint(this.g);
     if (!bounds || !art().bakes) return;
-    const width = Math.max(2, Math.ceil(bounds.width));
-    const height = Math.max(2, Math.ceil(bounds.height));
+    // The texture has one texel per device pixel, so it stays as sharp as the vector drawing.
+    const r = RENDER_RATIO;
+    const width = Math.max(2, Math.ceil(bounds.width * r));
+    const height = Math.max(2, Math.ceil(bounds.height * r));
     this.offsetX = bounds.x;
     this.offsetY = bounds.y;
     this.texture = this.scene.add
       .renderTexture(this.g.x + bounds.x, this.g.y + bounds.y, width, height)
       .setOrigin(0)
+      .setScale(1 / r)
       .setDepth(this.depth)
       .setAlpha(this.g.alpha);
-    this.texture.draw(this.g, -bounds.x, -bounds.y).render();
-    this.g.setVisible(false);
+    const { x, y } = this.g;
+    this.g.setScale(r).setPosition(0, 0);
+    this.texture.draw(this.g, -bounds.x * r, -bounds.y * r).render();
+    this.g.setScale(1).setPosition(x, y).setVisible(false);
   }
 
   setPosition(x: number, y: number): this {

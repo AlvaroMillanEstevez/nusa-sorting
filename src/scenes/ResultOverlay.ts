@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { theme } from '../ui/theme';
+import { RENDER_RATIO } from './view';
 
 const DEPTH_OVERLAY = 300;
 
@@ -30,7 +31,7 @@ export class ResultOverlay {
   private height = 0;
 
   constructor(private readonly scene: Phaser.Scene) {
-    const resolution = window.devicePixelRatio || 1;
+    const resolution = RENDER_RATIO;
     const style = { fontFamily: theme.fontFamily, fontStyle: 'bold', align: 'center' };
 
     // Interactive so it swallows pointer input meant for the board underneath.

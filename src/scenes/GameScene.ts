@@ -44,6 +44,7 @@ import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
 import { ResultOverlay } from './ResultOverlay';
+import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
 
 const BACK_TINT = 0x777777;
 const SELECTED_LIFT = 0.15;
@@ -167,7 +168,8 @@ export class GameScene extends Phaser.Scene {
     this.overlay = new ResultOverlay(this);
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
-    this.input.dragDistanceThreshold = 8;
+    // Pointer distances are in canvas pixels, hence the render ratio.
+    this.input.dragDistanceThreshold = 8 * RENDER_RATIO;
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
     this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
@@ -423,8 +425,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private relayout(): void {
-    const { width, height } = this.scale.gameSize;
-    this.cameras.main.setSize(width, height);
+    fitCamera(this);
+    const { width, height } = viewSize(this);
     this.base = layoutForLevel(this.level, this.state, width, height);
     this.refreshLive();
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
@@ -551,15 +553,15 @@ export class GameScene extends Phaser.Scene {
     if (this.overlay.visible) return;
     if (this.belt.onPointerDown(pointer)) return;
     if (this.state.status !== 'playing' || this.shelfPress) return;
-    this.pointerPos = { x: pointer.x, y: pointer.y };
-    const hit = frontSlotAt(this.layout, pointer.x, pointer.y);
+    this.pointerPos = pointerAt(pointer);
+    const hit = frontSlotAt(this.layout, this.pointerPos.x, this.pointerPos.y);
     if (!hit || isShelfLocked(this.state, hit.shelf) || this.live.shelfAlpha[hit.shelf]! < MIN_INTERACTIVE_ALPHA) return;
     const item = itemAt(this.state, { shelf: hit.shelf, layer: 0, slot: hit.slot });
     if (item) this.shelfPress = { pointerId: pointer.id, itemId: item.id, dragging: false };
   }
 
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
-    this.pointerPos = { x: pointer.x, y: pointer.y };
+    this.pointerPos = pointerAt(pointer);
     this.belt.onPointerMove(pointer);
     const press = this.shelfPress;
     if (!press || pointer.id !== press.pointerId || !pointer.isDown) return;
@@ -571,7 +573,7 @@ export class GameScene extends Phaser.Scene {
         return;
       }
     }
-    this.sprites.get(press.itemId)?.setPosition(pointer.x, pointer.y);
+    this.sprites.get(press.itemId)?.setPosition(this.pointerPos.x, this.pointerPos.y);
   }
 
   /** Lifts a shelf item to follow the pointer. Returns false if it can no longer be dragged. */
@@ -597,7 +599,8 @@ export class GameScene extends Phaser.Scene {
     if (!sprite || id !== this.draggingId) return;
     this.draggingId = null;
     const from = findItem(this.state, id);
-    const to = from && this.dropTarget(pointer.x, pointer.y, from);
+    const at = pointerAt(pointer);
+    const to = from && this.dropTarget(at.x, at.y, from);
     if (from && to && this.tryMove(from, to)) return;
 
     // Invalid drop: the item returns to its slot. Dropping it back where it was is not a mistake.
@@ -651,7 +654,8 @@ export class GameScene extends Phaser.Scene {
     if (this.dragOccurred || this.overlay.visible || this.state.status !== 'playing') return;
     // A press that travelled (e.g. a drag attempt on a locked shelf) is not a tap where it ended.
     if (pointer.getDistance() > this.input.dragDistanceThreshold) return;
-    this.handleTap(pointer.x, pointer.y);
+    const at = pointerAt(pointer);
+    this.handleTap(at.x, at.y);
   }
 
   /** Tap an item to select it (tap again to deselect); then tap an empty slot (any shelf) to move it there. */
@@ -854,7 +858,7 @@ export class GameScene extends Phaser.Scene {
     const label = this.add
       .text(x, y, text, { fontFamily: theme.fontFamily, fontStyle: 'bold', color, stroke: '#1b2a3a', strokeThickness: 4 })
       .setOrigin(0.5)
-      .setResolution(window.devicePixelRatio || 1)
+      .setResolution(RENDER_RATIO)
       .setFontSize(Math.round(Math.max(16, this.layout.slotSize * 0.32)))
       .setDepth(DEPTH_POPUP)
       .setAlpha(0);
