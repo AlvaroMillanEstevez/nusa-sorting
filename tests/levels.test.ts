@@ -12,13 +12,18 @@ describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_i
     expect(level.timeLimitSeconds).toBeGreaterThan(0);
   });
 
-  it('has 6-8 shelves, 4-5 item types and at least one back layer', () => {
-    const types = new Set(level.shelves.flat(2).filter((t) => t !== null));
-    expect(level.shelves.length).toBeGreaterThanOrEqual(6);
+  it('has 3-8 shelves, 4-5 item types and something hidden (a back layer or a stack)', () => {
+    const state = createGame(level);
+    const shelfTypes = level.shelves.flat(2).filter((t) => t !== null);
+    const trackTypes = state.tracks.flatMap((t) => t.carriers.flatMap((c) => c.stack.map((i) => i.type)));
+    const types = new Set([...shelfTypes, ...trackTypes]);
+    expect(level.shelves.length).toBeGreaterThanOrEqual(3);
     expect(level.shelves.length).toBeLessThanOrEqual(8);
     expect(types.size).toBeGreaterThanOrEqual(4);
     expect(types.size).toBeLessThanOrEqual(5);
-    expect(level.shelves.some((layers) => layers.length > 1)).toBe(true);
+    const backLayer = level.shelves.some((layers) => layers.length > 1);
+    const deepStack = state.tracks.some((t) => t.carriers.some((c) => c.stack.length > 1));
+    expect(backLayer || deepStack).toBe(true);
   });
 
   it('is solvable even if the player never chains a combo', () => {
@@ -47,7 +52,7 @@ describe('level progression', () => {
   });
 
   it('starts with base levels, then one demo per mechanic, then both obstacles combined', () => {
-    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 6);
+    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 9);
     for (let i = 0; i < BASE_LEVEL_COUNT; i++) expect(kindsOf(i)).toEqual([]);
     expect(kindsOf(3)).toEqual(['combo']);
     expect(kindsOf(4)).toEqual(['lockedShelves']);
@@ -56,6 +61,26 @@ describe('level progression', () => {
     expect(kindsOf(6)).toEqual(['combo', 'lockedShelves', 'roamingBlocker']);
     expect(kindsOf(7)).toEqual(['conveyor']);
     expect(kindsOf(8)).toEqual(['conveyor', 'lockedShelves']);
+    expect(kindsOf(9)).toEqual(['tracks']);
+    expect(kindsOf(10)).toEqual(['tracks']);
+    expect(kindsOf(11)).toEqual(['lockedShelves', 'tracks']);
+  });
+
+  it('gives levels 10-12 the requested column layouts', () => {
+    const shape = (index: number) => {
+      const level = levels[index]!;
+      const state = createGame(level);
+      return level.layout!.columns.map((c) => {
+        if (c.kind === 'shelves') return 'shelves';
+        return state.tracks[c.track]!.speed < 0 ? 'track up' : 'track down';
+      });
+    };
+    expect(shape(9)).toEqual(['shelves', 'track down', 'shelves']);
+    expect(shape(10)).toEqual(['track up', 'shelves', 'track down']);
+    expect(shape(11)[0]).toMatch(/^track/);
+    // Level 12: stacks three deep on its track.
+    const deepest = Math.max(...createGame(levels[11]!).tracks.flatMap((t) => t.carriers.map((c) => c.stack.length)));
+    expect(deepest).toBe(3);
   });
 
   it('runs the second conveyor faster than the first', () => {

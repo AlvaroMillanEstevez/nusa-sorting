@@ -8,11 +8,14 @@ import { level006 } from './level006';
 import { level007 } from './level007';
 import { level008 } from './level008';
 import { level009 } from './level009';
+import { level010 } from './level010';
+import { level011 } from './level011';
+import { level012 } from './level012';
 
 /**
  * Levels in play order: three base levels from easiest to hardest, one demo per mechanic (combo, locked
  * shelves, roaming blocker), one combining both obstacles, then the conveyor prototype: a slow belt alone
- * and a faster belt with a locked shelf.
+ * and a faster belt with a locked shelf; then column layouts with vertical conveyors carrying stacks.
  */
 export const levels: readonly LevelDefinition[] = [
   level001,
@@ -24,6 +27,9 @@ export const levels: readonly LevelDefinition[] = [
   level007,
   level008,
   level009,
+  level010,
+  level011,
+  level012,
 ];
 
 /** Number of leading levels that use no mechanics. */
