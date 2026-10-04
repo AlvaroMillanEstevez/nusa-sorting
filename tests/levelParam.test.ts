@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { wantsGallery } from '../src/dev/galleryParam';
 import { parseLevelParam } from '../src/dev/levelParam';
 import { wantsSaveReset } from '../src/dev/saveParams';
 
@@ -21,5 +22,14 @@ describe('wantsSaveReset (dev only)', () => {
     expect(wantsSaveReset('?level=3&resetSave=1')).toBe(true);
     expect(wantsSaveReset('?level=3')).toBe(false);
     expect(wantsSaveReset('')).toBe(false);
+  });
+});
+
+describe('wantsGallery (dev only)', () => {
+  it('is set by ?gallery, alongside other parameters', () => {
+    expect(wantsGallery('?gallery')).toBe(true);
+    expect(wantsGallery('?resetSave&gallery=1')).toBe(true);
+    expect(wantsGallery('?level=3')).toBe(false);
+    expect(wantsGallery('')).toBe(false);
   });
 });

@@ -25,6 +25,16 @@ export const en = {
   'levels.title': 'Levels',
   'levels.back': 'Back',
   'levels.best': 'Best {score}',
+  'gallery.title': 'Icon gallery',
+  'gallery.vision.normal': 'Normal',
+  'gallery.vision.deuteranopia': 'Deuteranopia',
+  'gallery.vision.protanopia': 'Protanopia',
+  'gallery.style.outlined': 'Style A · outlined',
+  'gallery.style.soft': 'Style B · soft',
+  'gallery.together': 'Together on a shelf (40 px)',
+  'gallery.placeholders': 'Placeholders (no art yet)',
+  'gallery.px': '{n} px',
+  'gallery.loading': 'Drawing…',
 } as const;
 
 export type MessageKey = keyof typeof en;
