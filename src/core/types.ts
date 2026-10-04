@@ -52,21 +52,41 @@ export interface BlockerState {
   readonly removeAtCombo: number;
 }
 
-/** A belt item lifted by the player and not yet placed. Its belt slot stays empty while held. */
-export interface HeldBeltItem {
-  readonly item: Item;
-  readonly beltSlot: number;
+/** Which way a track runs. Positive speeds move right (horizontal) or down (vertical). */
+export type TrackOrientation = 'horizontal' | 'vertical';
+
+/**
+ * A stop on a track. Today the only kind is a single pick-only slot holding a stack of items; only the
+ * top one (stack[0]) can be taken, then the next one moves up. A later kind ('shelf') will be a 3-slot shelf
+ * riding the track that also accepts items.
+ */
+export interface StackCarrier {
+  readonly kind: 'stack';
+  /** Top first; empty when the slot has nothing left. */
+  readonly stack: readonly Item[];
 }
 
-/** Conveyor belt: a loop of single slots moving sideways; present only with the conveyor mechanic. */
-export interface ConveyorState {
-  /** Items by belt slot. Slot identity is fixed; its on-screen position moves with time. */
-  readonly slots: readonly (Item | null)[];
-  /** Belt slots per second; positive moves right. */
+export type Carrier = StackCarrier;
+
+/** A conveyor: a loop of carriers moving at constant speed along one axis. */
+export interface TrackState {
+  readonly orientation: TrackOrientation;
+  /** Carriers per second; the sign is the direction. */
   readonly speed: number;
-  /** Game time the belt has run, in ms; it only advances while playing. */
-  readonly elapsedMs: number;
-  readonly held: HeldBeltItem | null;
+  /** Carrier identity is fixed; where each one is drawn depends on the game time (see carrierOffset). */
+  readonly carriers: readonly Carrier[];
+}
+
+/** A carrier on a track. */
+export interface CarrierRef {
+  readonly track: number;
+  readonly carrier: number;
+}
+
+/** An item taken from a track and not placed yet. Its carrier keeps moving, showing what is left under it. */
+export interface HeldTrackItem {
+  readonly item: Item;
+  readonly from: CarrierRef;
 }
 
 export interface GameState {
@@ -82,7 +102,12 @@ export interface GameState {
   readonly unlockAt: readonly (number | null)[];
   readonly combo: ComboState | null;
   readonly blocker: BlockerState | null;
-  readonly conveyor: ConveyorState | null;
+  /** Conveyor tracks; empty in levels without one. */
+  readonly tracks: readonly TrackState[];
+  /** Game time the tracks have run, in ms; it only advances while playing. */
+  readonly trackTimeMs: number;
+  /** Item taken from a track and not yet placed. */
+  readonly held: HeldTrackItem | null;
 }
 
 export interface Position {
@@ -100,8 +125,8 @@ export type InvalidMoveReason =
   | 'targetOccupied'
   | 'shelfLocked'
   | 'slotBlocked'
-  | 'noConveyor'
-  | 'beltSlotEmpty'
+  | 'noTrack'
+  | 'carrierEmpty'
   | 'alreadyHolding'
   | 'nothingHeld'
   | 'gameOver';
@@ -122,9 +147,9 @@ export type GameEvent =
   | { readonly kind: 'shelfUnlocked'; readonly shelf: number }
   | { readonly kind: 'blockerMoved'; readonly from: SlotRef; readonly to: SlotRef }
   | { readonly kind: 'blockerRemoved'; readonly at: SlotRef }
-  | { readonly kind: 'beltItemTaken'; readonly itemId: number; readonly beltSlot: number }
-  | { readonly kind: 'beltItemReturned'; readonly itemId: number; readonly beltSlot: number }
-  | { readonly kind: 'beltItemPlaced'; readonly itemId: number; readonly beltSlot: number; readonly to: Position };
+  | { readonly kind: 'beltItemTaken'; readonly itemId: number; readonly from: CarrierRef }
+  | { readonly kind: 'beltItemReturned'; readonly itemId: number; readonly to: CarrierRef }
+  | { readonly kind: 'beltItemPlaced'; readonly itemId: number; readonly from: CarrierRef; readonly to: Position };
 
 export type MoveResult =
   | { readonly ok: true; readonly state: GameState; readonly events: readonly GameEvent[] }

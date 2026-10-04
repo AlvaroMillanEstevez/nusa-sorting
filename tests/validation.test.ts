@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, firstMoves, LevelError, oneMoveTraps, validateLevel, type LevelDefinition } from '../src/core';
+import {
+  createGame,
+  firstMoves,
+  isCarrierSource,
+  LevelError,
+  oneMoveTraps,
+  validateLevel,
+  type LevelDefinition,
+} from '../src/core';
 
 /*
  * S0 [D . .] back [A B C]   S1 [A B .]   S2 [C A B]   S3 [C D D]
@@ -40,8 +48,8 @@ describe('one-move traps', () => {
       shelves: [[['A', 'B', null]], [['C', 'C', 'A']]],
       mechanics: [{ kind: 'conveyor', slots: ['C', 'A', 'B', 'B'], speed: 1 }],
     };
-    expect(oneMoveTraps(createGame(beltTrap)).some((move) => 'belt' in move.from)).toBe(true);
-    expect(() => validateLevel(beltTrap)).toThrow(/belt slot/);
+    expect(oneMoveTraps(createGame(beltTrap)).some((move) => isCarrierSource(move.from))).toBe(true);
+    expect(() => validateLevel(beltTrap)).toThrow(/track 0 carrier/);
   });
 
   it('only considers moves the player can make: no locked shelves', () => {
@@ -51,7 +59,7 @@ describe('one-move traps', () => {
       mechanics: [{ kind: 'lockedShelves', shelves: [{ shelf: 2, triplesRequired: 1 }] }],
     };
     const moves = firstMoves(createGame(level));
-    expect(moves.some((m) => !('belt' in m.from) && m.from.shelf === 2)).toBe(false);
+    expect(moves.some((m) => !isCarrierSource(m.from) && m.from.shelf === 2)).toBe(false);
     expect(moves.some((m) => m.to.shelf === 2)).toBe(false);
   });
 });

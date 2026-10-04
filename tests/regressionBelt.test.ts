@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, dropHeld, moveItem, pickFromBelt, returnHeld, tick, type GameState, type MoveResult } from '../src/core';
+import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult } from '../src/core';
 import { levels } from '../src/data/levels';
 import { computeBoardLayout } from '../src/ui/boardLayout';
 import fixture from './fixtures/regression-v3.json';
@@ -9,23 +9,32 @@ import layoutsFixture from './fixtures/layouts-v1.json';
  * Golden recordings made before the belt became a set of tracks with stacks (tests/fixtures/regression-v3.json):
  * levels 8 and 9 played by the solver, random and greedy players, with belt picks, drops, invalid drops and
  * returns, and ticks. All belt calls go through this adapter, so a new belt API only needs a new adapter.
+ *
+ * Today's API: the old single belt is track 0 and its slots are carriers holding one-item stacks; events name
+ * a carrier instead of a belt slot. The adapter translates back to the recording's terms.
  */
 const belt = {
-  pick: (state: GameState, slot: number): MoveResult => pickFromBelt(state, slot),
+  pick: (state: GameState, slot: number): MoveResult => pickFromTrack(state, { track: 0, carrier: slot }),
   drop: (state: GameState, shelf: number, slot: number): MoveResult => dropHeld(state, { shelf, layer: 0, slot }),
   back: (state: GameState): MoveResult => returnHeld(state),
   /** Events as the recording names them. */
-  events: (events: readonly unknown[]): unknown[] => [...events],
+  events: (events: readonly GameEvent[]): unknown[] =>
+    events.map((e) => {
+      if (e.kind === 'beltItemTaken') return { kind: e.kind, itemId: e.itemId, beltSlot: e.from.carrier };
+      if (e.kind === 'beltItemReturned') return { kind: e.kind, itemId: e.itemId, beltSlot: e.to.carrier };
+      if (e.kind === 'beltItemPlaced') return { kind: e.kind, itemId: e.itemId, beltSlot: e.from.carrier, to: e.to };
+      return e;
+    }),
   snapshot: (s: GameState) => ({
     status: s.status,
     loseReason: s.loseReason,
     timeLeftMs: s.timeLeftMs,
     triplesCleared: s.triplesCleared,
-    belt: s.conveyor
+    belt: s.tracks[0]
       ? {
-          slots: s.conveyor.slots.map((i) => i?.id ?? null),
-          elapsedMs: s.conveyor.elapsedMs,
-          held: s.conveyor.held ? { id: s.conveyor.held.item.id, beltSlot: s.conveyor.held.beltSlot } : null,
+          slots: s.tracks[0].carriers.map((c) => c.stack[0]?.id ?? null),
+          elapsedMs: s.trackTimeMs,
+          held: s.held ? { id: s.held.item.id, beltSlot: s.held.from.carrier } : null,
         }
       : null,
     shelves: s.shelves.map((sh) => sh.layers.map((l) => l.map((i) => i?.id ?? null))),
@@ -78,7 +87,7 @@ describe('automatic layout is unchanged', () => {
     const level = levels.find((l) => l.id === id)!;
     const state = createGame(level);
     for (const { w, h, layout } of entry.layouts) {
-      const now = computeBoardLayout(w, h, level.shelves.length, 3, state.combo !== null, state.conveyor?.slots.length ?? 0);
+      const now = computeBoardLayout(w, h, level.shelves.length, 3, state.combo !== null, state.tracks[0]?.carriers.length ?? 0);
       expect(JSON.parse(JSON.stringify(now))).toEqual(layout);
     }
   });

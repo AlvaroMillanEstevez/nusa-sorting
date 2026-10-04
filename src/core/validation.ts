@@ -1,9 +1,11 @@
-import { dropHeld, freeFrontSlots, isShelfLocked, moveItem, pickFromBelt } from './game';
+import { dropHeld, freeFrontSlots, isShelfLocked, moveItem, pickFromTrack } from './game';
 import { createGame, LevelError, type LevelDefinition } from './level';
-import type { GameState, MoveResult, Position } from './types';
+import type { CarrierRef, GameState, MoveResult, Position } from './types';
 
-/** Where a first move takes its item from: a front slot or a belt slot. */
-export type MoveSource = Position | { readonly belt: number };
+/** Where a first move takes its item from: a front slot or the top of a track carrier. */
+export type MoveSource = Position | CarrierRef;
+
+export const isCarrierSource = (source: MoveSource): source is CarrierRef => 'carrier' in source;
 
 export interface FirstMove {
   readonly from: MoveSource;
@@ -12,12 +14,12 @@ export interface FirstMove {
 
 /** Applies a move from a shelf, or a take-and-drop from the belt, as a single action. */
 export function playMove(state: GameState, { from, to }: FirstMove): MoveResult {
-  if (!('belt' in from)) return moveItem(state, from, to);
-  const picked = pickFromBelt(state, from.belt);
+  if (!isCarrierSource(from)) return moveItem(state, from, to);
+  const picked = pickFromTrack(state, from);
   return picked.ok ? dropHeld(picked.state, to) : picked;
 }
 
-/** Every move available at the start: front items on unlocked shelves and belt items, to any free front slot. */
+/** Every move available at the start: front items on unlocked shelves and carrier tops, to any free front slot. */
 export function firstMoves(state: GameState): FirstMove[] {
   const targets = state.shelves.flatMap((_, t) => freeFrontSlots(state, t).map((slot) => ({ shelf: t, layer: 0, slot })));
   const moves: FirstMove[] = [];
@@ -27,8 +29,10 @@ export function firstMoves(state: GameState): FirstMove[] {
       if (item) for (const to of targets) moves.push({ from: { shelf: s, layer: 0, slot }, to });
     });
   });
-  state.conveyor?.slots.forEach((item, belt) => {
-    if (item) for (const to of targets) moves.push({ from: { belt }, to });
+  state.tracks.forEach((trackState, track) => {
+    trackState.carriers.forEach((carrier, index) => {
+      if (carrier.stack.length > 0) for (const to of targets) moves.push({ from: { track, carrier: index }, to });
+    });
   });
   return moves;
 }
@@ -51,7 +55,9 @@ export function validateLevel(level: LevelDefinition): GameState {
   const traps = oneMoveTraps(state);
   if (traps.length > 0) {
     const { from, to } = traps[0]!;
-    const source = 'belt' in from ? `belt slot ${from.belt}` : `shelf ${from.shelf} slot ${from.slot}`;
+    const source = isCarrierSource(from)
+      ? `track ${from.track} carrier ${from.carrier}`
+      : `shelf ${from.shelf} slot ${from.slot}`;
     throw new LevelError(
       `${level.id}: ${traps.length} first move(s) lose at once, e.g. ${source} to shelf ${to.shelf} slot ${to.slot}`,
     );

@@ -36,3 +36,30 @@ describe('spreadEvenly', () => {
     expect(spreadEvenly(['a', 'b'], 2)).toEqual(['a', 'b']);
   });
 });
+
+describe('applyBeltOverrides with several tracks (dev only)', () => {
+  const tracksLevel: LevelDefinition = {
+    id: 'tracks',
+    shelves: level.shelves,
+    mechanics: [
+      {
+        kind: 'tracks',
+        tracks: [
+          { orientation: 'vertical', speed: -0.5, carriers: [['A'], []] },
+          { orientation: 'vertical', speed: 0.8, carriers: [['B'], []] },
+        ],
+      },
+    ],
+  };
+
+  it('sets every track to the new speed, keeping each direction', () => {
+    const tuned = applyBeltOverrides(tracksLevel, '?beltSpeed=2');
+    const tracks = tuned.mechanics![0]!;
+    expect(tracks.kind === 'tracks' && tracks.tracks.map((t) => t.speed)).toEqual([-2, 2]);
+  });
+
+  it('ignores ?beltSlots and missing parameters', () => {
+    expect(applyBeltOverrides(tracksLevel, '?beltSlots=6')).toBe(tracksLevel);
+    expect(applyBeltOverrides(tracksLevel, '')).toBe(tracksLevel);
+  });
+});

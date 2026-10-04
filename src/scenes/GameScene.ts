@@ -227,7 +227,9 @@ export class GameScene extends Phaser.Scene {
         for (const item of layer) if (item) this.createSprite(item);
       }
     }
-    for (const item of this.state.conveyor?.slots ?? []) if (item) this.createSprite(item);
+    for (const track of this.state.tracks) {
+      for (const carrier of track.carriers) for (const item of carrier.stack) this.createSprite(item);
+    }
     this.belt.reset(this.state);
     this.hud.setLevel(index + 1);
     this.hud.setTime(this.state.timeLeftMs);
@@ -318,7 +320,7 @@ export class GameScene extends Phaser.Scene {
       this.level.shelves.length,
       3,
       this.state.combo !== null,
-      this.state.conveyor?.slots.length ?? 0,
+      this.state.tracks[0]?.carriers.length ?? 0,
     );
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow);
     this.overlay.layout(width, height);

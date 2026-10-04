@@ -2,7 +2,7 @@ import { nextRandom } from './random';
 import type {
   BlockerState,
   ComboState,
-  ConveyorState,
+  CarrierRef,
   GameEvent,
   GameState,
   InvalidMoveReason,
@@ -12,6 +12,7 @@ import type {
   Position,
   Shelf,
   SlotRef,
+  TrackState,
   TickResult,
 } from './types';
 
@@ -38,30 +39,41 @@ export function countItems(state: GameState): number {
       for (const slot of layer) if (slot) total++;
     }
   }
-  return total + countBeltItems(state);
+  return total + countTrackItems(state);
 }
 
-/** Items on the conveyor, including one the player is holding. */
-export function countBeltItems(state: GameState): number {
-  const belt = state.conveyor;
-  if (!belt) return 0;
-  return belt.slots.filter((slot) => slot !== null).length + (belt.held ? 1 : 0);
+/** Items on tracks, including one the player is holding. */
+export function countTrackItems(state: GameState): number {
+  let total = state.held ? 1 : 0;
+  for (const track of state.tracks) for (const carrier of track.carriers) total += carrier.stack.length;
+  return total;
 }
 
 /**
- * Where a belt slot currently is along the belt, in slot units in [0, K): slot i starts at i and moves
- * `speed` slots per second of game time, wrapping around. Pure function of the belt's elapsed time.
+ * Where a carrier is along its track, in carrier units in [0, K): carrier i starts at i and moves `speed`
+ * carriers per second of game time, wrapping around. A pure function of the tracks' running time.
  */
-export function beltSlotOffset(belt: ConveyorState, slot: number): number {
-  const k = belt.slots.length;
-  const raw = slot + (belt.speed * belt.elapsedMs) / 1000;
+export function carrierOffset(track: TrackState, carrier: number, trackTimeMs: number): number {
+  const k = track.carriers.length;
+  const raw = carrier + (track.speed * trackTimeMs) / 1000;
   return ((raw % k) + k) % k;
 }
 
-/** Belt slot holding an item (not counting a held item), or null. */
-export function findBeltItem(state: GameState, itemId: number): number | null {
-  const index = state.conveyor?.slots.findIndex((item) => item?.id === itemId) ?? -1;
-  return index === -1 ? null : index;
+/** Where an item sits on a track (depth 0 is the top of its stack), or null if it is not on one. */
+export function findTrackItem(state: GameState, itemId: number): (CarrierRef & { depth: number }) | null {
+  for (let track = 0; track < state.tracks.length; track++) {
+    const carriers = state.tracks[track]!.carriers;
+    for (let carrier = 0; carrier < carriers.length; carrier++) {
+      const depth = carriers[carrier]!.stack.findIndex((item) => item.id === itemId);
+      if (depth !== -1) return { track, carrier, depth };
+    }
+  }
+  return null;
+}
+
+/** The item a carrier offers (top of its stack), or null. */
+export function carrierTop(state: GameState, ref: CarrierRef): Item | null {
+  return state.tracks[ref.track]?.carriers[ref.carrier]?.stack[0] ?? null;
 }
 
 /** True when the board has no items left. */
@@ -105,8 +117,8 @@ export function isBlocked(state: GameState): boolean {
   const canGive = state.shelves.map(
     (shelf, s) => !isShelfLocked(state, s) && shelf.layers[0]!.some((slot) => slot !== null),
   );
-  // Belt items can go to any shelf, but the belt itself never counts as free space.
-  const beltGives = countBeltItems(state) > 0;
+  // Track items can go to any shelf, but tracks never count as free space.
+  const beltGives = countTrackItems(state) > 0;
   const canMoveInto = (target: number) =>
     freeFrontSlots(state, target).length > 0 &&
     (beltGives || canGive.some((gives, source) => gives && source !== target));
@@ -119,8 +131,7 @@ export function tick(state: GameState, elapsedMs: number): TickResult {
   const events: GameEvent[] = [];
   let next = state;
 
-  const belt = state.conveyor;
-  if (belt) next = { ...next, conveyor: { ...belt, elapsedMs: belt.elapsedMs + elapsedMs } };
+  if (state.tracks.length > 0) next = { ...next, trackTimeMs: state.trackTimeMs + elapsedMs };
 
   const combo = state.combo;
   if (combo && combo.windowLeftMs > 0) {
@@ -198,63 +209,67 @@ function finishMove(state: GameState, events: GameEvent[]): { state: GameState; 
 }
 
 /**
- * Lifts the item in a belt slot into the player's hand. The slot stays empty and keeps moving.
- * Only one belt item can be held at a time.
+ * Takes the top item of a carrier into the player's hand; the next item of its stack becomes the top, and the
+ * carrier keeps moving. Only one track item can be held at a time.
  */
-export function pickFromBelt(state: GameState, beltSlot: number): MoveResult {
+export function pickFromTrack(state: GameState, from: CarrierRef): MoveResult {
   if (state.status !== 'playing') return { ok: false, reason: 'gameOver' };
-  const belt = state.conveyor;
-  if (!belt) return { ok: false, reason: 'noConveyor' };
-  if (!Number.isInteger(beltSlot) || beltSlot < 0 || beltSlot >= belt.slots.length) {
-    return { ok: false, reason: 'invalidPosition' };
-  }
-  if (belt.held) return { ok: false, reason: 'alreadyHolding' };
-  const item = belt.slots[beltSlot];
-  if (!item) return { ok: false, reason: 'beltSlotEmpty' };
+  if (state.tracks.length === 0) return { ok: false, reason: 'noTrack' };
+  const track = state.tracks[from.track];
+  const carrier = track?.carriers[from.carrier];
+  if (!track || !carrier) return { ok: false, reason: 'invalidPosition' };
+  if (state.held) return { ok: false, reason: 'alreadyHolding' };
+  const item = carrier.stack[0];
+  if (!item) return { ok: false, reason: 'carrierEmpty' };
 
-  const slots = belt.slots.slice();
-  slots[beltSlot] = null;
+  const ref = { track: from.track, carrier: from.carrier };
   return {
     ok: true,
-    state: { ...state, conveyor: { ...belt, slots, held: { item, beltSlot } } },
-    events: [{ kind: 'beltItemTaken', itemId: item.id, beltSlot }],
+    state: { ...setStack(state, ref, carrier.stack.slice(1)), held: { item, from: ref } },
+    events: [{ kind: 'beltItemTaken', itemId: item.id, from: ref }],
   };
 }
 
-/** Puts the held belt item back in its own belt slot, wherever the belt has moved it. */
+/** Puts the held item back on top of its own carrier's stack, wherever the track has moved it. */
 export function returnHeld(state: GameState): MoveResult {
-  const belt = state.conveyor;
-  if (!belt?.held) return { ok: false, reason: 'nothingHeld' };
-  const { item, beltSlot } = belt.held;
-  const slots = belt.slots.slice();
-  slots[beltSlot] = item;
+  const held = state.held;
+  if (!held) return { ok: false, reason: 'nothingHeld' };
+  const stack = state.tracks[held.from.track]!.carriers[held.from.carrier]!.stack;
   return {
     ok: true,
-    state: { ...state, conveyor: { ...belt, slots, held: null } },
-    events: [{ kind: 'beltItemReturned', itemId: item.id, beltSlot }],
+    state: { ...setStack(state, held.from, [held.item, ...stack]), held: null },
+    events: [{ kind: 'beltItemReturned', itemId: held.item.id, to: held.from }],
   };
 }
 
 /**
- * Places the held belt item into a free front slot, with the same rules as a shelf-to-shelf move.
+ * Places the held track item into a free front slot, with the same rules as a shelf-to-shelf move.
  * Invalid targets leave the state untouched (still holding); the caller then returns it with returnHeld.
  */
 export function dropHeld(state: GameState, to: Position): MoveResult {
   if (state.status !== 'playing') return { ok: false, reason: 'gameOver' };
-  const belt = state.conveyor;
-  if (!belt?.held) return { ok: false, reason: 'nothingHeld' };
+  const held = state.held;
+  if (!held) return { ok: false, reason: 'nothingHeld' };
   if (!isValidPosition(state, to)) return { ok: false, reason: 'invalidPosition' };
   if (to.layer !== 0) return { ok: false, reason: 'notFrontLayer' };
   if (isShelfLocked(state, to.shelf)) return { ok: false, reason: 'shelfLocked' };
   const invalid = checkTargetSlot(state, to);
   if (invalid) return { ok: false, reason: invalid };
 
-  const { item, beltSlot } = belt.held;
   const shelves = state.shelves.slice();
-  shelves[to.shelf] = setFrontSlot(shelves[to.shelf]!, to.slot, item);
-  const events: GameEvent[] = [{ kind: 'beltItemPlaced', itemId: item.id, beltSlot, to }];
+  shelves[to.shelf] = setFrontSlot(shelves[to.shelf]!, to.slot, held.item);
+  const events: GameEvent[] = [{ kind: 'beltItemPlaced', itemId: held.item.id, from: held.from, to }];
   shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, events);
-  return { ok: true, ...finishMove({ ...state, shelves, conveyor: { ...belt, held: null } }, events) };
+  return { ok: true, ...finishMove({ ...state, shelves, held: null }, events) };
+}
+
+function setStack(state: GameState, ref: CarrierRef, stack: readonly Item[]): GameState {
+  const tracks = state.tracks.slice();
+  const track = tracks[ref.track]!;
+  const carriers = track.carriers.slice();
+  carriers[ref.carrier] = { ...carriers[ref.carrier]!, stack };
+  tracks[ref.track] = { ...track, carriers };
+  return { ...state, tracks };
 }
 
 function setFrontSlot(shelf: Shelf, slot: number, value: Item | null): Shelf {

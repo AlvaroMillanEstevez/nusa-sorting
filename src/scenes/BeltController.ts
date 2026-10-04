@@ -1,9 +1,9 @@
 import * as Phaser from 'phaser';
 import {
-  beltSlotOffset,
+  carrierOffset,
   dropHeld,
-  findBeltItem,
-  pickFromBelt,
+  findTrackItem,
+  pickFromTrack,
   returnHeld,
   type GameEvent,
   type GameState,
@@ -75,7 +75,7 @@ export class BeltController {
     this.press = null;
     this.tapHeldId = null;
     this.returning.clear();
-    this.view.reset(state.conveyor);
+    this.view.reset(state.tracks[0] ?? null);
   }
 
   relayout(): void {
@@ -86,11 +86,11 @@ export class BeltController {
   /** True for items that are on the belt or held from it; the scene leaves those sprites to the belt. */
   owns(itemId: number): boolean {
     const state = this.host.getState();
-    return findBeltItem(state, itemId) !== null || state.conveyor?.held?.item.id === itemId;
+    return findTrackItem(state, itemId) !== null || state.held?.item.id === itemId;
   }
 
   get holding(): boolean {
-    return this.host.getState().conveyor?.held != null;
+    return this.host.getState().held !== null;
   }
 
   private heldScale(): number {
@@ -105,17 +105,21 @@ export class BeltController {
   /** Per frame: plates and belt items follow the belt; returning items fly back to their moving slot. */
   update(): void {
     const belt = this.belt;
-    const conveyor = this.host.getState().conveyor;
-    this.view.update(conveyor);
-    if (!belt || !conveyor) return;
+    const state = this.host.getState();
+    const track = state.tracks[0] ?? null;
+    this.view.update(track, state.trackTimeMs);
+    if (!belt || !track) return;
     const now = this.host.scene.time.now;
     const scale = this.itemScale();
-    for (let i = 0; i < conveyor.slots.length; i++) {
-      const item = conveyor.slots[i];
+    for (let i = 0; i < track.carriers.length; i++) {
+      const stack = track.carriers[i]!.stack;
+      // Only the top of a stack is shown on the belt for now.
+      for (let depth = 1; depth < stack.length; depth++) this.host.spriteFor(stack[depth]!.id)?.setAlpha(0);
+      const item = stack[0];
       if (!item) continue;
       const sprite = this.host.spriteFor(item.id);
       if (!sprite) continue;
-      const pose = beltPose(belt, beltSlotOffset(conveyor, i), this.pose);
+      const pose = beltPose(belt, carrierOffset(track, i, state.trackTimeMs), this.pose);
       const flight = this.returning.get(item.id);
       if (flight) {
         const t = Math.min(1, (now - flight.startedAt) / RETURN_MS);
@@ -140,20 +144,21 @@ export class BeltController {
   onPointerDown(pointer: Phaser.Input.Pointer): boolean {
     const belt = this.belt;
     const state = this.host.getState();
-    if (!belt || !state.conveyor || state.status !== 'playing' || this.press) return false;
+    if (!belt || state.tracks.length === 0 || state.status !== 'playing' || this.press) return false;
     if (!isOnBelt(belt, pointer.x, pointer.y)) return false;
 
     // A second belt press while holding something sends the held item back first.
     if (this.holding) this.sendBack(false);
-    const conveyor = this.host.getState().conveyor!;
-    const offsets = conveyor.slots.map((item, i) => (item ? beltSlotOffset(conveyor, i) : null));
+    const now = this.host.getState();
+    const track = now.tracks[0]!;
+    const offsets = track.carriers.map((carrier, i) => (carrier.stack.length ? carrierOffset(track, i, now.trackTimeMs) : null));
     const slot = beltSlotAt(belt, offsets, pointer.x, pointer.y);
     if (slot === null) return true;
 
-    const result = pickFromBelt(this.host.getState(), slot);
+    const result = pickFromTrack(this.host.getState(), { track: 0, carrier: slot });
     if (!result.ok) return true;
     this.host.setState(result.state);
-    const itemId = result.state.conveyor!.held!.item.id;
+    const itemId = result.state.held!.item.id;
     this.returning.delete(itemId);
     this.press = { pointerId: pointer.id, itemId, dragging: false };
     this.host.onPick();
@@ -211,7 +216,7 @@ export class BeltController {
   /** Sends a held item back to its slot (e.g. when the player starts doing something else). */
   sendBack(withFeedback: boolean): void {
     const state = this.host.getState();
-    const held = state.conveyor?.held;
+    const held = state.held;
     if (!held) return;
     const result = returnHeld(state);
     if (!result.ok) return;

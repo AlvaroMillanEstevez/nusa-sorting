@@ -347,7 +347,9 @@ describe('blocked detection', () => {
       unlockAt: [null],
       combo: null,
       blocker: null,
-      conveyor: null,
+      tracks: [],
+      trackTimeMs: 0,
+      held: null,
     };
     expect(isBlocked(reorderOnly)).toBe(true);
   });

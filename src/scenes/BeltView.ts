@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { beltSlotOffset, type ConveyorState } from '../core';
+import { carrierOffset, type TrackState } from '../core';
 import { beltPose, type BeltLayout, type BeltPose } from '../ui/boardLayout';
 import { theme } from '../ui/theme';
 
@@ -37,9 +37,9 @@ export class BeltView {
   }
 
   /** Builds the strip for a level's belt, or hides it with null. */
-  reset(belt: ConveyorState | null): void {
+  reset(track: TrackState | null): void {
     for (const plate of this.plates) plate.destroy();
-    this.plates = (belt?.slots ?? []).map(() => this.scene.add.image(0, 0, PLATE_TEXTURE).setDepth(DEPTH_PLATE));
+    this.plates = (track?.carriers ?? []).map(() => this.scene.add.image(0, 0, PLATE_TEXTURE).setDepth(DEPTH_PLATE));
   }
 
   relayout(layout: BeltLayout | null): void {
@@ -62,11 +62,11 @@ export class BeltView {
   }
 
   /** Moves the plates to the belt's current position. Called every frame; allocates nothing. */
-  update(belt: ConveyorState | null): void {
+  update(track: TrackState | null, trackTimeMs: number): void {
     const layout = this.layout;
-    if (!belt || !layout) return;
+    if (!track || !layout) return;
     for (let i = 0; i < this.plates.length; i++) {
-      const pose = beltPose(layout, beltSlotOffset(belt, i), this.pose);
+      const pose = beltPose(layout, carrierOffset(track, i, trackTimeMs), this.pose);
       this.plates[i]!.setPosition(pose.x, pose.y).setAlpha(pose.alpha);
     }
   }

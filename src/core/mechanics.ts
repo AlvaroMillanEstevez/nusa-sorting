@@ -4,7 +4,12 @@ import type { SlotRef } from './types';
  * Optional rules a level can switch on. A level without mechanics plays exactly like the base game.
  * Each kind may appear at most once per level.
  */
-export type MechanicDefinition = ComboMechanic | LockedShelvesMechanic | RoamingBlockerMechanic | ConveyorMechanic;
+export type MechanicDefinition =
+  | ComboMechanic
+  | LockedShelvesMechanic
+  | RoamingBlockerMechanic
+  | ConveyorMechanic
+  | TracksMechanic;
 
 /** Every triple scores; triples cleared within the window of the previous one grow a combo multiplier. */
 export interface ComboMechanic {
@@ -47,9 +52,29 @@ export interface ConveyorMechanic {
   readonly speed: number;
 }
 
+/**
+ * One or more conveyor tracks, horizontal or vertical, each with its own speed and direction. Every carrier
+ * is a pick-only slot holding a stack of items, top first. `conveyor` is the single-track shorthand used by
+ * levels 8 and 9; a level uses one or the other.
+ */
+export interface TracksMechanic {
+  readonly kind: 'tracks';
+  readonly tracks: readonly TrackDefinition[];
+}
+
+export interface TrackDefinition {
+  readonly orientation: 'horizontal' | 'vertical';
+  /** Carriers per second; positive moves right or down, negative left or up. */
+  readonly speed: number;
+  /** One stack per carrier, top item first; [] is an empty carrier. K is `carriers.length`. */
+  readonly carriers: readonly (readonly string[])[];
+}
+
 export const CONVEYOR_LIMITS = {
   maxSlots: 12,
   maxSpeed: 4,
+  maxTracks: 4,
+  maxStackDepth: 5,
 } as const;
 
 export const COMBO_DEFAULTS = {

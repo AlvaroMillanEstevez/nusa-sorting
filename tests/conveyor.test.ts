@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  beltSlotOffset,
+  carrierOffset,
   countItems,
   createGame,
   dropHeld,
   isBlocked,
   LevelError,
   moveItem,
-  pickFromBelt,
+  pickFromTrack,
   returnHeld,
   tick,
   type GameState,
@@ -31,6 +31,14 @@ function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
   return result as Extract<T, { ok: true }>;
 }
 
+/** The legacy single belt is track 0; its slots are carriers. */
+const slot = (carrier: number) => ({ track: 0, carrier });
+const pickFromBelt = (state: GameState, carrier: number) => pickFromTrack(state, slot(carrier));
+/** Belt contents as item ids or null: what each carrier shows on top. */
+const beltIds = (state: GameState) => state.tracks[0]!.carriers.map((c) => c.stack[0]?.id ?? null);
+const beltTops = (state: GameState) => state.tracks[0]!.carriers.map((c) => c.stack[0] ?? null);
+const offset = (state: GameState, carrier: number) => carrierOffset(state.tracks[0]!, carrier, state.trackTimeMs);
+
 const pickAndDrop = (state: GameState, beltSlot: number, to: Position) =>
   ok(dropHeld(ok(pickFromBelt(state, beltSlot)).state, to));
 
@@ -45,7 +53,7 @@ describe('conveyor level format', () => {
     const withBelt = createGame(basic);
     const shelfIds = withBelt.shelves.flatMap((s) => s.layers.flat()).flatMap((i) => (i ? [i.id] : []));
     expect(shelfIds).toEqual([1, 2, 3, 4]);
-    expect(withBelt.conveyor!.slots.map((i) => i?.id ?? null)).toEqual([5, null, 6, null]);
+    expect(beltIds(withBelt)).toEqual([5, null, 6, null]);
   });
 
   // Shelves that are complete on their own, so each case fails only for the belt rule it breaks.
@@ -73,19 +81,19 @@ describe('conveyor level format', () => {
 describe('belt movement', () => {
   it('is a deterministic function of game time, looping around', () => {
     let state = createGame({ ...basic, mechanics: [belt(['A', null, 'B', null], 0.5)] });
-    expect(beltSlotOffset(state.conveyor!, 0)).toBe(0);
+    expect(offset(state, 0)).toBe(0);
     state = tick(state, 1000).state;
-    expect(beltSlotOffset(state.conveyor!, 0)).toBeCloseTo(0.5);
-    expect(beltSlotOffset(state.conveyor!, 3)).toBeCloseTo(3.5);
+    expect(offset(state, 0)).toBeCloseTo(0.5);
+    expect(offset(state, 3)).toBeCloseTo(3.5);
     state = tick(state, 2000).state;
     // Slot 3 has gone past the end (K = 4) and reappeared at the start.
-    expect(beltSlotOffset(state.conveyor!, 3)).toBeCloseTo(0.5);
+    expect(offset(state, 3)).toBeCloseTo(0.5);
   });
 
   it('moves left with a negative speed and wraps the other way', () => {
     const state = tick(createGame({ ...basic, mechanics: [belt(['A', null, 'B', null], -1)] }), 1500).state;
-    expect(beltSlotOffset(state.conveyor!, 0)).toBeCloseTo(2.5);
-    expect(beltSlotOffset(state.conveyor!, 2)).toBeCloseTo(0.5);
+    expect(offset(state, 0)).toBeCloseTo(2.5);
+    expect(offset(state, 2)).toBeCloseTo(0.5);
   });
 
   it('stops when the game is not being played', () => {
@@ -96,7 +104,7 @@ describe('belt movement', () => {
     const timed = createGame({ ...basic, timeLimitSeconds: 1 });
     const lost = tick(timed, 1000).state;
     expect(lost.status).toBe('lost');
-    expect(tick(lost, 5000).state.conveyor!.elapsedMs).toBe(lost.conveyor!.elapsedMs);
+    expect(tick(lost, 5000).state.trackTimeMs).toBe(lost.trackTimeMs);
   });
 });
 
@@ -104,26 +112,26 @@ describe('taking items from the belt', () => {
   it('lifts the item, leaving its slot empty and still moving', () => {
     const state = createGame(basic);
     const picked = ok(pickFromBelt(state, 0));
-    expect(picked.events).toEqual([{ kind: 'beltItemTaken', itemId: 5, beltSlot: 0 }]);
-    expect(picked.state.conveyor!.slots[0]).toBeNull();
-    expect(picked.state.conveyor!.held).toEqual({ item: { id: 5, type: 'A' }, beltSlot: 0 });
+    expect(picked.events).toEqual([{ kind: 'beltItemTaken', itemId: 5, from: slot(0) }]);
+    expect(beltTops(picked.state)[0]).toBeNull();
+    expect(picked.state.held).toEqual({ item: { id: 5, type: 'A' }, from: slot(0) });
     // Held items still count: picking does not win or lose anything.
     expect(countItems(picked.state)).toBe(6);
     const later = tick(picked.state, 750).state;
-    expect(beltSlotOffset(later.conveyor!, 0)).toBeCloseTo(0.75);
+    expect(offset(later, 0)).toBeCloseTo(0.75);
   });
 
   it('rejects empty slots, a second pick, missing belts and finished games without changing the state', () => {
     const state = createGame(basic);
     const snapshot = structuredClone(state);
-    expect(pickFromBelt(state, 1)).toEqual({ ok: false, reason: 'beltSlotEmpty' });
+    expect(pickFromBelt(state, 1)).toEqual({ ok: false, reason: 'carrierEmpty' });
     expect(pickFromBelt(state, 9)).toEqual({ ok: false, reason: 'invalidPosition' });
     expect(state).toEqual(snapshot);
     const holding = ok(pickFromBelt(state, 0)).state;
     expect(pickFromBelt(holding, 2)).toEqual({ ok: false, reason: 'alreadyHolding' });
     expect(pickFromBelt(createGame({ id: 'plain', shelves: basic.shelves.slice(0, 1).concat([[['A', 'B', 'B']], [['B', null, null]]]) }), 0)).toEqual({
       ok: false,
-      reason: 'noConveyor',
+      reason: 'noTrack',
     });
     expect(returnHeld(state)).toEqual({ ok: false, reason: 'nothingHeld' });
     expect(dropHeld(state, front(0, 2))).toEqual({ ok: false, reason: 'nothingHeld' });
@@ -132,7 +140,7 @@ describe('taking items from the belt', () => {
   it('places the held item like a normal move, forming triples, and wins when the belt is empty too', () => {
     const first = pickAndDrop(createGame(basic), 0, front(0, 2));
     expect(first.events.map((e) => e.kind)).toEqual(['beltItemPlaced', 'tripleCleared']);
-    expect(first.events[0]).toEqual({ kind: 'beltItemPlaced', itemId: 5, beltSlot: 0, to: front(0, 2) });
+    expect(first.events[0]).toEqual({ kind: 'beltItemPlaced', itemId: 5, from: slot(0), to: front(0, 2) });
     expect(first.state.status).toBe('playing');
     const second = pickAndDrop(first.state, 2, front(1, 2));
     expect(second.events.map((e) => e.kind)).toEqual(['beltItemPlaced', 'tripleCleared', 'won']);
@@ -148,10 +156,10 @@ describe('taking items from the belt', () => {
 
     state = tick(state, 1250).state;
     const returned = ok(returnHeld(state));
-    expect(returned.events).toEqual([{ kind: 'beltItemReturned', itemId: 5, beltSlot: 0 }]);
-    expect(returned.state.conveyor!.slots[0]).toEqual({ id: 5, type: 'A' });
-    expect(returned.state.conveyor!.held).toBeNull();
-    expect(beltSlotOffset(returned.state.conveyor!, 0)).toBeCloseTo(1.25);
+    expect(returned.events).toEqual([{ kind: 'beltItemReturned', itemId: 5, to: slot(0) }]);
+    expect(beltTops(returned.state)[0]).toEqual({ id: 5, type: 'A' });
+    expect(returned.state.held).toBeNull();
+    expect(offset(returned.state, 0)).toBeCloseTo(1.25);
   });
 
   it('respects locked shelves and blocked slots when dropping', () => {
@@ -187,7 +195,7 @@ describe('belt and the end of the game', () => {
     });
     const later = tick(state, 10_000);
     expect(later.events).toEqual([]);
-    expect(later.state.conveyor!.slots.every((slot) => slot?.type === 'A')).toBe(true);
+    expect(beltTops(later.state).every((item) => item?.type === 'A')).toBe(true);
   });
 
   it('counts the belt as a source but never as free space', () => {
@@ -204,7 +212,7 @@ describe('belt and the end of the game', () => {
     const result = pickAndDrop(state, 0, front(0, 2));
     expect(result.state).toMatchObject({ status: 'lost', loseReason: 'blocked' });
     expect(result.events.at(-1)).toEqual({ kind: 'lost', reason: 'blocked' });
-    expect(result.state.conveyor!.slots.filter(Boolean)).toHaveLength(3);
+    expect(beltTops(result.state).filter(Boolean)).toHaveLength(3);
   });
 
   it('lets a single shelf with free space start unblocked when the belt can feed it', () => {
@@ -247,7 +255,7 @@ describe('invariants with a belt', () => {
       for (let step = 0; step < 150 && state.status === 'playing'; step++) {
         state = tick(state, random() * 3000).state;
         // Sometimes pick something and put it straight back, as an invalid drop would.
-        const full = state.conveyor!.slots.flatMap((slot, b) => (slot ? [b] : []));
+        const full = beltTops(state).flatMap((item, b) => (item ? [b] : []));
         if (full.length > 0 && random() < 0.2) {
           state = ok(returnHeld(ok(pickFromBelt(state, full[Math.floor(random() * full.length)]!)).state)).state;
         }
