@@ -1,6 +1,7 @@
 export const en = {
   'game.title': 'Nusa Sorting',
   'hud.level': 'Level {n}',
+  'hud.specialLevel': 'Special level {n}',
   'hud.restart': 'Restart',
   'hud.score': 'Score {score}',
   'hud.combo': 'Combo x{n}',

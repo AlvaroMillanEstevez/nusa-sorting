@@ -163,8 +163,11 @@ export class Hud {
     this.timerText.setPosition(x, this.hudHeight / 2);
   }
 
-  setLevel(levelNumber: number): void {
-    this.levelText.setText(t('hud.level', { n: levelNumber }));
+  /** The level label; special levels say so, in the combo colour. */
+  setLevel(levelNumber: number, special = false): void {
+    this.levelText
+      .setText(t(special ? 'hud.specialLevel' : 'hud.level', { n: levelNumber }))
+      .setColor(special ? theme.comboColor : theme.titleColor);
     this.placeTimer();
   }
 

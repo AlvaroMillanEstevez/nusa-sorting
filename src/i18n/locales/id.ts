@@ -3,6 +3,7 @@ import type { MessageKey } from './en';
 export const id: Record<MessageKey, string> = {
   'game.title': 'Nusa Sorting',
   'hud.level': 'Level {n}',
+  'hud.specialLevel': 'Level spesial {n}',
   'hud.restart': 'Ulangi',
   'hud.score': 'Skor {score}',
   'hud.combo': 'Kombo x{n}',

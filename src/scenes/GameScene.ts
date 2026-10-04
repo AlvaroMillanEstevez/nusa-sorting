@@ -4,6 +4,7 @@ import {
   findItem,
   freeFrontSlots,
   isShelfLocked,
+  isSpecialLevel,
   isSlotBlocked,
   itemAt,
   moveItem,
@@ -349,7 +350,7 @@ export class GameScene extends Phaser.Scene {
       for (const carrier of track.carriers) for (const item of stackOf(carrier)) this.createSprite(item);
     }
     this.belt.reset(this.state);
-    this.hud.setLevel(index + 1);
+    this.hud.setLevel(index + 1, isSpecialLevel(this.level));
     this.hud.setTime(this.state.timeLeftMs);
     this.hud.setScore(this.state.combo.score, false);
     this.hud.setCombo(0, 0, 0);

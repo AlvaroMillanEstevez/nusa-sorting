@@ -14,6 +14,7 @@ import {
   type LevelDefinition,
   type Position,
   startClock,
+  isSpecialLevel,
 } from '../src/core';
 import { applyMove, boardKinds, front, itemIds, rng, validMoves } from './helpers';
 
@@ -362,5 +363,14 @@ describe('blocked detection', () => {
 
   it('rejects levels that start blocked', () => {
     expect(() => createGame({ id: 'x', shelves: [[['A', 'A', 'B']], [['B', 'B', 'A']]] })).toThrow(/starts blocked/);
+  });
+});
+
+describe('special levels', () => {
+  it('are the levels with a theme, given as a kebab-case id', () => {
+    expect(isSpecialLevel(testLevel)).toBe(false);
+    expect(isSpecialLevel({ ...testLevel, theme: 'night-market' })).toBe(true);
+    expect(() => createGame({ ...testLevel, theme: 'night-market' })).not.toThrow();
+    expect(() => createGame({ ...testLevel, theme: 'Night Market' })).toThrow(/theme must be a kebab-case id/);
   });
 });

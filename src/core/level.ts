@@ -47,6 +47,16 @@ export interface LevelDefinition {
   readonly mechanics?: readonly MechanicDefinition[];
   /** Column layout; omitted: shelves in an automatic grid with at most one horizontal track below. */
   readonly layout?: ColumnLayoutDefinition;
+  /**
+   * Theme of a special level: any level with a theme is special (the HUD says so). Themes will bring their own
+   * decoration; for now a special level's twist comes from existing mechanics only.
+   */
+  readonly theme?: string;
+}
+
+/** Special levels are the ones with a theme. */
+export function isSpecialLevel(level: LevelDefinition): boolean {
+  return level.theme !== undefined;
 }
 
 export class LevelError extends Error {}
@@ -57,6 +67,9 @@ export function createGame(level: LevelDefinition): GameState {
   const { timeLimitSeconds } = level;
   if (timeLimitSeconds !== undefined && !(timeLimitSeconds > 0)) {
     throw new LevelError(`${level.id}: time limit must be positive`);
+  }
+  if (level.theme !== undefined && !/^[a-z]+(-[a-z]+)*$/.test(level.theme)) {
+    throw new LevelError(`${level.id}: theme must be a kebab-case id`);
   }
 
   const counts = new Map<ItemType, number>();
