@@ -14,6 +14,7 @@ import {
   type LevelDefinition,
   type MechanicDefinition,
   type Position,
+  stackOf,
 } from '../src/core';
 import { applyMove, boardKinds, front, itemIds, rng, validMoves } from './helpers';
 
@@ -35,8 +36,8 @@ function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
 const slot = (carrier: number) => ({ track: 0, carrier });
 const pickFromBelt = (state: GameState, carrier: number) => pickFromTrack(state, slot(carrier));
 /** Belt contents as item ids or null: what each carrier shows on top. */
-const beltIds = (state: GameState) => state.tracks[0]!.carriers.map((c) => c.stack[0]?.id ?? null);
-const beltTops = (state: GameState) => state.tracks[0]!.carriers.map((c) => c.stack[0] ?? null);
+const beltIds = (state: GameState) => state.tracks[0]!.carriers.map((c) => stackOf(c)[0]?.id ?? null);
+const beltTops = (state: GameState) => state.tracks[0]!.carriers.map((c) => stackOf(c)[0] ?? null);
 const offset = (state: GameState, carrier: number) => carrierOffset(state.tracks[0]!, carrier, state.trackTimeMs);
 
 const pickAndDrop = (state: GameState, beltSlot: number, to: Position) =>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countItems, createGame, isWon, tick, validateLevel, type GameState, type MechanicDefinition } from '../src/core';
+import { countItems, createGame, isWon, tick, validateLevel, type GameState, type MechanicDefinition, stackOf } from '../src/core';
 import { BASE_LEVEL_COUNT, levels } from '../src/data/levels';
 import { validateLevelLayout } from '../src/ui/levelLayout';
 import { applyMove, greedyWinRate, simulate, solve } from './helpers';
@@ -15,14 +15,14 @@ describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_i
   it('has 3-8 shelves, 4-5 item types and something hidden (a back layer or a stack)', () => {
     const state = createGame(level);
     const shelfTypes = level.shelves.flat(2).filter((t) => t !== null);
-    const trackTypes = state.tracks.flatMap((t) => t.carriers.flatMap((c) => c.stack.map((i) => i.type)));
+    const trackTypes = state.tracks.flatMap((t) => t.carriers.flatMap((c) => stackOf(c).map((i) => i.type)));
     const types = new Set([...shelfTypes, ...trackTypes]);
     expect(level.shelves.length).toBeGreaterThanOrEqual(3);
     expect(level.shelves.length).toBeLessThanOrEqual(8);
     expect(types.size).toBeGreaterThanOrEqual(4);
     expect(types.size).toBeLessThanOrEqual(5);
     const backLayer = level.shelves.some((layers) => layers.length > 1);
-    const deepStack = state.tracks.some((t) => t.carriers.some((c) => c.stack.length > 1));
+    const deepStack = state.tracks.some((t) => t.carriers.some((c) => stackOf(c).length > 1));
     expect(backLayer || deepStack).toBe(true);
   });
 
@@ -79,7 +79,7 @@ describe('level progression', () => {
     expect(shape(10)).toEqual(['track up', 'shelves', 'track down']);
     expect(shape(11)[0]).toMatch(/^track/);
     // Level 12: stacks three deep on its track.
-    const deepest = Math.max(...createGame(levels[11]!).tracks.flatMap((t) => t.carriers.map((c) => c.stack.length)));
+    const deepest = Math.max(...createGame(levels[11]!).tracks.flatMap((t) => t.carriers.map((c) => stackOf(c).length)));
     expect(deepest).toBe(3);
   });
 

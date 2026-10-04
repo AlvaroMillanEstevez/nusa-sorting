@@ -18,6 +18,7 @@ import {
   type GameState,
   type LevelDefinition,
   type TrackDefinition,
+  stackOf,
 } from '../src/core';
 import { front } from './helpers';
 
@@ -52,8 +53,8 @@ describe('tracks: data and ids', () => {
     const state = createGame(twoTracks);
     expect(state.tracks).toHaveLength(2);
     expect(state.tracks[0]!.orientation).toBe('vertical');
-    expect(state.tracks[0]!.carriers.map((c) => c.stack.map((i) => i.id))).toEqual([[7, 8], [9]]);
-    expect(state.tracks[1]!.carriers.map((c) => c.stack.map((i) => i.id))).toEqual([[], [10, 11, 12]]);
+    expect(state.tracks[0]!.carriers.map((c) => stackOf(c).map((i) => i.id))).toEqual([[7, 8], [9]]);
+    expect(state.tracks[1]!.carriers.map((c) => stackOf(c).map((i) => i.id))).toEqual([[], [10, 11, 12]]);
     expect(countTrackItems(state)).toBe(6);
     expect(countItems(state)).toBe(12);
     expect(findTrackItem(state, 8)).toEqual({ track: 0, carrier: 0, depth: 1 });
@@ -90,7 +91,7 @@ describe('column layouts (structure)', () => {
   it.each([
     ['no layout with vertical tracks', undefined, /column layout/],
     ['four columns', { columns: [{ kind: 'track', track: 0 }, shelves, { kind: 'track', track: 1 }, { kind: 'shelves', shelves: [0] }] }, /1 to 3 columns/],
-    ['a missing shelf', { columns: [{ kind: 'track', track: 0 }, { kind: 'shelves', shelves: [0, 1] }, { kind: 'track', track: 1 }] }, /shelf 2 must appear in exactly one column \(found 0\)/],
+    ['a missing shelf', { columns: [{ kind: 'track', track: 0 }, { kind: 'shelves', shelves: [0, 1] }, { kind: 'track', track: 1 }] }, /shelf 2 must appear in exactly one column or shelf track \(found 0\)/],
     ['a shelf twice', { columns: [{ kind: 'shelves', shelves: [0, 1] }, { kind: 'track', track: 0 }, { kind: 'shelves', shelves: [1, 2] }] }, /shelf 1 must appear/],
     ['a missing track', { columns: [{ kind: 'track', track: 0 }, shelves] }, /track 1 must appear/],
     ['an unknown shelf', { columns: [{ kind: 'shelves', shelves: [0, 1, 2, 7] }, { kind: 'track', track: 0 }, { kind: 'track', track: 1 }] }, /shelf 7, which does not exist/],
@@ -130,7 +131,7 @@ describe('stacks', () => {
     // Placing A completes AAA; the B now on top can be taken next.
     state = ok(dropHeld(state, front(0, 2))).state;
     state = ok(dropHeld(ok(pickFromTrack(state, ref)).state, front(1, 2))).state;
-    expect(state.tracks[0]!.carriers[0]!.stack).toEqual([]);
+    expect(stackOf(state.tracks[0]!.carriers[0]!)).toEqual([]);
     expect(pickFromTrack(state, ref)).toEqual({ ok: false, reason: 'carrierEmpty' });
   });
 
@@ -138,10 +139,10 @@ describe('stacks', () => {
     const state = createGame(twoTracks);
     const ref = { track: 1, carrier: 1 };
     const held = ok(pickFromTrack(state, ref)).state;
-    expect(held.tracks[1]!.carriers[1]!.stack.map((i) => i.id)).toEqual([11, 12]);
+    expect(stackOf(held.tracks[1]!.carriers[1]!).map((i) => i.id)).toEqual([11, 12]);
     const back = ok(returnHeld(held));
     expect(back.events).toEqual([{ kind: 'beltItemReturned', itemId: 10, to: ref }]);
-    expect(back.state.tracks[1]!.carriers[1]!.stack.map((i) => i.id)).toEqual([10, 11, 12]);
+    expect(stackOf(back.state.tracks[1]!.carriers[1]!).map((i) => i.id)).toEqual([10, 11, 12]);
     expect(back.state.held).toBeNull();
   });
 

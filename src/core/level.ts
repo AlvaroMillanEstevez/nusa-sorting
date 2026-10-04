@@ -18,10 +18,14 @@ import {
   type TrackState,
 } from './types';
 
-/** A column of a column layout: fixed shelves stacked top to bottom, or one vertical track. */
+/**
+ * A column of a column layout: fixed shelves stacked top to bottom, a vertical track of stacks, or a vertical
+ * track of shelves (its shelves are listed on the track, not in a shelf column).
+ */
 export type ColumnDefinition =
   | { readonly kind: 'shelves'; readonly shelves: readonly number[] }
-  | { readonly kind: 'track'; readonly track: number };
+  | { readonly kind: 'track'; readonly track: number }
+  | { readonly kind: 'shelfTrack'; readonly track: number };
 
 /**
  * Up to three columns, left to right. Every shelf and every track of the level appears in exactly one column,
@@ -91,11 +95,13 @@ export function createGame(level: LevelDefinition): GameState {
   // Track items count for the multiple-of-3 rule. Their ids come after the shelves' (track by track, carrier by
   // carrier, top of each stack first), so shelf ids never change and levels 8-9 keep theirs.
   const trackItems = trackDefinitions(level).map((track) =>
-    track.carriers.map((stack) =>
-      stack.map((type): Item => {
-        counts.set(type, (counts.get(type) ?? 0) + 1);
-        return { id: nextId++, type };
-      }),
+    track.carriers.map((carrier) =>
+      'shelf' in carrier
+        ? carrier
+        : carrier.map((type): Item => {
+            counts.set(type, (counts.get(type) ?? 0) + 1);
+            return { id: nextId++, type };
+          }),
     ),
   );
 
@@ -145,7 +151,7 @@ function parseMechanics(
   level: LevelDefinition,
   shelves: readonly Shelf[],
   totalTriples: number,
-  trackItems: readonly (readonly (readonly Item[])[])[],
+  trackItems: readonly (readonly (readonly Item[] | { readonly shelf: number })[])[],
 ): MechanicState {
   const fail = (message: string): never => {
     throw new LevelError(`${level.id}: ${message}`);
@@ -206,7 +212,7 @@ function parseMechanics(
         break;
       }
       case 'conveyor': {
-        const stacks = trackItems[0] ?? [];
+        const stacks = (trackItems[0] ?? []) as readonly (readonly Item[])[];
         if (stacks.length < 1 || stacks.length > CONVEYOR_LIMITS.maxSlots) {
           fail(`conveyor needs between 1 and ${CONVEYOR_LIMITS.maxSlots} slots`);
         }
@@ -219,22 +225,30 @@ function parseMechanics(
         const count = mechanic.tracks.length;
         if (count < 1 || count > CONVEYOR_LIMITS.maxTracks) fail(`tracks needs between 1 and ${CONVEYOR_LIMITS.maxTracks} tracks`);
         mechanic.tracks.forEach((definition, t) => {
-          const stacks = trackItems[t] ?? [];
+          const carriers = trackItems[t] ?? [];
           if (definition.orientation !== 'horizontal' && definition.orientation !== 'vertical') {
             fail(`track ${t} must be horizontal or vertical`);
           }
-          if (stacks.length < 1 || stacks.length > CONVEYOR_LIMITS.maxSlots) {
+          if (carriers.length < 1 || carriers.length > CONVEYOR_LIMITS.maxSlots) {
             fail(`track ${t} needs between 1 and ${CONVEYOR_LIMITS.maxSlots} carriers`);
           }
-          if (stacks.some((stack) => stack.length > CONVEYOR_LIMITS.maxStackDepth)) {
+          const shelfCarriers = carriers.filter((c): c is { readonly shelf: number } => 'shelf' in c);
+          if (shelfCarriers.length > 0 && shelfCarriers.length !== carriers.length) {
+            fail(`track ${t} must carry only stacks or only shelves`);
+          }
+          if (shelfCarriers.length > 0) {
+            if (definition.orientation !== 'vertical') fail(`track ${t} carries shelves, so it must be vertical`);
+            for (const { shelf } of shelfCarriers) {
+              if (!Number.isInteger(shelf) || shelf < 0 || shelf >= shelves.length) fail(`track ${t} carries shelf ${shelf}, which does not exist`);
+            }
+          } else if ((carriers as readonly (readonly Item[])[]).some((stack) => stack.length > CONVEYOR_LIMITS.maxStackDepth)) {
             fail(`track ${t} stacks hold at most ${CONVEYOR_LIMITS.maxStackDepth} items`);
           }
           checkSpeed(definition.speed, `track ${t}`);
-          tracks.push(toTrack(definition.orientation, definition.speed, stacks));
+          tracks.push(toTrack(definition.orientation, definition.speed, carriers));
         });
-        if (tracks.every((track) => track.carriers.every((carrier) => carrier.stack.length === 0))) {
-          fail('tracks need at least one item');
-        }
+        const useful = tracks.some((track) => track.carriers.some((c) => c.kind === 'shelf' || c.stack.length > 0));
+        if (!useful) fail('tracks need at least one item');
         break;
       }
     }
@@ -249,8 +263,21 @@ function newCombo(windowSeconds: number, pointsPerTriple: number, multipliers: r
   return { combo: 0, maxCombo: 0, windowLeftMs: 0, windowMs: windowSeconds * 1000, pointsPerTriple, multipliers, score: 0 };
 }
 
-function toTrack(orientation: TrackState['orientation'], speed: number, stacks: readonly (readonly Item[])[]): TrackState {
-  return { orientation, speed, carriers: stacks.map((stack) => ({ kind: 'stack', stack })) };
+function toTrack(
+  orientation: TrackState['orientation'],
+  speed: number,
+  carriers: readonly (readonly Item[] | { readonly shelf: number })[],
+): TrackState {
+  return {
+    orientation,
+    speed,
+    carriers: carriers.map((c) => ('shelf' in c ? { kind: 'shelf', shelf: c.shelf } : { kind: 'stack', stack: c })),
+  };
+}
+
+/** Whether a track carries shelves (rather than stacks). */
+export function carriesShelves(track: TrackState): boolean {
+  return track.carriers.some((c) => c.kind === 'shelf');
 }
 
 /**
@@ -284,11 +311,16 @@ function checkLayout(level: LevelDefinition, shelfCount: number, tracks: readonl
       const track = tracks[column.track];
       if (!track) fail(`layout uses track ${column.track}, which does not exist`);
       if (track!.orientation !== 'vertical') fail(`track ${column.track} is in a column, so it must be vertical`);
+      const ofShelves = carriesShelves(track!);
+      if (column.kind === 'track' && ofShelves) fail(`track ${column.track} carries shelves: use a shelfTrack column`);
+      if (column.kind === 'shelfTrack' && !ofShelves) fail(`track ${column.track} carries stacks: use a track column`);
       trackUses[column.track]!++;
+      // The shelves a track carries are placed by it.
+      for (const carrier of track!.carriers) if (carrier.kind === 'shelf') shelfUses[carrier.shelf]!++;
     }
   }
   shelfUses.forEach((uses, shelf) => {
-    if (uses !== 1) fail(`shelf ${shelf} must appear in exactly one column (found ${uses})`);
+    if (uses !== 1) fail(`shelf ${shelf} must appear in exactly one column or shelf track (found ${uses})`);
   });
   trackUses.forEach((uses, track) => {
     if (uses !== 1) fail(`track ${track} must appear in exactly one column (found ${uses})`);

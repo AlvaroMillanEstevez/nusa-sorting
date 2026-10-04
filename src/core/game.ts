@@ -1,8 +1,9 @@
 import { nextRandom } from './random';
 import type {
   BlockerState,
-  ComboState,
+  Carrier,
   CarrierRef,
+  ComboState,
   GameEvent,
   GameState,
   InvalidMoveReason,
@@ -42,11 +43,25 @@ export function countItems(state: GameState): number {
   return total + countTrackItems(state);
 }
 
-/** Items on tracks, including one the player is holding. */
+/** Items on track stacks, including one the player is holding (shelves riding a track count as shelves). */
 export function countTrackItems(state: GameState): number {
   let total = state.held ? 1 : 0;
-  for (const track of state.tracks) for (const carrier of track.carriers) total += carrier.stack.length;
+  for (const track of state.tracks) for (const carrier of track.carriers) total += stackOf(carrier).length;
   return total;
+}
+
+/** A carrier's stack; shelves riding a track have none (their items are on the shelf). */
+export function stackOf(carrier: Carrier): readonly Item[] {
+  return carrier.kind === 'stack' ? carrier.stack : [];
+}
+
+/** The track and carrier a shelf rides on, or null for a fixed shelf. */
+export function carrierOfShelf(state: GameState, shelf: number): CarrierRef | null {
+  for (let track = 0; track < state.tracks.length; track++) {
+    const carrier = state.tracks[track]!.carriers.findIndex((c) => c.kind === 'shelf' && c.shelf === shelf);
+    if (carrier !== -1) return { track, carrier };
+  }
+  return null;
 }
 
 /**
@@ -64,7 +79,7 @@ export function findTrackItem(state: GameState, itemId: number): (CarrierRef & {
   for (let track = 0; track < state.tracks.length; track++) {
     const carriers = state.tracks[track]!.carriers;
     for (let carrier = 0; carrier < carriers.length; carrier++) {
-      const depth = carriers[carrier]!.stack.findIndex((item) => item.id === itemId);
+      const depth = stackOf(carriers[carrier]!).findIndex((item) => item.id === itemId);
       if (depth !== -1) return { track, carrier, depth };
     }
   }
@@ -73,7 +88,8 @@ export function findTrackItem(state: GameState, itemId: number): (CarrierRef & {
 
 /** The item a carrier offers (top of its stack), or null. */
 export function carrierTop(state: GameState, ref: CarrierRef): Item | null {
-  return state.tracks[ref.track]?.carriers[ref.carrier]?.stack[0] ?? null;
+  const carrier = state.tracks[ref.track]?.carriers[ref.carrier];
+  return carrier ? (stackOf(carrier)[0] ?? null) : null;
 }
 
 /** True when the board has no items left. */
@@ -217,7 +233,8 @@ export function pickFromTrack(state: GameState, from: CarrierRef): MoveResult {
   if (state.tracks.length === 0) return { ok: false, reason: 'noTrack' };
   const track = state.tracks[from.track];
   const carrier = track?.carriers[from.carrier];
-  if (!track || !carrier) return { ok: false, reason: 'invalidPosition' };
+  // Shelves riding a track are taken from with moveItem, like any shelf.
+  if (!track || !carrier || carrier.kind !== 'stack') return { ok: false, reason: 'invalidPosition' };
   if (state.held) return { ok: false, reason: 'alreadyHolding' };
   const item = carrier.stack[0];
   if (!item) return { ok: false, reason: 'carrierEmpty' };
@@ -234,7 +251,7 @@ export function pickFromTrack(state: GameState, from: CarrierRef): MoveResult {
 export function returnHeld(state: GameState): MoveResult {
   const held = state.held;
   if (!held) return { ok: false, reason: 'nothingHeld' };
-  const stack = state.tracks[held.from.track]!.carriers[held.from.carrier]!.stack;
+  const stack = stackOf(state.tracks[held.from.track]!.carriers[held.from.carrier]!);
   return {
     ok: true,
     state: { ...setStack(state, held.from, [held.item, ...stack]), held: null },
@@ -267,7 +284,7 @@ function setStack(state: GameState, ref: CarrierRef, stack: readonly Item[]): Ga
   const tracks = state.tracks.slice();
   const track = tracks[ref.track]!;
   const carriers = track.carriers.slice();
-  carriers[ref.carrier] = { ...carriers[ref.carrier]!, stack };
+  carriers[ref.carrier] = { kind: 'stack', stack };
   tracks[ref.track] = { ...track, carriers };
   return { ...state, tracks };
 }

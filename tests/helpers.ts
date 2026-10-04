@@ -1,4 +1,5 @@
 import {
+  carrierOfShelf,
   dropHeld,
   freeFrontSlots,
   isShelfLocked,
@@ -14,6 +15,7 @@ import {
   type LoseReason,
   type MoveResult,
   type Position,
+  stackOf,
 } from '../src/core';
 
 export const front = (shelf: number, slot: number): Position => ({ shelf, layer: 0, slot });
@@ -23,7 +25,7 @@ export function itemIds(state: GameState): number[] {
   const shelves = state.shelves.flatMap((shelf) =>
     shelf.layers.flatMap((layer) => layer.flatMap((slot) => (slot ? [slot.id] : []))),
   );
-  const tracks = state.tracks.flatMap((track) => track.carriers.flatMap((carrier) => carrier.stack.map((item) => item.id)));
+  const tracks = state.tracks.flatMap((track) => track.carriers.flatMap((carrier) => stackOf(carrier).map((item) => item.id)));
   const held = state.held ? [state.held.item.id] : [];
   return [...shelves, ...tracks, ...held];
 }
@@ -48,7 +50,7 @@ export function applyMove(state: GameState, [from, to]: Move): MoveResult {
 /** Type of the item a move would carry. */
 export function movedType(state: GameState, from: Source): string {
   return isBeltSource(from)
-    ? state.tracks[from.track]!.carriers[from.carrier]!.stack[0]!.type
+    ? stackOf(state.tracks[from.track]!.carriers[from.carrier]!)[0]!.type
     : state.shelves[from.shelf]!.layers[0]![from.slot]!.type;
 }
 
@@ -67,7 +69,7 @@ export function validMoves(state: GameState): Move[] {
   });
   state.tracks.forEach((track, t) =>
     track.carriers.forEach((carrier, c) => {
-      if (carrier.stack.length > 0) for (const to of targets) moves.push([{ track: t, carrier: c }, to]);
+      if (stackOf(carrier).length > 0) for (const to of targets) moves.push([{ track: t, carrier: c }, to]);
     }),
   );
   return moves;
@@ -98,7 +100,7 @@ function stateKey(state: GameState): string {
 /** Every non-empty carrier as the types of its stack, top first. */
 function stackSignatures(state: GameState): string[] {
   return state.tracks.flatMap((track) =>
-    track.carriers.flatMap((carrier) => (carrier.stack.length ? [carrier.stack.map((item) => item.type).join(',')] : [])),
+    track.carriers.flatMap((carrier) => (stackOf(carrier).length ? [stackOf(carrier).map((item) => item.type).join(',')] : [])),
   );
 }
 
@@ -131,7 +133,7 @@ export function solve(start: GameState, maxStates = 200_000): Move[] | undefined
     for (const move of validMoves(state)) {
       const [from, to] = move;
       if (isBeltSource(from)) {
-        const stack = state.tracks[from.track]!.carriers[from.carrier]!.stack.map((item) => item.type).join(',');
+        const stack = stackOf(state.tracks[from.track]!.carriers[from.carrier]!).map((item) => item.type).join(',');
         const key = `${stack}>${to.shelf}:${to.slot}`;
         if (stacksTried.has(key)) continue;
         stacksTried.add(key);
@@ -179,6 +181,26 @@ export function beltPickSeconds(speed: number): number {
   return 0.5 + 0.75 * Math.abs(speed);
 }
 
+/** Slots a shelf track moves per carrier: a shelf and the gap to the next one are about two slots tall. */
+export const SLOTS_PER_SHELF_CARRIER = 1.95;
+
+/**
+ * Estimated extra seconds to drop an item on (or take one from) a shelf riding a track: aiming at something
+ * moving. Grows with how fast its slots move. A guess to be checked by playing.
+ */
+export function movingShelfSeconds(carriersPerSecond: number): number {
+  return 0.5 + 0.75 * Math.abs(carriersPerSecond) * SLOTS_PER_SHELF_CARRIER;
+}
+
+/** Extra seconds a move costs because its source or target shelf rides a track (the larger of the two). */
+export function movingShelfCost(state: GameState, from: Source, to: Position): number {
+  const costOf = (shelf: number) => {
+    const ref = carrierOfShelf(state, shelf);
+    return ref ? movingShelfSeconds(state.tracks[ref.track]!.speed) : 0;
+  };
+  return Math.max(isBeltSource(from) ? 0 : costOf(from.shelf), costOf(to.shelf));
+}
+
 export interface GameOutcome {
   readonly won: boolean;
   readonly loseReason: LoseReason | null;
@@ -190,7 +212,8 @@ export interface GameOutcome {
 /**
  * Simulated casual player: completes a triple when it can, otherwise prefers moves that pair an item with a
  * matching one, otherwise moves at random. Never reorders and does not plan combos. Each move takes
- * SECONDS_PER_MOVE of game time (plus beltPickSeconds when taken from the belt), so the clock and combo
+ * SECONDS_PER_MOVE of game time (plus beltPickSeconds when taken from a track stack, and movingShelfSeconds when
+ * a moving shelf is involved), so the clock and combo
  * windows behave as in a real game.
  */
 export function playGreedy(start: GameState, random: () => number, maxMoves = 400): GameOutcome {
@@ -206,7 +229,10 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
         const type = movedType(state, from);
         const clears = result.events.some((e) => e.kind === 'tripleCleared');
         const pairs = state.shelves[to.shelf]!.layers[0]!.some((slot) => slot?.type === type);
-        const seconds = SECONDS_PER_MOVE + (isBeltSource(from) ? beltPickSeconds(state.tracks[from.track]!.speed) : 0);
+        const seconds =
+          SECONDS_PER_MOVE +
+          (isBeltSource(from) ? beltPickSeconds(state.tracks[from.track]!.speed) : 0) +
+          movingShelfCost(state, from, to);
         return { result, seconds, score: clears ? 2 : pairs ? 1 : 0 };
       })
       .filter((option) => option !== null);

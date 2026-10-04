@@ -19,7 +19,10 @@ export function playMove(state: GameState, { from, to }: FirstMove): MoveResult 
   return picked.ok ? dropHeld(picked.state, to) : picked;
 }
 
-/** Every move available at the start: front items on unlocked shelves and carrier tops, to any free front slot. */
+/**
+ * Every move available at the start: front items on unlocked shelves (fixed or riding a track) and the tops of
+ * track stacks, to any free front slot.
+ */
 export function firstMoves(state: GameState): FirstMove[] {
   const targets = state.shelves.flatMap((_, t) => freeFrontSlots(state, t).map((slot) => ({ shelf: t, layer: 0, slot })));
   const moves: FirstMove[] = [];
@@ -31,7 +34,9 @@ export function firstMoves(state: GameState): FirstMove[] {
   });
   state.tracks.forEach((trackState, track) => {
     trackState.carriers.forEach((carrier, index) => {
-      if (carrier.stack.length > 0) for (const to of targets) moves.push({ from: { track, carrier: index }, to });
+      if (carrier.kind === 'stack' && carrier.stack.length > 0) {
+        for (const to of targets) moves.push({ from: { track, carrier: index }, to });
+      }
     });
   });
   return moves;

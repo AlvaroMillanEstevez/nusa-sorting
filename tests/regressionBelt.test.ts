@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult } from '../src/core';
+import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult, stackOf } from '../src/core';
 import { levels } from '../src/data/levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
@@ -33,7 +33,7 @@ const belt = {
     triplesCleared: s.triplesCleared,
     belt: s.tracks[0]
       ? {
-          slots: s.tracks[0].carriers.map((c) => c.stack[0]?.id ?? null),
+          slots: s.tracks[0].carriers.map((c) => stackOf(c)[0]?.id ?? null),
           elapsedMs: s.trackTimeMs,
           held: s.held ? { id: s.held.item.id, beltSlot: s.held.from.carrier } : null,
         }

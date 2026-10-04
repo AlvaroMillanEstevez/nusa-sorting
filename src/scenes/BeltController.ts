@@ -9,6 +9,7 @@ import {
   type GameEvent,
   type GameState,
   type Position,
+  stackOf,
 } from '../core';
 import type { SoundService } from '../services/SoundService';
 import { BACK_SCALE, isOnTrack, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
@@ -118,7 +119,7 @@ export class BeltController {
       if (!layout) continue;
       const behind = layout.pitch * BEHIND_OFFSET;
       for (let c = 0; c < track.carriers.length; c++) {
-        const stack = track.carriers[c]!.stack;
+        const stack = stackOf(track.carriers[c]!);
         if (stack.length === 0) continue;
         const pose = trackPose(layout, carrierOffset(track, c, state.trackTimeMs), this.pose);
         for (let depth = 0; depth < stack.length; depth++) {
@@ -175,7 +176,7 @@ export class BeltController {
     if (this.holding) this.sendBack(false);
     const now = this.host.getState();
     const track = now.tracks[t]!;
-    const offsets = track.carriers.map((carrier, c) => (carrier.stack.length ? carrierOffset(track, c, now.trackTimeMs) : null));
+    const offsets = track.carriers.map((carrier, c) => (stackOf(carrier).length ? carrierOffset(track, c, now.trackTimeMs) : null));
     const carrier = trackCarrierAt(layouts[t]!, offsets, pointer.x, pointer.y);
     if (carrier === null) return true;
 
@@ -186,7 +187,7 @@ export class BeltController {
     const itemId = result.state.held!.item.id;
     this.returning.delete(itemId);
     // The next item of this stack, if any, comes forward.
-    const next = result.state.tracks[t]!.carriers[carrier]!.stack[0];
+    const next = stackOf(result.state.tracks[t]!.carriers[carrier]!)[0];
     if (next) this.promoting.set(next.id, this.host.scene.time.now);
     this.press = { pointerId: pointer.id, itemId, dragging: false };
     this.host.onPick();
@@ -255,7 +256,7 @@ export class BeltController {
     this.host.setState(result.state);
     this.tapHeldId = null;
     // The item that had come forward goes back behind it.
-    const below = result.state.tracks[held.from.track]!.carriers[held.from.carrier]!.stack[1];
+    const below = stackOf(result.state.tracks[held.from.track]!.carriers[held.from.carrier]!)[1];
     if (below) this.promoting.delete(below.id);
     const sprite = this.host.spriteFor(held.item.id);
     if (sprite) {

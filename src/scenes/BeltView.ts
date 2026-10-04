@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { carrierOffset, type GameState } from '../core';
+import { carrierOffset, type GameState, stackOf } from '../core';
 import { trackPose, type BeltPose, type TrackLayout } from '../ui/boardLayout';
 import { theme } from '../ui/theme';
 
@@ -110,7 +110,7 @@ export class BeltView {
         const pose = trackPose(layout, carrierOffset(track, c, state.trackTimeMs), this.pose);
         plates[c]!.setPosition(pose.x, pose.y).setAlpha(pose.alpha);
         // Dots for items hidden below the top two: the stack's depth at a glance.
-        const hidden = Math.min(MAX_PIPS, track.carriers[c]!.stack.length - 2);
+        const hidden = Math.min(MAX_PIPS, stackOf(track.carriers[c]!).length - 2);
         const pip = pips[c]!;
         if (hidden > 0) {
           const key = PIPS_TEXTURE(hidden);

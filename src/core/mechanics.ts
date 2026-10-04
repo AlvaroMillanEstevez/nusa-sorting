@@ -69,8 +69,11 @@ export interface TrackDefinition {
   readonly orientation: 'horizontal' | 'vertical';
   /** Carriers per second; positive moves right or down, negative left or up. */
   readonly speed: number;
-  /** One stack per carrier, top item first; [] is an empty carrier. K is `carriers.length`. */
-  readonly carriers: readonly (readonly string[])[];
+  /**
+   * K carriers. Either all stacks (top item first; [] is an empty carrier), or all shelves riding the track:
+   * `{ shelf: i }` refers to level.shelves[i], which then belongs to this track instead of a shelf column.
+   */
+  readonly carriers: readonly (readonly string[] | { readonly shelf: number })[];
 }
 
 export const CONVEYOR_LIMITS = {

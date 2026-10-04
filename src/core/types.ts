@@ -56,9 +56,8 @@ export interface BlockerState {
 export type TrackOrientation = 'horizontal' | 'vertical';
 
 /**
- * A stop on a track. Today the only kind is a single pick-only slot holding a stack of items; only the
- * top one (stack[0]) can be taken, then the next one moves up. A later kind ('shelf') will be a 3-slot shelf
- * riding the track that also accepts items.
+ * A pick-only slot on a track holding a stack of items; only the top one (stack[0]) can be taken, then the
+ * next one moves up.
  */
 export interface StackCarrier {
   readonly kind: 'stack';
@@ -66,7 +65,17 @@ export interface StackCarrier {
   readonly stack: readonly Item[];
 }
 
-export type Carrier = StackCarrier;
+/**
+ * A 3-slot shelf riding the track. It is one of the level's shelves (state.shelves[shelf]), so it follows every
+ * shelf rule: take, drop and reorder in its front layer, triples, layers, locks, the roaming blocker and the
+ * blocked defeat. The track only decides where it is drawn.
+ */
+export interface ShelfCarrier {
+  readonly kind: 'shelf';
+  readonly shelf: number;
+}
+
+export type Carrier = StackCarrier | ShelfCarrier;
 
 /** A conveyor: a loop of carriers moving at constant speed along one axis. */
 export interface TrackState {

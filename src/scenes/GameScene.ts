@@ -14,6 +14,7 @@ import {
   type LevelDefinition,
   type LoseReason,
   type Position,
+  stackOf,
 } from '../core';
 import { levels } from '../data/levels';
 import { applyBeltOverrides } from '../dev/beltOverrides';
@@ -226,7 +227,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
     for (const track of this.state.tracks) {
-      for (const carrier of track.carriers) for (const item of carrier.stack) this.createSprite(item);
+      for (const carrier of track.carriers) for (const item of stackOf(carrier)) this.createSprite(item);
     }
     this.belt.reset(this.state);
     this.hud.setLevel(index + 1);
