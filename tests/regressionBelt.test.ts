@@ -88,7 +88,10 @@ describe('automatic layout is unchanged', () => {
     const state = createGame(level);
     for (const { w, h, layout } of entry.layouts) {
       const now = computeBoardLayout(w, h, level.shelves.length, 3, state.combo !== null, state.tracks[0]?.carriers.length ?? 0);
-      expect(JSON.parse(JSON.stringify(now))).toEqual(layout);
+      // Fields added since the snapshot (e.g. the generic track list) are not compared.
+      const current = JSON.parse(JSON.stringify(now)) as Record<string, unknown>;
+      const recorded = layout as Record<string, unknown>;
+      for (const key of Object.keys(recorded)) expect(current[key]).toEqual(recorded[key]);
     }
   });
 });

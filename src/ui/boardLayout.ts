@@ -31,6 +31,20 @@ export interface BeltLayout {
   readonly y: number;
 }
 
+/**
+ * A track on screen, horizontal or vertical. Carrier offset o (in carriers) is drawn at loopStart + o * pitch
+ * along the track's axis; `cross` is the position on the other axis (the line the carriers ride on).
+ */
+export interface TrackLayout {
+  readonly orientation: 'horizontal' | 'vertical';
+  /** The track's area, used for touch: the whole loop and the rail around it. */
+  readonly rect: Rect;
+  readonly loopStart: number;
+  readonly pitch: number;
+  readonly slots: number;
+  readonly cross: number;
+}
+
 export interface BoardLayout {
   /** Size of one slot in px; items are drawn slightly smaller. */
   readonly slotSize: number;
@@ -40,8 +54,10 @@ export interface BoardLayout {
   readonly hudRowHeight: number;
   /** Second HUD row (score and combo), or null when the level has none. */
   readonly statusRow: Rect | null;
-  /** Conveyor strip below the shelves, or null when the level has no belt. */
+  /** Conveyor strip below the shelves in the automatic layout, or null. */
   readonly belt: BeltLayout | null;
+  /** Every track of the level on screen, in the level's track order. */
+  readonly tracks: readonly TrackLayout[];
   readonly shelves: readonly ShelfLayout[];
 }
 
@@ -49,9 +65,9 @@ export interface BoardLayout {
 const SIDE_PAD = 0.15;
 const BACK_PEEK = 0.4;
 const PLANK = 0.2;
-const GAP = 0.35;
-const MARGIN = 16;
-const MAX_SLOT_SIZE = 110;
+export const GAP = 0.35;
+export const MARGIN = 16;
+export const MAX_SLOT_SIZE = 110;
 
 export const SHELF_WIDTH_UNITS = (slotsPerLayer: number) => slotsPerLayer + SIDE_PAD * 2;
 export const SHELF_HEIGHT_UNITS = BACK_PEEK + 1 + PLANK;
@@ -67,7 +83,7 @@ export function hudHeight(height: number): number {
  * so it works in both portrait and landscape. Incomplete last rows are centered.
  */
 /** The status row (score and combo) is this fraction of the main HUD row. */
-const STATUS_ROW = 0.75;
+export const STATUS_ROW = 0.75;
 
 export function computeBoardLayout(
   width: number,
@@ -122,26 +138,73 @@ export function computeBoardLayout(
     const rowW = inRow * shelfW * s + (inRow - 1) * GAP * s;
     const left = area.x + (area.width - rowW) / 2;
 
-    const rect: Rect = {
-      x: left + col * (shelfW + GAP) * s,
-      y: top + row * (shelfH + GAP) * s,
-      width: shelfW * s,
-      height: shelfH * s,
-    };
-    const frontY = rect.y + (BACK_PEEK + 0.5) * s;
-    const xs = Array.from({ length: slotsPerLayer }, (_, j) => rect.x + (SIDE_PAD + j + 0.5) * s);
-    shelves.push({
-      rect,
-      slots: xs.map((x) => ({ x, y: frontY })),
-      backSlots: xs.map((x) => ({ x, y: frontY - BACK_PEEK * s })),
-    });
+    shelves.push(shelfLayoutAt(left + col * (shelfW + GAP) * s, top + row * (shelfH + GAP) * s, s, slotsPerLayer));
   }
 
-  return { slotSize: s, hud, hudRowHeight, statusRow, belt, shelves };
+  return { slotSize: s, hud, hudRowHeight, statusRow, belt, tracks: belt ? [trackFromBelt(belt)] : [], shelves };
+}
+
+/** The automatic layout's horizontal strip as a generic track. */
+export function trackFromBelt(belt: BeltLayout): TrackLayout {
+  return { orientation: 'horizontal', rect: belt.rect, loopStart: belt.loopX, pitch: belt.pitch, slots: belt.slots, cross: belt.y };
+}
+
+/** Builds a shelf's slots from its top-left corner and the slot size (shared by every layout). */
+export function shelfLayoutAt(x: number, y: number, s: number, slotsPerLayer = 3): ShelfLayout {
+  const rect: Rect = { x, y, width: SHELF_WIDTH_UNITS(slotsPerLayer) * s, height: SHELF_HEIGHT_UNITS * s };
+  const frontY = rect.y + (BACK_PEEK + 0.5) * s;
+  const xs = Array.from({ length: slotsPerLayer }, (_, j) => rect.x + (SIDE_PAD + j + 0.5) * s);
+  return {
+    rect,
+    slots: xs.map((sx) => ({ x: sx, y: frontY })),
+    backSlots: xs.map((sx) => ({ x: sx, y: frontY - BACK_PEEK * s })),
+  };
+}
+
+/** Where a carrier at `offset` (carriers, in [0, K)) is drawn on a track. Writes into `out` to avoid allocations. */
+export function trackPose(track: TrackLayout, offset: number, out: BeltPose = { x: 0, y: 0, alpha: 0 }): BeltPose {
+  const along = track.loopStart + offset * track.pitch;
+  if (track.orientation === 'horizontal') {
+    out.x = along;
+    out.y = track.cross;
+  } else {
+    out.x = track.cross;
+    out.y = along;
+  }
+  const toEnd = Math.min(offset, track.slots - offset);
+  out.alpha = Math.max(0, Math.min(1, toEnd / 0.5));
+  return out;
+}
+
+/** True when a point is on (or within half a pitch around) a track. */
+export function isOnTrack(track: TrackLayout, x: number, y: number): boolean {
+  const slack = track.pitch / 2;
+  const { rect } = track;
+  return x >= rect.x - slack && x <= rect.x + rect.width + slack && y >= rect.y - slack && y <= rect.y + rect.height + slack;
+}
+
+/**
+ * The carrier to take from for a press at (x, y), among carriers with something on top (`offsets[i]` is null
+ * for empty ones): anywhere on or around the track, the nearest one along it within one pitch.
+ */
+export function trackCarrierAt(track: TrackLayout, offsets: readonly (number | null)[], x: number, y: number): number | null {
+  if (!isOnTrack(track, x, y)) return null;
+  const along = track.orientation === 'horizontal' ? x : y;
+  let best: number | null = null;
+  let bestDistance = track.pitch;
+  offsets.forEach((offset, i) => {
+    if (offset === null) return;
+    const distance = Math.abs(track.loopStart + offset * track.pitch - along);
+    if (distance <= bestDistance) {
+      bestDistance = distance;
+      best = i;
+    }
+  });
+  return best;
 }
 
 /** Strip height in slots: a full-size item plus room for the rail around it. */
-const BELT_STRIP = 1.3;
+export const BELT_STRIP = 1.3;
 /** The belt may run closer to the screen edges than the shelves. */
 const BELT_SIDE_MARGIN = 8;
 
