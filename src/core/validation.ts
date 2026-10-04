@@ -154,3 +154,18 @@ export function startTriples(state: GameState): number {
   for (const count of counts.values()) triples += Math.floor(count / 3);
   return triples;
 }
+
+/**
+ * The game's levels hold exactly one triple of each type (colour variants are types of their own): returns the
+ * types that appear some other number of times, with their count. Empty when the level follows the rule.
+ */
+export function typesNotOneTriple(state: GameState): { readonly type: string; readonly count: number }[] {
+  const counts = new Map<string, number>();
+  const add = (type: string) => counts.set(type, (counts.get(type) ?? 0) + 1);
+  for (const shelf of state.shelves) for (const layer of shelf.layers) for (const item of layer) if (item) add(item.type);
+  for (const track of state.tracks) {
+    for (const carrier of track.carriers) if (carrier.kind === 'stack') carrier.stack.forEach((item) => add(item.type));
+  }
+  if (state.held) add(state.held.item.type);
+  return [...counts].filter(([, count]) => count !== 3).map(([type, count]) => ({ type, count }));
+}

@@ -4,18 +4,14 @@ import type { LevelRecipe } from './recipe';
  * Levels 1-10. A sawtooth: after a level with something new or demanding comes a slightly easier one. Levels
  * 5 and 10 are special levels, their twist made from existing mechanics only (themes still to be decided).
  *
- * Kinds come from the starter set, never two of a confusable group, and no colour variants before level 11.
+ * Every level holds exactly one triple of each of its types, taken in the generator's type order (types.ts):
+ * the starter kinds, then the rest of the catalogue keeping look-alikes apart, then colour variants. So the
+ * number of types is the number of items over three, and new kinds appear as levels grow.
+ *
  * Win bands are for the simulated casual player (tools/simulator.ts), not real people. That player rarely runs
- * out of space on shelves alone (it wins about 98% of these boards without a clock), so on the harder levels
- * the clock does much of the work: `time.slack` below 1 lets the limit cut into its slower wins.
+ * out of space on shelves alone, so on the harder levels the clock does much of the work: `time.slack` below 1
+ * lets the limit cut into its slower wins. Its time per move grows with the number of types.
  */
-
-const FIRST = ['rambutan', 'ketupat', 'es-teh-manis', 'nasi-goreng'];
-const FIVE = [...FIRST, 'manggis'];
-/** Level 6 brings two new kinds. */
-const SEVEN = [...FIVE, 'onde-onde', 'sate'];
-const EIGHT = [...SEVEN, 'kerupuk-udang'];
-const EIGHT_B = [...SEVEN, 'durian'];
 
 /** Combo multipliers doubled (special level 5). */
 const DOUBLE_COMBO = [2, 3, 4, 5, 6, 8, 10];
@@ -24,15 +20,15 @@ export const RECIPES: readonly LevelRecipe[] = [
   {
     number: 1,
     id: 'nusa-001',
-    purpose: 'First level: very simple and obvious. Few shelves, few empty slots, four kinds, nothing hidden.',
+    purpose: 'First level: very simple and obvious. Few empty slots, six kinds, nothing hidden.',
     seed: 101,
     layout: 'grid',
-    shelves: 5,
-    kinds: FIRST,
+    shelves: 7,
+    types: 6,
     backLayers: { shelves: 0, layers: [1, 1] },
     emptyFront: 3,
     maxDepth: 0,
-    minStartTriples: 4,
+    minStartTriples: 6,
     winBand: [0.97, 1],
     time: { slack: 2, timeUp: [0, 0] },
   },
@@ -42,10 +38,10 @@ export const RECIPES: readonly LevelRecipe[] = [
     purpose: 'More shelves and items in two columns; items behind the front ones appear.',
     seed: 202,
     layout: [
-      { kind: 'shelves', count: 3 },
-      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 4 },
+      { kind: 'shelves', count: 4 },
     ],
-    kinds: FIVE,
+    types: 9,
     backLayers: { shelves: 3, layers: [2, 2] },
     emptyFront: 4,
     maxDepth: 1,
@@ -59,13 +55,13 @@ export const RECIPES: readonly LevelRecipe[] = [
     purpose: 'Three columns and the first locked shelf.',
     seed: 303,
     layout: [
-      { kind: 'shelves', count: 2 },
-      { kind: 'shelves', count: 2 },
-      { kind: 'shelves', count: 2 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
     ],
-    kinds: FIVE,
+    types: 10,
     backLayers: { shelves: 3, layers: [2, 2] },
-    emptyFront: 4,
+    emptyFront: 5,
     locked: [2],
     maxDepth: 1,
     minStartTriples: 2,
@@ -82,7 +78,7 @@ export const RECIPES: readonly LevelRecipe[] = [
       { kind: 'shelves', count: 2 },
       { kind: 'shelves', count: 3 },
     ],
-    kinds: FIVE,
+    types: 12,
     backLayers: { shelves: 4, layers: [2, 3] },
     emptyFront: 5,
     locked: [2, 4],
@@ -102,7 +98,7 @@ export const RECIPES: readonly LevelRecipe[] = [
       { kind: 'shelves', count: 2 },
       { kind: 'shelves', count: 2 },
     ],
-    kinds: FIVE,
+    types: 7,
     backLayers: { shelves: 3, layers: [2, 2] },
     emptyFront: 5,
     comboMultipliers: DOUBLE_COMBO,
@@ -114,16 +110,16 @@ export const RECIPES: readonly LevelRecipe[] = [
   {
     number: 6,
     id: 'nusa-006',
-    purpose: 'Two new kinds, on an easier board after the special level.',
+    purpose: 'One new kind, on an easier board after the special level.',
     seed: 606,
     layout: [
-      { kind: 'shelves', count: 2 },
-      { kind: 'shelves', count: 2 },
-      { kind: 'shelves', count: 2 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
     ],
-    kinds: SEVEN,
-    backLayers: { shelves: 3, layers: [2, 2] },
-    emptyFront: 4,
+    types: 13,
+    backLayers: { shelves: 5, layers: [2, 2] },
+    emptyFront: 3,
     locked: [1],
     maxDepth: 1,
     minStartTriples: 3,
@@ -136,13 +132,13 @@ export const RECIPES: readonly LevelRecipe[] = [
     purpose: 'More shelves and deeper layers.',
     seed: 707,
     layout: [
+      { kind: 'shelves', count: 4 },
       { kind: 'shelves', count: 3 },
-      { kind: 'shelves', count: 3 },
-      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 4 },
     ],
-    kinds: SEVEN,
-    backLayers: { shelves: 5, layers: [2, 3] },
-    emptyFront: 5,
+    types: 15,
+    backLayers: { shelves: 6, layers: [2, 3] },
+    emptyFront: 7,
     locked: [3],
     maxDepth: 2,
     minStartTriples: 3,
@@ -155,10 +151,10 @@ export const RECIPES: readonly LevelRecipe[] = [
     purpose: 'A slow belt of stacks, on an easier board since the belt is new.',
     seed: 808,
     layout: 'grid',
-    shelves: 6,
+    shelves: 7,
     belt: { speed: 0.35, carriers: 7 },
     stacks: { depth: [1, 2], empty: 2 },
-    kinds: SEVEN,
+    types: 10,
     backLayers: { shelves: 2, layers: [2, 2] },
     emptyFront: 4,
     maxDepth: 1,
@@ -177,7 +173,7 @@ export const RECIPES: readonly LevelRecipe[] = [
       { kind: 'shelves', count: 3 },
     ],
     stacks: { depth: [1, 3], empty: 1 },
-    kinds: EIGHT,
+    types: 10,
     backLayers: { shelves: 3, layers: [2, 2] },
     emptyFront: 4,
     locked: [2],
@@ -198,7 +194,7 @@ export const RECIPES: readonly LevelRecipe[] = [
       { kind: 'track', speed: -0.8, carriers: 5 },
     ],
     stacks: { depth: [2, 2], empty: 1 },
-    kinds: EIGHT_B,
+    types: 8,
     backLayers: { shelves: 1, layers: [2, 2] },
     emptyFront: 7,
     maxDepth: 2,

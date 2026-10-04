@@ -163,8 +163,24 @@ export function rng(seed: number): () => number {
   };
 }
 
-/** Seconds a casual player needs per move; the level clock and combo window advance by this much per move. */
+/** Seconds a casual player needs per move on a level with five item types (the demo levels' usual count). */
 export const SECONDS_PER_MOVE = 2.5;
+
+/**
+ * Seconds per move on a level with `types` item types: telling more types apart takes longer, about 0.12 s per
+ * type around the five-type baseline. A guess to be checked by playing.
+ */
+export function secondsPerMove(types: number): number {
+  return SECONDS_PER_MOVE + 0.12 * (types - 5);
+}
+
+/** Distinct item types on the board and tracks. */
+export function typeCount(state: GameState): number {
+  const types = new Set<string>();
+  for (const shelf of state.shelves) for (const layer of shelf.layers) for (const item of layer) if (item) types.add(item.type);
+  for (const track of state.tracks) for (const carrier of track.carriers) for (const item of stackOf(carrier)) types.add(item.type);
+  return types.size;
+}
 
 /**
  * Estimated extra seconds to take an item from the belt: reaching for something moving, and sometimes
@@ -206,8 +222,10 @@ export interface GameOutcome {
 
 /**
  * Simulated casual player: completes a triple when it can, otherwise prefers moves that pair an item with a
- * matching one, otherwise moves at random. Never reorders and does not plan combos. Each move takes
- * SECONDS_PER_MOVE of game time (plus beltPickSeconds when taken from a track stack, and movingShelfSeconds when
+ * matching one, otherwise moves at random, but does not split a pair it already has unless nothing else is
+ * left. A quarter of the time it misses the best move and takes any move that splits no pair. Never reorders
+ * and does not plan combos. Each move takes
+ * secondsPerMove of game time for the level's number of types (plus beltPickSeconds when taken from a track stack, and movingShelfSeconds when
  * a moving shelf is involved), so the clock and combo
  * windows behave as in a real game.
  */
@@ -215,6 +233,7 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
   let state = start;
   let moves = 0;
   let seconds = 0;
+  const basePerMove = secondsPerMove(typeCount(start));
   for (; moves < maxMoves && state.status === 'playing'; moves++) {
     const options = validMoves(state)
       .filter(([from, to]) => isBeltSource(from) || from.shelf !== to.shelf)
@@ -225,17 +244,23 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
         const type = movedType(state, from);
         const clears = result.events.some((e) => e.kind === 'tripleCleared');
         const pairs = state.shelves[to.shelf]!.layers[0]!.some((slot) => slot?.type === type);
+        // Taking an item away from one of its kind it sits beside, to no new pair.
+        const splits =
+          !pairs &&
+          !isBeltSource(from) &&
+          state.shelves[from.shelf]!.layers[0]!.some((slot, i) => i !== from.slot && slot?.type === type);
         const seconds =
-          SECONDS_PER_MOVE +
+          basePerMove +
           (isBeltSource(from) ? beltPickSeconds(state.tracks[from.track]!.speed) : 0) +
           movingShelfCost(state, from, to);
-        return { result, seconds, score: clears ? 2 : pairs ? 1 : 0 };
+        return { result, seconds, score: clears ? 3 : pairs ? 2 : splits ? 0 : 1 };
       })
       .filter((option) => option !== null);
     if (options.length === 0) break;
     const best = Math.max(...options.map((o) => o.score));
-    // Casual players miss things: a quarter of the time they take any move instead of the best one.
-    const pool = random() < 0.25 ? options : options.filter((o) => o.score === best);
+    // Casual players miss things: a quarter of the time they take any move (that splits no pair, if they can).
+    const sensible = options.filter((o) => o.score > 0);
+    const pool = random() < 0.25 ? (sensible.length > 0 ? sensible : options) : options.filter((o) => o.score === best);
     const choice = pool[Math.floor(random() * pool.length)]!;
     state = tick(choice.result.state, choice.seconds * 1000).state;
     seconds += choice.seconds;

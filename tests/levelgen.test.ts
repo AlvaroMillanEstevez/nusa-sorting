@@ -2,7 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { createGame } from '../src/core';
 import { buildCandidate, generateLevel, ruleFailures } from '../tools/levelgen/generate';
 import { constName, levelSource } from '../tools/levelgen/format';
+import type { LevelRecipe } from '../tools/levelgen/recipe';
 import { RECIPES, recipeFor } from '../tools/levelgen/recipes';
+
+/** A small recipe that generates in a moment, for testing the generator itself. */
+const small: LevelRecipe = {
+  number: 1,
+  id: 'nusa-001',
+  purpose: 'Test recipe.',
+  seed: 7,
+  layout: 'grid',
+  shelves: 4,
+  types: 3,
+  backLayers: { shelves: 0, layers: [1, 1] },
+  emptyFront: 3,
+  maxDepth: 0,
+  minStartTriples: 1,
+  winBand: [0, 1],
+  time: { slack: 1.5, timeUp: [0, 1] },
+};
 import { rng } from '../tools/simulator';
 
 describe('level generator', () => {
@@ -30,7 +48,7 @@ describe('level generator', () => {
   });
 
   it('regenerates a level identically from its recipe, and differently with another seed', () => {
-    const recipe = recipeFor(1);
+    const recipe = small;
     const first = generateLevel(recipe);
     expect(generateLevel(recipe).level).toEqual(first.level);
     expect(ruleFailures(first.level, recipe)).toEqual([]);
@@ -40,7 +58,7 @@ describe('level generator', () => {
   });
 
   it('writes a reviewable level file', () => {
-    const generated = generateLevel(recipeFor(1));
+    const generated = generateLevel(small);
     const source = levelSource(generated);
     expect(source).toContain("export const nusa001: LevelDefinition = {");
     expect(source).toContain("id: 'nusa-001',");

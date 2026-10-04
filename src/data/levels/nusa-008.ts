@@ -7,19 +7,20 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 8`, or try another seed with `npm run levelgen -- 8 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated casual player, 200 games: wins 86%, out of space 4%, out of time 11%.
+ * Simulated casual player, 200 games: wins 78%, out of space 14%, out of time 8%.
  * A guide only: real players may find it easier or harder.
  */
 export const nusa008: LevelDefinition = {
   id: 'nusa-008',
-  timeLimitSeconds: 120,
+  timeLimitSeconds: 110,
   shelves: [
-    [['ketupat', null, 'rambutan'], ['sate', 'nasi-goreng', 'es-teh-manis']],
-    [['ketupat', null, 'manggis'], ['sate', 'onde-onde', 'ketupat']],
-    [['sate', 'sate', null]],
-    [['nasi-goreng', 'sate', null]],
-    [['rambutan', 'rambutan', 'manggis']],
-    [['ketupat', 'es-teh-manis', 'onde-onde']],
+    [['durian', 'onde-onde', 'sate'], ['kerupuk-udang', 'kerupuk-udang', 'manggis']],
+    [[null, 'rambutan', 'nasi-goreng'], ['es-teh-manis', 'bakso', 'bakso']],
+    [['kerupuk-udang', 'manggis', 'nasi-goreng']],
+    [['durian', 'sate', null]],
+    [['sate', 'onde-onde', 'durian']],
+    [[null, 'ketupat', 'rambutan']],
+    [['ketupat', null, 'bakso']],
   ],
   mechanics: [
     {
@@ -29,13 +30,13 @@ export const nusa008: LevelDefinition = {
           orientation: 'horizontal',
           speed: 0.35,
           carriers: [
-            ['es-teh-manis'],
-            ['ketupat', 'onde-onde'],
-            ['ketupat'],
+            ['es-teh-manis', 'ketupat'],
+            ['onde-onde'],
+            ['rambutan', 'es-teh-manis'],
             [],
-            ['nasi-goreng', 'sate'],
             [],
             ['manggis'],
+            ['nasi-goreng'],
           ],
         },
       ],

@@ -9,6 +9,7 @@ import {
   startTriples,
   trapWithin,
   tripleDepthIssues,
+  typesNotOneTriple,
   validateLevel,
   type LevelDefinition,
 } from '../src/core';
@@ -144,5 +145,24 @@ describe('how deep triples are buried', () => {
     // A: 2 within reach (the third is two layers back); B: 2 in reach; C is on a locked shelf.
     expect(startTriples(createGame(level))).toBe(0);
     expect(startTriples(createGame(twoMoveTrap))).toBe(5);
+  });
+});
+
+describe('one triple per type', () => {
+  it('accepts a level where every type appears exactly three times, variants counting as their own type', () => {
+    const level: LevelDefinition = {
+      id: 'one-each',
+      shelves: [[['A', 'A', null]], [['A', 'B', 'B']], [['B', 'A:alt1', 'A:alt1']], [['A:alt1', null, null]]],
+    };
+    expect(typesNotOneTriple(createGame(level))).toEqual([]);
+  });
+
+  it('reports types with two triples, counting track stacks too', () => {
+    const level: LevelDefinition = {
+      id: 'two-of-a',
+      shelves: [[['A', 'A', null]], [['A', 'B', 'B']], [['B', 'A', null]], [[null, null, null]]],
+      mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'horizontal', speed: 0.5, carriers: [['A', 'A'], []] }] }],
+    };
+    expect(typesNotOneTriple(createGame(level))).toEqual([{ type: 'A', count: 6 }]);
   });
 });

@@ -5,6 +5,7 @@ import {
   startTriples,
   trapWithin,
   tripleDepthIssues,
+  typesNotOneTriple,
   type ColumnDefinition,
   type GameState,
   type LevelDefinition,
@@ -13,6 +14,7 @@ import {
 } from '../../src/core';
 import { itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
 import { playMany, rng, simulate, solve, type SimulationStats } from '../simulator';
+import { levelTypes } from './types';
 import type { LevelRecipe } from './recipe';
 
 /** Simulated games while searching, and for the final figures. */
@@ -85,8 +87,8 @@ type Place = { kind: 'shelf'; shelf: number; layer: number; slot: number } | { k
 
 /**
  * One random board for the recipe, without a time limit: shelves with their layers, empty front slots, stacks on
- * the tracks, locks, and every kind in a whole number of triples spread over all of it. Null if the numbers do
- * not work out (e.g. fewer triples than kinds).
+ * the tracks, locks, and one triple of each of the recipe's types spread over all of it. Null if the numbers do
+ * not work out (more items than slots, or too many empty slots for the back layers to take).
  */
 export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefinition | null {
   const { shelfCount, columns, tracks } = plan(recipe);
@@ -107,29 +109,32 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
     }
   });
 
-  // Empty front slots; then, to make the item count a multiple of three, a few more empty back slots.
+  // Exactly three items of each type: the front gets the recipe's empty slots, back layers any others (never
+  // a whole back layer), and boards where that does not work out are skipped.
+  const types = levelTypes(recipe.types);
+  const spare = places.length - types.length * 3 - recipe.emptyFront;
+  if (spare < 0) return null;
   const fronts = places.filter((p) => p.kind === 'shelf' && p.layer === 0);
   const empty = new Set<Place>(shuffle(random, fronts).slice(0, recipe.emptyFront));
-  const backs = shuffle(
+  const left = new Map<string, number>();
+  for (const p of places) if (p.kind === 'shelf' && p.layer > 0) left.set(`${p.shelf}:${p.layer}`, (left.get(`${p.shelf}:${p.layer}`) ?? 0) + 1);
+  let toEmpty = spare;
+  for (const back of shuffle(
     random,
     places.filter((p) => p.kind === 'shelf' && p.layer > 0),
-  );
-  let filled = places.length - empty.size;
-  for (const back of backs) {
-    if (filled % 3 === 0) break;
+  )) {
+    if (toEmpty === 0) break;
+    if (back.kind !== 'shelf') continue;
+    const key = `${back.shelf}:${back.layer}`;
+    if (left.get(key)! <= 1) continue;
+    left.set(key, left.get(key)! - 1);
     empty.add(back);
-    filled--;
+    toEmpty--;
   }
-  if (filled % 3 !== 0) return null;
-
-  const triples = filled / 3;
-  const kinds = recipe.kinds;
-  if (triples < kinds.length) return null;
-  const perKind = kinds.map(() => Math.floor(triples / kinds.length));
-  for (const k of choose(random, kinds.length, triples % kinds.length)) perKind[k]!++;
+  if (toEmpty > 0) return null;
   const items = shuffle(
     random,
-    kinds.flatMap((kind, k) => Array<string>(perKind[k]! * 3).fill(kind)),
+    types.flatMap((type) => [type, type, type]),
   );
 
   const shelves = layerCounts.map((layers) => Array.from({ length: layers }, () => Array<string | null>(3).fill(null)));
@@ -170,7 +175,7 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
 
 /**
  * The rules every generated level must meet, as a list of failures (empty when it passes): a valid level whose
- * items are big enough on a phone; no layer that starts as a triple; no defeat within the first two moves; no
+ * items are big enough on a phone; exactly one triple of each type; no layer that starts as a triple; no defeat within the first two moves; no
  * triple buried deeper than the recipe allows; enough triples in reach at the start; solvable even without
  * combos.
  */
@@ -184,6 +189,8 @@ export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, '
     throw error;
   }
   const failures: string[] = [];
+  const counts = typesNotOneTriple(state);
+  if (counts.length > 0) failures.push(`types not exactly one triple: ${counts.map((c) => `${c.type} ×${c.count}`).join(', ')}`);
   // A back layer of three alike would clear by itself as it comes forward: a gift, not a puzzle.
   const readyTriples = level.shelves.flatMap((layers, s) =>
     layers.flatMap((layer, l) => (layer[0] && layer.every((type) => type === layer[0]) ? [`shelf ${s} layer ${l}`] : [])),
@@ -194,8 +201,19 @@ export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, '
   if (deep.length > 0) failures.push(`triples buried too deep: ${deep.map((d) => `${d.type} #${d.triple + 1}`).join(', ')}`);
   const reachable = startTriples(state);
   if (reachable < recipe.minStartTriples) failures.push(`only ${reachable} triple(s) in reach at the start`);
-  if (failures.length === 0 && !solve(state)) failures.push('no solution found');
+  if (failures.length === 0 && !isSolvable(state)) failures.push('no solution found');
   return failures;
+}
+
+/**
+ * Whether the level can be won: some untimed game of the simulated player wins (a won game is a solution),
+ * or else the solver finds a way; its search can run out on big boards, which is why the player goes first.
+ * The player's wins only count without a roaming blocker, whose removal depends on combos the solver does not
+ * assume.
+ */
+function isSolvable(state: GameState): boolean {
+  if (!state.blocker && playMany({ ...state, timeLeftMs: null }, 40, 7).some((o) => o.won)) return true;
+  return solve(state) !== undefined;
 }
 
 const roundUp = (seconds: number) => Math.max(MIN_TIME, Math.ceil(seconds / TIME_STEP) * TIME_STEP);
@@ -203,8 +221,9 @@ const roundUp = (seconds: number) => Math.max(MIN_TIME, Math.ceil(seconds / TIME
 const inRange = (value: number, [min, max]: readonly [number, number]) => value >= min - 1e-9 && value <= max + 1e-9;
 
 /**
- * A time limit for a board that puts the simulated win rate in the recipe's band, or null if none does. Starts
- * from what untimed games predict, then checks with timed games around it.
+ * A time limit for a board that puts the simulated win rate in the recipe's band, or null if none does: the
+ * shortest one (never under the recipe's floor) whose predicted win rate reaches the band while the share of
+ * games lost to the clock stays in its range, checked with timed games.
  */
 function chooseTime(level: LevelDefinition, recipe: LevelRecipe): { seconds: number; stats: SimulationStats } | null {
   const untimed = playMany(createGame(level), SEARCH_RUNS, 1);
@@ -212,21 +231,21 @@ function chooseTime(level: LevelDefinition, recipe: LevelRecipe): { seconds: num
     .filter((o) => o.won)
     .map((o) => o.seconds)
     .sort((a, b) => a - b);
-  if (winTimes.length / SEARCH_RUNS < recipe.winBand[0]) return null;
+  const untimedRate = winTimes.length / SEARCH_RUNS;
+  if (untimedRate < recipe.winBand[0]) return null;
   const p90 = winTimes[Math.floor(winTimes.length * 0.9)] ?? winTimes.at(-1)!;
   const floor = roundUp(recipe.time.slack * p90);
-  const target = (recipe.winBand[0] + recipe.winBand[1]) / 2;
-  // Predicted win rate for a limit: untimed wins that finish in time.
+  // Predicted win rate for a limit: untimed wins that finish in time; the rest of those wins become time-ups.
   const predicted = (limit: number) => winTimes.filter((s) => s <= limit).length / SEARCH_RUNS;
-  let best = floor;
-  for (let limit = floor; limit <= roundUp(winTimes.at(-1)!) + TIME_STEP; limit += TIME_STEP) {
-    if (Math.abs(predicted(limit) - target) < Math.abs(predicted(best) - target)) best = limit;
-  }
-  for (const delta of [0, TIME_STEP, -TIME_STEP, 2 * TIME_STEP, -2 * TIME_STEP]) {
-    const seconds = best + delta;
-    if (seconds < floor) continue;
-    const stats = simulate(createGame({ ...level, timeLimitSeconds: seconds }), SEARCH_RUNS, 1);
-    if (inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp)) return { seconds, stats };
+  const last = roundUp(winTimes.at(-1)!) + TIME_STEP;
+  for (let limit = floor; limit <= last; limit += TIME_STEP) {
+    const win = predicted(limit);
+    if (win < recipe.winBand[0] || !inRange(untimedRate - win, recipe.time.timeUp)) continue;
+    for (const seconds of [limit, limit + TIME_STEP, limit + 2 * TIME_STEP]) {
+      const stats = simulate(createGame({ ...level, timeLimitSeconds: seconds }), SEARCH_RUNS, 1);
+      if (inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp)) return { seconds, stats };
+    }
+    return null;
   }
   return null;
 }

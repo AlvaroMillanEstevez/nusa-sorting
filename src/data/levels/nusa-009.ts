@@ -7,22 +7,22 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 9`, or try another seed with `npm run levelgen -- 9 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated casual player, 200 games: wins 66%, out of space 32%, out of time 3%.
+ * Simulated casual player, 200 games: wins 65%, out of space 27%, out of time 9%.
  * A guide only: real players may find it easier or harder.
  */
 export const nusa009: LevelDefinition = {
   id: 'nusa-009',
-  timeLimitSeconds: 150,
+  timeLimitSeconds: 165,
   shelves: [
-    [['manggis', 'ketupat', null], ['sate', 'sate', null]],
-    [['kerupuk-udang', 'nasi-goreng', null], [null, 'ketupat', 'manggis']],
-    [['kerupuk-udang', 'kerupuk-udang', 'es-teh-manis'], ['rambutan', 'nasi-goreng', 'sate']],
-    [[null, null, 'sate']],
-    [['sate', 'kerupuk-udang', 'kerupuk-udang']],
-    [['onde-onde', 'ketupat', 'rambutan']],
+    [['nasi-goreng', 'manggis', null], ['es-teh-manis', 'onde-onde', null]],
+    [['nasi-goreng', 'es-teh-manis', null], [null, 'kerupuk-udang', 'es-teh-manis']],
+    [['rambutan', 'onde-onde', 'bakso'], ['ketupat', 'sate', 'sate']],
+    [[null, null, 'manggis']],
+    [['durian', 'durian', 'ketupat']],
+    [['durian', 'rambutan', 'rambutan']],
   ],
   mechanics: [
-    { kind: 'lockedShelves', shelves: [{ shelf: 1, triplesRequired: 2 }] },
+    { kind: 'lockedShelves', shelves: [{ shelf: 4, triplesRequired: 2 }] },
     {
       kind: 'tracks',
       tracks: [
@@ -30,11 +30,11 @@ export const nusa009: LevelDefinition = {
           orientation: 'vertical',
           speed: 0.6,
           carriers: [
-            ['nasi-goreng'],
+            ['sate'],
             [],
-            ['es-teh-manis', 'kerupuk-udang'],
-            ['manggis', 'sate', 'onde-onde'],
-            ['es-teh-manis', 'rambutan', 'onde-onde'],
+            ['kerupuk-udang', 'bakso'],
+            ['nasi-goreng', 'manggis', 'ketupat'],
+            ['kerupuk-udang', 'bakso', 'onde-onde'],
           ],
         },
       ],

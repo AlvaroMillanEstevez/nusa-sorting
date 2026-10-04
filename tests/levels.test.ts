@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-  areConfusable,
-  parseItemType,
-  STARTER_KINDS,
-} from '../src/data/itemCatalog';
+import { areConfusable, parseItemType } from '../src/data/itemCatalog';
 import {
   COMBO_DEFAULTS,
   createGame,
   firstIncomplete,
   isSpecialLevel,
   stackOf,
+  typesNotOneTriple,
   validateLevel,
   type GameState,
   type LevelDefinition,
@@ -17,6 +14,7 @@ import {
 import { levels } from '../src/data/levels';
 import { ruleFailures } from '../tools/levelgen/generate';
 import { RECIPES } from '../tools/levelgen/recipes';
+import { levelTypes, TYPES_WITHOUT_LOOK_ALIKES, TYPES_WITHOUT_VARIANTS } from '../tools/levelgen/types';
 import { simulate } from '../tools/simulator';
 import { demoLevels } from './fixtures/demo-levels';
 
@@ -53,13 +51,14 @@ describe.each(levels.map((level, i) => [i + 1, level] as const))('level %i', (nu
     expect(ruleFailures(level, recipe)).toEqual([]);
   }, 60_000);
 
-  it('uses starter kinds only, never two that look alike, and no colour variants', () => {
-    const kinds = kindsOf(level);
-    expect([...kinds].sort()).toEqual([...recipe.kinds].sort());
-    for (const kind of kinds) {
-      expect(STARTER_KINDS).toContain(kind);
-      expect(parseItemType(kind)?.variant).toBe('original');
-      for (const other of kinds) expect(areConfusable(kind, other)).toBe(false);
+  it('holds exactly one triple of each type, taken in order: base kinds first, look-alikes and variants last', () => {
+    expect(typesNotOneTriple(createGame(level))).toEqual([]);
+    const types = kindsOf(level);
+    expect([...types].sort()).toEqual(levelTypes(recipe.types).sort());
+    const kinds = [...types].map((t) => parseItemType(t)!);
+    if (types.size <= TYPES_WITHOUT_VARIANTS) expect(kinds.every((k) => k.variant === 'original')).toBe(true);
+    if (types.size <= TYPES_WITHOUT_LOOK_ALIKES) {
+      for (const a of kinds) for (const b of kinds) expect(areConfusable(a.kind.id, b.kind.id)).toBe(false);
     }
   });
 
@@ -83,11 +82,11 @@ describe('the curve of levels 1-10', () => {
     for (const demo of demoLevels) expect(ids).not.toContain(demo.id);
   });
 
-  it('1: very simple: a few shelves, 4-5 kinds, nothing hidden, no mechanics', () => {
+  it('1: very simple: 6-8 kinds, few empty slots, nothing hidden, no mechanics', () => {
     expect(columnsOf(l1!)).toEqual(['grid']);
-    expect(l1!.shelves.length).toBeLessThanOrEqual(5);
-    expect(kindsOf(l1!).size).toBeGreaterThanOrEqual(4);
-    expect(kindsOf(l1!).size).toBeLessThanOrEqual(5);
+    expect(kindsOf(l1!).size).toBeGreaterThanOrEqual(6);
+    expect(kindsOf(l1!).size).toBeLessThanOrEqual(8);
+    expect(l1!.shelves.flat(2).filter((slot) => slot === null).length).toBeLessThanOrEqual(3);
     expect(backLayers(l1!)).toBe(0);
     expect(l1!.mechanics ?? []).toEqual([]);
   });

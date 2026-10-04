@@ -36,11 +36,14 @@ export interface LevelRecipe {
   /** Stacks on every track of the level. */
   readonly stacks?: StackRecipe;
 
-  /** Item kinds the level uses (all of them). */
-  readonly kinds: readonly string[];
+  /**
+   * Item types in the level, one triple each: the first `types` of the generator's type order (types.ts), so
+   * the level holds exactly 3 × types items.
+   */
+  readonly types: number;
   /** Shelves with layers behind the front one, and how many layers in all each of them has. */
   readonly backLayers: { readonly shelves: number; readonly layers: readonly [number, number] };
-  /** Empty front slots at the start, across the board. */
+  /** Empty front slots at the start, across the board. Back layers take any other empty slots needed. */
   readonly emptyFront: number;
   /** Locked shelves: triples needed to open each one. */
   readonly locked?: readonly number[];
