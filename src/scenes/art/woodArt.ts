@@ -81,9 +81,9 @@ export function drawWoodShelf(
   const plankTop = shelf.slots[0]!.y + dy + s / 2;
   const seed = noise(rect.x, rect.y);
 
-  // Brackets under the board at both ends.
-  const bw = s * 0.22;
-  const bh = s * 0.16;
+  // Brackets under the board at both ends, within the gap to the next shelf.
+  const bw = s * 0.2;
+  const bh = s * 0.12;
   g.fillStyle(hex(p.frameDark), 1);
   g.lineStyle(edge, hex(p.line), 1);
   for (const [bx, dir] of [
@@ -94,15 +94,16 @@ export function drawWoodShelf(
     g.strokeTriangle(bx, y + h, bx + bw * dir, y + h, bx, y + h + bh);
   }
 
-  // Frame: sides and top.
-  g.fillStyle(hex(p.frame), 1).fillRoundedRect(x, y, w, h, s * 0.07);
-  g.lineStyle(edge, hex(p.line), 1).strokeRoundedRect(x, y, w, h, s * 0.07);
-  g.fillStyle(hex(p.frameLight), 0.7).fillRect(x + s * 0.06, y + s * 0.025, w - s * 0.12, s * 0.03);
+  // Frame: thin sides and top (the layout leaves SIDE_PAD and TOP_PAD for them).
+  g.fillStyle(hex(p.frame), 1).fillRoundedRect(x, y, w, h, s * 0.05);
+  g.lineStyle(edge, hex(p.line), 1).strokeRoundedRect(x, y, w, h, s * 0.05);
+  g.fillStyle(hex(p.frameLight), 0.7).fillRect(x + s * 0.05, y + s * 0.015, w - s * 0.1, s * 0.022);
 
   // Back wall: dark boards with seams, shaded at the top and sides so it reads as the inside of a box.
-  const wx = x + s * 0.07;
-  const wy = y + s * 0.07;
-  const ww = w - s * 0.14;
+  const side = s * 0.035;
+  const wx = x + side;
+  const wy = y + s * 0.05;
+  const ww = w - side * 2;
   const wh = plankTop - wy;
   g.fillStyle(hex(p.wall), 1).fillRect(wx, wy, ww, wh);
   const boards = Math.max(2, Math.round(ww / (s * 0.42)));
@@ -112,20 +113,20 @@ export function drawWoodShelf(
     g.lineStyle(Math.max(1, s * 0.012), hex(p.wallSlat), 1).lineBetween(sx + s * 0.02, wy, sx + s * 0.02, wy + wh);
   }
   const shade = hex(p.wallShade);
-  g.fillGradientStyle(shade, shade, shade, shade, 0.95, 0.95, 0, 0).fillRect(wx, wy, ww, s * 0.24);
-  g.fillGradientStyle(shade, shade, shade, shade, 0.8, 0, 0.8, 0).fillRect(wx, wy, s * 0.1, wh);
-  g.fillGradientStyle(shade, shade, shade, shade, 0, 0.8, 0, 0.8).fillRect(wx + ww - s * 0.1, wy, s * 0.1, wh);
+  g.fillGradientStyle(shade, shade, shade, shade, 0.95, 0.95, 0, 0).fillRect(wx, wy, ww, s * 0.2);
+  g.fillGradientStyle(shade, shade, shade, shade, 0.8, 0, 0.8, 0).fillRect(wx, wy, s * 0.08, wh);
+  g.fillGradientStyle(shade, shade, shade, shade, 0, 0.8, 0, 0.8).fillRect(wx + ww - s * 0.08, wy, s * 0.08, wh);
 
-  // A slightly lighter panel behind each front slot, so slots read at a glance.
+  // A slightly lighter panel behind each slot, so slots read at a glance.
   g.fillStyle(hex(p.wallSlat), 0.55);
   for (const slot of shelf.slots) {
-    g.fillRoundedRect(slot.x + dx - s * 0.45, slot.y + dy - s * 0.45, s * 0.9, s * 0.9, s * 0.1);
+    g.fillRoundedRect(slot.x + dx - s * 0.46, slot.y + dy - s * 0.46, s * 0.92, s * 0.92, s * 0.1);
   }
 
   // Front board: overhangs a little, with a lit top edge, a dark lower edge and grain.
-  const px = x - s * 0.03;
-  const pw = w + s * 0.06;
-  const py = plankTop - s * 0.03;
+  const px = x - s * 0.02;
+  const pw = w + s * 0.04;
+  const py = plankTop - s * 0.02;
   const ph = y + h - py + s * 0.02;
   g.fillStyle(hex(p.plank), 1).fillRect(px, py, pw, ph);
   g.fillStyle(hex(p.plankLight), 1).fillRect(px, py, pw, s * 0.04);
@@ -209,11 +210,11 @@ export function makeWoodArt(p: WoodPalette = WOOD): ArtSet {
     drawShelfTrack(rails, rollers, layout) {
       const { rect } = layout;
       const s = layout.pitch / 1.95;
-      const pole = Math.max(4, s * 0.13);
+      const pole = Math.max(3, s * 0.11);
       const edge = Math.max(1, s * 0.03);
-      // Bamboo poles up both sides, a log across each end of the loop.
-      bamboo(rails, p, rect.x - pole * 1.3, rect.y, pole, rect.height, s * 0.7, edge);
-      bamboo(rails, p, rect.x + rect.width + pole * 0.3, rect.y, pole, rect.height, s * 0.7, edge);
+      // Bamboo poles up both sides, in the gaps beside the column, and a log across each end of the loop.
+      bamboo(rails, p, rect.x - pole - s * 0.035, rect.y, pole, rect.height, s * 0.7, edge);
+      bamboo(rails, p, rect.x + rect.width + s * 0.035, rect.y, pole, rect.height, s * 0.7, edge);
       const cap = s * 0.3;
       for (const y of [rect.y, rect.y + rect.height]) {
         const x0 = rect.x - pole * 2;

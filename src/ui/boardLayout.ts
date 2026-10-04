@@ -12,10 +12,8 @@ export interface Rect {
 
 export interface ShelfLayout {
   readonly rect: Rect;
-  /** Centers of the front-layer slots. */
+  /** Centers of the slots. Back layers sit right under the front items, at the same points. */
   readonly slots: readonly Point[];
-  /** Centers of the back-layer slots (peeking above the front). */
-  readonly backSlots: readonly Point[];
 }
 
 export interface BeltLayout {
@@ -63,16 +61,17 @@ export interface BoardLayout {
   readonly shelves: readonly ShelfLayout[];
 }
 
-// Shelf geometry in units of slotSize.
-const SIDE_PAD = 0.15;
-const BACK_PEEK = 0.4;
-const PLANK = 0.2;
-export const GAP = 0.35;
+// Shelf geometry in units of slotSize: a thin frame at the sides and top, the front board below the slots.
+export const SIDE_PAD = 0.05;
+export const TOP_PAD = 0.08;
+export const PLANK = 0.18;
+/** Between shelves: room for the brackets under each board. */
+export const GAP = 0.24;
 export const MARGIN = 16;
 export const MAX_SLOT_SIZE = 110;
 
 export const SHELF_WIDTH_UNITS = (slotsPerLayer: number) => slotsPerLayer + SIDE_PAD * 2;
-export const SHELF_HEIGHT_UNITS = BACK_PEEK + 1 + PLANK;
+export const SHELF_HEIGHT_UNITS = TOP_PAD + 1 + PLANK;
 /**
  * The layer behind the front sits exactly under it, a little smaller so the front item covers it. Where the
  * front slot is empty it shows as a dim dark silhouette that does not give its type away.
@@ -175,12 +174,10 @@ export function trackFromBelt(belt: BeltLayout): TrackLayout {
 /** Builds a shelf's slots from its top-left corner and the slot size (shared by every layout). */
 export function shelfLayoutAt(x: number, y: number, s: number, slotsPerLayer = 3): ShelfLayout {
   const rect: Rect = { x, y, width: SHELF_WIDTH_UNITS(slotsPerLayer) * s, height: SHELF_HEIGHT_UNITS * s };
-  const frontY = rect.y + (BACK_PEEK + 0.5) * s;
-  const xs = Array.from({ length: slotsPerLayer }, (_, j) => rect.x + (SIDE_PAD + j + 0.5) * s);
+  const slotY = rect.y + (TOP_PAD + 0.5) * s;
   return {
     rect,
-    slots: xs.map((sx) => ({ x: sx, y: frontY })),
-    backSlots: xs.map((sx) => ({ x: sx, y: frontY - BACK_PEEK * s })),
+    slots: Array.from({ length: slotsPerLayer }, (_, j) => ({ x: rect.x + (SIDE_PAD + j + 0.5) * s, y: slotY })),
   };
 }
 
@@ -302,17 +299,18 @@ export function shelfAt(layout: BoardLayout, x: number, y: number): number {
 }
 
 /**
- * Front slot under a point, from the layout alone: the slot's cell (a slot wide, from a little above the
- * item to the plank). Uses where the slot is, never where its sprite is drawn, so items still sliding in
- * from a back layer can be grabbed at once.
+ * Front slot under a point, from the layout alone: the slot's cell, a slot wide and as tall as its shelf plus
+ * half the gap above and below (frame and board included, so a press near an item's edge still counts).
+ * Uses where the slot is, never where its sprite is drawn, so items still moving can be grabbed at once.
  */
 export function frontSlotAt(layout: BoardLayout, x: number, y: number): { shelf: number; slot: number } | null {
   const s = layout.slotSize;
+  const slack = (GAP * s) / 2;
   for (let shelf = 0; shelf < layout.shelves.length; shelf++) {
-    const slots = layout.shelves[shelf]!.slots;
+    const { rect, slots } = layout.shelves[shelf]!;
+    if (y < rect.y - slack || y > rect.y + rect.height + slack) continue;
     for (let slot = 0; slot < slots.length; slot++) {
-      const centre = slots[slot]!;
-      if (Math.abs(x - centre.x) <= s / 2 && y >= centre.y - s * 0.65 && y <= centre.y + s / 2) return { shelf, slot };
+      if (Math.abs(x - slots[slot]!.x) <= s / 2) return { shelf, slot };
     }
   }
   return null;

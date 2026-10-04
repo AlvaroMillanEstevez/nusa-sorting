@@ -115,9 +115,15 @@ describe('shelf track columns', () => {
     });
   });
 
-  it('rejects three shelf-wide columns on a 390 px phone (items under 36 px)', () => {
+  it('fits fixed shelves | a shelf track | fixed shelves on a 390 px phone with items of at least 36 px', () => {
     const wide = computeColumnLayout(390, 844, [shelvesCol(0, 1, 2), shelfTrackCol(0, 3, 4, 5), shelvesCol(6, 7, 8)], 9, 1, true);
-    expect(itemSize(wide)).toBeLessThan(MIN_ITEM_PX);
+    expect(itemSize(wide)).toBeGreaterThanOrEqual(MIN_ITEM_PX);
+    // Its columns do not overlap and stay on screen.
+    const [left, , right] = [wide.shelves[0]!, wide.shelves[3]!, wide.shelves[6]!];
+    expect(left.rect.x).toBeGreaterThanOrEqual(0);
+    expect(left.rect.x + left.rect.width).toBeLessThan(wide.tracks[0]!.rect.x);
+    expect(wide.tracks[0]!.rect.x + wide.tracks[0]!.rect.width).toBeLessThan(right.rect.x);
+    expect(right.rect.x + right.rect.width).toBeLessThanOrEqual(390);
   });
 });
 

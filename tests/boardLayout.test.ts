@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { beltPose, beltSlotAt, boundsAround, computeBoardLayout, frontSlotAt, isOnBelt, nearestFreeSlot, nearestSlot, shelfAt, type Rect } from '../src/ui/boardLayout';
+import { beltPose, beltSlotAt, boundsAround, computeBoardLayout, frontSlotAt, GAP, isOnBelt, nearestFreeSlot, nearestSlot, shelfAt, type Rect } from '../src/ui/boardLayout';
 
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -66,17 +66,28 @@ describe('hit testing helpers', () => {
   const shelf = layout.shelves[0]!;
 
   it('finds the front slot under a point from the layout, wherever its sprite is drawn', () => {
+    const s = layout.slotSize;
     layout.shelves.forEach((sh, i) =>
       sh.slots.forEach((slot, j) => {
         expect(frontSlotAt(layout, slot.x, slot.y)).toEqual({ shelf: i, slot: j });
-        // The top of the cell covers a lifted item; the plank below the slot does not count.
-        expect(frontSlotAt(layout, slot.x, slot.y - layout.slotSize * 0.6)).toEqual({ shelf: i, slot: j });
+        // The cell is a slot wide and covers the whole shelf (a lifted item, the board below) and half the gap
+        // above and below it.
+        expect(frontSlotAt(layout, slot.x + s * 0.49, sh.rect.y - s * GAP * 0.45)).toEqual({ shelf: i, slot: j });
+        expect(frontSlotAt(layout, slot.x - s * 0.49, sh.rect.y + sh.rect.height + s * GAP * 0.45)).toEqual({ shelf: i, slot: j });
       }),
     );
-    // Where a back-layer item is drawn while it slides forward is above the cell: not the front slot.
-    const back = shelf.backSlots[1]!;
-    expect(frontSlotAt(layout, back.x, back.y - layout.slotSize * 0.3)).toBeNull();
+    // Beside the shelf, past the half-slot margin, there is no slot.
+    expect(frontSlotAt(layout, shelf.rect.x - s * 0.3, shelf.slots[0]!.y)).toBeNull();
     expect(frontSlotAt(layout, -10, -10)).toBeNull();
+  });
+
+  it('gives each slot its own cell: neighbouring cells never overlap', () => {
+    const s = layout.slotSize;
+    // Points along a row and down a column land in exactly one slot each, the nearest one.
+    for (let dx = -0.49; dx <= 0.49; dx += 0.07) {
+      const hit = frontSlotAt(layout, shelf.slots[1]!.x + dx * s, shelf.slots[1]!.y);
+      expect(hit).toEqual({ shelf: 0, slot: 1 });
+    }
   });
 
   it('returns -1 outside every shelf', () => {

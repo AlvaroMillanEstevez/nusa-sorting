@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { ITEM_KINDS, itemTypeId, VARIANTS, type ItemKind } from '../data/itemCatalog';
 import { getLocale, t, type MessageKey } from '../i18n';
-import { shelfLayoutAt } from '../ui/boardLayout';
+import { SHELF_HEIGHT_UNITS, shelfLayoutAt } from '../ui/boardLayout';
 import { mapWood } from '../ui/art/wood';
 import { simulateSvg, simulateVision, type Vision } from '../ui/icons/color';
 import { DRAWN_KINDS, renderItemSvg } from '../ui/icons/icons';
@@ -148,7 +148,7 @@ export class GalleryScene extends Phaser.Scene {
     groups.push(['blocker', null, null], ['locked', null, null]);
     let bottom = top;
     groups.forEach((group, i) => {
-      const shelf = shelfLayoutAt(PAD + (i % columns) * (shelfW + GAP), top + Math.floor(i / columns) * (s * 1.6 + GAP * 1.5), s);
+      const shelf = shelfLayoutAt(PAD + (i % columns) * (shelfW + GAP), top + Math.floor(i / columns) * (s * SHELF_HEIGHT_UNITS + GAP * 1.5), s);
       const g = this.add.graphics();
       this.art.drawShelf(g, shelf, s);
       this.content.add(g);

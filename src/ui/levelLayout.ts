@@ -2,8 +2,8 @@ import { carrierOffset, createGame, type GameState, type LevelDefinition } from 
 import { computeBoardLayout, shelfLayoutCentred, trackPose, type BoardLayout, type ShelfLayout } from './boardLayout';
 import { computeColumnLayout, type ColumnSpec } from './columnLayout';
 
-/** Item size relative to its slot (shelves and tracks alike). */
-export const ITEM_FILL = 0.86;
+/** Item size relative to its slot (shelves and tracks alike): items stand close together. */
+export const ITEM_FILL = 0.95;
 
 /** Smallest item, in CSS px, that is still comfortable to grab with a finger. */
 export const MIN_ITEM_PX = 36;

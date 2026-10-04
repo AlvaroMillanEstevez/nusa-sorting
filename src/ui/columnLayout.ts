@@ -22,8 +22,8 @@ export type ColumnSpec =
 // Sizes in slots.
 /** Width of a vertical track column: a carrier plus its rail. */
 export const TRACK_COLUMN_UNITS = 1.2;
-/** Space between columns. */
-export const COLUMN_GAP_UNITS = 0.3;
+/** Space between columns: wide enough for a shelf track's bamboo pole. */
+export const COLUMN_GAP_UNITS = 0.22;
 /** Columns may run closer to the screen edges than the automatic grid. */
 const SIDE_MARGIN = 8;
 

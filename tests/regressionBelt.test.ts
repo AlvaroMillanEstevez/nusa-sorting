@@ -4,7 +4,7 @@ import { levels } from '../src/data/levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
 import { asRecorded } from './helpers';
-import layoutsFixture from './fixtures/layouts-v2.json';
+import layoutsFixture from './fixtures/layouts-v3.json';
 
 /**
  * Golden recordings made before the belt became a set of tracks with stacks (tests/fixtures/regression-v3.json):
@@ -84,11 +84,11 @@ describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regre
 });
 
 /**
- * Layouts of levels 1-9 (tests/fixtures/layouts-v2.json), recorded when score and combo became part of every
- * level: portrait gained a status row for levels that had none, and landscape moved it into the main HUD row.
- * The earlier snapshot (before column layouts) was replaced then; see the commit message for the size changes.
+ * Layouts of every level (tests/fixtures/layouts-v3.json), recorded when shelves became compact: back layers
+ * moved under the front items (no more room above them), thinner frames and gaps, and items filling more of
+ * each slot. Earlier snapshots were replaced then; see the commit message for the size changes.
  */
-describe('automatic layout is unchanged', () => {
+describe('layouts are unchanged', () => {
   it.each(layoutsFixture.map((entry) => [entry.level, entry] as const))('%s', (id, entry) => {
     const level = levels.find((l) => l.id === id)!;
     const state = createGame(level);
