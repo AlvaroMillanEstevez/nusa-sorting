@@ -1,5 +1,5 @@
 import { firstIncomplete, isUnlocked, recordWin, type Progress, type WinRecord } from '../core/progress';
-import type { SaveData, SaveService } from './SaveService';
+import type { SaveData, SaveService, Settings } from './SaveService';
 
 /**
  * The game's view of saved data: reads once at start, and writes only on meaningful changes (a finished
@@ -18,6 +18,10 @@ export class ProgressStore {
 
   get muted(): boolean {
     return this.data.settings.muted;
+  }
+
+  get colorBlindMode(): boolean {
+    return this.data.settings.colorBlindMode;
   }
 
   isUnlocked(levelIds: readonly string[], index: number): boolean {
@@ -40,8 +44,16 @@ export class ProgressStore {
   }
 
   setMuted(muted: boolean): void {
-    if (muted === this.data.settings.muted) return;
-    this.data = { ...this.data, settings: { ...this.data.settings, muted } };
+    this.setSetting('muted', muted);
+  }
+
+  setColorBlindMode(on: boolean): void {
+    this.setSetting('colorBlindMode', on);
+  }
+
+  private setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
+    if (value === this.data.settings[key]) return;
+    this.data = { ...this.data, settings: { ...this.data.settings, [key]: value } };
     this.saves.save(this.data);
   }
 

@@ -35,6 +35,8 @@ interface Section {
 
 export class GalleryScene extends Phaser.Scene {
   private vision: Vision = 'normal';
+  /** Colour-blind mode: variant badges on. */
+  private marks = false;
   private art!: ArtSet;
   private scroll = 0;
   private headerHeight = 0;
@@ -82,7 +84,7 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private textureKey(type: string, px: number): string {
-    return `gallery:${this.vision}:${px}:${type}`;
+    return `gallery:${this.vision}:${this.marks ? 'marked' : 'plain'}:${px}:${type}`;
   }
 
   /** Rasterizes every icon the gallery shows, for the current vision, then draws the page. */
@@ -96,7 +98,7 @@ export class GalleryScene extends Phaser.Scene {
       for (const kind of section.kinds)
         for (const variant of VARIANTS) {
           const type = itemTypeId(kind.id, variant);
-          const svg = simulateSvg(renderItemSvg(type), vision);
+          const svg = simulateSvg(renderItemSvg(type, this.marks), vision);
           // Rasterized at exactly the size they show at, in device pixels.
           for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px), svg, px * RENDER_RATIO));
         }
@@ -210,10 +212,11 @@ export class GalleryScene extends Phaser.Scene {
     this.header.add(this.label(PAD, 12, loading ? t('gallery.loading') : t('gallery.title'), 20, theme.titleColor));
     let x = PAD;
     let y = 48;
-    for (const vision of VISIONS) {
-      const active = vision === this.vision;
+    const marksLabel = t('settings.colorBlind', { state: t(this.marks ? 'settings.on' : 'settings.off') });
+    for (const vision of [...VISIONS, 'marks' as const]) {
+      const active = vision === this.vision || (vision === 'marks' && this.marks);
       const button = this.add
-        .text(0, 0, t(`gallery.vision.${vision}` as MessageKey), {
+        .text(0, 0, vision === 'marks' ? marksLabel : t(`gallery.vision.${vision}` as MessageKey), {
           fontFamily: theme.fontFamily,
           fontStyle: 'bold',
           fontSize: '14px',
@@ -229,7 +232,13 @@ export class GalleryScene extends Phaser.Scene {
       }
       button.setPosition(x, y);
       button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
-        if (vision !== this.vision && !this.press?.moved) void this.setVision(vision);
+        if (this.press?.moved) return;
+        if (vision === 'marks') {
+          this.marks = !this.marks;
+          void this.setVision(this.vision);
+        } else if (vision !== this.vision) {
+          void this.setVision(vision);
+        }
       });
       this.header.add(button);
       x += button.width + 8;

@@ -329,11 +329,12 @@ export function tintedMaterials(template: IconTemplate): string[] {
 }
 
 /**
- * Colour-free badge in the bottom-right corner: none for the original, a dot for alt1, a triangle for alt2.
- * Dark with a white ring and a white mark, so it stands out on light and on dark icons alike.
+ * Colour-free badge in the bottom-right corner, shown only in colour-blind mode (`marks`): none for the
+ * original, a dot for alt1, a triangle for alt2. Dark with a white ring and a white mark, so it stands out on
+ * light and on dark icons alike. Without it, variants are told apart by colour and lightness alone.
  */
-function variantBadge(variant: Variant): string {
-  if (variant === 'original') return '';
+function variantBadge(variant: Variant, marks: boolean): string {
+  if (!marks || variant === 'original') return '';
   const mark =
     variant === 'alt1'
       ? '<circle cx="81" cy="81" r="6.5" fill="#ffffff"/>'
@@ -397,15 +398,15 @@ function svgDocument(defs: string[], body: string): string {
   );
 }
 
-/** SVG for a drawn kind in a variant. */
-export function renderIcon(kindId: string, variant: Variant): string {
+/** SVG for a drawn kind in a variant; `marks` adds the colour-blind variant badge. */
+export function renderIcon(kindId: string, variant: Variant, marks = false): string {
   const template = ICON_TEMPLATES[kindId];
   if (!template) throw new Error(`no icon for ${kindId}`);
   const defs: string[] = [];
   const paint = paintFor(variantPalette(template, variant), defs);
   const body = template.draw(paint).replace(/\s*\n\s*/g, '');
   // Drawn a little larger than the 100-unit grid so icons fill their slot; the badge stays in its corner.
-  return svgDocument(defs, `<g transform="translate(50 52) scale(1.07) translate(-50 -52)">${body}</g>` + variantBadge(variant));
+  return svgDocument(defs, `<g transform="translate(50 52) scale(1.07) translate(-50 -52)">${body}</g>` + variantBadge(variant, marks));
 }
 
 // ---------------------------------------------------------------- placeholders
@@ -470,7 +471,7 @@ function placeholderShape(shape: PlaceholderShape, fill: string, edge: string): 
 }
 
 /** Provisional icon for kinds without art yet: shape + colour + initial, with the same variant badges. */
-export function renderPlaceholder(kindId: string, variant: Variant): string {
+export function renderPlaceholder(kindId: string, variant: Variant, marks = false): string {
   const kind = ITEM_KINDS.find((k) => k.id === kindId);
   if (!kind) throw new Error(`unknown kind ${kindId}`);
   const look = placeholderLook(kind);
@@ -481,12 +482,14 @@ export function renderPlaceholder(kindId: string, variant: Variant): string {
   const letter =
     `<text x="50" y="${look.shape === 'triangle' ? 66 : 62}" text-anchor="middle" font-family="Arial, sans-serif" ` +
     `font-weight="700" font-size="34" fill="${light ? '#1d2630' : '#ffffff'}">${look.initial}</text>`;
-  return svgDocument(defs, placeholderShape(look.shape, paint.fill('body'), paint.edge('body', 3)) + letter + variantBadge(variant));
+  return svgDocument(defs, placeholderShape(look.shape, paint.fill('body'), paint.edge('body', 3)) + letter + variantBadge(variant, marks));
 }
 
-/** SVG for any item type id: its drawn icon if there is one, otherwise its placeholder. */
-export function renderItemSvg(type: string): string {
+/** SVG for any item type id: its drawn icon if there is one, otherwise its placeholder (`marks`: see renderIcon). */
+export function renderItemSvg(type: string, marks = false): string {
   const parsed = parseItemType(type);
   if (!parsed) throw new Error(`unknown item type ${type}`);
-  return ICON_TEMPLATES[parsed.kind.id] ? renderIcon(parsed.kind.id, parsed.variant) : renderPlaceholder(parsed.kind.id, parsed.variant);
+  return ICON_TEMPLATES[parsed.kind.id]
+    ? renderIcon(parsed.kind.id, parsed.variant, marks)
+    : renderPlaceholder(parsed.kind.id, parsed.variant, marks);
 }

@@ -200,6 +200,7 @@ export class GameScene extends Phaser.Scene {
         this.transitionTo(index);
       },
       onClose: () => this.scene.resume(),
+      onColorBlindModeChanged: () => this.applyColorBlindMode(),
     };
     this.scene.launch('LevelSelect', data);
     this.scene.pause();
@@ -359,8 +360,14 @@ export class GameScene extends Phaser.Scene {
 
   private createSprite(item: Item): void {
     // Not interactive: presses are matched to slots by layout (see onPointerDown), not to sprites.
-    const sprite = this.add.image(0, 0, itemTextureKey(item.type));
+    const sprite = this.add.image(0, 0, itemTextureKey(item.type, this.store.colorBlindMode)).setData('type', item.type);
     this.sprites.set(item.id, sprite);
+  }
+
+  /** Colour-blind mode adds a colour-free mark to item variants: swaps every item's texture. */
+  private applyColorBlindMode(): void {
+    const marks = this.store.colorBlindMode;
+    for (const sprite of this.sprites.values()) sprite.setTexture(itemTextureKey(sprite.getData('type') as string, marks));
   }
 
   /** Shows the win or defeat panel once the final animations have had time to play. */

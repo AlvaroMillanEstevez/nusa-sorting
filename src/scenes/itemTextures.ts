@@ -10,7 +10,8 @@ import { addSvgTexture } from './svgTexture';
  */
 export const ITEM_TEXTURE_SIZE = 256;
 
-export const itemTextureKey = (type: ItemType) => `item:${type}`;
+/** Texture of an item type; `marks` is the colour-blind version, with the variant badge. */
+export const itemTextureKey = (type: ItemType, marks: boolean) => `item:${type}${marks ? ':marked' : ''}`;
 
 /** Every item type the levels use. */
 function levelItemTypes(): Set<ItemType> {
@@ -23,9 +24,14 @@ function levelItemTypes(): Set<ItemType> {
   return types;
 }
 
-/** Rasterizes the icon of every item type the levels use, once, before the game starts. */
+/**
+ * Rasterizes the icon of every item type the levels use, once, before the game starts: with and without the
+ * colour-blind badge, so switching the mode needs no waiting.
+ */
 export async function prepareItemTextures(scene: Phaser.Scene): Promise<void> {
-  await Promise.all(
-    [...levelItemTypes()].map((type) => addSvgTexture(scene.textures, itemTextureKey(type), renderItemSvg(type), ITEM_TEXTURE_SIZE)),
-  );
+  const jobs: Promise<void>[] = [];
+  for (const type of levelItemTypes())
+    for (const marks of [false, true])
+      jobs.push(addSvgTexture(scene.textures, itemTextureKey(type, marks), renderItemSvg(type, marks), ITEM_TEXTURE_SIZE));
+  await Promise.all(jobs);
 }

@@ -14,6 +14,8 @@ export interface LevelSelectData {
   readonly currentIndex: number;
   readonly onChoose: (index: number) => void;
   readonly onClose: () => void;
+  /** The colour-blind mode setting was switched (it is already saved). */
+  readonly onColorBlindModeChanged: () => void;
 }
 
 /** Pointer travel (px) after which a press is a scroll, not a tap. */
@@ -34,6 +36,7 @@ export class LevelSelectScene extends Phaser.Scene {
   private headerBar!: Phaser.GameObjects.Rectangle;
   private title!: Phaser.GameObjects.Text;
   private backButton!: Phaser.GameObjects.Text;
+  private colorBlindButton!: Phaser.GameObjects.Text;
   private tiles: Phaser.GameObjects.Container[] = [];
 
   constructor(
@@ -68,6 +71,19 @@ export class LevelSelectScene extends Phaser.Scene {
       .setDepth(11)
       .setInteractive({ useHandCursor: true });
     this.backButton.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.close(() => this.data_.onClose()));
+    // Colour-blind mode: variants of an item also get a mark that does not rely on colour.
+    this.colorBlindButton = this.add
+      .text(0, 0, '', { ...style, color: theme.textColor, backgroundColor: theme.buttonColor })
+      .setOrigin(1, 0.5)
+      .setResolution(resolution)
+      .setDepth(11)
+      .setInteractive({ useHandCursor: true });
+    this.colorBlindButton.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
+      this.store.setColorBlindMode(!this.store.colorBlindMode);
+      this.sfx.play('pick');
+      this.data_.onColorBlindModeChanged();
+      this.relayout();
+    });
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.press = { y: pointerAt(pointer).y, scroll: this.scroll, moved: false };
@@ -111,6 +127,22 @@ export class LevelSelectScene extends Phaser.Scene {
       .setFontSize(Math.round(header.height * 0.3))
       .setPadding(pad * 1.4, pad, pad * 1.4, pad)
       .setPosition(width - 12, header.height / 2);
+    const state = t(this.store.colorBlindMode ? 'settings.on' : 'settings.off');
+    // As tall as the back button (a comfortable finger target); on narrow screens its text gets smaller to fit
+    // between the title and the back button.
+    const fontSize = Math.round(header.height * 0.24);
+    const side = pad * 0.8;
+    this.colorBlindButton
+      .setText(t('settings.colorBlind', { state }))
+      .setFontSize(fontSize)
+      .setPadding(side, 0, side, 0)
+      .setPosition(this.backButton.x - this.backButton.width - 8, header.height / 2);
+    const room = this.colorBlindButton.x - (this.title.x + this.title.width + 8);
+    if (this.colorBlindButton.width > room) {
+      this.colorBlindButton.setFontSize(Math.max(10, Math.floor((fontSize * (room - side * 2)) / (this.colorBlindButton.width - side * 2))));
+    }
+    const vertical = Math.max(0, (this.backButton.height - this.colorBlindButton.height) / 2);
+    this.colorBlindButton.setPadding(side, vertical, side, vertical);
     this.buildTiles();
     this.setScroll(this.scroll);
   }

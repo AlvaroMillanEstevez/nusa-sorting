@@ -141,11 +141,16 @@ describe('icon templates', () => {
         }
   });
 
-  it('marks variants with a colour-free badge: none, a dot, a triangle', () => {
-    const badge = (svg: string) => svg.slice(svg.lastIndexOf('<circle cx="81" cy="81" r="15.5"'));
-    expect(renderIcon('sate', 'original')).not.toContain('r="15.5"');
-    expect(badge(renderIcon('sate', 'alt1'))).toContain('<circle cx="81" cy="81" r="6.5"');
-    expect(badge(renderIcon('sate', 'alt2'))).toContain('<polygon');
+  it('shows no variant marks by default; colour-blind mode adds a dot (alt1) or a triangle (alt2)', () => {
+    const badge = '<circle cx="81" cy="81" r="15.5"';
+    for (const variant of VARIANTS) expect(renderIcon('sate', variant)).not.toContain(badge);
+    expect(renderIcon('sate', 'original', true)).not.toContain(badge);
+    const alt1 = renderIcon('sate', 'alt1', true);
+    const alt2 = renderIcon('sate', 'alt2', true);
+    expect(alt1.slice(alt1.indexOf(badge))).toContain('<circle cx="81" cy="81" r="6.5"');
+    expect(alt2.slice(alt2.indexOf(badge))).toContain('<polygon');
+    expect(renderItemSvg('tempe:alt1', true)).toContain(badge);
+    expect(renderItemSvg('tempe:alt1')).not.toContain(badge);
   });
 });
 

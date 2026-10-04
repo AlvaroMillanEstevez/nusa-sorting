@@ -35,7 +35,7 @@ class BrokenStorage implements StorageLike {
 const sample: SaveData = {
   version: SAVE_VERSION,
   progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 } },
-  settings: { muted: true },
+  settings: { muted: true, colorBlindMode: true },
 };
 
 describe('save format', () => {
@@ -63,13 +63,18 @@ describe('save format', () => {
         completed: ['level001', 7, '', null, 'level001', 'level003'],
         bestScores: { level004: 900, level005: -1, level006: 'lots', level007: null },
       },
-      settings: { muted: 'yes' },
+      settings: { muted: 'yes', colorBlindMode: 1 },
     });
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
       progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 } },
-      settings: { muted: false },
+      settings: { muted: false, colorBlindMode: false },
     });
+  });
+
+  it('reads saves from before colour-blind mode existed with the mode off', () => {
+    const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: { muted: true } });
+    expect(parseSave(old).settings).toEqual({ muted: true, colorBlindMode: false });
   });
 
   it('survives missing sections', () => {
@@ -152,6 +157,18 @@ describe('ProgressStore', () => {
     const reloaded = new ProgressStore(new LocalSaveService(storage));
     expect(reloaded.bestScore('level004')).toBe(1500);
     expect(reloaded.muted).toBe(false);
+  });
+
+  it('keeps colour-blind mode off by default, and saves it when it changes', () => {
+    const storage = new FakeStorage();
+    const store = new ProgressStore(new LocalSaveService(storage));
+    expect(store.colorBlindMode).toBe(false);
+    store.setColorBlindMode(false); // unchanged: no write
+    expect(storage.writes).toBe(0);
+    store.setColorBlindMode(true);
+    expect(storage.writes).toBe(1);
+    expect(new ProgressStore(new LocalSaveService(storage)).colorBlindMode).toBe(true);
+    expect(store.muted).toBe(false);
   });
 
   it('answers progression questions by level id', () => {

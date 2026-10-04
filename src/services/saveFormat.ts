@@ -3,7 +3,7 @@ import type { SaveData, Settings } from './SaveService';
 
 export const SAVE_VERSION = 1;
 
-const DEFAULT_SETTINGS: Settings = { muted: false };
+const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false };
 
 export function emptySave(): SaveData {
   return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS };
@@ -60,7 +60,11 @@ function parseProgress(value: unknown): Progress {
 
 function parseSettings(value: unknown): Settings {
   if (!isRecord(value)) return DEFAULT_SETTINGS;
-  return { muted: typeof value.muted === 'boolean' ? value.muted : DEFAULT_SETTINGS.muted };
+  // Settings added later are missing from older saves and simply take their default.
+  return {
+    muted: typeof value.muted === 'boolean' ? value.muted : DEFAULT_SETTINGS.muted,
+    colorBlindMode: typeof value.colorBlindMode === 'boolean' ? value.colorBlindMode : DEFAULT_SETTINGS.colorBlindMode,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

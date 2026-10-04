@@ -2,6 +2,8 @@ import type { Progress } from '../core/progress';
 
 export interface Settings {
   readonly muted: boolean;
+  /** Colour-blind mode: item variants also carry a mark that does not rely on colour. */
+  readonly colorBlindMode: boolean;
 }
 
 /** Everything the game persists. `version` is the schema version, bumped on any incompatible change. */
