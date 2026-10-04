@@ -10,7 +10,10 @@ import {
   STARTER_KINDS,
   VARIANTS,
 } from '../src/data/itemCatalog';
-import { levels } from '../src/data/levels';
+import { levels as gameLevels } from '../src/data/levels';
+import { demoLevels } from './fixtures/demo-levels';
+
+const levels = [...gameLevels, ...demoLevels];
 
 const ids = ITEM_KINDS.map((k) => k.id);
 

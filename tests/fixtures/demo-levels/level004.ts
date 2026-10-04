@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Combo demo: triples cleared within 5 s of each other chain into a score multiplier. */
 export const level004: LevelDefinition = {

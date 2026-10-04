@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** A track of stacks, a track of shelves (one locked) and fixed shelves, with the roaming blocker. */
 export const level014: LevelDefinition = {

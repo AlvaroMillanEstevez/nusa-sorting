@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Faster conveyor with a locked shelf and little free space: the belt keeps feeding a tight board. */
 export const level009: LevelDefinition = {

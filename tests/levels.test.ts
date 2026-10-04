@@ -1,138 +1,173 @@
 import { describe, expect, it } from 'vitest';
-import { countItems, createGame, isWon, tick, validateLevel, type GameState, type MechanicDefinition, stackOf } from '../src/core';
-import { BASE_LEVEL_COUNT, levels } from '../src/data/levels';
-import { validateLevelLayout } from '../src/ui/levelLayout';
-import { applyMove, greedyWinRate, simulate, solve } from './helpers';
+import {
+  areConfusable,
+  parseItemType,
+  STARTER_KINDS,
+} from '../src/data/itemCatalog';
+import {
+  COMBO_DEFAULTS,
+  createGame,
+  firstIncomplete,
+  isSpecialLevel,
+  stackOf,
+  validateLevel,
+  type GameState,
+  type LevelDefinition,
+} from '../src/core';
+import { levels } from '../src/data/levels';
+import { ruleFailures } from '../tools/levelgen/generate';
+import { RECIPES } from '../tools/levelgen/recipes';
+import { simulate } from '../tools/simulator';
+import { demoLevels } from './fixtures/demo-levels';
 
-describe.each(levels.map((level) => [level.id, level] as const))('level %s', (_id, level) => {
-  it('is a valid, timed level with no first move that loses on the spot', () => {
-    expect(() => validateLevel(level)).not.toThrow();
-    // Items at least MIN_ITEM_PX on a phone in portrait and landscape.
-    expect(() => validateLevelLayout(level)).not.toThrow();
+const kindsOf = (level: LevelDefinition): Set<string> => {
+  const state = createGame(level);
+  const types = [
+    ...state.shelves.flatMap((s) => s.layers.flat().flatMap((i) => (i ? [i.type] : []))),
+    ...state.tracks.flatMap((t) => t.carriers.flatMap((c) => stackOf(c).map((i) => i.type))),
+  ];
+  return new Set(types);
+};
+const columnsOf = (level: LevelDefinition) => level.layout?.columns.map((c) => c.kind) ?? ['grid'];
+const backLayers = (level: LevelDefinition) => level.shelves.filter((s) => s.length > 1).length;
+const deepest = (level: LevelDefinition) => Math.max(...level.shelves.map((s) => s.length));
+const mechanic = <K extends string>(level: LevelDefinition, kind: K) => level.mechanics?.find((m) => m.kind === kind);
+const lockCounts = (state: GameState) => state.unlockAt.filter((at) => at !== null) as number[];
+
+// Simulated once per level, as the generator does for its report (200 games, seed 1).
+const stats = new Map(levels.map((level) => [level.id, simulate(createGame(level))]));
+
+describe.each(levels.map((level, i) => [i + 1, level] as const))('level %i', (number, level) => {
+  const recipe = RECIPES[number - 1]!;
+
+  it('is the level its recipe describes', () => {
+    expect(level.id).toBe(recipe.id);
+    expect(isSpecialLevel(level)).toBe(recipe.theme !== undefined);
     expect(level.timeLimitSeconds).toBeGreaterThan(0);
   });
 
-  it('has 3-8 shelves, 4-5 item types and something hidden (a back layer or a stack)', () => {
-    const state = createGame(level);
-    const shelfTypes = level.shelves.flat(2).filter((t) => t !== null);
-    const trackTypes = state.tracks.flatMap((t) => t.carriers.flatMap((c) => stackOf(c).map((i) => i.type)));
-    const types = new Set([...shelfTypes, ...trackTypes]);
-    expect(level.shelves.length).toBeGreaterThanOrEqual(3);
-    expect(level.shelves.length).toBeLessThanOrEqual(8);
-    expect(types.size).toBeGreaterThanOrEqual(4);
-    expect(types.size).toBeLessThanOrEqual(5);
-    const backLayer = level.shelves.some((layers) => layers.length > 1);
-    const deepStack = state.tracks.some((t) => t.carriers.some((c) => stackOf(c).length > 1));
-    expect(backLayer || deepStack).toBe(true);
-  });
+  it('meets every rule for generated levels', () => {
+    // Valid, items big enough on a phone, no defeat in the first two moves, triples not buried too deep, enough
+    // triples in reach at the start, and solvable without combos.
+    expect(() => validateLevel(level)).not.toThrow();
+    expect(ruleFailures(level, recipe)).toEqual([]);
+  }, 60_000);
 
-  it('is solvable even if the player never chains a combo', () => {
-    const start = createGame(level);
-    const solution = solve(start);
-    expect(solution).toBeDefined();
-
-    // Replay as the solver assumed: no clock, and every combo window runs out between moves.
-    let state: GameState = { ...start, timeLeftMs: null };
-    for (const move of solution!) {
-      const result = applyMove(state, move);
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      state = state.combo ? tick(result.state, state.combo.windowMs).state : result.state;
+  it('uses starter kinds only, never two that look alike, and no colour variants', () => {
+    const kinds = kindsOf(level);
+    expect([...kinds].sort()).toEqual([...recipe.kinds].sort());
+    for (const kind of kinds) {
+      expect(STARTER_KINDS).toContain(kind);
+      expect(parseItemType(kind)?.variant).toBe('original');
+      for (const other of kinds) expect(areConfusable(kind, other)).toBe(false);
     }
-    expect(isWon(state)).toBe(true);
-    expect(countItems(state)).toBe(0);
-  }, 60_000);
+  });
+
+  it("lands in its recipe's win band for the simulated player", () => {
+    const s = stats.get(level.id)!;
+    expect(s.winRate).toBeGreaterThanOrEqual(recipe.winBand[0]);
+    expect(s.winRate).toBeLessThanOrEqual(recipe.winBand[1]);
+    expect(s.timeUpRate).toBeGreaterThanOrEqual(recipe.time.timeUp[0]);
+    expect(s.timeUpRate).toBeLessThanOrEqual(recipe.time.timeUp[1]);
+  });
 });
 
-const kindsOf = (index: number) => (levels[index]!.mechanics ?? []).map((m: MechanicDefinition) => m.kind).sort();
+describe('the curve of levels 1-10', () => {
+  const [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10] = levels as [LevelDefinition, ...LevelDefinition[]] & LevelDefinition[];
+  const win = (level: LevelDefinition) => stats.get(level.id)!.winRate;
 
-describe('level progression', () => {
-  it('has unique ids', () => {
-    expect(new Set(levels.map((l) => l.id)).size).toBe(levels.length);
+  it('has ten levels with new ids, none shared with the demo levels', () => {
+    expect(levels).toHaveLength(10);
+    const ids = levels.map((l) => l.id);
+    expect(new Set(ids).size).toBe(10);
+    for (const demo of demoLevels) expect(ids).not.toContain(demo.id);
   });
 
-  it('starts with base levels, then one demo per mechanic, then both obstacles combined', () => {
-    expect(levels).toHaveLength(BASE_LEVEL_COUNT + 11);
-    for (let i = 0; i < BASE_LEVEL_COUNT; i++) expect(kindsOf(i)).toEqual([]);
-    expect(kindsOf(3)).toEqual(['combo']);
-    expect(kindsOf(4)).toEqual(['lockedShelves']);
-    // The blocker is removed by reaching a combo, so it always comes with the combo mechanic.
-    expect(kindsOf(5)).toEqual(['combo', 'roamingBlocker']);
-    expect(kindsOf(6)).toEqual(['combo', 'lockedShelves', 'roamingBlocker']);
-    expect(kindsOf(7)).toEqual(['conveyor']);
-    expect(kindsOf(8)).toEqual(['conveyor', 'lockedShelves']);
-    expect(kindsOf(9)).toEqual(['tracks']);
-    expect(kindsOf(10)).toEqual(['tracks']);
-    expect(kindsOf(11)).toEqual(['lockedShelves', 'tracks']);
-    expect(kindsOf(12)).toEqual(['tracks']);
-    expect(kindsOf(13)).toEqual(['lockedShelves', 'roamingBlocker', 'tracks']);
+  it('1: very simple: a few shelves, 4-5 kinds, nothing hidden, no mechanics', () => {
+    expect(columnsOf(l1!)).toEqual(['grid']);
+    expect(l1!.shelves.length).toBeLessThanOrEqual(5);
+    expect(kindsOf(l1!).size).toBeGreaterThanOrEqual(4);
+    expect(kindsOf(l1!).size).toBeLessThanOrEqual(5);
+    expect(backLayers(l1!)).toBe(0);
+    expect(l1!.mechanics ?? []).toEqual([]);
   });
 
-  it('gives levels 13-14 tracks of shelves, with a locked one in level 14', () => {
-    const columns = (index: number) => levels[index]!.layout!.columns.map((c) => c.kind);
-    expect(columns(12)).toEqual(['shelves', 'shelfTrack']);
-    expect(columns(13)).toEqual(['track', 'shelfTrack', 'shelves']);
-    const state = createGame(levels[13]!);
-    const carried = state.tracks[1]!.carriers.map((c) => (c.kind === 'shelf' ? c.shelf : -1));
-    expect(carried.some((shelf) => state.unlockAt[shelf] !== null)).toBe(true);
+  it('2: more shelves and items, two columns, and back layers appear', () => {
+    expect(columnsOf(l2!)).toEqual(['shelves', 'shelves']);
+    expect(l2!.shelves.length).toBeGreaterThan(l1!.shelves.length);
+    expect(l2!.shelves.flat(2).filter(Boolean).length).toBeGreaterThan(l1!.shelves.flat(2).filter(Boolean).length);
+    expect(backLayers(l2!)).toBeGreaterThan(0);
   });
 
-  it('gives levels 10-12 the requested column layouts', () => {
-    const shape = (index: number) => {
-      const level = levels[index]!;
-      const state = createGame(level);
-      return level.layout!.columns.map((c) => {
-        if (c.kind === 'shelves') return 'shelves';
-        return state.tracks[c.track]!.speed < 0 ? 'track up' : 'track down';
-      });
-    };
-    expect(shape(9)).toEqual(['shelves', 'track down', 'shelves']);
-    expect(shape(10)).toEqual(['track up', 'shelves', 'track down']);
-    expect(shape(11)[0]).toMatch(/^track/);
-    // Level 12: stacks three deep on its track.
-    const deepest = Math.max(...createGame(levels[11]!).tracks.flatMap((t) => t.carriers.map((c) => stackOf(c).length)));
-    expect(deepest).toBe(3);
+  it('3: three columns and the first locked shelf; 4: locks get more demanding', () => {
+    expect(columnsOf(l3!)).toEqual(['shelves', 'shelves', 'shelves']);
+    expect(lockCounts(createGame(l1!))).toEqual([]);
+    expect(lockCounts(createGame(l2!))).toEqual([]);
+    expect(lockCounts(createGame(l3!))).toHaveLength(1);
+    const four = lockCounts(createGame(l4!));
+    expect(four.length).toBeGreaterThan(1);
+    expect(Math.max(...four)).toBeGreaterThan(Math.max(...lockCounts(createGame(l3!))));
   });
 
-  it('runs the second conveyor faster than the first', () => {
-    const speedOf = (index: number) => {
-      const belt = levels[index]!.mechanics!.find((m) => m.kind === 'conveyor');
-      return belt?.kind === 'conveyor' ? Math.abs(belt.speed) : 0;
-    };
-    expect(speedOf(8)).toBeGreaterThan(speedOf(7));
+  it('5 and 10 are the special levels', () => {
+    expect(levels.filter(isSpecialLevel).map((l) => l.id)).toEqual([l5!.id, l10!.id]);
   });
 
-  it('base levels get harder: a simulated player wins less often on each one', () => {
-    const rates = levels.slice(0, BASE_LEVEL_COUNT).map((level) => greedyWinRate(createGame(level)));
-    for (let i = 1; i < rates.length; i++) expect(rates[i]).toBeLessThan(rates[i - 1]!);
-    // The hardest level must still be beatable by the simulated player sometimes.
-    expect(rates.at(-1)).toBeGreaterThan(0.2);
-  }, 30_000);
+  it('5: against the clock, with combo multipliers doubled', () => {
+    const combo = mechanic(l5!, 'combo');
+    expect(combo?.kind === 'combo' && combo.multipliers).toEqual(COMBO_DEFAULTS.multipliers.map((m) => m * 2));
+    // The clock, more than space, is what beats the simulated player.
+    const s = stats.get(l5!.id)!;
+    expect(s.timeUpRate).toBeGreaterThan(s.blockedRate);
+  });
 
-  it('obstacles make running out of space a real way to lose', () => {
-    const blocked = levels.map((level) => simulate(createGame(level)).blockedRate);
-    const baseWorst = Math.max(...blocked.slice(0, BASE_LEVEL_COUNT));
-    // Locked shelves, the roaming blocker and the tight conveyor level each cause more blocked defeats
-    // than any base level.
-    for (const index of [4, 5, 6, 8]) expect(blocked[index]).toBeGreaterThan(baseWorst);
-  }, 60_000);
+  it('6: one or two new kinds', () => {
+    const before = new Set(levels.slice(0, 5).flatMap((l) => [...kindsOf(l)]));
+    const added = [...kindsOf(l6!)].filter((k) => !before.has(k));
+    expect(added.length).toBeGreaterThanOrEqual(1);
+    expect(added.length).toBeLessThanOrEqual(2);
+  });
+
+  it('7: more shelves and layers than 6', () => {
+    expect(l7!.shelves.length).toBeGreaterThan(l6!.shelves.length);
+    expect(backLayers(l7!)).toBeGreaterThan(backLayers(l6!));
+    expect(deepest(l7!)).toBeGreaterThan(deepest(l6!));
+  });
+
+  it('8: the first belt, slow and carrying stacks', () => {
+    for (const level of levels.slice(0, 7)) expect(createGame(level).tracks).toEqual([]);
+    const tracks = createGame(l8!).tracks;
+    expect(tracks).toHaveLength(1);
+    expect(Math.abs(tracks[0]!.speed)).toBeLessThanOrEqual(0.4);
+    expect(tracks[0]!.carriers.some((c) => stackOf(c).length > 1)).toBe(true);
+  });
+
+  it('9: a vertical belt, faster than in 8', () => {
+    const track = createGame(l9!).tracks[0]!;
+    expect(track.orientation).toBe('vertical');
+    expect(Math.abs(track.speed)).toBeGreaterThan(Math.abs(createGame(l8!).tracks[0]!.speed));
+  });
+
+  it('10: fast belts with many stacks', () => {
+    const tracks = createGame(l10!).tracks;
+    expect(tracks.length).toBeGreaterThanOrEqual(2);
+    for (const track of tracks) expect(Math.abs(track.speed)).toBeGreaterThan(Math.abs(createGame(l9!).tracks[0]!.speed));
+    const stacks = tracks.flatMap((t) => t.carriers.map((c) => stackOf(c).length));
+    expect(stacks.filter((n) => n >= 2).length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('is a sawtooth: after something new or demanding comes an easier level', () => {
+    expect(win(l1!)).toBeGreaterThan(win(l3!));
+    expect(win(l6!)).toBeGreaterThan(win(l5!));
+    expect(win(l6!)).toBeGreaterThan(win(l7!));
+    expect(win(l8!)).toBeGreaterThan(win(l7!));
+    expect(win(l8!)).toBeGreaterThan(win(l9!));
+  });
 });
 
-describe('solver sanity check', () => {
-  it('reports an unsolvable level as unsolvable', () => {
-    // Two of each type are in front and the third is behind S1. Emptying S1 uses every free slot,
-    // and its back layer then fills the board without a triple.
-    const doomed = createGame({
-      id: 'doomed',
-      shelves: [
-        [['C', null, 'B']],
-        [
-          ['B', 'A', 'C'],
-          ['A', 'B', 'C'],
-        ],
-        [[null, null, 'A']],
-      ],
-    });
-    expect(solve(doomed)).toBeUndefined();
+describe('saved progress from the demo levels', () => {
+  it('is ignored without errors: the game starts at level 1', () => {
+    const old = { completed: demoLevels.map((l) => l.id), bestScores: { level004: 1200 } };
+    expect(firstIncomplete(old, levels.map((l) => l.id))).toBe(0);
   });
 });

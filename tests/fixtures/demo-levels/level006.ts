@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Roaming blocker demo: a blocked slot hops after every triple; a combo of 4 removes it. */
 export const level006: LevelDefinition = {

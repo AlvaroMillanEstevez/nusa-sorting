@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Shelves riding a track: three fixed shelves beside a slow vertical track of three shelves that take items too. */
 export const level013: LevelDefinition = {

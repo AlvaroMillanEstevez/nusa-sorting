@@ -11,6 +11,7 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `npm run preview` — sirve `dist/` (también en la red local)
 - `npm test` — tests con Vitest
 - `npm run typecheck` — `tsc --noEmit`
+- `npm run levelgen -- all` — regenera los niveles desde sus recetas (`tools/levelgen/recipes.ts`); `npm run levelgen -- N` regenera solo el nivel N y `npm run levelgen -- N --seed S` lo prueba con otra semilla. Escribe en `src/data/levels`; revisar el diff antes de hacer commit.
 
 ## Probar en el móvil
 
@@ -31,9 +32,10 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `src/scenes` — escenas de Phaser
 - `src/ui` — utilidades de presentación (layout, tema)
 - `src/services` — fronteras con el exterior (guardado, anuncios, sonido)
-- `src/data/levels` — definiciones de niveles
+- `src/data/levels` — los niveles del juego, generados con `tools/levelgen` y revisados
 - `src/i18n` — textos y catálogos (`en`, `id`)
-- `tests` — tests de Vitest
+- `tests` — tests de Vitest; `tests/fixtures/demo-levels` guarda los niveles de demostración que usan las grabaciones de regresión y los tests de mecánicas
+- `tools` — herramientas internas fuera del build: el generador de niveles y el jugador simulado
 
 ## Reglas del proyecto
 

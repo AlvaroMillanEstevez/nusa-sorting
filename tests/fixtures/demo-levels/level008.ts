@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Conveyor demo: a slow belt of 8 slots carrying 6 items. */
 export const level008: LevelDefinition = {

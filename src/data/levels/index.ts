@@ -1,41 +1,29 @@
 import type { LevelDefinition } from '../../core';
-import { level001 } from './level001';
-import { level002 } from './level002';
-import { level003 } from './level003';
-import { level004 } from './level004';
-import { level005 } from './level005';
-import { level006 } from './level006';
-import { level007 } from './level007';
-import { level008 } from './level008';
-import { level009 } from './level009';
-import { level010 } from './level010';
-import { level011 } from './level011';
-import { level012 } from './level012';
-import { level013 } from './level013';
-import { level014 } from './level014';
+import { nusa001 } from './nusa-001';
+import { nusa002 } from './nusa-002';
+import { nusa003 } from './nusa-003';
+import { nusa004 } from './nusa-004';
+import { nusa005 } from './nusa-005';
+import { nusa006 } from './nusa-006';
+import { nusa007 } from './nusa-007';
+import { nusa008 } from './nusa-008';
+import { nusa009 } from './nusa-009';
+import { nusa010 } from './nusa-010';
 
 /**
- * Levels in play order: three base levels from easiest to hardest, one demo per mechanic (combo, locked
- * shelves, roaming blocker), one combining both obstacles, then the conveyor prototype: a slow belt alone
- * and a faster belt with a locked shelf; then column layouts with vertical conveyors carrying stacks; then
- * vertical tracks of shelves that take items too.
+ * The game's levels in play order. Made with the level generator (tools/levelgen) from the recipes in
+ * tools/levelgen/recipes.ts, then reviewed: a sawtooth curve where something new or demanding is followed by an
+ * easier level, with special levels at 5 and 10.
  */
 export const levels: readonly LevelDefinition[] = [
-  level001,
-  level002,
-  level003,
-  level004,
-  level005,
-  level006,
-  level007,
-  level008,
-  level009,
-  level010,
-  level011,
-  level012,
-  level013,
-  level014,
+  nusa001,
+  nusa002,
+  nusa003,
+  nusa004,
+  nusa005,
+  nusa006,
+  nusa007,
+  nusa008,
+  nusa009,
+  nusa010,
 ];
-
-/** Number of leading levels that use no mechanics. */
-export const BASE_LEVEL_COUNT = 3;

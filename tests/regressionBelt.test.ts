@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type GameEvent, type GameState, type MoveResult, stackOf, startClock } from '../src/core';
-import { levels } from '../src/data/levels';
+import { demoLevels as levels } from './fixtures/demo-levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
 import { asRecorded } from './helpers';

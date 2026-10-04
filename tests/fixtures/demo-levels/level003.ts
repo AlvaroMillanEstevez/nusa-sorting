@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Third level: 8 shelves, 5 item types, two free slots and two-deep back layers. */
 export const level003: LevelDefinition = {

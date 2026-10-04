@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Both obstacles: two locked shelves (2 and 5 triples) and a roaming blocker that a combo of 5 removes. */
 export const level007: LevelDefinition = {

@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Second level: 7 shelves, 5 item types, only two free slots. */
 export const level002: LevelDefinition = {

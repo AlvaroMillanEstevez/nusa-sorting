@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Locked shelves demo: two full shelves open after 2 and 4 triples. */
 export const level005: LevelDefinition = {

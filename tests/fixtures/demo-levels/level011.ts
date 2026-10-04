@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '../../core';
+import type { LevelDefinition } from '../../../src/core';
 
 /** Two vertical conveyors around one column of shelves: the left runs up, the right runs down. */
 export const level011: LevelDefinition = {

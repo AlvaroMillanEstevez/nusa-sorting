@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createGame, tick, type LevelDefinition, startClock } from '../src/core';
-import { levels } from '../src/data/levels';
+import { levels as gameLevels } from '../src/data/levels';
+import { demoLevels } from './fixtures/demo-levels';
+
+/** The game's levels and the demo levels the mechanics were built with. */
+const levels = [...gameLevels, ...demoLevels];
 import { computeBoardLayout, trackCarrierAt, trackPose, type Rect } from '../src/ui/boardLayout';
 import { computeColumnLayout, type ColumnSpec } from '../src/ui/columnLayout';
 import { CHECKED_SCREENS, itemSize, layoutForLevel, liveBoard, MIN_ITEM_PX, validateLevelLayout } from '../src/ui/levelLayout';

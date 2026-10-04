@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGame, moveItem, tick, type GameEvent, type LevelDefinition } from '../src/core';
-import { levels } from '../src/data/levels';
+import { demoLevels as levels } from './fixtures/demo-levels';
 import fixture from './fixtures/regression-v1.json';
 import { asRecorded, hadCombo } from './helpers';
 import fixtureV2 from './fixtures/regression-v2.json';
