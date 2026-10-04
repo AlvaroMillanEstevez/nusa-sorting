@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { wantsArtV2 } from '../src/dev/artParam';
 import { wantsGallery } from '../src/dev/galleryParam';
 import { parseLevelParam } from '../src/dev/levelParam';
 import { wantsSaveReset } from '../src/dev/saveParams';
@@ -32,15 +31,5 @@ describe('wantsGallery (dev only)', () => {
     expect(wantsGallery('?resetSave&gallery=1')).toBe(true);
     expect(wantsGallery('?level=3')).toBe(false);
     expect(wantsGallery('')).toBe(false);
-  });
-});
-
-describe('wantsArtV2 (dev only)', () => {
-  it('is set by ?art=v2 only', () => {
-    expect(wantsArtV2('?art=v2')).toBe(true);
-    expect(wantsArtV2('?level=3&art=v2')).toBe(true);
-    expect(wantsArtV2('?art=v1')).toBe(false);
-    expect(wantsArtV2('?art')).toBe(false);
-    expect(wantsArtV2('')).toBe(false);
   });
 });

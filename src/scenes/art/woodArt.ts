@@ -1,19 +1,11 @@
 import type * as Phaser from 'phaser';
-import { createGame, stackOf } from '../../core';
-import { levels } from '../../data/levels';
 import type { ShelfLayout, TrackLayout } from '../../ui/boardLayout';
 import { WOOD, type WoodPalette } from '../../ui/art/wood';
-import { renderItemSvg } from '../../ui/icons/icons';
-import { itemTextureKey } from '../../ui/itemStyles';
-import { ITEM_TEXTURE_SIZE } from '../itemTextures';
-import { addSvgTexture } from '../svgTexture';
 import type { ArtSet } from './ArtSet';
-import { trackEnds } from './classicArt';
 
 /**
- * Wooden street-stall look (warung shelves, bamboo conveyors, a rolling shutter for locked shelves and a crate
- * for the blocker) with the SVG item icons. Everything is drawn from the slot size `s`, so it scales to any
- * size without stretching.
+ * Wooden street-stall look: warung shelves, bamboo conveyors, a rolling shutter for locked shelves and a crate
+ * for the blocker. Everything is drawn from the slot size `s`, so it scales to any size without stretching.
  */
 
 const hex = (color: string) => Number.parseInt(color.slice(1), 16);
@@ -145,28 +137,26 @@ export function drawWoodShelf(
   g.lineStyle(edge, hex(p.line), 1).strokeRect(px, py, pw, ph);
 }
 
+/** Both ends of a conveyor loop, where rollers sit. */
+function trackEnds(layout: TrackLayout): [number, number][] {
+  const { rect, cross } = layout;
+  return layout.orientation === 'horizontal'
+    ? [
+        [rect.x, cross],
+        [rect.x + rect.width, cross],
+      ]
+    : [
+        [cross, rect.y],
+        [cross, rect.y + rect.height],
+      ];
+}
+
 /** Bamboo mat under each stack on a conveyor, drawn once as a texture. */
 const PLATE_TEXTURE = 'belt-plate-wood';
 const PLATE_SIZE = 128;
 
 export function makeWoodArt(p: WoodPalette = WOOD): ArtSet {
   return {
-    name: 'wood',
-    bakes: true,
-
-    async prepareItems(scene) {
-      // Icons for every item type the levels use, rasterized once at the game's texture size.
-      const types = new Set<string>();
-      for (const level of levels) {
-        const state = createGame(level);
-        for (const shelf of state.shelves) for (const layer of shelf.layers) for (const item of layer) if (item) types.add(item.type);
-        for (const track of state.tracks) for (const carrier of track.carriers) for (const item of stackOf(carrier)) types.add(item.type);
-      }
-      await Promise.all(
-        [...types].map((type) => addSvgTexture(scene.textures, itemTextureKey(type), renderItemSvg(type), ITEM_TEXTURE_SIZE)),
-      );
-    },
-
     drawShelf: (g, shelf, s, dx = 0, dy = 0) => drawWoodShelf(g, shelf, s, dx, dy, p),
 
     plateTexture(scene) {

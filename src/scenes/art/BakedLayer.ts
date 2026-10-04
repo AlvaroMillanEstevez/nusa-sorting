@@ -1,12 +1,11 @@
 import type * as Phaser from 'phaser';
 import type { Rect } from '../../ui/boardLayout';
 import { RENDER_RATIO } from '../view';
-import { art } from './ArtSet';
 
 /**
- * A vector drawing (shelves, rails) that the current art may cache in a texture. Phaser redraws Graphics
- * commands every frame; detailed art (wood grain, seams, gradients) is drawn once into a RenderTexture
- * instead, and the texture is what gets drawn each frame. Art sets that do not ask for it keep plain Graphics.
+ * A vector drawing (shelves, rails) cached in a texture. Phaser redraws Graphics commands every frame; the
+ * detailed wood (grain, seams, gradients) is drawn once into a RenderTexture instead, and the texture is what
+ * gets drawn each frame.
  */
 export class BakedLayer {
   private readonly g: Phaser.GameObjects.Graphics;
@@ -30,7 +29,7 @@ export class BakedLayer {
     this.texture = null;
     this.g.clear().setVisible(true);
     paint(this.g);
-    if (!bounds || !art().bakes) return;
+    if (!bounds) return;
     // The texture has one texel per device pixel, so it stays as sharp as the vector drawing.
     const r = RENDER_RATIO;
     const width = Math.max(2, Math.ceil(bounds.width * r));

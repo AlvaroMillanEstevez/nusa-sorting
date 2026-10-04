@@ -40,7 +40,7 @@ import { BakedLayer } from './art/BakedLayer';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud, WARNING_MS } from './Hud';
-import { ensureItemTexture, ITEM_TEXTURE_SIZE } from './itemTextures';
+import { ITEM_TEXTURE_SIZE, itemTextureKey } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
 import { ResultOverlay } from './ResultOverlay';
@@ -359,7 +359,7 @@ export class GameScene extends Phaser.Scene {
 
   private createSprite(item: Item): void {
     // Not interactive: presses are matched to slots by layout (see onPointerDown), not to sprites.
-    const sprite = this.add.image(0, 0, ensureItemTexture(this, item.type));
+    const sprite = this.add.image(0, 0, itemTextureKey(item.type));
     this.sprites.set(item.id, sprite);
   }
 
