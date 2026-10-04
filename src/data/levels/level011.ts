@@ -19,22 +19,22 @@ export const level011: LevelDefinition = {
         {
           orientation: 'vertical',
           speed: -0.4,
-          carriers: [['grape'], [], ['lime', 'lime'], ['banana'], ['grape'], []],
+          carriers: [['manggis'], [], ['ketupat', 'ketupat'], ['nasi-goreng'], ['manggis'], []],
         },
         {
           orientation: 'vertical',
           speed: 0.4,
-          carriers: [['banana'], ['apple'], [], ['apple', 'banana'], [], ['apple']],
+          carriers: [['nasi-goreng'], ['rambutan'], [], ['rambutan', 'nasi-goreng'], [], ['rambutan']],
         },
       ],
     },
   ],
   shelves: [
     [
-      [null, 'apple', null],
-      ['apple', 'banana', 'banana'],
+      [null, 'rambutan', null],
+      ['rambutan', 'nasi-goreng', 'nasi-goreng'],
     ],
-    [['apple', 'lime', 'grape']],
-    [[null, 'banana', null]],
+    [['rambutan', 'ketupat', 'manggis']],
+    [[null, 'nasi-goreng', null]],
   ],
 };

@@ -5,21 +5,21 @@ export const level002: LevelDefinition = {
   id: 'level002',
   timeLimitSeconds: 100,
   shelves: [
-    [['lime', 'apple', 'lime']],
+    [['ketupat', 'rambutan', 'ketupat']],
     [
-      ['banana', 'grape', null],
-      ['lime', 'grape', 'grape'],
+      ['nasi-goreng', 'manggis', null],
+      ['ketupat', 'manggis', 'manggis'],
     ],
-    [['blueberry', 'lime', 'apple']],
+    [['sate', 'ketupat', 'rambutan']],
     [
-      ['lime', 'banana', 'blueberry'],
-      ['banana', 'grape', 'blueberry'],
+      ['ketupat', 'nasi-goreng', 'sate'],
+      ['nasi-goreng', 'manggis', 'sate'],
     ],
-    [['banana', 'banana', 'apple']],
+    [['nasi-goreng', 'nasi-goreng', 'rambutan']],
     [
-      ['lime', 'apple', 'grape'],
-      [null, 'grape', 'apple'],
+      ['ketupat', 'rambutan', 'manggis'],
+      [null, 'manggis', 'rambutan'],
     ],
-    [['apple', 'banana', null]],
+    [['rambutan', 'nasi-goreng', null]],
   ],
 };

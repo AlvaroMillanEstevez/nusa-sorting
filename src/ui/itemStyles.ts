@@ -12,11 +12,12 @@ export interface ItemStyle {
  * so they stay distinguishable without relying on color alone.
  */
 export const ITEM_STYLES: Readonly<Record<ItemType, ItemStyle>> = {
-  apple: { color: 0xe5484d, shape: 'circle' },
-  banana: { color: 0xf5d90a, shape: 'triangle' },
-  grape: { color: 0xa855f7, shape: 'diamond' },
-  lime: { color: 0x30a46c, shape: 'square' },
-  blueberry: { color: 0x3b82f6, shape: 'star' },
+  // The five kinds levels 1-14 use, keeping the shapes and colours they had before the catalogue existed.
+  rambutan: { color: 0xe5484d, shape: 'circle' },
+  'nasi-goreng': { color: 0xf5d90a, shape: 'triangle' },
+  manggis: { color: 0xa855f7, shape: 'diamond' },
+  ketupat: { color: 0x30a46c, shape: 'square' },
+  sate: { color: 0x3b82f6, shape: 'star' },
 };
 
 const FALLBACK_STYLE: ItemStyle = { color: 0xbbbbbb, shape: 'hexagon' };

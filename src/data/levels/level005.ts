@@ -12,20 +12,20 @@ export const level005: LevelDefinition = {
   ],
   shelves: [
     [
-      [null, 'apple', 'grape'],
-      ['grape', 'apple', 'banana'],
+      [null, 'rambutan', 'manggis'],
+      ['manggis', 'rambutan', 'nasi-goreng'],
     ],
-    [['lime', null, 'banana']],
-    [['grape', 'lime', 'blueberry']],
+    [['ketupat', null, 'nasi-goreng']],
+    [['manggis', 'ketupat', 'sate']],
     [
-      [null, 'apple', 'banana'],
-      ['banana', 'banana', 'apple'],
+      [null, 'rambutan', 'nasi-goreng'],
+      ['nasi-goreng', 'nasi-goreng', 'rambutan'],
     ],
-    [['grape', 'lime', 'grape']],
+    [['manggis', 'ketupat', 'manggis']],
     [
-      ['grape', 'lime', 'blueberry'],
-      ['lime', 'banana', 'apple'],
+      ['manggis', 'ketupat', 'sate'],
+      ['ketupat', 'nasi-goreng', 'rambutan'],
     ],
-    [['apple', 'lime', 'blueberry']],
+    [['rambutan', 'ketupat', 'sate']],
   ],
 };

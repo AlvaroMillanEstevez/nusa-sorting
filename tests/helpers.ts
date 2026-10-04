@@ -299,3 +299,22 @@ export function boardEvents(events: readonly GameEvent[], level: LevelDefinition
 export function boardKinds(events: readonly GameEvent[]): string[] {
   return events.filter((e) => e.kind !== 'comboChanged' && e.kind !== 'scoreChanged').map((e) => e.kind);
 }
+
+/**
+ * The golden recordings were made when levels used placeholder type ids. Levels 1-14 now use catalogue ids;
+ * this maps them back so recorded events (tripleCleared.itemType) still compare one to one.
+ */
+export const LEGACY_ITEM_TYPES: Readonly<Record<string, string>> = {
+  rambutan: 'apple',
+  'nasi-goreng': 'banana',
+  manggis: 'grape',
+  ketupat: 'lime',
+  sate: 'blueberry',
+};
+
+/** Events as the golden recordings name them: board events only (see boardEvents) and legacy type ids. */
+export function asRecorded(events: readonly GameEvent[], level: LevelDefinition): GameEvent[] {
+  return boardEvents(events, level).map((e) =>
+    e.kind === 'tripleCleared' ? { ...e, itemType: LEGACY_ITEM_TYPES[e.itemType] ?? e.itemType } : e,
+  );
+}

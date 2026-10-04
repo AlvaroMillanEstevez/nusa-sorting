@@ -14,22 +14,22 @@ export const level009: LevelDefinition = {
       // Tuning: speed is in belt slots per second; K is the length of `slots` (add or remove nulls).
       // In dev builds, ?beltSpeed=1.2&beltSlots=10 overrides both without editing this file.
       speed: 1,
-      slots: ['banana', 'blueberry', null, 'apple', 'lime', 'grape', null, 'apple'],
+      slots: ['nasi-goreng', 'sate', null, 'rambutan', 'ketupat', 'manggis', null, 'rambutan'],
     },
   ],
   shelves: [
-    [['apple', null, 'banana']],
-    [['grape', 'lime', 'grape']],
+    [['rambutan', null, 'nasi-goreng']],
+    [['manggis', 'ketupat', 'manggis']],
     [
-      ['lime', 'grape', null],
-      ['lime', 'banana', 'apple'],
+      ['ketupat', 'manggis', null],
+      ['ketupat', 'nasi-goreng', 'rambutan'],
     ],
     [
-      [null, 'grape', 'blueberry'],
-      ['lime', 'apple', 'banana'],
+      [null, 'manggis', 'sate'],
+      ['ketupat', 'rambutan', 'nasi-goreng'],
     ],
-    [['banana', 'blueberry', 'blueberry']],
-    [['blueberry', 'grape', 'lime']],
-    [['apple', 'blueberry', 'banana']],
+    [['nasi-goreng', 'sate', 'sate']],
+    [['sate', 'manggis', 'ketupat']],
+    [['rambutan', 'sate', 'nasi-goreng']],
   ],
 };

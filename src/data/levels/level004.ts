@@ -8,21 +8,21 @@ export const level004: LevelDefinition = {
     { kind: 'combo', windowSeconds: 5, pointsPerTriple: 100, multipliers: [1, 1.5, 2, 2.5, 3, 4, 5] },
   ],
   shelves: [
-    [['blueberry', 'grape', 'lime']],
+    [['sate', 'manggis', 'ketupat']],
     [
-      [null, null, 'apple'],
-      ['grape', 'lime', 'banana'],
+      [null, null, 'rambutan'],
+      ['manggis', 'ketupat', 'nasi-goreng'],
     ],
-    [['banana', 'banana', 'apple']],
+    [['nasi-goreng', 'nasi-goreng', 'rambutan']],
     [
-      ['banana', null, null],
-      ['banana', 'apple', 'grape'],
+      ['nasi-goreng', null, null],
+      ['nasi-goreng', 'rambutan', 'manggis'],
     ],
-    [[null, 'banana', 'grape']],
+    [[null, 'nasi-goreng', 'manggis']],
     [
-      ['blueberry', 'grape', 'apple'],
-      ['lime', 'grape', 'apple'],
+      ['sate', 'manggis', 'rambutan'],
+      ['ketupat', 'manggis', 'rambutan'],
     ],
-    [[null, 'apple', 'blueberry']],
+    [[null, 'rambutan', 'sate']],
   ],
 };

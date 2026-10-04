@@ -3,7 +3,7 @@ import { createGame, dropHeld, moveItem, pickFromTrack, returnHeld, tick, type G
 import { levels } from '../src/data/levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
-import { boardEvents } from './helpers';
+import { asRecorded } from './helpers';
 import layoutsFixture from './fixtures/layouts-v2.json';
 
 /**
@@ -74,7 +74,7 @@ describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regre
       if (result.ok) {
         state = result.state;
         // Levels 8-9 had no combos when recorded: only the board's events are compared (see regression.test.ts).
-        expect(belt.events(boardEvents(result.events, level))).toEqual(events);
+        expect(belt.events(asRecorded(result.events, level))).toEqual(events);
       } else {
         expect([result.reason]).toEqual(events);
       }

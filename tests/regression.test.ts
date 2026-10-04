@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame, moveItem, tick, type GameEvent, type LevelDefinition } from '../src/core';
 import { levels } from '../src/data/levels';
 import fixture from './fixtures/regression-v1.json';
-import { boardEvents, hadCombo } from './helpers';
+import { asRecorded, hadCombo } from './helpers';
 import fixtureV2 from './fixtures/regression-v2.json';
 
 /**
@@ -36,9 +36,9 @@ describe.each(fixture.map((entry, i) => [entry.level, i] as const))('regression:
       );
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      expect(boardEvents(result.events, level)).toEqual(step.events);
+      expect(asRecorded(result.events, level)).toEqual(step.events);
       const ticked = tick(result.state, 2500);
-      expect(boardEvents(ticked.events, level)).toEqual(step.tickEvents);
+      expect(asRecorded(ticked.events, level)).toEqual(step.tickEvents);
       state = ticked.state;
       expect(state.status).toBe(step.status);
       expect(state.timeLeftMs).toBe(step.timeLeftMs);
@@ -73,9 +73,9 @@ describe.each(fixtureV2.map((entry) => [entry.level, entry] as const))('regressi
       );
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      expect(boardEvents(result.events, level)).toEqual(step.events);
+      expect(asRecorded(result.events, level)).toEqual(step.events);
       const ticked = tick(result.state, step.tickMs);
-      expect(boardEvents(ticked.events, level)).toEqual(step.tickEvents);
+      expect(asRecorded(ticked.events, level)).toEqual(step.tickEvents);
       state = ticked.state;
       expect(state.status).toBe(step.status);
       expect(state.timeLeftMs).toBe(step.timeLeftMs);

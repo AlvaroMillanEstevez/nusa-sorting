@@ -22,7 +22,7 @@ export const level014: LevelDefinition = {
         {
           orientation: 'vertical',
           speed: 0.4,
-          carriers: [[], ['grape'], ['grape', 'grape'], ['banana'], ['banana', 'blueberry']],
+          carriers: [[], ['manggis'], ['manggis', 'manggis'], ['nasi-goreng'], ['nasi-goreng', 'sate']],
         },
         {
           orientation: 'vertical',
@@ -34,16 +34,16 @@ export const level014: LevelDefinition = {
   ],
   shelves: [
     [
-      ['banana', 'lime', null],
-      ['apple', 'apple', 'grape'],
+      ['nasi-goreng', 'ketupat', null],
+      ['rambutan', 'rambutan', 'manggis'],
     ],
-    [['blueberry', null, 'blueberry']],
-    [['lime', 'banana', 'grape']],
-    [['apple', 'lime', 'lime']],
-    [[null, 'lime', 'lime']],
+    [['sate', null, 'sate']],
+    [['ketupat', 'nasi-goreng', 'manggis']],
+    [['rambutan', 'ketupat', 'ketupat']],
+    [[null, 'ketupat', 'ketupat']],
     [
-      ['banana', 'apple', 'apple'],
-      ['banana', 'apple', 'grape'],
+      ['nasi-goreng', 'rambutan', 'rambutan'],
+      ['nasi-goreng', 'rambutan', 'manggis'],
     ],
   ],
 };

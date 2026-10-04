@@ -6,13 +6,13 @@ export const level001: LevelDefinition = {
   timeLimitSeconds: 90,
   shelves: [
     [
-      ['apple', null, 'lime'],
-      ['grape', 'apple', 'grape'],
+      ['rambutan', null, 'ketupat'],
+      ['manggis', 'rambutan', 'manggis'],
     ],
-    [['grape', null, 'banana']],
-    [['lime', null, 'apple']],
-    [['lime', 'apple', null]],
-    [['apple', null, 'apple']],
-    [['banana', null, 'banana']],
+    [['manggis', null, 'nasi-goreng']],
+    [['ketupat', null, 'rambutan']],
+    [['ketupat', 'rambutan', null]],
+    [['rambutan', null, 'rambutan']],
+    [['nasi-goreng', null, 'nasi-goreng']],
   ],
 };
