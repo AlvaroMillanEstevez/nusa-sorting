@@ -4,7 +4,11 @@ import {
   firstMoves,
   isCarrierSource,
   LevelError,
+  itemDepths,
   oneMoveTraps,
+  startTriples,
+  trapWithin,
+  tripleDepthIssues,
   validateLevel,
   type LevelDefinition,
 } from '../src/core';
@@ -61,5 +65,84 @@ describe('one-move traps', () => {
     const moves = firstMoves(createGame(level));
     expect(moves.some((m) => !isCarrierSource(m.from) && m.from.shelf === 2)).toBe(false);
     expect(moves.some((m) => m.to.shelf === 2)).toBe(false);
+  });
+});
+
+/*
+ * S0 [. E B] back [D B C]   S1 [. E C]   S2 [D A E]   S3 [B C D]   S4 [. A A]
+ * No single move loses, but E from S0 to S1 and then B from S0 to S4 empty S0: its back layer advances and
+ * fills the board without a triple.
+ */
+const twoMoveTrap: LevelDefinition = {
+  id: 'two-move-trap',
+  shelves: [
+    [
+      [null, 'E', 'B'],
+      ['D', 'B', 'C'],
+    ],
+    [[null, 'E', 'C']],
+    [['D', 'A', 'E']],
+    [['B', 'C', 'D']],
+    [[null, 'A', 'A']],
+  ],
+};
+
+describe('traps within a few moves', () => {
+  it('finds a two-move sequence that loses, even when no single move does', () => {
+    const state = createGame(twoMoveTrap);
+    expect(oneMoveTraps(state)).toEqual([]);
+    expect(trapWithin(state, 1)).toBeNull();
+    const trap = trapWithin(state, 2);
+    expect(trap).toHaveLength(2);
+    expect(trap![0]!.from).toEqual({ shelf: 0, layer: 0, slot: 1 });
+  });
+
+  it('finds one-move traps too, and none on a roomy board', () => {
+    expect(trapWithin(createGame(trap), 2)).toHaveLength(1);
+    const roomy: LevelDefinition = { id: 'roomy', shelves: [[['A', 'A', null]], [['A', 'B', 'B']], [['B', null, null]], [[null, null, null]]] };
+    expect(trapWithin(createGame(roomy), 2)).toBeNull();
+  });
+});
+
+describe('how deep triples are buried', () => {
+  // A: front, front, layer 2. B: front, layer 1, layer 2. C: three on the locked shelf's front (depth 1 each).
+  const level: LevelDefinition = {
+    id: 'depths',
+    shelves: [
+      [
+        ['A', 'B', null],
+        ['C', 'B', null],
+        ['A', null, 'B'],
+      ],
+      [['A', null, null]],
+      [['C', 'C', null]],
+      [[null, null, null]],
+    ],
+    mechanics: [{ kind: 'lockedShelves', shelves: [{ shelf: 2, triplesRequired: 1 }] }],
+  };
+
+  it('measures each item by layer, one deeper on a locked shelf, and by place in a track stack', () => {
+    const depths = itemDepths(createGame(level));
+    expect(depths.get('A')).toEqual([0, 0, 2]);
+    expect(depths.get('B')).toEqual([0, 1, 2]);
+    expect(depths.get('C')).toEqual([1, 1, 1]);
+    const belt = itemDepths(createGame({ id: 'belt', shelves: [[['A', 'A', null]], [[null, null, null]]], mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'horizontal', speed: 0.5, carriers: [['B', 'A'], ['B', 'B']] }] }] }));
+    expect(belt.get('A')).toEqual([0, 0, 1]);
+    expect(belt.get('B')).toEqual([0, 0, 1]);
+  });
+
+  it('reports triples whose last item is more than maxDepth layers deeper than their first', () => {
+    const state = createGame(level);
+    expect(tripleDepthIssues(state, 2)).toEqual([]);
+    expect(tripleDepthIssues(state, 1)).toEqual([
+      { type: 'A', triple: 0, spread: 2 },
+      { type: 'B', triple: 0, spread: 2 },
+    ]);
+  });
+
+  it('counts the triples that can be completed with what is in view and the layer behind it', () => {
+    // A: 2 within reach (the third is two layers back); B: 2 in reach; C is on a locked shelf.
+    expect(startTriples(createGame(level))).toBe(0);
+    expect(startTriples(createGame(twoMoveTrap))).toBe(5);
   });
 });
