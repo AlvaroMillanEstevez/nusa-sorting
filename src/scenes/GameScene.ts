@@ -18,7 +18,6 @@ import {
   type Position,
   stackOf,
   startClock,
-  unseenIntros,
 } from '../core';
 import { levels } from '../data/levels';
 import { applyBeltOverrides } from '../dev/beltOverrides';
@@ -48,7 +47,6 @@ import { Hud, WARNING_MS } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
-import { IntroToast } from './IntroToast';
 import { ResultOverlay } from './ResultOverlay';
 import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
 
@@ -110,9 +108,6 @@ export class GameScene extends Phaser.Scene {
   private board!: BakedLayer;
   private hud!: Hud;
   private overlay!: ResultOverlay;
-  private intro!: IntroToast;
-  /** The current press closed an intro panel: its release is not a tap on the board. */
-  private pressOnIntro = false;
   private locks!: LockOverlays;
   private blocker!: BlockerView;
   private belt!: BeltController;
@@ -175,7 +170,6 @@ export class GameScene extends Phaser.Scene {
     });
     this.hud.setMuted(this.sfx.muted);
     this.overlay = new ResultOverlay(this);
-    this.intro = new IntroToast(this);
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     // Pointer distances are in canvas pixels, hence the render ratio.
@@ -367,11 +361,6 @@ export class GameScene extends Phaser.Scene {
     this.locks.reset(locked);
     this.relayout();
     this.sync(0);
-    // Explains each mechanic the first time a level has it.
-    this.intro.clear();
-    const intros = unseenIntros(this.state, this.store.introsSeen);
-    for (const id of intros) this.store.markIntroSeen(id);
-    this.intro.show(intros.map((id) => t(`intro.${id}`)));
   }
 
   private createSprite(item: Item): void {
@@ -469,9 +458,6 @@ export class GameScene extends Phaser.Scene {
     this.refreshLive();
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
     this.overlay.layout(width, height);
-    // In landscape the board takes the whole height: the note goes over the HUD bar instead (the clock waits).
-    if (this.layout.statusInline) this.intro.layout(width, 2, this.layout.hudRowHeight - 4);
-    else this.intro.layout(width, this.layout.hud.height + 6);
     this.locks.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
@@ -590,9 +576,6 @@ export class GameScene extends Phaser.Scene {
    */
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     this.dragOccurred = false;
-    const at = pointerAt(pointer);
-    this.pressOnIntro = this.intro.hit(at.x, at.y);
-    if (this.pressOnIntro) return;
     this.sfx.unlock();
     if (this.overlay.visible) return;
     if (this.belt.onPointerDown(pointer)) return;
@@ -688,10 +671,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
-    if (this.pressOnIntro) {
-      this.pressOnIntro = false;
-      return;
-    }
     // Presses that began on the belt are the belt's to finish, whatever the game state.
     if (this.belt.onPointerUp(pointer)) return;
     const press = this.shelfPress;
