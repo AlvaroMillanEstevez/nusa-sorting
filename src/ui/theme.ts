@@ -5,6 +5,7 @@ export const theme = {
   buttonColor: '#2f4a63',
   accentButtonColor: '#d9822b',
   warningColor: '#ff6b5e',
+  lowTimeColor: '#ffc23d',
   comboColor: '#ffb347',
   lockVeil: 0x0b131c,
   overlayDim: 0x0b131c,

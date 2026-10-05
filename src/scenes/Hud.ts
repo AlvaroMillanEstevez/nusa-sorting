@@ -3,11 +3,10 @@ import { t } from '../i18n';
 import type { Rect } from '../ui/boardLayout';
 import { formatTime } from '../ui/format';
 import { theme } from '../ui/theme';
+import { timeStage, type TimeStage } from '../ui/timeWarning';
 import { RENDER_RATIO } from './view';
 
 const DEPTH_HUD = 150;
-/** Below this many ms the clock turns red and pulses. */
-export const WARNING_MS = 10_000;
 
 export interface HudHandlers {
   onRestart(): void;
@@ -39,7 +38,7 @@ export class Hud {
   private width = 0;
   private hudHeight = 0;
   private muted = false;
-  private warning = false;
+  private stage: TimeStage = 'normal';
   /** Waiting for the first touch on the board: the clock is paused and a hint replaces the combo label. */
   private waiting = false;
   private readonly scoreText: Phaser.GameObjects.Text;
@@ -211,7 +210,11 @@ export class Hud {
     }
   }
 
-  setTime(timeLeftMs: number | null): void {
+  /**
+   * The clock. Running low (see timeStage) it turns amber with one short pulse; in the last seconds it turns red
+   * and beats. `totalMs` is the level's whole time.
+   */
+  setTime(timeLeftMs: number | null, totalMs = 0): void {
     this.timerText.setVisible(timeLeftMs !== null);
     if (timeLeftMs === null) return;
     const text = formatTime(timeLeftMs);
@@ -220,13 +223,16 @@ export class Hud {
       this.placeTimer();
     }
 
-    const warning = timeLeftMs <= WARNING_MS;
-    if (warning === this.warning) return;
-    this.warning = warning;
+    const stage = timeStage(timeLeftMs, totalMs);
+    if (stage === this.stage) return;
+    this.stage = stage;
     this.scene.tweens.killTweensOf(this.timerText);
-    this.timerText.setScale(1).setColor(warning ? theme.warningColor : theme.textColor);
-    if (warning) {
+    const color = stage === 'critical' ? theme.warningColor : stage === 'low' ? theme.lowTimeColor : theme.textColor;
+    this.timerText.setScale(1).setColor(color);
+    if (stage === 'critical') {
       this.scene.tweens.add({ targets: this.timerText, scale: 1.15, duration: 250, yoyo: true, repeat: -1 });
+    } else if (stage === 'low') {
+      this.scene.tweens.add({ targets: this.timerText, scale: 1.25, duration: 160, yoyo: true, ease: 'Quad.easeOut' });
     }
   }
 

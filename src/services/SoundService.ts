@@ -5,6 +5,7 @@ export type SoundEffect =
   | 'clear'
   | 'advance'
   | 'tick'
+  | 'timeLow'
   | 'win'
   | 'lose'
   | 'combo'

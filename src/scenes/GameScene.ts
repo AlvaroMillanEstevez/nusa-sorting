@@ -38,11 +38,12 @@ import {
 import { formatTime } from '../ui/format';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
+import { CRITICAL_TIME_MS, timeStage, type TimeStage } from '../ui/timeWarning';
 import { art } from './art/ArtSet';
 import { BakedLayer } from './art/BakedLayer';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
-import { Hud, WARNING_MS } from './Hud';
+import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
@@ -130,6 +131,8 @@ export class GameScene extends Phaser.Scene {
   /** Set when the current pointer press turned into a drag, so its pointerup is not a tap. */
   private dragOccurred = false;
   private lastWarningSecond: number | null = null;
+  /** How urgent the clock was last frame, to chime once when time starts running low. */
+  private timeStage: TimeStage = 'normal';
 
   constructor(
     private readonly sfx: SoundService,
@@ -214,7 +217,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state.status === 'playing') {
       const result = tick(this.state, delta);
       this.state = result.state;
-      this.hud.setTime(this.state.timeLeftMs);
+      this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
       this.warnTicks();
       const combo = this.state.combo;
       this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
@@ -350,7 +353,8 @@ export class GameScene extends Phaser.Scene {
     }
     this.belt.reset(this.state);
     this.hud.setLevel(index + 1, isSpecialLevel(this.level));
-    this.hud.setTime(this.state.timeLeftMs);
+    this.timeStage = 'normal';
+    this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
     this.hud.setScore(this.state.combo.score, false);
     this.hud.setCombo(0, 0, 0);
     const locked = new Map<number, number>();
@@ -433,9 +437,21 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** The level's whole time, in ms (0 for an untimed level). */
+  private totalTimeMs(): number {
+    return (this.level.timeLimitSeconds ?? 0) * 1000;
+  }
+
+  /** A soft chime once when time starts running low, then a tick every second of the last ten. */
   private warnTicks(): void {
     const left = this.state.timeLeftMs;
-    if (left === null || left > WARNING_MS || left <= 0) return;
+    if (left === null || left <= 0) return;
+    const stage = timeStage(left, this.totalTimeMs());
+    if (stage !== this.timeStage) {
+      if (stage === 'low') this.sfx.play('timeLow');
+      this.timeStage = stage;
+    }
+    if (left > CRITICAL_TIME_MS) return;
     const second = Math.ceil(left / 1000);
     if (second !== this.lastWarningSecond) {
       this.lastWarningSecond = second;
