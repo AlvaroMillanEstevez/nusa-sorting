@@ -465,7 +465,7 @@ export class GameScene extends Phaser.Scene {
     return (this.level.timeLimitSeconds ?? 0) * 1000;
   }
 
-  /** A soft chime once when time starts running low, then a tick every second of the last ten. */
+  /** An alert once when time starts running low, then a tick every second of the last ten. */
   private warnTicks(): void {
     const left = this.state.timeLeftMs;
     if (left === null || left <= 0) return;

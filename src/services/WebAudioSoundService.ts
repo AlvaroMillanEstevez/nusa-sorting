@@ -27,8 +27,8 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   clear: [note(0, 660), note(0.06, 830), note(0.12, 990, 0.16), note(0.12, 1980, 0.12, 'sine', 0.06)],
   advance: [{ at: 0, duration: 0.14, freq: 280, freqEnd: 460, wave: 'sine', gain: 0.12 }],
   tick: [note(0, 1200, 0.03, 'square', 0.05)],
-  // Soft two-note chime, once, when time starts running low.
-  timeLow: [note(0, 660, 0.14, 'sine', 0.12), note(0.16, 880, 0.2, 'sine', 0.1)],
+  // Once, when time starts running low: a watch-alarm "beep-beep, beep-beep", unlike any other effect.
+  timeLow: [0, 0.15, 0.45, 0.6].flatMap((at) => [note(at, 1047, 0.1, 'triangle', 0.26), note(at, 1047, 0.1, 'square', 0.05)]),
   win: [note(0, 523), note(0.1, 659), note(0.2, 784), note(0.3, 1047, 0.35)],
   lose: [note(0, 392, 0.18, 'sawtooth', 0.1), note(0.18, 330, 0.18, 'sawtooth', 0.1), note(0.36, 262, 0.4, 'sawtooth', 0.1)],
   combo: [{ at: 0, duration: 0.18, freq: 700, freqEnd: 1400, wave: 'square', gain: 0.07 }, note(0.12, 1760, 0.12, 'sine', 0.1)],

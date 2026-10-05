@@ -229,7 +229,7 @@ export class Hud {
   }
 
   /**
-   * The clock. Running low (see timeStage) it turns amber with one short pulse; in the last seconds it turns red
+   * The clock. Running low (see timeStage) it turns amber with two double pulses; in the last seconds it turns red
    * and beats. `totalMs` is the level's whole time.
    */
   setTime(timeLeftMs: number | null, totalMs = 0): void {
@@ -250,7 +250,11 @@ export class Hud {
     if (stage === 'critical') {
       this.scene.tweens.add({ targets: this.timerText, scale: 1.15, duration: 250, yoyo: true, repeat: -1 });
     } else if (stage === 'low') {
-      this.scene.tweens.add({ targets: this.timerText, scale: 1.25, duration: 160, yoyo: true, ease: 'Quad.easeOut' });
+      // Two double pulses, in time with the warning beeps.
+      this.scene.tweens.chain({
+        targets: this.timerText,
+        tweens: [0, 0, 150, 0].map((delay) => ({ scale: 1.3, duration: 70, yoyo: true, delay, ease: 'Quad.easeOut' })),
+      });
     }
   }
 
