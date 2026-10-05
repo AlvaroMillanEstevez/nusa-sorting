@@ -45,6 +45,8 @@ export const en = {
   'gallery.lookAlikes': 'Look-alikes side by side',
   'gallery.px': '{n} px',
   'gallery.loading': 'Drawing…',
+  'themeIntro.newItems': 'New items in this level',
+  'themeIntro.continue': 'Tap to continue',
 } as const;
 
 export type MessageKey = keyof typeof en;

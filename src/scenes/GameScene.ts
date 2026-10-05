@@ -19,9 +19,9 @@ import {
   stackOf,
   startClock,
 } from '../core';
-import { levels } from '../data/levels';
 import { applyBeltOverrides } from '../dev/beltOverrides';
 import { applyTimeScale } from '../dev/timeScale';
+import { levels } from '../data/levels';
 import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
@@ -39,8 +39,10 @@ import {
 import { formatTime } from '../ui/format';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
+import { themeLook } from '../ui/themeLook';
+import { themeById, type ThemeId } from '../data/themes';
 import { CRITICAL_TIME_MS, timeStage, type TimeStage } from '../ui/timeWarning';
-import { art } from './art/ArtSet';
+import { art, useShelfTrim } from './art/ArtSet';
 import { BakedLayer } from './art/BakedLayer';
 import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
@@ -49,6 +51,8 @@ import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTex
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
 import { ResultOverlay } from './ResultOverlay';
+import { ThemeDecor } from './ThemeDecor';
+import { ThemeIntro } from './ThemeIntro';
 import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
 
 const SELECTED_LIFT = 0.15;
@@ -109,6 +113,10 @@ export class GameScene extends Phaser.Scene {
   private board!: BakedLayer;
   private hud!: Hud;
   private overlay!: ResultOverlay;
+  private decor!: ThemeDecor;
+  private themeIntro!: ThemeIntro;
+  /** The current press landed on the theme intro screen: its release is not a tap on the board. */
+  private pressOnIntro = false;
   private locks!: LockOverlays;
   private blocker!: BlockerView;
   private belt!: BeltController;
@@ -173,6 +181,8 @@ export class GameScene extends Phaser.Scene {
     });
     this.hud.setMuted(this.sfx.muted);
     this.overlay = new ResultOverlay(this);
+    this.decor = new ThemeDecor(this);
+    this.themeIntro = new ThemeIntro(this);
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     // Pointer distances are in canvas pixels, hence the render ratio.
@@ -365,8 +375,18 @@ export class GameScene extends Phaser.Scene {
       if (isShelfLocked(this.state, shelf)) locked.set(shelf, triplesToUnlock(this.state, shelf));
     });
     this.locks.reset(locked);
+    // A themed level trims the shelves and the HUD in its colours (the background is drawn in relayout).
+    const look = themeLook(this.level.theme);
+    useShelfTrim(look?.trim ?? null);
+    this.hud.setAccent(look?.accent ?? null);
     this.relayout();
     this.sync(0);
+    // The first time in a themed level: its name and the objects it brings. Seen once closed.
+    this.themeIntro.clear();
+    const themeId = this.level.theme;
+    if (look && themeId && themeById(themeId) && !this.store.themesSeen.includes(themeId)) {
+      this.themeIntro.show(themeId as ThemeId, look, this.store.colorBlindMode, () => this.store.markThemeSeen(themeId));
+    }
   }
 
   private createSprite(item: Item): void {
@@ -476,6 +496,8 @@ export class GameScene extends Phaser.Scene {
     this.refreshLive();
     this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
     this.overlay.layout(width, height);
+    this.decor.draw(themeLook(this.level.theme), width, height, this.layout);
+    this.themeIntro.layout(width, height);
     this.locks.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
@@ -595,7 +617,8 @@ export class GameScene extends Phaser.Scene {
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     this.dragOccurred = false;
     this.sfx.unlock();
-    if (this.overlay.visible) return;
+    this.pressOnIntro = this.themeIntro.visible;
+    if (this.overlay.visible || this.pressOnIntro) return;
     if (this.belt.onPointerDown(pointer)) return;
     if (this.state.status !== 'playing' || this.shelfPress) return;
     this.pointerPos = pointerAt(pointer);
@@ -689,6 +712,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
+    // The intro screen closes itself on this release; it is no tap on the board, and does not start the clock.
+    if (this.pressOnIntro) {
+      this.pressOnIntro = false;
+      return;
+    }
     // Presses that began on the belt are the belt's to finish, whatever the game state.
     if (this.belt.onPointerUp(pointer)) return;
     const press = this.shelfPress;

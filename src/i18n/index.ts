@@ -37,3 +37,8 @@ export function t(key: MessageKey, params?: MessageParams): string {
   if (!params) return text;
   return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match));
 }
+
+/** A text in a given locale, whatever the current one (e.g. a name shown in both languages). */
+export function textIn(locale: Locale, key: MessageKey): string {
+  return catalogs[locale][key];
+}

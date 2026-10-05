@@ -47,4 +47,6 @@ export const id: Record<MessageKey, string> = {
   'gallery.lookAlikes': 'Yang mirip, berdampingan',
   'gallery.px': '{n} px',
   'gallery.loading': 'Menggambar…',
+  'themeIntro.newItems': 'Barang baru di level ini',
+  'themeIntro.continue': 'Ketuk untuk lanjut',
 };

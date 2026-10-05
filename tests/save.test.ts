@@ -36,6 +36,7 @@ const sample: SaveData = {
   version: SAVE_VERSION,
   progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 } },
   settings: { muted: true, colorBlindMode: true },
+  themesSeen: ['budaya-jawa'],
 };
 
 describe('save format', () => {
@@ -64,11 +65,13 @@ describe('save format', () => {
         bestScores: { level004: 900, level005: -1, level006: 'lots', level007: null },
       },
       settings: { muted: 'yes', colorBlindMode: 1 },
+      themesSeen: ['budaya-jawa', 7, '', 'budaya-jawa', '17-agustus'],
     });
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
       progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 } },
       settings: { muted: false, colorBlindMode: false },
+      themesSeen: ['budaya-jawa', '17-agustus'],
     });
   });
 
@@ -167,6 +170,18 @@ describe('ProgressStore', () => {
     const reloaded = new ProgressStore(new LocalSaveService(storage));
     expect(reloaded.bestScore('level004')).toBe(1500);
     expect(reloaded.muted).toBe(false);
+  });
+
+  it('remembers the theme intros seen, saving only the first time, and reads older saves as none seen', () => {
+    const storage = new FakeStorage();
+    const store = new ProgressStore(new LocalSaveService(storage));
+    expect(store.themesSeen).toEqual([]);
+    store.markThemeSeen('budaya-jawa');
+    store.markThemeSeen('budaya-jawa');
+    expect(storage.writes).toBe(1);
+    expect(new ProgressStore(new LocalSaveService(storage)).themesSeen).toEqual(['budaya-jawa']);
+    const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: sample.settings });
+    expect(parseSave(old).themesSeen).toEqual([]);
   });
 
   it('keeps colour-blind mode off by default, and saves it when it changes', () => {

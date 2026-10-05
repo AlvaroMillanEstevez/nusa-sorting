@@ -44,6 +44,9 @@ export class Hud {
   private readonly scoreText: Phaser.GameObjects.Text;
   private readonly comboText: Phaser.GameObjects.Text;
   private readonly comboBar: Phaser.GameObjects.Graphics;
+  /** A themed level's accent: a line along the bottom of the HUD. */
+  private readonly accentLine: Phaser.GameObjects.Graphics;
+  private accent: string | null = null;
   private statusRow: Rect | null = null;
   private inline = false;
   /** Right end of the combo bar. */
@@ -95,6 +98,7 @@ export class Hud {
       .setResolution(resolution)
       .setDepth(DEPTH_HUD);
     this.comboBar = scene.add.graphics().setDepth(DEPTH_HUD);
+    this.accentLine = scene.add.graphics().setDepth(DEPTH_HUD);
   }
 
   /** Lays out the main row and, when given, the score/combo row below it. */
@@ -149,6 +153,20 @@ export class Hud {
       this.placeComboText();
     }
     this.placeTimer();
+    this.drawAccent();
+  }
+
+  /** A themed level's accent colour under the HUD, or none. */
+  setAccent(color: string | null): void {
+    this.accent = color;
+    this.drawAccent();
+  }
+
+  private drawAccent(): void {
+    const g = this.accentLine.clear();
+    if (!this.accent) return;
+    const bottom = this.statusRow && !this.inline ? this.statusRow.y + this.statusRow.height : this.hudHeight;
+    g.fillStyle(Phaser.Display.Color.HexStringToColor(this.accent).color, 1).fillRect(0, bottom - 3, this.width, 3);
   }
 
   /** Room kept for texts that change while playing, so the clock does not shift as they grow. */

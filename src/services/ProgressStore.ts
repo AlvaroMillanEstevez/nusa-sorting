@@ -20,6 +20,17 @@ export class ProgressStore {
     return this.data.settings.muted;
   }
 
+  get themesSeen(): readonly string[] {
+    return this.data.themesSeen;
+  }
+
+  /** Remembers that the intro screen of a theme was seen; call it once the player has closed it. */
+  markThemeSeen(theme: string): void {
+    if (this.data.themesSeen.includes(theme)) return;
+    this.data = { ...this.data, themesSeen: [...this.data.themesSeen, theme] };
+    this.saves.save(this.data);
+  }
+
   get colorBlindMode(): boolean {
     return this.data.settings.colorBlindMode;
   }

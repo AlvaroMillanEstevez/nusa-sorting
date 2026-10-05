@@ -1,6 +1,7 @@
 import type * as Phaser from 'phaser';
 import type { ShelfLayout, TrackLayout } from '../../ui/boardLayout';
-import { woodArt } from './woodArt';
+import { WOOD } from '../../ui/art/wood';
+import { makeWoodArt, woodArt } from './woodArt';
 
 /**
  * Everything that gives the board its look: shelves, tracks, the locked-shelf veil and the roaming blocker.
@@ -22,7 +23,20 @@ export interface ArtSet {
   drawBlocker(g: Phaser.GameObjects.Graphics, slotSize: number): void;
 }
 
+let current: ArtSet = woodArt;
+let currentTrim: string | null = null;
+
 /** The art the game is drawn with. */
 export function art(): ArtSet {
-  return woodArt;
+  return current;
+}
+
+/**
+ * Themed levels trim the shelves in their accent colour (the light edges of the frame and the front board);
+ * null goes back to plain wood. The back wall, behind the items, never changes.
+ */
+export function useShelfTrim(trim: string | null): void {
+  if (trim === currentTrim) return;
+  currentTrim = trim;
+  current = trim ? makeWoodArt({ ...WOOD, frameLight: trim, plankLight: trim }) : woodArt;
 }

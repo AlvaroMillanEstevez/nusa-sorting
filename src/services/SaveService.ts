@@ -11,6 +11,8 @@ export interface SaveData {
   readonly version: number;
   readonly progress: Progress;
   readonly settings: Settings;
+  /** Themes whose intro screen the player has seen (and closed). */
+  readonly themesSeen: readonly string[];
 }
 
 /** Persistence boundary. The game never touches storage APIs directly. */
