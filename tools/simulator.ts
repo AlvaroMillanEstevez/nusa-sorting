@@ -163,15 +163,22 @@ export function rng(seed: number): () => number {
   };
 }
 
+/**
+ * How fast the simulated player acts, as a share of the first guess (2.5 s per move). Played on phones,
+ * levels 1-10 left far too much time over: real players move about twice as fast, so every time cost below is
+ * halved.
+ */
+export const PACE = 0.5;
+
 /** Seconds a casual player needs per move on a level with five item types (the demo levels' usual count). */
-export const SECONDS_PER_MOVE = 2.5;
+export const SECONDS_PER_MOVE = 2.5 * PACE;
 
 /**
- * Seconds per move on a level with `types` item types: telling more types apart takes longer, about 0.12 s per
+ * Seconds per move on a level with `types` item types: telling more types apart takes longer, about 0.06 s per
  * type around the five-type baseline. A guess to be checked by playing.
  */
 export function secondsPerMove(types: number): number {
-  return SECONDS_PER_MOVE + 0.12 * (types - 5);
+  return SECONDS_PER_MOVE + 0.12 * PACE * (types - 5);
 }
 
 /** Distinct item types on the board and tracks. */
@@ -187,7 +194,7 @@ export function typeCount(state: GameState): number {
  * waiting for it to come out from the faded ends. Grows with belt speed. A guess to be checked by playing.
  */
 export function beltPickSeconds(speed: number): number {
-  return 0.5 + 0.75 * Math.abs(speed);
+  return (0.5 + 0.75 * Math.abs(speed)) * PACE;
 }
 
 /** Slots a shelf track moves per carrier: a shelf and the gap to the next one are about two slots tall. */
@@ -198,7 +205,7 @@ export const SLOTS_PER_SHELF_CARRIER = 1.95;
  * moving. Grows with how fast its slots move. A guess to be checked by playing.
  */
 export function movingShelfSeconds(carriersPerSecond: number): number {
-  return 0.5 + 0.75 * Math.abs(carriersPerSecond) * SLOTS_PER_SHELF_CARRIER;
+  return (0.5 + 0.75 * Math.abs(carriersPerSecond) * SLOTS_PER_SHELF_CARRIER) * PACE;
 }
 
 /** Extra seconds a move costs because its source or target shelf rides a track (the larger of the two). */

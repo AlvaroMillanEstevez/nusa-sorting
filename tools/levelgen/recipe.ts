@@ -26,6 +26,12 @@ export interface LevelRecipe {
   /** One line on what the level is for, written into the level file. */
   readonly purpose: string;
   readonly seed: number;
+  /**
+   * The candidate of the seed's sequence the shipped level uses, once chosen: the generator then rebuilds that
+   * board and only sets its time, so tuning times never changes a board players have seen. Without it, the
+   * generator searches from the first candidate.
+   */
+  readonly candidate?: number;
 
   /** 'grid': the automatic layout (with an optional horizontal belt below); otherwise columns, left to right. */
   readonly layout: 'grid' | readonly ColumnRecipe[];
@@ -60,7 +66,8 @@ export interface LevelRecipe {
   readonly winBand: readonly [number, number];
   /**
    * How the time limit is set: the limit that gives a win rate in the band, never less than `slack` times the
-   * time 90% of the simulator's wins need. `timeUp` bounds the share of games lost to the clock.
+   * time 90% of the simulator's wins need. `timeUp` bounds the share of games lost to the clock. `fixed` sets the
+   * limit outright (special levels that keep their time); the win band is then only checked.
    */
-  readonly time: { readonly slack: number; readonly timeUp: readonly [number, number] };
+  readonly time: { readonly slack: number; readonly timeUp: readonly [number, number]; readonly fixed?: number };
 }

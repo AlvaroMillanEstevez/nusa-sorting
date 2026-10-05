@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 6`, or try another seed with `npm run levelgen -- 6 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated casual player, 200 games: wins 86%, out of space 0%, out of time 14%.
+ * Simulated casual player, 200 games: wins 80%, out of space 0%, out of time 20%.
  * A guide only: real players may find it easier or harder.
  */
 export const nusa006: LevelDefinition = {
   id: 'nusa-006',
-  timeLimitSeconds: 200,
+  timeLimitSeconds: 95,
   shelves: [
     [['rendang', 'onde-onde', 'manggis'], ['es-teh-manis', 'bakso', 'manggis']],
     [['durian', 'gado-gado', 'kerupuk-udang']],

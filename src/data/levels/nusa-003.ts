@@ -12,7 +12,7 @@ import type { LevelDefinition } from '../../core';
  */
 export const nusa003: LevelDefinition = {
   id: 'nusa-003',
-  timeLimitSeconds: 125,
+  timeLimitSeconds: 65,
   shelves: [
     [['sate', 'nasi-goreng', 'rambutan']],
     [[null, 'bakso', 'manggis']],

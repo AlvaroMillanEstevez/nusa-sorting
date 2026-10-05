@@ -12,7 +12,7 @@ import {
   type LevelDefinition,
 } from '../src/core';
 import { levels } from '../src/data/levels';
-import { ruleFailures } from '../tools/levelgen/generate';
+import { generateLevel, ruleFailures } from '../tools/levelgen/generate';
 import { RECIPES } from '../tools/levelgen/recipes';
 import { levelTypes, TYPES_WITHOUT_LOOK_ALIKES, TYPES_WITHOUT_VARIANTS } from '../tools/levelgen/types';
 import { simulate } from '../tools/simulator';
@@ -43,6 +43,11 @@ describe.each(levels.map((level, i) => [i + 1, level] as const))('level %i', (nu
     expect(isSpecialLevel(level)).toBe(recipe.theme !== undefined);
     expect(level.timeLimitSeconds).toBeGreaterThan(0);
   });
+
+  it('is exactly what its recipe generates (board and time), so regenerating never changes a shipped board', () => {
+    expect(recipe.candidate).toBeDefined();
+    expect(generateLevel(recipe).level).toEqual(level);
+  }, 120_000);
 
   it('meets every rule for generated levels', () => {
     // Valid, items big enough on a phone, no defeat in the first two moves, triples not buried too deep, enough

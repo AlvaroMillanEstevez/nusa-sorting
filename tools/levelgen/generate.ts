@@ -226,6 +226,11 @@ const inRange = (value: number, [min, max]: readonly [number, number]) => value 
  * games lost to the clock stays in its range, checked with timed games.
  */
 function chooseTime(level: LevelDefinition, recipe: LevelRecipe): { seconds: number; stats: SimulationStats } | null {
+  if (recipe.time.fixed !== undefined) {
+    const stats = simulate(createGame({ ...level, timeLimitSeconds: recipe.time.fixed }), SEARCH_RUNS, 1);
+    const fits = inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp);
+    return fits ? { seconds: recipe.time.fixed, stats } : null;
+  }
   const untimed = playMany(createGame(level), SEARCH_RUNS, 1);
   const winTimes = untimed
     .filter((o) => o.won)
@@ -237,15 +242,17 @@ function chooseTime(level: LevelDefinition, recipe: LevelRecipe): { seconds: num
   const floor = roundUp(recipe.time.slack * p90);
   // Predicted win rate for a limit: untimed wins that finish in time; the rest of those wins become time-ups.
   const predicted = (limit: number) => winTimes.filter((s) => s <= limit).length / SEARCH_RUNS;
-  const last = roundUp(winTimes.at(-1)!) + TIME_STEP;
-  for (let limit = floor; limit <= last; limit += TIME_STEP) {
+  // Up to past the slowest win; at least the floor itself, which can be above it with a generous slack.
+  const last = Math.max(floor, roundUp(winTimes.at(-1)!) + TIME_STEP);
+  // Timed games differ a little from the prediction, so a few limits near it are checked, shortest first.
+  const near = ([min, max]: readonly [number, number]) => [min - 0.05, max + 0.05] as const;
+  let checks = 0;
+  for (let limit = floor; limit <= last && checks < 6; limit += TIME_STEP) {
     const win = predicted(limit);
-    if (win < recipe.winBand[0] || !inRange(untimedRate - win, recipe.time.timeUp)) continue;
-    for (const seconds of [limit, limit + TIME_STEP, limit + 2 * TIME_STEP]) {
-      const stats = simulate(createGame({ ...level, timeLimitSeconds: seconds }), SEARCH_RUNS, 1);
-      if (inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp)) return { seconds, stats };
-    }
-    return null;
+    if (win < recipe.winBand[0] - 0.05 || !inRange(untimedRate - win, near(recipe.time.timeUp))) continue;
+    checks++;
+    const stats = simulate(createGame({ ...level, timeLimitSeconds: limit }), SEARCH_RUNS, 1);
+    if (inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp)) return { seconds: limit, stats };
   }
   return null;
 }
@@ -258,6 +265,8 @@ const candidateSeed = (seed: number, attempt: number) => (Math.imul(seed, 1_000_
  * rule and lands in the win band with a fitting time limit. Same recipe and seed, same level.
  */
 export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttempts = 4000): GeneratedLevel {
+  // A recipe that names its candidate (with its own seed) keeps that board: only the time is worked out.
+  if (recipe.candidate !== undefined && seed === recipe.seed) return retime(recipe, seed, recipe.candidate);
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0 && attempt % 250 === 0) console.log(`  ${recipe.id}: ${attempt} candidates tried`);
     const board = buildCandidate(recipe, rng(candidateSeed(seed, attempt)));
@@ -270,6 +279,17 @@ export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttemp
     return { level, recipe, seed, attempt, stats, itemPx: itemPx(level) };
   }
   throw new Error(`${recipe.id}: no level found in ${maxAttempts} attempts with seed ${seed}`);
+}
+
+function retime(recipe: LevelRecipe, seed: number, attempt: number): GeneratedLevel {
+  const board = buildCandidate(recipe, rng(candidateSeed(seed, attempt)));
+  if (!board) throw new Error(`${recipe.id}: candidate ${attempt} no longer fits the recipe`);
+  const failures = ruleFailures(board, recipe);
+  if (failures.length > 0) throw new Error(`${recipe.id}: candidate ${attempt} breaks the rules: ${failures.join('; ')}`);
+  const timed = chooseTime(board, recipe);
+  if (!timed) throw new Error(`${recipe.id}: no time limit puts candidate ${attempt} in the win band`);
+  const level = { ...board, timeLimitSeconds: timed.seconds };
+  return { level, recipe, seed, attempt, stats: simulate(createGame(level), REPORT_RUNS, 1), itemPx: itemPx(level) };
 }
 
 export function itemPx(level: LevelDefinition): { portrait: number; landscape: number } {

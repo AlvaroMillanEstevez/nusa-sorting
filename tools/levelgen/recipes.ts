@@ -10,7 +10,9 @@ import type { LevelRecipe } from './recipe';
  *
  * Win bands are for the simulated casual player (tools/simulator.ts), not real people. That player rarely runs
  * out of space on shelves alone, so on the harder levels the clock does much of the work: `time.slack` below 1
- * lets the limit cut into its slower wins. Its time per move grows with the number of types.
+ * lets the limit cut into its slower wins. Its time per move grows with the number of types. Special levels
+ * keep a fixed time (time.fixed) and get harder through more items instead. Levels 1 and 2, played by new
+ * players, keep a generous floor (slack) so they never frustrate.
  */
 
 /** Combo multipliers doubled (special level 5). */
@@ -22,6 +24,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-001',
     purpose: 'First level: very simple and obvious. Few empty slots, six kinds, nothing hidden.',
     seed: 101,
+    candidate: 259,
     layout: 'grid',
     shelves: 7,
     types: 6,
@@ -30,13 +33,14 @@ export const RECIPES: readonly LevelRecipe[] = [
     maxDepth: 0,
     minStartTriples: 6,
     winBand: [0.97, 1],
-    time: { slack: 2, timeUp: [0, 0] },
+    time: { slack: 2.7, timeUp: [0, 0] },
   },
   {
     number: 2,
     id: 'nusa-002',
     purpose: 'More shelves and items in two columns; items behind the front ones appear.',
     seed: 202,
+    candidate: 6,
     layout: [
       { kind: 'shelves', count: 4 },
       { kind: 'shelves', count: 4 },
@@ -46,14 +50,15 @@ export const RECIPES: readonly LevelRecipe[] = [
     emptyFront: 4,
     maxDepth: 1,
     minStartTriples: 3,
-    winBand: [0.88, 0.98],
-    time: { slack: 1, timeUp: [0, 0.12] },
+    winBand: [0.88, 1],
+    time: { slack: 1.4, timeUp: [0, 0.12] },
   },
   {
     number: 3,
     id: 'nusa-003',
     purpose: 'Three columns and the first locked shelf.',
     seed: 303,
+    candidate: 3,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
@@ -73,6 +78,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-004',
     purpose: 'Locked shelves get demanding: two of them, one needing four triples.',
     seed: 404,
+    candidate: 136,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 2 },
@@ -90,28 +96,30 @@ export const RECIPES: readonly LevelRecipe[] = [
   {
     number: 5,
     id: 'nusa-005',
-    purpose: 'Special level: against the clock, with combo multipliers doubled.',
+    purpose: 'Special level: against the clock (it keeps its 65 s with a quarter more items), combo multipliers doubled.',
     seed: 505,
+    candidate: 0,
     theme: 'rush',
     layout: [
       { kind: 'shelves', count: 2 },
       { kind: 'shelves', count: 2 },
       { kind: 'shelves', count: 2 },
     ],
-    types: 7,
-    backLayers: { shelves: 3, layers: [2, 2] },
-    emptyFront: 5,
+    types: 9,
+    backLayers: { shelves: 4, layers: [2, 3] },
+    emptyFront: 4,
     comboMultipliers: DOUBLE_COMBO,
-    maxDepth: 1,
+    maxDepth: 2,
     minStartTriples: 3,
-    winBand: [0.45, 0.65],
-    time: { slack: 0, timeUp: [0.3, 0.55] },
+    winBand: [0.4, 0.95],
+    time: { slack: 0, timeUp: [0, 0.6], fixed: 65 },
   },
   {
     number: 6,
     id: 'nusa-006',
     purpose: 'One new kind, on an easier board after the special level.',
     seed: 606,
+    candidate: 8,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
@@ -131,6 +139,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-007',
     purpose: 'More shelves and deeper layers.',
     seed: 707,
+    candidate: 26,
     layout: [
       { kind: 'shelves', count: 4 },
       { kind: 'shelves', count: 3 },
@@ -150,6 +159,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-008',
     purpose: 'A slow belt of stacks, on an easier board since the belt is new.',
     seed: 808,
+    candidate: 0,
     layout: 'grid',
     shelves: 7,
     belt: { speed: 0.35, carriers: 7 },
@@ -167,6 +177,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-009',
     purpose: 'A vertical belt between two columns of shelves, faster and with deeper stacks.',
     seed: 909,
+    candidate: 2,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'track', speed: 0.6, carriers: 5 },
@@ -185,22 +196,23 @@ export const RECIPES: readonly LevelRecipe[] = [
   {
     number: 10,
     id: 'nusa-010',
-    purpose: 'Special level: two fast belts full of stacks around a column of shelves.',
+    purpose: 'Special level: two fast belts full of stacks around a column of shelves (it keeps its 115 s with a quarter more items).',
     seed: 1010,
+    candidate: 5,
     theme: 'belts',
     layout: [
       { kind: 'track', speed: 0.8, carriers: 5 },
       { kind: 'shelves', count: 4 },
       { kind: 'track', speed: -0.8, carriers: 5 },
     ],
-    stacks: { depth: [2, 2], empty: 1 },
-    types: 8,
+    stacks: { depth: [2, 3], empty: 1 },
+    types: 10,
     backLayers: { shelves: 1, layers: [2, 2] },
-    emptyFront: 7,
+    emptyFront: 6,
     maxDepth: 2,
     minStartTriples: 3,
-    winBand: [0.45, 0.65],
-    time: { slack: 1, timeUp: [0, 0.2] },
+    winBand: [0.35, 0.8],
+    time: { slack: 1, timeUp: [0, 0.3], fixed: 115 },
   },
 ];
 
