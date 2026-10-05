@@ -9,3 +9,14 @@ export function parseLevelParam(search: string, numbers: readonly number[]): num
   const index = numbers.indexOf(Number(raw));
   return index === -1 ? null : index;
 }
+
+/**
+ * Development only: reads `?arrangement=K` and returns K if the level has an arrangement K (0 is the level as
+ * written), or null. Every attempt then plays that arrangement.
+ */
+export function parseArrangementParam(search: string, count: number): number | null {
+  const raw = new URLSearchParams(search).get('arrangement');
+  if (raw === null || !/^\d+$/.test(raw)) return null;
+  const index = Number(raw);
+  return index < count ? index : null;
+}

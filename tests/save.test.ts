@@ -37,6 +37,7 @@ const sample: SaveData = {
   progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 } },
   settings: { muted: true, colorBlindMode: true },
   themesSeen: ['budaya-jawa'],
+  lastArrangements: { 'nusa-003': 2 },
 };
 
 describe('save format', () => {
@@ -66,12 +67,14 @@ describe('save format', () => {
       },
       settings: { muted: 'yes', colorBlindMode: 1 },
       themesSeen: ['budaya-jawa', 7, '', 'budaya-jawa', '17-agustus'],
+      lastArrangements: { 'nusa-001': 3, 'nusa-002': -1, 'nusa-004': 1.5, 'nusa-005': '2', '': 1 },
     });
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
       progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 } },
       settings: { muted: false, colorBlindMode: false },
       themesSeen: ['budaya-jawa', '17-agustus'],
+      lastArrangements: { 'nusa-001': 3 },
     });
   });
 
@@ -182,6 +185,16 @@ describe('ProgressStore', () => {
     expect(new ProgressStore(new LocalSaveService(storage)).themesSeen).toEqual(['budaya-jawa']);
     const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: sample.settings });
     expect(parseSave(old).themesSeen).toEqual([]);
+  });
+
+  it('plays arrangement 0 first, then another each attempt in turn, remembered across sessions', () => {
+    const storage = new FakeStorage();
+    const store = new ProgressStore(new LocalSaveService(storage));
+    expect([0, 1, 2, 3].map(() => store.takeArrangement('nusa-004', 3))).toEqual([0, 1, 2, 0]);
+    expect(store.takeArrangement('nusa-005', 3)).toBe(0);
+    expect(new ProgressStore(new LocalSaveService(storage)).takeArrangement('nusa-004', 3)).toBe(1);
+    const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: sample.settings });
+    expect(parseSave(old).lastArrangements).toEqual({});
   });
 
   it('keeps colour-blind mode off by default, and saves it when it changes', () => {

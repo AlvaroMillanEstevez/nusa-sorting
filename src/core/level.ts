@@ -1,3 +1,4 @@
+import type { Arrangement } from './arrangement';
 import { isBlocked } from './game';
 import {
   COMBO_DEFAULTS,
@@ -52,6 +53,11 @@ export interface LevelDefinition {
    * decoration; for now a special level's twist comes from existing mechanics only.
    */
   readonly theme?: string;
+  /**
+   * Other arrangements of the same items (see Arrangement): the level as written is arrangement 0, and these
+   * are 1 and up. Each attempt plays one of them (withArrangement), so the solution cannot be memorised.
+   */
+  readonly arrangements?: readonly Arrangement[];
 }
 
 /** Special levels are the ones with a theme. */

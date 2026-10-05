@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { wantsGallery } from '../src/dev/galleryParam';
-import { parseLevelParam } from '../src/dev/levelParam';
+import { parseArrangementParam, parseLevelParam } from '../src/dev/levelParam';
 import { wantsSaveReset } from '../src/dev/saveParams';
 
 describe('parseLevelParam (dev only)', () => {
@@ -35,5 +35,15 @@ describe('wantsGallery (dev only)', () => {
     expect(wantsGallery('?resetSave&gallery=1')).toBe(true);
     expect(wantsGallery('?level=3')).toBe(false);
     expect(wantsGallery('')).toBe(false);
+  });
+});
+
+describe('parseArrangementParam (dev only)', () => {
+  it('picks an arrangement the level has, 0 being the level as written', () => {
+    expect(parseArrangementParam('?level=3&arrangement=0', 8)).toBe(0);
+    expect(parseArrangementParam('?arrangement=7', 8)).toBe(7);
+    for (const search of ['', '?arrangement=', '?arrangement=8', '?arrangement=-1', '?arrangement=x']) {
+      expect(parseArrangementParam(search, 8)).toBeNull();
+    }
   });
 });

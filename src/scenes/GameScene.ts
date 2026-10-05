@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import {
+  arrangementCount,
   createGame,
   findItem,
   freeFrontSlots,
@@ -10,6 +11,7 @@ import {
   moveItem,
   tick,
   triplesToUnlock,
+  withArrangement,
   type GameEvent,
   type GameState,
   type Item,
@@ -21,7 +23,7 @@ import {
 } from '../core';
 import { applyBeltOverrides } from '../dev/beltOverrides';
 import { applyTimeScale } from '../dev/timeScale';
-import { parseLevelParam } from '../dev/levelParam';
+import { parseArrangementParam, parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
@@ -352,9 +354,14 @@ export class GameScene extends Phaser.Scene {
 
     this.levelIndex = index;
     // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor, ?timeScale= the time limit.
+    // Each attempt plays another arrangement of the level's items (?arrangement=K picks one in development).
+    const written = playList[index]!.level;
+    const count = arrangementCount(written);
+    const forced = import.meta.env.DEV ? parseArrangementParam(window.location.search, count) : null;
+    const level = withArrangement(written, forced ?? this.store.takeArrangement(written.id, count));
     this.level = import.meta.env.DEV
-      ? applyTimeScale(applyBeltOverrides(playList[index]!.level, window.location.search), window.location.search)
-      : playList[index]!.level;
+      ? applyTimeScale(applyBeltOverrides(level, window.location.search), window.location.search)
+      : level;
     this.state = createGame(this.level);
     for (const shelf of this.state.shelves) {
       for (const layer of shelf.layers) {

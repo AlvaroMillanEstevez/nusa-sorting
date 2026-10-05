@@ -13,6 +13,8 @@ export interface SaveData {
   readonly settings: Settings;
   /** Themes whose intro screen the player has seen (and closed). */
   readonly themesSeen: readonly string[];
+  /** Per level id, the arrangement of its items played last (see nextArrangement). */
+  readonly lastArrangements: Readonly<Record<string, number>>;
 }
 
 /** Persistence boundary. The game never touches storage APIs directly. */

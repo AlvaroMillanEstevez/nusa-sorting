@@ -6,7 +6,7 @@ export const SAVE_VERSION = 1;
 const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false };
 
 export function emptySave(): SaveData {
-  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [] };
+  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {} };
 }
 
 /**
@@ -47,6 +47,7 @@ export function parseSave(raw: string | null): SaveData {
     // Fields the game no longer uses (such as introsSeen, from the mechanic notes) are simply dropped.
     settings: parseSettings(data.settings),
     themesSeen: parseIdList(data.themesSeen),
+    lastArrangements: parseArrangements(data.lastArrangements),
   };
 }
 
@@ -67,6 +68,16 @@ function parseProgress(value: unknown): Progress {
 /** A list of non-empty ids, without duplicates; anything else is dropped (missing in older saves: empty). */
 function parseIdList(value: unknown): string[] {
   return Array.isArray(value) ? [...new Set(value.filter((id): id is string => typeof id === 'string' && id.length > 0))] : [];
+}
+
+/** Arrangement numbers by level id; bad entries are dropped (missing in older saves: none played yet). */
+function parseArrangements(value: unknown): Record<string, number> {
+  const result: Record<string, number> = {};
+  if (!isRecord(value)) return result;
+  for (const [id, index] of Object.entries(value)) {
+    if (id.length > 0 && typeof index === 'number' && Number.isInteger(index) && index >= 0) result[id] = index;
+  }
+  return result;
 }
 
 function parseSettings(value: unknown): Settings {

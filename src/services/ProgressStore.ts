@@ -1,3 +1,4 @@
+import { nextArrangement } from '../core/arrangement';
 import { firstIncomplete, isUnlocked, recordWin, type Progress, type WinRecord } from '../core/progress';
 import type { SaveData, SaveService, Settings } from './SaveService';
 
@@ -29,6 +30,17 @@ export class ProgressStore {
     if (this.data.themesSeen.includes(theme)) return;
     this.data = { ...this.data, themesSeen: [...this.data.themesSeen, theme] };
     this.saves.save(this.data);
+  }
+
+  /**
+   * The arrangement of a level's items to play now, out of `count`: 0 the first time, then a different one each
+   * attempt. Remembers it, so the next attempt (even after closing the game) moves on to another.
+   */
+  takeArrangement(levelId: string, count: number): number {
+    const index = nextArrangement(count, this.data.lastArrangements[levelId]);
+    this.data = { ...this.data, lastArrangements: { ...this.data.lastArrangements, [levelId]: index } };
+    this.saves.save(this.data);
+    return index;
   }
 
   get colorBlindMode(): boolean {
