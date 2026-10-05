@@ -4,6 +4,7 @@ import { buildCandidate, generateLevel, ruleFailures } from '../tools/levelgen/g
 import { constName, levelSource } from '../tools/levelgen/format';
 import type { LevelRecipe } from '../tools/levelgen/recipe';
 import { RECIPES, recipeFor } from '../tools/levelgen/recipes';
+import { levels, upcomingLevels } from '../src/data/levels';
 
 /** A small recipe that generates in a moment, for testing the generator itself. */
 const small: LevelRecipe = {
@@ -67,8 +68,10 @@ describe('level generator', () => {
     expect(constName('nusa-010')).toBe('nusa010');
   });
 
-  it('has one recipe per level, numbered in order, with unique ids and seeds', () => {
-    expect(RECIPES.map((r) => r.number)).toEqual(RECIPES.map((_, i) => i + 1));
+  it('has one recipe per level in order, the game\'s levels then the upcoming ones, with unique ids and seeds', () => {
+    const numbers = [...levels.map((_, i) => i + 1), ...upcomingLevels.map((l) => l.number)];
+    expect(RECIPES.map((r) => r.number)).toEqual(numbers);
+    expect(RECIPES.map((r) => r.id)).toEqual(RECIPES.map((r) => `nusa-${String(r.number).padStart(3, '0')}`));
     expect(new Set(RECIPES.map((r) => r.id)).size).toBe(RECIPES.length);
     expect(new Set(RECIPES.map((r) => r.seed)).size).toBe(RECIPES.length);
   });

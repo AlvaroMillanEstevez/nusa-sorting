@@ -21,7 +21,6 @@ import {
 } from '../core';
 import { applyBeltOverrides } from '../dev/beltOverrides';
 import { applyTimeScale } from '../dev/timeScale';
-import { levels } from '../data/levels';
 import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
@@ -50,6 +49,7 @@ import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
+import { playList } from './playList';
 import { ResultOverlay } from './ResultOverlay';
 import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
@@ -198,10 +198,10 @@ export class GameScene extends Phaser.Scene {
 
     // Straight into play: the first level not completed yet (level 1 on a first visit). With everything
     // completed, show the list over the last level. Dev builds can force a level with ?level=N.
-    const ids = levels.map((level) => level.id);
-    const devLevel = import.meta.env.DEV ? parseLevelParam(window.location.search, levels.length) : null;
+    const ids = playList.map((entry) => entry.level.id);
+    const devLevel = import.meta.env.DEV ? parseLevelParam(window.location.search, playList.map((entry) => entry.number)) : null;
     const next = this.store.firstIncomplete(ids);
-    this.loadLevel(devLevel ?? next ?? levels.length - 1);
+    this.loadLevel(devLevel ?? next ?? playList.length - 1);
     if (devLevel === null && next === null) this.openLevelList();
   }
 
@@ -353,8 +353,8 @@ export class GameScene extends Phaser.Scene {
     this.levelIndex = index;
     // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor, ?timeScale= the time limit.
     this.level = import.meta.env.DEV
-      ? applyTimeScale(applyBeltOverrides(levels[index]!, window.location.search), window.location.search)
-      : levels[index]!;
+      ? applyTimeScale(applyBeltOverrides(playList[index]!.level, window.location.search), window.location.search)
+      : playList[index]!.level;
     this.state = createGame(this.level);
     for (const shelf of this.state.shelves) {
       for (const layer of shelf.layers) {
@@ -365,7 +365,7 @@ export class GameScene extends Phaser.Scene {
       for (const carrier of track.carriers) for (const item of stackOf(carrier)) this.createSprite(item);
     }
     this.belt.reset(this.state);
-    this.hud.setLevel(index + 1, isSpecialLevel(this.level));
+    this.hud.setLevel(playList[index]!.number, isSpecialLevel(this.level));
     this.timeStage = 'normal';
     this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
     this.hud.setScore(this.state.combo.score, false);
@@ -428,7 +428,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(delay, () => {
       if (record) {
         this.sfx.play('win');
-        const isLast = this.levelIndex === levels.length - 1;
+        const isLast = this.levelIndex === playList.length - 1;
         const bestLine = record.newBest
           ? t('result.newBest')
           : record.best !== null && score !== null && record.best > score

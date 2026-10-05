@@ -58,7 +58,8 @@ const intIn = (random: Random, [min, max]: readonly [number, number]) => min + M
 interface Plan {
   readonly shelfCount: number;
   readonly columns: ColumnDefinition[] | undefined;
-  readonly tracks: { orientation: 'horizontal' | 'vertical'; speed: number; carriers: number }[];
+  /** Tracks of stacks, or of shelves (`shelves`: the level's shelves riding it, in carrier order). */
+  readonly tracks: { orientation: 'horizontal' | 'vertical'; speed: number; carriers: number; shelves?: number[] }[];
 }
 
 /** Shelves, tracks and columns from the recipe's layout. */
@@ -75,6 +76,12 @@ function plan(recipe: LevelRecipe): Plan {
       const shelves = Array.from({ length: column.count }, (_, i) => shelfCount + i);
       shelfCount += column.count;
       return { kind: 'shelves', shelves };
+    }
+    if (column.kind === 'shelfTrack') {
+      const shelves = Array.from({ length: column.count }, (_, i) => shelfCount + i);
+      shelfCount += column.count;
+      tracks.push({ orientation: 'vertical', speed: column.speed, carriers: column.count, shelves });
+      return { kind: 'shelfTrack', track: tracks.length - 1 };
     }
     tracks.push({ orientation: 'vertical', speed: column.speed, carriers: column.carriers });
     return { kind: 'track', track: tracks.length - 1 };
@@ -100,6 +107,8 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
     for (let layer = 0; layer < layers; layer++) for (let slot = 0; slot < 3; slot++) places.push({ kind: 'shelf', shelf, layer, slot });
   });
   tracks.forEach((track, t) => {
+    // Shelves riding a track hold their items on the shelves themselves.
+    if (track.shelves) return;
     const stacks = recipe.stacks ?? { depth: [1, 1] as const, empty: 0 };
     const empty = new Set(choose(random, track.carriers, stacks.empty));
     for (let carrier = 0; carrier < track.carriers; carrier++) {
@@ -162,7 +171,13 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
   if (tracks.length > 0) {
     mechanics.push({
       kind: 'tracks',
-      tracks: tracks.map((track, t): TrackDefinition => ({ orientation: track.orientation, speed: track.speed, carriers: stacks[t]! })),
+      tracks: tracks.map(
+        (track, t): TrackDefinition => ({
+          orientation: track.orientation,
+          speed: track.speed,
+          carriers: track.shelves ? track.shelves.map((shelf) => ({ shelf })) : stacks[t]!,
+        }),
+      ),
     });
   }
   return {

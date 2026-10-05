@@ -1,6 +1,6 @@
 import type * as Phaser from 'phaser';
 import { createGame, stackOf, type ItemType } from '../core';
-import { levels } from '../data/levels';
+import { playList } from './playList';
 import { renderItemSvg, renderSilhouette } from '../ui/icons/icons';
 import { addSvgTexture } from './svgTexture';
 
@@ -16,10 +16,10 @@ export const itemTextureKey = (type: ItemType, marks: boolean) => `item:${type}$
 /** Texture of an item seen from behind the one in front of it (see renderSilhouette). */
 export const itemBackTextureKey = (type: ItemType) => `item:${type}:back`;
 
-/** Every item type the levels use. */
+/** Every item type the playable levels use. */
 function levelItemTypes(): Set<ItemType> {
   const types = new Set<ItemType>();
-  for (const level of levels) {
+  for (const { level } of playList) {
     const state = createGame(level);
     for (const shelf of state.shelves) for (const layer of shelf.layers) for (const item of layer) if (item) types.add(item.type);
     for (const track of state.tracks) for (const carrier of track.carriers) for (const item of stackOf(carrier)) types.add(item.type);

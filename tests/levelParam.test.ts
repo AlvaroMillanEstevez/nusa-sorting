@@ -4,14 +4,18 @@ import { parseLevelParam } from '../src/dev/levelParam';
 import { wantsSaveReset } from '../src/dev/saveParams';
 
 describe('parseLevelParam (dev only)', () => {
-  it('turns a 1-based level number into an index', () => {
-    expect(parseLevelParam('?level=5', 7)).toBe(4);
-    expect(parseLevelParam('?foo=1&level=1', 7)).toBe(0);
+  const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20];
+
+  it('finds the level with that number, including levels made ahead of their turn', () => {
+    expect(parseLevelParam('?level=5', numbers)).toBe(4);
+    expect(parseLevelParam('?foo=1&level=1', numbers)).toBe(0);
+    expect(parseLevelParam('?level=15', numbers)).toBe(10);
+    expect(parseLevelParam('?level=20', numbers)).toBe(11);
   });
 
-  it('ignores missing, malformed or out-of-range values', () => {
-    for (const search of ['', '?level=', '?level=0', '?level=8', '?level=-1', '?level=2.5', '?level=abc']) {
-      expect(parseLevelParam(search, 7)).toBeNull();
+  it('ignores missing, malformed or unknown numbers', () => {
+    for (const search of ['', '?level=', '?level=0', '?level=11', '?level=21', '?level=-1', '?level=2.5', '?level=abc']) {
+      expect(parseLevelParam(search, numbers)).toBeNull();
     }
   });
 });

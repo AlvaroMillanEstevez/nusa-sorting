@@ -21,7 +21,7 @@ WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP d
 
 Solo en `npm run dev`; el build de producción no los incluye.
 
-- `?level=N` — abre el nivel N (1-based) aunque esté bloqueado; el progreso se sigue guardando con normalidad.
+- `?level=N` — abre el nivel N aunque esté bloqueado; el progreso se sigue guardando con normalidad. En desarrollo también se juegan los niveles temáticos adelantados (15 y 20, en `upcomingLevels`), que el build de producción no incluye.
 - `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.

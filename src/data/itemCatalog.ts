@@ -113,8 +113,6 @@ export const CONFUSABLE_GROUPS: readonly (readonly string[])[] = [
   ['kelapa', 'es-kelapa-muda'],
   // Both diamonds; the closest pair in greyscale after the gallery check.
   ['layangan', 'ketupat'],
-  // Both round and red, on a string.
-  ['balon', 'lampion'],
 ];
 
 /** The three colour variants of every kind; 'original' is the kind's own colours. */

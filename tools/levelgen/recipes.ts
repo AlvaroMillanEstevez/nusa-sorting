@@ -1,8 +1,9 @@
 import type { LevelRecipe } from './recipe';
 
 /**
- * Levels 1-10. A sawtooth: after a level with something new or demanding comes a slightly easier one. Levels
- * 5 and 10 are special levels, their twist made from existing mechanics only (themes still to be decided).
+ * Levels 1-10, and the themed levels 15 and 20 made ahead of the levels before them. A sawtooth: after a
+ * level with something new or demanding comes a slightly easier one. Every fifth level is a themed level with
+ * its own decoration and cultural objects (src/data/themes.ts).
  *
  * Every level holds exactly one triple of each of its types, taken in the generator's type order (types.ts):
  * the starter kinds, then the rest of the catalogue keeping look-alikes apart, then colour variants. So the
@@ -100,24 +101,22 @@ export const RECIPES: readonly LevelRecipe[] = [
   {
     number: 5,
     id: 'nusa-005',
-    purpose: 'Special level: against the clock (it keeps its 65 s with a quarter more items), combo multipliers doubled.',
+    purpose: 'Themed level, Budaya Jawa: calm, with a few more layers than levels 4 and 6 and comfortable time; brings the Javanese objects.',
     seed: 505,
-    candidate: 0,
-    theme: 'rush',
+    candidate: 48,
+    theme: 'budaya-jawa',
     layout: [
-      { kind: 'shelves', count: 2 },
-      { kind: 'shelves', count: 2 },
-      { kind: 'shelves', count: 2 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
     ],
-    types: 9,
-    fixedTypes: ['sate', 'bakso', 'nasi-goreng', 'ketupat', 'kerupuk-udang', 'onde-onde', 'es-teh-manis', 'rambutan', 'manggis'],
-    backLayers: { shelves: 4, layers: [2, 3] },
-    emptyFront: 4,
-    comboMultipliers: DOUBLE_COMBO,
+    types: 13,
+    backLayers: { shelves: 6, layers: [2, 3] },
+    emptyFront: 7,
     maxDepth: 2,
     minStartTriples: 3,
-    winBand: [0.4, 0.95],
-    time: { slack: 0, timeUp: [0, 0.6], fixed: 65 },
+    winBand: [0.8, 0.96],
+    time: { slack: 1.2, timeUp: [0, 0.1] },
   },
   {
     number: 6,
@@ -205,24 +204,64 @@ export const RECIPES: readonly LevelRecipe[] = [
   {
     number: 10,
     id: 'nusa-010',
-    purpose: 'Special level: two fast belts full of stacks around a column of shelves (it keeps its 115 s with a quarter more items).',
+    purpose: 'Themed level, 17 Agustus: a lomba against the clock, with combo multipliers doubled; brings the Independence Day objects.',
     seed: 1010,
-    candidate: 5,
-    theme: 'belts',
+    candidate: 338,
+    theme: '17-agustus',
     layout: [
-      { kind: 'track', speed: 0.8, carriers: 5 },
+      { kind: 'shelves', count: 2 },
+      { kind: 'shelves', count: 2 },
+      { kind: 'shelves', count: 2 },
+    ],
+    types: 10,
+    backLayers: { shelves: 4, layers: [2, 3] },
+    emptyFront: 5,
+    comboMultipliers: DOUBLE_COMBO,
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.45, 0.65],
+    time: { slack: 0, timeUp: [0.3, 0.55] },
+  },
+  {
+    number: 15,
+    id: 'nusa-015',
+    purpose: 'Themed level, Pasar malam: two fast belts full of stacks around a column of shelves; brings the night market objects.',
+    seed: 1515,
+    candidate: 48,
+    theme: 'pasar-malam',
+    layout: [
+      { kind: 'track', speed: 0.9, carriers: 5 },
       { kind: 'shelves', count: 4 },
-      { kind: 'track', speed: -0.8, carriers: 5 },
+      { kind: 'track', speed: -0.9, carriers: 5 },
     ],
     stacks: { depth: [2, 3], empty: 1 },
     types: 10,
-    fixedTypes: ['sate', 'bakso', 'nasi-goreng', 'ketupat', 'kerupuk-udang', 'onde-onde', 'es-teh-manis', 'rambutan', 'manggis', 'durian'],
     backLayers: { shelves: 1, layers: [2, 2] },
-    emptyFront: 6,
+    emptyFront: 5,
     maxDepth: 2,
     minStartTriples: 3,
-    winBand: [0.35, 0.8],
-    time: { slack: 1, timeUp: [0, 0.3], fixed: 115 },
+    winBand: [0.45, 0.65],
+    time: { slack: 1, timeUp: [0, 0.2] },
+  },
+  {
+    number: 20,
+    id: 'nusa-020',
+    purpose: 'Themed level, Laut Nusantara: shelves riding a track between two columns of shelves; brings the sea objects.',
+    seed: 2020,
+    candidate: 4,
+    theme: 'laut-nusantara',
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelfTrack', speed: 0.3, count: 4 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 13,
+    backLayers: { shelves: 7, layers: [2, 2] },
+    emptyFront: 10,
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.5, 0.7],
+    time: { slack: 0.8, timeUp: [0.1, 0.35] },
   },
 ];
 

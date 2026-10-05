@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { isCompleted } from '../core';
-import { levels } from '../data/levels';
+import { playList } from './playList';
 import { t } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
@@ -117,7 +117,7 @@ export class LevelSelectScene extends Phaser.Scene {
   private relayout(): void {
     fitCamera(this);
     const { width, height } = viewSize(this);
-    this.grid = computeLevelGrid(width, height, levels.length);
+    this.grid = computeLevelGrid(width, height, playList.length);
     const { header } = this.grid;
     this.background.setSize(width, height);
     this.headerBar.setSize(width, header.height);
@@ -149,7 +149,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
   private buildTiles(): void {
     for (const tile of this.tiles) tile.destroy();
-    const ids = levels.map((level) => level.id);
+    const ids = playList.map((entry) => entry.level.id);
     const resolution = RENDER_RATIO;
     this.tiles = this.grid.tiles.map((rect, index) => {
       const id = ids[index]!;
@@ -168,7 +168,7 @@ export class LevelSelectScene extends Phaser.Scene {
       const parts: Phaser.GameObjects.GameObject[] = [g];
 
       const number = this.add
-        .text(size / 2, best !== null ? size * 0.42 : size / 2, String(index + 1), {
+        .text(size / 2, best !== null ? size * 0.42 : size / 2, String(playList[index]!.number), {
           fontFamily: theme.fontFamily,
           fontStyle: 'bold',
           color: unlocked ? theme.textColor : '#55677a',
@@ -204,7 +204,7 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private choose(index: number): void {
-    const ids = levels.map((level) => level.id);
+    const ids = playList.map((entry) => entry.level.id);
     if (!this.store.isUnlocked(ids, index)) {
       this.sfx.play('invalid');
       const tile = this.tiles[index];

@@ -68,7 +68,7 @@ export function createGame(level: LevelDefinition): GameState {
   if (timeLimitSeconds !== undefined && !(timeLimitSeconds > 0)) {
     throw new LevelError(`${level.id}: time limit must be positive`);
   }
-  if (level.theme !== undefined && !/^[a-z]+(-[a-z]+)*$/.test(level.theme)) {
+  if (level.theme !== undefined && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(level.theme)) {
     throw new LevelError(`${level.id}: theme must be a kebab-case id`);
   }
 

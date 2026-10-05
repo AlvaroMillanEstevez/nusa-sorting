@@ -5,7 +5,9 @@
 /** A column of a column layout: fixed shelves, a vertical track of stacks, or nothing else for now. */
 export type ColumnRecipe =
   | { readonly kind: 'shelves'; readonly count: number }
-  | { readonly kind: 'track'; readonly speed: number; readonly carriers: number };
+  | { readonly kind: 'track'; readonly speed: number; readonly carriers: number }
+  /** A vertical track of `count` shelves riding it, ordinary shelves of the level in every other way. */
+  | { readonly kind: 'shelfTrack'; readonly speed: number; readonly count: number };
 
 export interface TrackRecipe {
   readonly speed: number;

@@ -11,9 +11,10 @@ import {
   type GameState,
   type LevelDefinition,
 } from '../src/core';
-import { levels } from '../src/data/levels';
+import { levels, upcomingLevels } from '../src/data/levels';
+import { ITEM_KINDS } from '../src/data/itemCatalog';
 import { generateLevel, ruleFailures } from '../tools/levelgen/generate';
-import { RECIPES } from '../tools/levelgen/recipes';
+import { recipeFor } from '../tools/levelgen/recipes';
 import { typesFor } from '../tools/levelgen/plan';
 import { simulate } from '../tools/simulator';
 import { demoLevels } from './fixtures/demo-levels';
@@ -32,11 +33,14 @@ const deepest = (level: LevelDefinition) => Math.max(...level.shelves.map((s) =>
 const mechanic = <K extends string>(level: LevelDefinition, kind: K) => level.mechanics?.find((m) => m.kind === kind);
 const lockCounts = (state: GameState) => state.unlockAt.filter((at) => at !== null) as number[];
 
-// Simulated once per level, as the generator does for its report (200 games, seed 1).
-const stats = new Map(levels.map((level) => [level.id, simulate(createGame(level))]));
+/** Every level made so far, with its number: levels 1-10 and the themed levels made ahead of their turn. */
+const numbered = [...levels.map((level, i) => ({ number: i + 1, level })), ...upcomingLevels];
 
-describe.each(levels.map((level, i) => [i + 1, level] as const))('level %i', (number, level) => {
-  const recipe = RECIPES[number - 1]!;
+// Simulated once per level, as the generator does for its report (200 games, seed 1).
+const stats = new Map(numbered.map(({ level }) => [level.id, simulate(createGame(level))]));
+
+describe.each(numbered.map(({ number, level }) => [number, level] as const))('level %i', (number, level) => {
+  const recipe = recipeFor(number);
 
   it('is the level its recipe describes', () => {
     expect(level.id).toBe(recipe.id);
@@ -79,10 +83,10 @@ describe('the curve of levels 1-10', () => {
   const [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10] = levels as [LevelDefinition, ...LevelDefinition[]] & LevelDefinition[];
   const win = (level: LevelDefinition) => stats.get(level.id)!.winRate;
 
-  it('has ten levels with new ids, none shared with the demo levels', () => {
+  it('has ten levels plus the themed ones made ahead, with new ids, none shared with the demo levels', () => {
     expect(levels).toHaveLength(10);
-    const ids = levels.map((l) => l.id);
-    expect(new Set(ids).size).toBe(10);
+    const ids = numbered.map((entry) => entry.level.id);
+    expect(new Set(ids).size).toBe(12);
     for (const demo of demoLevels) expect(ids).not.toContain(demo.id);
   });
 
@@ -112,20 +116,40 @@ describe('the curve of levels 1-10', () => {
     expect(Math.max(...four)).toBeGreaterThan(Math.max(...lockCounts(createGame(l3!))));
   });
 
-  it('5 and 10 are the special levels', () => {
-    expect(levels.filter(isSpecialLevel).map((l) => l.id)).toEqual([l5!.id, l10!.id]);
+  const [l15, l20] = upcomingLevels.map((entry) => entry.level) as [LevelDefinition, LevelDefinition];
+  const bringsItsObjects = (level: LevelDefinition) => {
+    const kinds = kindsOf(level);
+    for (const kind of ITEM_KINDS.filter((k) => k.theme === level.theme)) expect(kinds, kind.id).toContain(kind.id);
+  };
+
+  it('every fifth level is a themed level, bringing all its theme’s objects', () => {
+    expect(levels.filter(isSpecialLevel).map((l) => l.theme)).toEqual(['budaya-jawa', '17-agustus']);
+    expect(upcomingLevels.map((entry) => [entry.number, entry.level.theme])).toEqual([
+      [15, 'pasar-malam'],
+      [20, 'laut-nusantara'],
+    ]);
+    for (const level of [l5!, l10!, l15, l20]) bringsItsObjects(level);
   });
 
-  it('5: against the clock, with combo multipliers doubled', () => {
-    const combo = mechanic(l5!, 'combo');
+  it('5, Budaya Jawa: calm, with more layers than 4 and 6 and comfortable time', () => {
+    expect(backLayers(l5!)).toBeGreaterThan(backLayers(l4!));
+    expect(backLayers(l5!)).toBeGreaterThan(backLayers(l6!));
+    const s = stats.get(l5!.id)!;
+    expect(s.winRate).toBeGreaterThanOrEqual(0.8);
+    expect(s.timeUpRate).toBeLessThanOrEqual(0.1);
+    expect(mechanic(l5!, 'combo')).toBeUndefined();
+  });
+
+  it('10, 17 Agustus: a lomba against the clock, with combo multipliers doubled', () => {
+    const combo = mechanic(l10!, 'combo');
     expect(combo?.kind === 'combo' && combo.multipliers).toEqual(COMBO_DEFAULTS.multipliers.map((m) => m * 2));
     // The clock, more than space, is what beats the simulated player.
-    const s = stats.get(l5!.id)!;
+    const s = stats.get(l10!.id)!;
     expect(s.timeUpRate).toBeGreaterThan(s.blockedRate);
   });
 
-  it('6: one or two new kinds', () => {
-    const before = new Set(levels.slice(0, 5).flatMap((l) => [...kindsOf(l)]));
+  it('6: one or two food kinds new since the regular levels before it', () => {
+    const before = new Set(levels.slice(0, 4).flatMap((l) => [...kindsOf(l)]));
     const added = [...kindsOf(l6!)].filter((k) => !before.has(k));
     expect(added.length).toBeGreaterThanOrEqual(1);
     expect(added.length).toBeLessThanOrEqual(2);
@@ -151,17 +175,22 @@ describe('the curve of levels 1-10', () => {
     expect(Math.abs(track.speed)).toBeGreaterThan(Math.abs(createGame(l8!).tracks[0]!.speed));
   });
 
-  it('10: fast belts with many stacks', () => {
-    const tracks = createGame(l10!).tracks;
+  it('15, Pasar malam: fast belts with many stacks', () => {
+    const tracks = createGame(l15).tracks;
     expect(tracks.length).toBeGreaterThanOrEqual(2);
     for (const track of tracks) expect(Math.abs(track.speed)).toBeGreaterThan(Math.abs(createGame(l9!).tracks[0]!.speed));
     const stacks = tracks.flatMap((t) => t.carriers.map((c) => stackOf(c).length));
     expect(stacks.filter((n) => n >= 2).length).toBeGreaterThanOrEqual(8);
   });
 
+  it('20, Laut Nusantara: shelves riding a track', () => {
+    expect(columnsOf(l20)).toContain('shelfTrack');
+    expect(createGame(l20).tracks.some((t) => t.carriers.every((c) => c.kind === 'shelf'))).toBe(true);
+  });
+
   it('is a sawtooth: after something new or demanding comes an easier level', () => {
     expect(win(l1!)).toBeGreaterThan(win(l3!));
-    expect(win(l6!)).toBeGreaterThan(win(l5!));
+    expect(win(l5!)).toBeGreaterThan(win(l4!));
     expect(win(l6!)).toBeGreaterThan(win(l7!));
     expect(win(l8!)).toBeGreaterThan(win(l7!));
     expect(win(l8!)).toBeGreaterThan(win(l9!));
