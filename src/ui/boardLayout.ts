@@ -74,11 +74,10 @@ export const SHELF_WIDTH_UNITS = (slotsPerLayer: number) => slotsPerLayer + SIDE
 export const SHELF_HEIGHT_UNITS = TOP_PAD + 1 + PLANK;
 /**
  * The layer behind the front sits exactly under it, a little smaller so the front item covers it. Where the
- * front slot is empty it shows as a dim dark silhouette that does not give its type away.
+ * front slot is empty it shows as a dark silhouette of its shape (renderSilhouette), so players can plan.
  */
 export const BACK_SCALE = 0.94;
-export const SILHOUETTE_TINT = 0x000000;
-export const SILHOUETTE_ALPHA = 0.5;
+export const SILHOUETTE_ALPHA = 0.9;
 
 export function hudHeight(height: number): number {
   return Math.round(Math.min(72, Math.max(44, height * 0.08)));

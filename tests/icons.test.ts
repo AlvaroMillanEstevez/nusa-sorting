@@ -15,6 +15,8 @@ import {
   renderIcon,
   renderItemSvg,
   renderSilhouette,
+  SILHOUETTE_FILL,
+  SILHOUETTE_RIM,
   tintedMaterials,
   tones,
   variantPalette,
@@ -164,11 +166,18 @@ describe('every item type', () => {
 });
 
 describe('silhouettes of items behind others', () => {
-  it('blurs the whole icon, without the variant mark', () => {
+  it('keeps the exact shape in one flat dark tone with a lighter rim, without the mark or the shadow', () => {
     const svg = renderSilhouette('sate:alt1');
     expect(balanced(svg)).toBe(true);
-    expect(svg).toContain('<feGaussianBlur');
+    expect(svg).not.toContain('feGaussianBlur');
+    expect(svg).toContain(`flood-color="${SILHOUETTE_FILL}"`);
+    expect(svg).toContain(`flood-color="${SILHOUETTE_RIM}"`);
+    expect(svg).toContain('<feMorphology');
     expect(svg).toMatch(/<\/defs><g filter="url\(#silhouette\)">.*<\/g><\/svg>$/);
     expect(svg).not.toContain('r="15.5"');
+    expect(svg).not.toContain('fill="url(#shadow)"');
+    // Dark, but its rim stands out from the shelf wall.
+    expect(lightness(SILHOUETTE_FILL)).toBeLessThan(lightness(WOOD.wall));
+    expect(contrastRatio(SILHOUETTE_RIM, WOOD.wall)).toBeGreaterThan(2);
   });
 });

@@ -119,13 +119,25 @@ export function renderItemSvg(type: string, marks = false): string {
   return renderIcon(parsed.kind.id, parsed.variant, marks);
 }
 
+/** Flat colour of a silhouette, and of the thin rim that lifts it off the dark wood. */
+export const SILHOUETTE_FILL = '#1e130b';
+export const SILHOUETTE_RIM = '#8c6a48';
+
 /**
- * What an item looks like from behind another one: its icon blurred into a soft blob, so an empty front slot
- * shows that something waits there and roughly how big it is, but not what it is. Drawn dark in the game.
+ * What an item looks like from behind another one: its exact shape in one flat dark tone, without colour or
+ * inner detail, with a thin lighter rim so it stands out on the shelf's dark wood. The shape is shown on
+ * purpose, so players can plan; the item's soft shadow is left out.
  */
 export function renderSilhouette(type: string): string {
-  const svg = renderItemSvg(type);
+  const svg = renderItemSvg(type).replace('<ellipse cx="50" cy="91" rx="34" ry="6" fill="url(#shadow)"/>', '');
   const open = svg.indexOf('</defs>') + '</defs>'.length;
-  const blur = '<filter id="silhouette" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="6"/></filter>';
-  return svg.slice(0, open - '</defs>'.length) + blur + '</defs><g filter="url(#silhouette)">' + svg.slice(open, -'</svg>'.length) + '</g></svg>';
+  const filter =
+    '<filter id="silhouette" x="-10%" y="-10%" width="120%" height="120%">' +
+    // Semi-transparent parts (glass) count as solid: the shape is all that matters.
+    '<feComponentTransfer in="SourceAlpha" result="solid"><feFuncA type="linear" slope="4"/></feComponentTransfer>' +
+    '<feMorphology in="solid" operator="dilate" radius="2.4" result="grown"/>' +
+    `<feFlood flood-color="${SILHOUETTE_RIM}"/><feComposite in2="grown" operator="in" result="rim"/>` +
+    `<feFlood flood-color="${SILHOUETTE_FILL}"/><feComposite in2="solid" operator="in" result="shape"/>` +
+    '<feMerge><feMergeNode in="rim"/><feMergeNode in="shape"/></feMerge></filter>';
+  return svg.slice(0, open - '</defs>'.length) + filter + '</defs><g filter="url(#silhouette)">' + svg.slice(open, -'</svg>'.length) + '</g></svg>';
 }

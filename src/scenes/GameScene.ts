@@ -28,7 +28,6 @@ import type { SoundService } from '../services/SoundService';
 import {
   BACK_SCALE,
   SILHOUETTE_ALPHA,
-  SILHOUETTE_TINT,
   frontSlotAt,
   nearestFreeSlot,
   nearestSlot,
@@ -379,8 +378,8 @@ export class GameScene extends Phaser.Scene {
     // Called every frame for items on belts: nothing to do when the look is already right.
     if (sprite.texture.key === key) return;
     sprite.setTexture(key);
-    if (front) sprite.clearTint();
-    else sprite.setTint(SILHOUETTE_TINT);
+    // The silhouette texture carries its own flat colour: no tint either way.
+    sprite.clearTint();
   }
 
   /** Colour-blind mode adds a colour-free mark to item variants: swaps the texture of every item in front. */
