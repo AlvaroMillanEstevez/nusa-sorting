@@ -5,7 +5,7 @@ import { KIND_ORDER, levelTypes, TYPES_WITHOUT_LOOK_ALIKES, TYPES_WITHOUT_VARIAN
 describe('the order levels take item types in', () => {
   it('starts with the starter set and covers the whole catalogue once', () => {
     expect(KIND_ORDER.slice(0, STARTER_KINDS.length)).toEqual(STARTER_KINDS);
-    expect([...KIND_ORDER].sort()).toEqual(ITEM_KINDS.map((k) => k.id).sort());
+    expect([...KIND_ORDER].sort()).toEqual(ITEM_KINDS.filter((k) => k.category !== 'cultural').map((k) => k.id).sort());
     expect(TYPES_WITHOUT_VARIANTS).toBe(26);
   });
 

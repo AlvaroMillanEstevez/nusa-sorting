@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { ITEM_KINDS, itemTypeId, VARIANTS, type ItemKind } from '../data/itemCatalog';
+import { THEMES } from '../data/themes';
 import { getLocale, t, type MessageKey } from '../i18n';
 import { SHELF_HEIGHT_UNITS, shelfLayoutAt } from '../ui/boardLayout';
 import { mapWood } from '../ui/art/wood';
@@ -29,6 +30,18 @@ const LOOK_ALIKES: readonly (readonly string[])[] = [
   ['gado-gado', 'rendang', 'ketupat'],
   ['es-kelapa-muda', 'manggis', 'durian'],
   ['kerupuk-udang', 'ikan-bakar', 'tempe'],
+  // Cultural objects next to food (and each other) that might look alike.
+  ['kelapa', 'es-kelapa-muda', 'manggis'],
+  ['layangan', 'ketupat', 'kipas'],
+  ['bintang-laut', 'kembang-api', 'durian'],
+  ['balon', 'rambutan', 'lampion'],
+  ['peci', 'blangkon', 'caping'],
+  ['karung', 'batik', 'tempe'],
+  ['gong', 'kerang', 'onde-onde'],
+  ['topeng', 'wayang-kulit', 'arum-manis'],
+  ['bendera', 'panjat-pinang', 'terompet'],
+  ['kendang', 'jaring', 'pinisi'],
+  ['arum-manis', 'kerupuk-udang', 'klepon'],
 ];
 
 const SIZES = [36, 40, 52] as const;
@@ -92,11 +105,29 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private sections(): Section[] {
-    const all: (string | null)[][] = [];
-    for (let i = 0; i < ITEM_KINDS.length; i += 3) all.push(ITEM_KINDS.slice(i, i + 3).map((k) => k.id));
-    all.push(['blocker', null, null], ['locked', null, null]);
+    const inThrees = (kinds: readonly ItemKind[]) => {
+      const shelves: (string | null)[][] = [];
+      for (let i = 0; i < kinds.length; i += 3) shelves.push(kinds.slice(i, i + 3).map((k) => k.id));
+      return shelves;
+    };
+    const food = ITEM_KINDS.filter((k) => !k.theme);
+    const themed = THEMES.map((theme): Section => {
+      const kinds = ITEM_KINDS.filter((k) => k.theme === theme.id);
+      return {
+        title: t('gallery.theme', { name: t(`theme.${theme.id}`), level: theme.level }),
+        shelves: inThrees(kinds),
+        shelvesLabel: t('gallery.together'),
+        cards: kinds,
+      };
+    });
     return [
-      { title: t('gallery.icons'), shelves: all, shelvesLabel: t('gallery.together'), cards: ITEM_KINDS },
+      {
+        title: t('gallery.icons'),
+        shelves: [...inThrees(food), ['blocker', null, null], ['locked', null, null]],
+        shelvesLabel: t('gallery.together'),
+        cards: food,
+      },
+      ...themed,
       { title: t('gallery.lookAlikes'), shelves: LOOK_ALIKES, shelvesLabel: t('gallery.together'), cards: [] },
     ];
   }

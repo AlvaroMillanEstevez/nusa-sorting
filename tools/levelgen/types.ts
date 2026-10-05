@@ -3,7 +3,8 @@ import { areConfusable, ITEM_KINDS, itemTypeId, STARTER_KINDS } from '../../src/
 function kindOrder(): { order: string[]; withoutLookAlikes: number } {
   const order = [...STARTER_KINDS];
   const deferred: string[] = [];
-  for (const kind of ITEM_KINDS.map((k) => k.id)) {
+  // Cultural objects are left to themed levels for now.
+  for (const kind of ITEM_KINDS.filter((k) => k.category !== 'cultural').map((k) => k.id)) {
     if (order.includes(kind)) continue;
     if (order.some((taken) => areConfusable(taken, kind))) deferred.push(kind);
     else order.push(kind);

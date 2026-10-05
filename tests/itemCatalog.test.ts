@@ -8,8 +8,10 @@ import {
   itemTypeId,
   parseItemType,
   STARTER_KINDS,
+  unlockLevel,
   VARIANTS,
 } from '../src/data/itemCatalog';
+import { THEMES } from '../src/data/themes';
 import { levels as gameLevels } from '../src/data/levels';
 import { demoLevels } from './fixtures/demo-levels';
 
@@ -18,14 +20,15 @@ const levels = [...gameLevels, ...demoLevels];
 const ids = ITEM_KINDS.map((k) => k.id);
 
 describe('item catalogue', () => {
-  it('has the 26 kinds, with stable kebab-case ids and names in English and Indonesian', () => {
-    expect(ITEM_KINDS).toHaveLength(26);
-    expect(new Set(ids).size).toBe(26);
+  it('has 26 food kinds and 25 cultural objects, with stable kebab-case ids and names in English and Indonesian', () => {
+    expect(ITEM_KINDS).toHaveLength(51);
+    expect(new Set(ids).size).toBe(51);
+    expect(ITEM_KINDS.filter((k) => k.category === 'cultural')).toHaveLength(25);
     for (const kind of ITEM_KINDS) {
       expect(kind.id).toMatch(/^[a-z]+(-[a-z]+)*$/);
       expect(kind.name.en.length).toBeGreaterThan(0);
       expect(kind.name.id.length).toBeGreaterThan(0);
-      expect(['dish', 'snack', 'sweet', 'drink', 'fruit', 'other']).toContain(kind.category);
+      expect(['dish', 'snack', 'sweet', 'drink', 'fruit', 'other', 'cultural']).toContain(kind.category);
     }
   });
 
@@ -45,11 +48,30 @@ describe('item catalogue', () => {
   });
 });
 
+describe('cultural objects', () => {
+  it('belong to a theme, and first appear in its level; food is there from level 1', () => {
+    const perTheme = (theme: string) => ITEM_KINDS.filter((k) => k.theme === theme).map((k) => k.id);
+    expect(perTheme('budaya-jawa')).toEqual(['blangkon', 'batik', 'wayang-kulit', 'kendang', 'gong', 'caping', 'kipas']);
+    expect(perTheme('17-agustus')).toEqual(['bendera', 'karung', 'kelereng', 'panjat-pinang', 'peci', 'terompet']);
+    expect(perTheme('pasar-malam')).toEqual(['lampion', 'arum-manis', 'balon', 'topeng', 'kembang-api', 'bianglala']);
+    expect(perTheme('laut-nusantara')).toEqual(['pinisi', 'kerang', 'bintang-laut', 'jaring', 'layangan', 'kelapa']);
+    for (const kind of ITEM_KINDS) {
+      expect(kind.category === 'cultural', kind.id).toBe(kind.theme !== undefined);
+      const theme = THEMES.find((t) => t.id === kind.theme);
+      expect(unlockLevel(kind), kind.id).toBe(theme ? theme.level : 1);
+    }
+  });
+
+  it('keeps the whole coconut apart from the coconut drink', () => {
+    expect(areConfusable('kelapa', 'es-kelapa-muda')).toBe(true);
+  });
+});
+
 describe('variants as item types', () => {
   it('gives every kind three variants, each its own item type', () => {
     expect(VARIANTS).toEqual(['original', 'alt1', 'alt2']);
-    expect(ALL_ITEM_TYPES).toHaveLength(78);
-    expect(new Set(ALL_ITEM_TYPES).size).toBe(78);
+    expect(ALL_ITEM_TYPES).toHaveLength(153);
+    expect(new Set(ALL_ITEM_TYPES).size).toBe(153);
     expect(itemTypeId('tempe')).toBe('tempe');
     expect(itemTypeId('tempe', 'alt1')).toBe('tempe:alt1');
   });

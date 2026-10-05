@@ -1,5 +1,6 @@
 import { parseItemType, type Variant } from '../../data/itemCatalog';
 import { darken, lighten } from './color';
+import { CULTURAL_TEMPLATES } from './culturalIcons';
 import { MORE_TEMPLATES } from './moreIcons';
 import { STARTER_TEMPLATES } from './starterIcons';
 import { OUTLINE, r1, type IconTemplate, type Paint, type Palette } from './template';
@@ -17,7 +18,7 @@ import { OUTLINE, r1, type IconTemplate, type Paint, type Palette } from './temp
 export type { IconTemplate, Paint, Palette } from './template';
 
 /** Every kind's icon. */
-export const ICON_TEMPLATES: Readonly<Record<string, IconTemplate>> = { ...STARTER_TEMPLATES, ...MORE_TEMPLATES };
+export const ICON_TEMPLATES: Readonly<Record<string, IconTemplate>> = { ...STARTER_TEMPLATES, ...MORE_TEMPLATES, ...CULTURAL_TEMPLATES };
 
 
 // ---------------------------------------------------------------- variants
