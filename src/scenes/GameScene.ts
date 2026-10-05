@@ -21,6 +21,7 @@ import {
 } from '../core';
 import { levels } from '../data/levels';
 import { applyBeltOverrides } from '../dev/beltOverrides';
+import { applyTimeScale } from '../dev/timeScale';
 import { parseLevelParam } from '../dev/levelParam';
 import { t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
@@ -340,8 +341,10 @@ export class GameScene extends Phaser.Scene {
     this.overlay.hide();
 
     this.levelIndex = index;
-    // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor while playing.
-    this.level = import.meta.env.DEV ? applyBeltOverrides(levels[index]!, window.location.search) : levels[index]!;
+    // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor, ?timeScale= the time limit.
+    this.level = import.meta.env.DEV
+      ? applyTimeScale(applyBeltOverrides(levels[index]!, window.location.search), window.location.search)
+      : levels[index]!;
     this.state = createGame(this.level);
     for (const shelf of this.state.shelves) {
       for (const layer of shelf.layers) {
