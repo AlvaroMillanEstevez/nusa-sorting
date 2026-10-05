@@ -16,23 +16,23 @@ export const nusa010: LevelDefinition = {
   timeLimitSeconds: 70,
   shelves: [
     [
-      ['panjat-pinang', 'karung', 'klepon'],
-      ['pisang-goreng', 'mie-goreng', 'mie-goreng'],
+      ['panjat-pinang', 'karung', 'es-kelapa-muda'],
+      ['es-cendol', 'tahu-goreng', 'tahu-goreng'],
       ['peci', 'terompet', 'panjat-pinang'],
     ],
-    [['klepon', null, 'kelereng']],
+    [['es-kelapa-muda', null, 'kelereng']],
     [
-      ['pisang-goreng', 'tempe', 'pisang-goreng'],
-      ['panjat-pinang', null, 'tempe'],
+      ['es-cendol', 'klepon', 'es-cendol'],
+      ['panjat-pinang', null, 'klepon'],
       ['peci', 'terompet', null],
     ],
     [
       ['karung', 'bendera', null],
-      ['terompet', 'mie-goreng', 'peci'],
-      ['bendera', 'tempe', 'kelereng'],
+      ['terompet', 'tahu-goreng', 'peci'],
+      ['bendera', 'klepon', 'kelereng'],
     ],
     [['kelereng', null, 'karung']],
-    [[null, null, 'klepon'], [null, 'bendera', null]],
+    [[null, null, 'es-kelapa-muda'], [null, 'bendera', null]],
   ],
   mechanics: [{ kind: 'combo', windowSeconds: 5, multipliers: [2, 3, 4, 5, 6, 8, 10] }],
   layout: {

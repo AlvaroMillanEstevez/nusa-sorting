@@ -148,11 +148,14 @@ describe('the curve of levels 1-10', () => {
     expect(s.timeUpRate).toBeGreaterThan(s.blockedRate);
   });
 
-  it('6: one or two food kinds new since the regular levels before it', () => {
-    const before = new Set(levels.slice(0, 4).flatMap((l) => [...kindsOf(l)]));
-    const added = [...kindsOf(l6!)].filter((k) => !before.has(k));
-    expect(added.length).toBeGreaterThanOrEqual(1);
-    expect(added.length).toBeLessThanOrEqual(2);
+  it('the four levels after a themed level feature its objects, at least two in each', () => {
+    for (const theme of numbered.filter(({ level }) => isSpecialLevel(level))) {
+      const objects = ITEM_KINDS.filter((k) => k.theme === theme.level.theme).map((k) => k.id);
+      for (const { number, level } of numbered.filter((e) => e.number > theme.number && e.number <= theme.number + 4)) {
+        const featured = objects.filter((id) => kindsOf(level).has(id));
+        expect(featured.length, `level ${number}, ${theme.level.theme}`).toBeGreaterThanOrEqual(2);
+      }
+    }
   });
 
   it('7: more shelves and layers than 6', () => {
