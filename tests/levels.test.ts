@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areConfusable, parseItemType } from '../src/data/itemCatalog';
+import { areConfusable, parseItemType, unlockLevel } from '../src/data/itemCatalog';
 import {
   COMBO_DEFAULTS,
   createGame,
@@ -14,7 +14,7 @@ import {
 import { levels } from '../src/data/levels';
 import { generateLevel, ruleFailures } from '../tools/levelgen/generate';
 import { RECIPES } from '../tools/levelgen/recipes';
-import { levelTypes, TYPES_WITHOUT_LOOK_ALIKES, TYPES_WITHOUT_VARIANTS } from '../tools/levelgen/types';
+import { typesFor } from '../tools/levelgen/plan';
 import { simulate } from '../tools/simulator';
 import { demoLevels } from './fixtures/demo-levels';
 
@@ -56,15 +56,14 @@ describe.each(levels.map((level, i) => [i + 1, level] as const))('level %i', (nu
     expect(ruleFailures(level, recipe)).toEqual([]);
   }, 60_000);
 
-  it('holds exactly one triple of each type, taken in order: base kinds first, look-alikes and variants last', () => {
+  it('holds exactly one triple of each of its planned types, none locked yet, no look-alikes or variants', () => {
     expect(typesNotOneTriple(createGame(level))).toEqual([]);
     const types = kindsOf(level);
-    expect([...types].sort()).toEqual(levelTypes(recipe.types).sort());
+    expect([...types].sort()).toEqual([...typesFor(recipe)].sort());
     const kinds = [...types].map((t) => parseItemType(t)!);
-    if (types.size <= TYPES_WITHOUT_VARIANTS) expect(kinds.every((k) => k.variant === 'original')).toBe(true);
-    if (types.size <= TYPES_WITHOUT_LOOK_ALIKES) {
-      for (const a of kinds) for (const b of kinds) expect(areConfusable(a.kind.id, b.kind.id)).toBe(false);
-    }
+    for (const { kind } of kinds) expect(unlockLevel(kind), kind.id).toBeLessThanOrEqual(number);
+    expect(kinds.every((k) => k.variant === 'original')).toBe(true);
+    for (const a of kinds) for (const b of kinds) expect(areConfusable(a.kind.id, b.kind.id), `${a.kind.id} ${b.kind.id}`).toBe(false);
   });
 
   it("lands in its recipe's win band for the simulated player", () => {

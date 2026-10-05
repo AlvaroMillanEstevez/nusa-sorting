@@ -47,6 +47,11 @@ export interface LevelRecipe {
    * the level holds exactly 3 × types items.
    */
   readonly types: number;
+  /**
+   * The exact types, in order, for levels players have already approved: they keep their boards whatever the
+   * rotation would choose now. Otherwise the rotation picks them (types.ts).
+   */
+  readonly fixedTypes?: readonly string[];
   /** Shelves with layers behind the front one, and how many layers in all each of them has. */
   readonly backLayers: { readonly shelves: number; readonly layers: readonly [number, number] };
   /** Empty front slots at the start, across the board. Back layers take any other empty slots needed. */

@@ -14,7 +14,7 @@ import {
 } from '../../src/core';
 import { itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
 import { playMany, rng, simulate, solve, type SimulationStats } from '../simulator';
-import { levelTypes } from './types';
+import { typesFor } from './plan';
 import type { LevelRecipe } from './recipe';
 
 /** Simulated games while searching, and for the final figures. */
@@ -111,7 +111,8 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
 
   // Exactly three items of each type: the front gets the recipe's empty slots, back layers any others (never
   // a whole back layer), and boards where that does not work out are skipped.
-  const types = levelTypes(recipe.types);
+  const types = typesFor(recipe);
+  if (types.length !== recipe.types) throw new Error(`${recipe.id}: ${types.length} types planned for ${recipe.types}`);
   const spare = places.length - types.length * 3 - recipe.emptyFront;
   if (spare < 0) return null;
   const fronts = places.filter((p) => p.kind === 'shelf' && p.layer === 0);
