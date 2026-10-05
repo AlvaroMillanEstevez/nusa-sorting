@@ -49,3 +49,9 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - Cambios pequeños, un commit por paso coherente con mensaje claro.
 - Al terminar cada tarea, informar de: qué cambió, qué tests se ejecutaron, qué NO se ha probado, y una lista de pruebas manuales para Koke.
 - Nunca afirmar que algo funciona en móvil sin que Koke lo haya probado.
+
+## Principio de dificultad
+
+- Todo nivel debe poder superarse sin consumibles ni anuncios.
+- Las bandas de dificultad de las recetas se calculan con el jugador simulado sin ayudas.
+- Un nivel exigente puede costar 2 o 3 intentos, pero nunca se diseña para obligar a usar ayudas.
