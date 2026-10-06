@@ -1,6 +1,8 @@
 import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, winRange, type WithArrangements } from './generate';
 import { constName, levelSource } from './format';
 import { RECIPES, recipeFor } from './recipes';
+import { spaceReport } from './report';
+import { levels } from '../../src/data/levels';
 
 export interface OutputFile {
   readonly path: string;
@@ -14,9 +16,11 @@ export interface RunResult {
 
 /**
  * `levelgen all` regenerates every level; `levelgen 3` one level; `levelgen 3 --seed 77` one level with
- * another seed. Returns the files to write (the runner writes them) and a summary to print.
+ * another seed; `levelgen report` only reports how full the shipped levels are (see spaceReport). Returns the
+ * files to write (the runner writes them) and a summary to print.
  */
 export function main(args: readonly string[]): RunResult {
+  if (args[0] === 'report') return { files: [], summary: spaceReport(levels) };
   const seedFlag = args.indexOf('--seed');
   const seed = seedFlag === -1 ? undefined : Number(args[seedFlag + 1]);
   const targets = args.filter((a, i) => a !== '--seed' && (seedFlag === -1 || i !== seedFlag + 1));

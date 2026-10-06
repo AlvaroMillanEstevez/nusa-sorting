@@ -217,6 +217,14 @@ export function movingShelfCost(state: GameState, from: Source, to: Position): n
   return Math.max(isBeltSource(from) ? 0 : costOf(from.shelf), costOf(to.shelf));
 }
 
+/** Free front slots the player can drop into: on unlocked shelves, not under the roaming blocker. */
+export function freeSlots(state: GameState): number {
+  return state.shelves.reduce((sum, _, s) => sum + freeFrontSlots(state, s).length, 0);
+}
+
+/** At or below this many free slots, where to put the next item is a real decision: space pressure. */
+export const TIGHT_FREE_SLOTS = 2;
+
 export interface GameOutcome {
   readonly won: boolean;
   readonly loseReason: LoseReason | null;
@@ -225,6 +233,10 @@ export interface GameOutcome {
   readonly score: number;
   /** Game time the game took, in seconds. */
   readonly seconds: number;
+  /** Free slots before each move, averaged over the game's moves. */
+  readonly meanFree: number;
+  /** Share of the game's moves made with TIGHT_FREE_SLOTS free slots or fewer. */
+  readonly tightShare: number;
 }
 
 /**
@@ -240,8 +252,13 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
   let state = start;
   let moves = 0;
   let seconds = 0;
+  let freeTotal = 0;
+  let tight = 0;
   const basePerMove = secondsPerMove(typeCount(start));
   for (; moves < maxMoves && state.status === 'playing'; moves++) {
+    const free = freeSlots(state);
+    freeTotal += free;
+    if (free <= TIGHT_FREE_SLOTS) tight++;
     const options = validMoves(state)
       .filter(([from, to]) => isBeltSource(from) || from.shelf !== to.shelf)
       .map((move) => {
@@ -279,6 +296,8 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
     maxCombo: state.combo?.maxCombo ?? 0,
     score: state.combo?.score ?? 0,
     seconds,
+    meanFree: moves > 0 ? freeTotal / moves : freeSlots(start),
+    tightShare: moves > 0 ? tight / moves : 0,
   };
 }
 
@@ -289,6 +308,10 @@ export interface SimulationStats {
   readonly timeUpRate: number;
   readonly avgMaxCombo: number;
   readonly avgScore: number;
+  /** Free slots during a game, averaged over moves and games. */
+  readonly avgFree: number;
+  /** Space pressure: share of moves made with TIGHT_FREE_SLOTS free slots or fewer, averaged over games. */
+  readonly pressure: number;
 }
 
 /** Plays `runs` simulated games with a fixed seed so the outcomes are reproducible. */
@@ -308,6 +331,8 @@ export function simulate(start: GameState, runs = 200, seed = 1): SimulationStat
     timeUpRate: share((o) => o.loseReason === 'timeUp'),
     avgMaxCombo: mean((o) => o.maxCombo),
     avgScore: mean((o) => o.score),
+    avgFree: mean((o) => o.meanFree),
+    pressure: mean((o) => o.tightShare),
   };
 }
 
