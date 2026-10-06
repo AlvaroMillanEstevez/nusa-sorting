@@ -126,6 +126,7 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
   const { shelfCount, columns, tracks } = plan(recipe);
   const layerCounts = Array<number>(shelfCount).fill(1);
   for (const shelf of choose(random, shelfCount, recipe.backLayers.shelves)) layerCounts[shelf] = intIn(random, recipe.backLayers.layers);
+  const lockedShelves = recipe.locked?.length ? choose(random, shelfCount, recipe.locked.length) : [];
 
   const places: Place[] = [];
   layerCounts.forEach((layers, shelf) => {
@@ -149,7 +150,9 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
   if (types.length !== recipe.types) throw new Error(`${recipe.id}: ${types.length} types planned for ${recipe.types}`);
   const spare = places.length - types.length * 3 - recipe.emptyFront;
   if (spare < 0) return null;
-  const fronts = places.filter((p) => p.kind === 'shelf' && p.layer === 0);
+  // Empty front slots go on unlocked shelves, so they are all free from the start.
+  const fronts = places.filter((p) => p.kind === 'shelf' && p.layer === 0 && !lockedShelves.includes(p.shelf));
+  if (fronts.length < recipe.emptyFront) return null;
   const empty = new Set<Place>(shuffle(random, fronts).slice(0, recipe.emptyFront));
   const left = new Map<string, number>();
   for (const p of places) if (p.kind === 'shelf' && p.layer > 0) left.set(`${p.shelf}:${p.layer}`, (left.get(`${p.shelf}:${p.layer}`) ?? 0) + 1);
@@ -186,8 +189,7 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
   if (recipe.comboMultipliers) {
     mechanics.push({ kind: 'combo', windowSeconds: COMBO_DEFAULTS.windowSeconds, multipliers: recipe.comboMultipliers });
   }
-  if (recipe.locked && recipe.locked.length > 0) {
-    const lockedShelves = choose(random, shelfCount, recipe.locked.length);
+  if (lockedShelves.length > 0) {
     mechanics.push({
       kind: 'lockedShelves',
       shelves: lockedShelves.map((shelf, i) => ({ shelf, triplesRequired: recipe.locked![i]! })),

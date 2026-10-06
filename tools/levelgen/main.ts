@@ -66,7 +66,7 @@ export function summaryTable(levels: readonly WithArrangements[]): string {
         `layers≤${layers}`,
         `${kinds.size} kinds`,
         `${level.timeLimitSeconds}s`,
-        `casual win ${pct(casual.winRate)} blocked ${pct(casual.blockedRate)} timeUp ${pct(casual.timeUpRate)} pressure ${pct(casual.pressure)}`,
+        `casual win ${pct(casual.winRate)} space ${pct(casual.blockedRate + casual.stuckRate)} timeUp ${pct(casual.timeUpRate)} pressure ${pct(casual.pressure)}`,
         `expert win ${pct(expert.winRate)}`,
         `${generated.arrangements.length + 1} arrangements: casual ${range((s) => s.casual.winRate)}, expert ${range((s) => s.expert.winRate)}, pressure ${range((s) => s.casual.pressure)}`,
         `items ${itemPx.portrait}/${itemPx.landscape}px`,

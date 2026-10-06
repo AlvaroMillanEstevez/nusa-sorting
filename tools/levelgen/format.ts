@@ -49,7 +49,7 @@ export function levelSource(generated: WithArrangements): string {
  * \`npm run levelgen -- ${recipe.number}\`, or try another seed with \`npm run levelgen -- ${recipe.number} --seed N\`.
  * Change the recipe rather than this file.
  *
- * Simulated players, ${REPORT_RUNS} games each. Casual: wins ${percent(casual.winRate)}, out of space ${percent(casual.blockedRate)},
+ * Simulated players, ${REPORT_RUNS} games each. Casual: wins ${percent(casual.winRate)}, out of space ${percent(casual.blockedRate + casual.stuckRate)},
  * out of time ${percent(casual.timeUpRate)}, space pressure ${percent(casual.pressure)}. Expert: wins ${percent(expert.winRate)}.
  * A guide only: real players may find it easier or harder.
  *

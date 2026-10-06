@@ -3,6 +3,7 @@ import {
   dropHeld,
   freeFrontSlots,
   isShelfLocked,
+  isSlotBlocked,
   isWon,
   moveItem,
   isCarrierSource,
@@ -237,6 +238,8 @@ export interface GameOutcome {
   readonly meanFree: number;
   /** Share of the game's moves made with TIGHT_FREE_SLOTS free slots or fewer. */
   readonly tightShare: number;
+  /** Ended by STUCK_MOVES moves without a triple (or by the move limit), not won and not lost by the rules. */
+  readonly stuck: boolean;
 }
 
 /**
@@ -251,8 +254,8 @@ export interface PlayerProfile {
   /** When missing, the share of times the move taken may split a pair it already has. */
   readonly splitRate: number;
   /**
-   * Weighs every move by the board it leaves (see boardValue) instead of only by what it does: so it breaks a
-   * pair when that brings a hidden layer forward, keeps some space, and does not shuffle the same item around.
+   * Plans its moves (see plannedMove): works towards the triple that takes fewest moves to gather, moving other
+   * items out of the way, digs out hidden layers when no triple is in reach, and keeps the last free slot.
    */
   readonly plansSpace: boolean;
 }
@@ -267,11 +270,17 @@ export const CASUAL: PlayerProfile = { name: 'casual', missRate: 0.35, splitRate
 /** A careful player, the one the bands make sure is still challenged: rarely misses, and plans its moves. */
 export const EXPERT: PlayerProfile = { name: 'expert', missRate: 0.08, splitRate: 0, plansSpace: true };
 
-/** The planning player avoids moving an item again, to no pair, within this many moves. */
-const RECENT_MOVES = 8;
+/** The planning player avoids moving an item out of the way again within this many moves. */
+const RECENT_MOVES = 6;
 
-/** Moves a simulated game may take before it counts as stuck, for a level with `items` items. */
+/** Moves a simulated game may take, for a level with `items` items. */
 export const maxMovesFor = (items: number) => Math.max(400, items * 8);
+
+/**
+ * Moves without clearing a triple after which a game counts as stuck: free slots are left, but too few to
+ * bring the missing items forward. A real player would shuffle until the clock runs out; it is a loss to space.
+ */
+export const STUCK_MOVES = 60;
 
 /** Items on the board and tracks. */
 function itemsLeft(state: GameState): number {
@@ -295,10 +304,16 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
   let seconds = 0;
   let freeTotal = 0;
   let tight = 0;
-  // Move number at which each item was last moved, for the planning player.
-  const lastMoved = new Map<number, number>();
+  // Items moved lately, oldest first, for the planning player.
+  const recentIds: number[] = [];
+  let lastClear = 0;
+  let stuck = false;
   const basePerMove = secondsPerMove(typeCount(start));
   for (; moves < maxMoves && state.status === 'playing'; moves++) {
+    if (moves - lastClear >= STUCK_MOVES) {
+      stuck = true;
+      break;
+    }
     const free = freeSlots(state);
     freeTotal += free;
     if (free <= TIGHT_FREE_SLOTS) tight++;
@@ -320,21 +335,19 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
           basePerMove +
           (isBeltSource(from) ? beltPickSeconds(state.tracks[from.track]!.speed) : 0) +
           movingShelfCost(state, from, to);
-        let score = clears ? 3 : pairs ? 2 : splits ? 0 : 1;
-        const itemId = isBeltSource(from) ? null : state.shelves[from.shelf]!.layers[0]![from.slot]!.id;
-        if (profile.plansSpace) {
-          score = boardValue(result.state);
-          // It does not shuffle the same item around: moving one again soon, to no pair, goes nowhere.
-          const last = itemId === null ? undefined : lastMoved.get(itemId);
-          if (!clears && !pairs && last !== undefined && moves - last < RECENT_MOVES) score -= 6;
-        }
-        return { result, seconds, score, splits, itemId };
+        const score = clears ? 3 : pairs ? 2 : splits ? 0 : 1;
+        return { move, result, seconds, score, splits };
       })
       .filter((option) => option !== null);
     if (options.length === 0) break;
     const best = Math.max(...options.map((o) => o.score));
+    const missed = random() < profile.missRate;
+    const planned = profile.plansSpace && !missed ? plannedMove(state, new Set(recentIds)) : null;
+    const plannedOption = planned && options.find((o) => sameMove(o.move, planned));
     let pool: typeof options;
-    if (random() < profile.missRate) {
+    if (plannedOption) {
+      pool = [plannedOption];
+    } else if (missed) {
       // A miss: any move, keeping its pairs unless it slips (or has nothing else).
       const keepsPairs = options.filter((o) => !o.splits);
       pool = random() < profile.splitRate || keepsPairs.length === 0 ? options : keepsPairs;
@@ -342,7 +355,12 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
       pool = options.filter((o) => o.score === best);
     }
     const choice = pool[Math.floor(random() * pool.length)]!;
-    if (choice.itemId !== null) lastMoved.set(choice.itemId, moves);
+    const [from] = choice.move;
+    if (!isBeltSource(from)) {
+      recentIds.push(state.shelves[from.shelf]!.layers[0]![from.slot]!.id);
+      if (recentIds.length > RECENT_MOVES) recentIds.shift();
+    }
+    if (choice.result.events.some((e) => e.kind === 'tripleCleared')) lastClear = moves + 1;
     state = tick(choice.result.state, choice.seconds * 1000).state;
     seconds += choice.seconds;
   }
@@ -355,29 +373,122 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
     seconds,
     meanFree: moves > 0 ? freeTotal / moves : freeSlots(start),
     tightShare: moves > 0 ? tight / moves : 0,
+    stuck: stuck || (state.status === 'playing' && moves >= maxMoves),
   };
 }
 
+const sameSource = (a: Source, b: Source) =>
+  isBeltSource(a) ? isBeltSource(b) && a.track === b.track && a.carrier === b.carrier : !isBeltSource(b) && a.shelf === b.shelf && a.slot === b.slot;
+const sameMove = (a: Move, b: Move) => sameSource(a[0], b[0]) && a[1].shelf === b[1].shelf && a[1].slot === b[1].slot;
+
+/** An item the player can take now: a front item of an unlocked shelf, or the top of a track stack. */
+interface Reachable {
+  readonly from: Source;
+  readonly type: string;
+  /** The shelf it sits on, or null on a track. */
+  readonly shelf: number | null;
+}
+
+function reachableItems(state: GameState): Reachable[] {
+  const items: Reachable[] = [];
+  state.shelves.forEach((shelf, s) => {
+    if (isShelfLocked(state, s)) return;
+    shelf.layers[0]!.forEach((item, i) => item && items.push({ from: front(s, i), type: item.type, shelf: s }));
+  });
+  state.tracks.forEach((track, t) =>
+    track.carriers.forEach((carrier, c) => {
+      const top = stackOf(carrier)[0];
+      if (top) items.push({ from: { track: t, carrier: c }, type: top.type, shelf: null });
+    }),
+  );
+  return items;
+}
+
 /**
- * How good a board looks to the planning player: cleared triples above all, then items brought forward from
- * hidden layers, pairs on fronts, and a little free space (more than a few slots adds nothing).
+ * Where the planner puts an item it moves out of the way: a free slot on another shelf than `avoid`, beside one
+ * of its kind if it can, else on the shelf with the most free slots (keeping tight spots open).
  */
-function boardValue(state: GameState): number {
-  let pairs = 0;
-  let hidden = 0;
-  for (const shelf of state.shelves) {
-    const counts = new Map<string, number>();
-    for (const item of shelf.layers[0]!) if (item) counts.set(item.type, (counts.get(item.type) ?? 0) + 1);
-    for (const n of counts.values()) if (n === 2) pairs++;
-    for (const layer of shelf.layers.slice(1)) for (const item of layer) if (item) hidden++;
+function parkingSlot(state: GameState, type: string, avoid: number | null): Position | null {
+  let best: { at: Position; score: number } | null = null;
+  state.shelves.forEach((shelf, s) => {
+    if (s === avoid) return;
+    const slots = freeFrontSlots(state, s);
+    if (slots.length === 0) return;
+    const pairs = shelf.layers[0]!.some((item) => item?.type === type);
+    const score = (pairs ? 10 : 0) + slots.length - (shelf.layers.length > 1 ? 0.5 : 0);
+    if (!best || score > best.score) best = { at: front(s, slots[0]!), score };
+  });
+  return best === null ? null : (best as { at: Position }).at;
+}
+
+/**
+ * The planning player's move: of every triple it could gather on one shelf, the one needing the fewest moves
+ * (items of other kinds to move off that shelf, plus its own kind to bring in), and the first step of it. With
+ * no triple in reach, it digs: empties the front of the shelf with hidden layers that has fewest items left.
+ * It never fills the last free slot unless that completes a triple, and avoids moving out of the way again an
+ * item it has just moved (`recent`, item ids), which would only shuffle it back and forth. Null when it sees
+ * nothing worth doing.
+ */
+function plannedMove(state: GameState, recent: ReadonlySet<number>): Move | null {
+  const reach = reachableItems(state);
+  const free = freeSlots(state);
+  const byType = new Map<string, Reachable[]>();
+  for (const r of reach) byType.set(r.type, [...(byType.get(r.type) ?? []), r]);
+  let plan: { cost: number; move: Move } | null = null;
+  state.shelves.forEach((shelf, s) => {
+    if (isShelfLocked(state, s) || shelf.layers[0]!.some((_, i) => isSlotBlocked(state, s, i))) return;
+    const frontItems = shelf.layers[0]!;
+    const room = freeFrontSlots(state, s);
+    for (const [type, copies] of byType) {
+      const here = frontItems.filter((item) => item?.type === type).length;
+      const incoming = copies.filter((c) => c.shelf !== s);
+      if (here + incoming.length < 3) continue;
+      const others = frontItems
+        .flatMap((item, i) => (item && item.type !== type ? [i] : []))
+        .sort((a, b) => Number(recent.has(frontItems[a]!.id)) - Number(recent.has(frontItems[b]!.id)));
+      const needed = 3 - here;
+      // Moving the others off needs that many free slots elsewhere.
+      if (others.length > free - room.length) continue;
+      const shuffles = others.filter((i) => recent.has(frontItems[i]!.id)).length;
+      const cost = others.length + needed + 3 * shuffles + (shelf.layers.length > 1 ? -0.3 : 0);
+      if (plan && cost >= plan.cost) continue;
+      let move: Move | null = null;
+      if (others.length > 0) {
+        const slot = others[0]!;
+        const at = parkingSlot(state, frontItems[slot]!.type, s);
+        if (at) move = [front(s, slot), at];
+      } else if (room.length > 0) {
+        // Bring the closest copy: from a shelf it would leave empty with hidden layers behind, if any.
+        const source = incoming.find((c) => c.shelf !== null && state.shelves[c.shelf]!.layers[0]!.filter(Boolean).length === 1) ?? incoming[0]!;
+        move = [source.from, front(s, room[0]!)];
+      }
+      if (move) plan = { cost, move };
+    }
+  });
+  if (plan) {
+    const chosen = (plan as { move: Move }).move;
+    const completes = applyMove(state, chosen);
+    const clears = completes.ok && completes.events.some((e) => e.kind === 'tripleCleared');
+    if (clears || free > 1) return chosen;
   }
-  return 100 * state.triplesCleared - 3 * hidden + 5 * pairs + Math.min(freeSlots(state), 4);
+  // Dig: bring a hidden layer forward by emptying the front with the fewest items.
+  let dig: { left: number; move: Move } | null = null;
+  state.shelves.forEach((shelf, s) => {
+    if (isShelfLocked(state, s) || shelf.layers.length < 2) return;
+    const items = shelf.layers[0]!.flatMap((item, i) => (item && !recent.has(item.id) ? [i] : []));
+    if (items.length === 0 || items.length >= free || (dig && items.length >= dig.left)) return;
+    const at = parkingSlot(state, shelf.layers[0]![items[0]!]!.type, s);
+    if (at) dig = { left: items.length, move: [front(s, items[0]!), at] };
+  });
+  return dig === null ? null : (dig as { move: Move }).move;
 }
 
 export interface SimulationStats {
   readonly winRate: number;
   /** Share of games lost because the board ran out of usable space. */
   readonly blockedRate: number;
+  /** Share of games that got stuck (see STUCK_MOVES): also lost to space, as the clock would end them. */
+  readonly stuckRate: number;
   readonly timeUpRate: number;
   readonly avgMaxCombo: number;
   readonly avgScore: number;
@@ -401,6 +512,7 @@ export function simulate(start: GameState, runs = 200, seed = 1, profile: Player
   return {
     winRate: share((o) => o.won),
     blockedRate: share((o) => o.loseReason === 'blocked'),
+    stuckRate: share((o) => o.stuck),
     timeUpRate: share((o) => o.loseReason === 'timeUp'),
     avgMaxCombo: mean((o) => o.maxCombo),
     avgScore: mean((o) => o.score),
