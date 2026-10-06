@@ -240,20 +240,63 @@ export interface GameOutcome {
 }
 
 /**
- * Simulated casual player: completes a triple when it can, otherwise prefers moves that pair an item with a
- * matching one, otherwise moves at random, but does not split a pair it already has unless nothing else is
- * left. A quarter of the time it misses the best move and takes any move that splits no pair. Never reorders
- * and does not plan combos. Each move takes
- * secondsPerMove of game time for the level's number of types (plus beltPickSeconds when taken from a track stack, and movingShelfSeconds when
- * a moving shelf is involved), so the clock and combo
- * windows behave as in a real game.
+ * How a simulated player plays. Both complete a triple when they can, otherwise prefer moves that pair an item
+ * with a matching one, and never reorder or plan combos; they differ in the mistakes they make and in what they
+ * look at.
  */
-export function playGreedy(start: GameState, random: () => number, maxMoves = 400): GameOutcome {
+export interface PlayerProfile {
+  readonly name: string;
+  /** Share of moves where the player misses the best move and takes any other one. */
+  readonly missRate: number;
+  /** When missing, the share of times the move taken may split a pair it already has. */
+  readonly splitRate: number;
+  /**
+   * Weighs every move by the board it leaves (see boardValue) instead of only by what it does: so it breaks a
+   * pair when that brings a hidden layer forward, keeps some space, and does not shuffle the same item around.
+   */
+  readonly plansSpace: boolean;
+}
+
+/**
+ * A casual player, the one the difficulty bands make sure can win without help: misses the best move a third
+ * of the time, then sometimes splits a pair, places without looking at the layers behind and does not plan
+ * which shelf to free.
+ */
+export const CASUAL: PlayerProfile = { name: 'casual', missRate: 0.35, splitRate: 0.3, plansSpace: false };
+
+/** A careful player, the one the bands make sure is still challenged: rarely misses, and plans its moves. */
+export const EXPERT: PlayerProfile = { name: 'expert', missRate: 0.08, splitRate: 0, plansSpace: true };
+
+/** The planning player avoids moving an item again, to no pair, within this many moves. */
+const RECENT_MOVES = 8;
+
+/** Moves a simulated game may take before it counts as stuck, for a level with `items` items. */
+export const maxMovesFor = (items: number) => Math.max(400, items * 8);
+
+/** Items on the board and tracks. */
+function itemsLeft(state: GameState): number {
+  let count = 0;
+  for (const shelf of state.shelves) for (const layer of shelf.layers) for (const item of layer) if (item) count++;
+  for (const track of state.tracks) for (const carrier of track.carriers) count += stackOf(carrier).length;
+  return count;
+}
+
+/**
+ * One simulated game. The player completes a triple when it can, otherwise prefers moves that pair an item
+ * with a matching one, otherwise moves at random, and does not split a pair it already has unless nothing else
+ * is left; it misses the best move as often as its profile says (see PlayerProfile). Each move takes
+ * secondsPerMove of game time for the level's number of types (plus beltPickSeconds when taken from a track
+ * stack, and movingShelfSeconds when a moving shelf is involved), so the clock and combo windows behave as in a
+ * real game.
+ */
+export function playGreedy(start: GameState, random: () => number, profile: PlayerProfile = CASUAL, maxMoves = maxMovesFor(itemsLeft(start))): GameOutcome {
   let state = start;
   let moves = 0;
   let seconds = 0;
   let freeTotal = 0;
   let tight = 0;
+  // Move number at which each item was last moved, for the planning player.
+  const lastMoved = new Map<number, number>();
   const basePerMove = secondsPerMove(typeCount(start));
   for (; moves < maxMoves && state.status === 'playing'; moves++) {
     const free = freeSlots(state);
@@ -277,15 +320,29 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
           basePerMove +
           (isBeltSource(from) ? beltPickSeconds(state.tracks[from.track]!.speed) : 0) +
           movingShelfCost(state, from, to);
-        return { result, seconds, score: clears ? 3 : pairs ? 2 : splits ? 0 : 1 };
+        let score = clears ? 3 : pairs ? 2 : splits ? 0 : 1;
+        const itemId = isBeltSource(from) ? null : state.shelves[from.shelf]!.layers[0]![from.slot]!.id;
+        if (profile.plansSpace) {
+          score = boardValue(result.state);
+          // It does not shuffle the same item around: moving one again soon, to no pair, goes nowhere.
+          const last = itemId === null ? undefined : lastMoved.get(itemId);
+          if (!clears && !pairs && last !== undefined && moves - last < RECENT_MOVES) score -= 6;
+        }
+        return { result, seconds, score, splits, itemId };
       })
       .filter((option) => option !== null);
     if (options.length === 0) break;
     const best = Math.max(...options.map((o) => o.score));
-    // Casual players miss things: a quarter of the time they take any move (that splits no pair, if they can).
-    const sensible = options.filter((o) => o.score > 0);
-    const pool = random() < 0.25 ? (sensible.length > 0 ? sensible : options) : options.filter((o) => o.score === best);
+    let pool: typeof options;
+    if (random() < profile.missRate) {
+      // A miss: any move, keeping its pairs unless it slips (or has nothing else).
+      const keepsPairs = options.filter((o) => !o.splits);
+      pool = random() < profile.splitRate || keepsPairs.length === 0 ? options : keepsPairs;
+    } else {
+      pool = options.filter((o) => o.score === best);
+    }
     const choice = pool[Math.floor(random() * pool.length)]!;
+    if (choice.itemId !== null) lastMoved.set(choice.itemId, moves);
     state = tick(choice.result.state, choice.seconds * 1000).state;
     seconds += choice.seconds;
   }
@@ -299,6 +356,22 @@ export function playGreedy(start: GameState, random: () => number, maxMoves = 40
     meanFree: moves > 0 ? freeTotal / moves : freeSlots(start),
     tightShare: moves > 0 ? tight / moves : 0,
   };
+}
+
+/**
+ * How good a board looks to the planning player: cleared triples above all, then items brought forward from
+ * hidden layers, pairs on fronts, and a little free space (more than a few slots adds nothing).
+ */
+function boardValue(state: GameState): number {
+  let pairs = 0;
+  let hidden = 0;
+  for (const shelf of state.shelves) {
+    const counts = new Map<string, number>();
+    for (const item of shelf.layers[0]!) if (item) counts.set(item.type, (counts.get(item.type) ?? 0) + 1);
+    for (const n of counts.values()) if (n === 2) pairs++;
+    for (const layer of shelf.layers.slice(1)) for (const item of layer) if (item) hidden++;
+  }
+  return 100 * state.triplesCleared - 3 * hidden + 5 * pairs + Math.min(freeSlots(state), 4);
 }
 
 export interface SimulationStats {
@@ -315,14 +388,14 @@ export interface SimulationStats {
 }
 
 /** Plays `runs` simulated games with a fixed seed so the outcomes are reproducible. */
-export function playMany(start: GameState, runs = 200, seed = 1): GameOutcome[] {
+export function playMany(start: GameState, runs = 200, seed = 1, profile: PlayerProfile = CASUAL): GameOutcome[] {
   const random = rng(seed);
-  return Array.from({ length: runs }, () => playGreedy(start, random));
+  return Array.from({ length: runs }, () => playGreedy(start, random, profile));
 }
 
 /** Plays `runs` simulated games with a fixed seed so the numbers are reproducible. */
-export function simulate(start: GameState, runs = 200, seed = 1): SimulationStats {
-  const outcomes = playMany(start, runs, seed);
+export function simulate(start: GameState, runs = 200, seed = 1, profile: PlayerProfile = CASUAL): SimulationStats {
+  const outcomes = playMany(start, runs, seed, profile);
   const share = (test: (o: GameOutcome) => boolean) => outcomes.filter(test).length / runs;
   const mean = (value: (o: GameOutcome) => number) => outcomes.reduce((sum, o) => sum + value(o), 0) / runs;
   return {

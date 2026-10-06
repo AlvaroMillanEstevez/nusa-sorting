@@ -1,5 +1,5 @@
 import type { LevelDefinition } from '../../src/core';
-import { REPORT_RUNS, winRange, type WithArrangements } from './generate';
+import { REPORT_RUNS, statRange, type WithArrangements } from './generate';
 
 /** A value as TypeScript source: single quotes, short arrays and objects on one line. */
 function literal(value: unknown, indent: string): string {
@@ -38,7 +38,8 @@ export function levelSource(generated: WithArrangements): string {
   if (level.mechanics) ordered.mechanics = level.mechanics;
   if (level.layout) ordered.layout = level.layout;
   if (level.arrangements?.length) ordered.arrangements = level.arrangements;
-  const [low, high] = winRange(generated);
+  const { casual, expert } = stats;
+  const range = (figure: Parameters<typeof statRange>[1]) => statRange(generated, figure).map(percent).join(' to ');
   return `import type { LevelDefinition } from '../../core';
 
 /**
@@ -48,11 +49,12 @@ export function levelSource(generated: WithArrangements): string {
  * \`npm run levelgen -- ${recipe.number}\`, or try another seed with \`npm run levelgen -- ${recipe.number} --seed N\`.
  * Change the recipe rather than this file.
  *
- * Simulated casual player, ${REPORT_RUNS} games: wins ${percent(stats.winRate)}, out of space ${percent(stats.blockedRate)}, out of time ${percent(stats.timeUpRate)}.
+ * Simulated players, ${REPORT_RUNS} games each. Casual: wins ${percent(casual.winRate)}, out of space ${percent(casual.blockedRate)},
+ * out of time ${percent(casual.timeUpRate)}, space pressure ${percent(casual.pressure)}. Expert: wins ${percent(expert.winRate)}.
  * A guide only: real players may find it easier or harder.
  *
- * ${generated.arrangements.length + 1} arrangements of the items (the level as written is the first; each attempt plays the next one):
- * the same player wins ${percent(low)} to ${percent(high)} of games across them.
+ * ${generated.arrangements.length + 1} arrangements of the items (the level as written is the first; each attempt plays the next one).
+ * Across them the casual player wins ${range((s) => s.casual.winRate)}, the expert ${range((s) => s.expert.winRate)}; pressure ${range((s) => s.casual.pressure)}.
  */
 export const ${constName(level.id)}: LevelDefinition = ${literal(ordered as unknown as LevelDefinition, '')};
 `;

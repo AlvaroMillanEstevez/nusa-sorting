@@ -74,8 +74,18 @@ export interface LevelRecipe {
   readonly maxDepth: number;
   /** Triples completable at the start with what is in view and the layer behind it. */
   readonly minStartTriples: number;
-  /** Share of simulated games won, inclusive range. */
+  /**
+   * Share of games the casual simulated player wins, inclusive range: the level is fair and can be won without
+   * help (tools/simulator.ts, CASUAL).
+   */
   readonly winBand: readonly [number, number];
+  /** Share of games the expert simulated player wins, inclusive range: the level is not trivial (EXPERT). */
+  readonly expertBand?: readonly [number, number];
+  /**
+   * Space pressure for the casual player, inclusive range: the share of its moves made with two free slots or
+   * fewer, so that where to put an item is often a real decision.
+   */
+  readonly pressure?: readonly [number, number];
   /**
    * How the time limit is set: the limit that gives a win rate in the band, never less than `slack` times the
    * time 90% of the simulator's wins need. `timeUp` bounds the share of games lost to the clock. `fixed` sets the

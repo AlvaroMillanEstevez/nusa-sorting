@@ -78,7 +78,7 @@ describe('level generator', () => {
     expect(keys.size).toBe(ARRANGEMENTS);
     for (const { arrangement, stats } of found) {
       expect(ruleFailures(withArrangement({ ...level, arrangements: [arrangement] }, 1), recipe)).toEqual([]);
-      expect(stats.winRate).toBeGreaterThanOrEqual(0.3);
+      expect(stats.casual.winRate).toBeGreaterThanOrEqual(0.3);
     }
   }, 120_000);
 

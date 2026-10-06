@@ -14,7 +14,7 @@ import {
   type TrackDefinition,
 } from '../../src/core';
 import { itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
-import { playMany, rng, simulate, solve, type SimulationStats } from '../simulator';
+import { CASUAL, EXPERT, playMany, rng, simulate, solve, type SimulationStats } from '../simulator';
 import { typesFor } from './plan';
 import type { LevelRecipe } from './recipe';
 
@@ -31,12 +31,36 @@ export interface GeneratedLevel {
   readonly seed: number;
   /** Which candidate of the seed's sequence passed. */
   readonly attempt: number;
-  readonly stats: SimulationStats;
+  readonly stats: LevelStats;
   /** Item size in px on a phone in portrait and in landscape. */
   readonly itemPx: { readonly portrait: number; readonly landscape: number };
 }
 
 type Random = () => number;
+
+/** Both simulated players' results on a level, REPORT_RUNS games each. */
+export interface LevelStats {
+  readonly casual: SimulationStats;
+  readonly expert: SimulationStats;
+}
+
+/**
+ * Whether a timed level meets its recipe's bands: the casual player's wins, time-ups and space pressure, then
+ * (only worth simulating if those pass) the expert's wins. Returns the results when it does, null otherwise.
+ */
+export function bandedStats(level: LevelDefinition, recipe: LevelRecipe): LevelStats | null {
+  const casual = simulate(createGame(level), REPORT_RUNS, 1, CASUAL);
+  if (!inRange(casual.winRate, recipe.winBand) || !inRange(casual.timeUpRate, recipe.time.timeUp)) return null;
+  if (recipe.pressure && !inRange(casual.pressure, recipe.pressure)) return null;
+  const expert = simulate(createGame(level), REPORT_RUNS, 1, EXPERT);
+  if (recipe.expertBand && !inRange(expert.winRate, recipe.expertBand)) return null;
+  return { casual, expert };
+}
+
+/** Both players' results, whatever the bands. */
+export function levelStats(level: LevelDefinition): LevelStats {
+  return { casual: simulate(createGame(level), REPORT_RUNS, 1, CASUAL), expert: simulate(createGame(level), REPORT_RUNS, 1, EXPERT) };
+}
 
 function shuffle<T>(random: Random, list: T[]): T[] {
   for (let i = list.length - 1; i > 0; i--) {
@@ -239,7 +263,7 @@ export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, '
  */
 function isSolvable(state: GameState): boolean {
   const blocker = state.blocker && { ...state.blocker, removeAtCombo: Number.POSITIVE_INFINITY };
-  if (playMany({ ...state, blocker, timeLeftMs: null }, 40, 7).some((o) => o.won)) return true;
+  if (playMany({ ...state, blocker, timeLeftMs: null }, 40, 7, EXPERT).some((o) => o.won)) return true;
   return solve(state) !== undefined;
 }
 
@@ -348,8 +372,8 @@ export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttemp
     const timed = chooseTime(board, recipe, candidateSeed(seed, attempt) ^ TYPICAL_SALT);
     if (!timed) continue;
     const level = { ...board, timeLimitSeconds: timed.seconds };
-    const stats = simulate(createGame(level), REPORT_RUNS, 1);
-    if (!inRange(stats.winRate, recipe.winBand) || !inRange(stats.timeUpRate, recipe.time.timeUp)) continue;
+    const stats = bandedStats(level, recipe);
+    if (!stats) continue;
     return { level, recipe, seed, attempt, stats, itemPx: itemPx(level) };
   }
   throw new Error(`${recipe.id}: no level found in ${maxAttempts} attempts with seed ${seed}`);
@@ -366,7 +390,7 @@ function retime(recipe: LevelRecipe, seed: number, attempt: number): GeneratedLe
   const timed = chooseTime(board, recipe, candidateSeed(seed, attempt) ^ TYPICAL_SALT);
   if (!timed) throw new Error(`${recipe.id}: no time limit puts candidate ${attempt} in the win band`);
   const level = { ...board, timeLimitSeconds: timed.seconds };
-  return { level, recipe, seed, attempt, stats: simulate(createGame(level), REPORT_RUNS, 1), itemPx: itemPx(level) };
+  return { level, recipe, seed, attempt, stats: levelStats(level), itemPx: itemPx(level) };
 }
 
 export function itemPx(level: LevelDefinition): { portrait: number; landscape: number } {
@@ -390,7 +414,7 @@ const ARRANGEMENT_ATTEMPTS = 400;
 
 export interface GeneratedArrangement {
   readonly arrangement: Arrangement;
-  readonly stats: SimulationStats;
+  readonly stats: LevelStats;
 }
 
 /**
@@ -445,8 +469,8 @@ export function generateArrangements(level: LevelDefinition, recipe: LevelRecipe
     if (seen.has(key)) continue;
     seen.add(key);
     if (ruleFailures(candidate, recipe).length > 0) continue;
-    const stats = simulate(createGame(candidate), REPORT_RUNS, 1);
-    if (!inRange(stats.winRate, recipe.winBand) || !inRange(stats.timeUpRate, recipe.time.timeUp)) continue;
+    const stats = bandedStats(candidate, recipe);
+    if (!stats) continue;
     found.push({ arrangement: arrangementOf(candidate), stats });
   }
   return found;
@@ -455,8 +479,8 @@ export function generateArrangements(level: LevelDefinition, recipe: LevelRecipe
 /** A generated level with the arrangements made for it (also in `level.arrangements`). */
 export type WithArrangements = GeneratedLevel & { readonly arrangements: readonly GeneratedArrangement[] };
 
-/** Lowest and highest simulated win rate over all of a level's arrangements, the level as written included. */
-export function winRange(generated: WithArrangements): [number, number] {
-  const rates = [generated.stats.winRate, ...generated.arrangements.map((a) => a.stats.winRate)];
-  return [Math.min(...rates), Math.max(...rates)];
+/** Lowest and highest value of a figure over all of a level's arrangements, the level as written included. */
+export function statRange(generated: WithArrangements, figure: (stats: LevelStats) => number): [number, number] {
+  const values = [generated.stats, ...generated.arrangements.map((a) => a.stats)].map(figure);
+  return [Math.min(...values), Math.max(...values)];
 }

@@ -1,4 +1,4 @@
-import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, winRange, type WithArrangements } from './generate';
+import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, statRange, type WithArrangements } from './generate';
 import { constName, levelSource } from './format';
 import { RECIPES, recipeFor } from './recipes';
 import { spaceReport } from './report';
@@ -56,7 +56,8 @@ export function summaryTable(levels: readonly WithArrangements[]): string {
   return levels
     .map((generated) => {
       const { level, stats, itemPx, recipe } = generated;
-      const [low, high] = winRange(generated);
+      const range = (figure: Parameters<typeof statRange>[1]) => statRange(generated, figure).map(pct).join('-');
+      const { casual, expert } = stats;
       const kinds = new Set([...level.shelves.flat(2), ...(level.mechanics ?? []).flatMap((m) => (m.kind === 'tracks' ? m.tracks.flatMap((t) => t.carriers.flat()) : []))].filter((k) => typeof k === 'string'));
       const layers = Math.max(...level.shelves.map((s) => s.length));
       return [
@@ -65,8 +66,9 @@ export function summaryTable(levels: readonly WithArrangements[]): string {
         `layers≤${layers}`,
         `${kinds.size} kinds`,
         `${level.timeLimitSeconds}s`,
-        `win ${pct(stats.winRate)} blocked ${pct(stats.blockedRate)} timeUp ${pct(stats.timeUpRate)}`,
-        `${generated.arrangements.length + 1} arrangements, win ${pct(low)}-${pct(high)}`,
+        `casual win ${pct(casual.winRate)} blocked ${pct(casual.blockedRate)} timeUp ${pct(casual.timeUpRate)} pressure ${pct(casual.pressure)}`,
+        `expert win ${pct(expert.winRate)}`,
+        `${generated.arrangements.length + 1} arrangements: casual ${range((s) => s.casual.winRate)}, expert ${range((s) => s.expert.winRate)}, pressure ${range((s) => s.casual.pressure)}`,
         `items ${itemPx.portrait}/${itemPx.landscape}px`,
       ].join(' | ');
     })
