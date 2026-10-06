@@ -24,6 +24,13 @@ const small: LevelRecipe = {
 };
 import { rng } from '../tools/simulator';
 
+/**
+ * Recipe 9 (shelves, a track of stacks, a lock) searched afresh with bands anything meets, so these tests do not
+ * depend on the board shipped for level 9.
+ */
+const { candidate: _pinned, ...nine } = recipeFor(9);
+const loose: LevelRecipe = { ...nine, winBand: [0, 1], time: { slack: 1, timeUp: [0, 1] } };
+
 describe('level generator', () => {
   it('builds the same board from the same seed, and another from another seed', () => {
     const recipe = recipeFor(3);
@@ -59,7 +66,7 @@ describe('level generator', () => {
   });
 
   it('rearranges only where items are: occupied places, stacks and blocker start stay', () => {
-    const level = generateLevel(recipeFor(9)).level;
+    const level = generateLevel(loose).level;
     const other = rearrange(level, rng(5));
     const shape = (l: typeof level) => JSON.stringify(l, (_k, v: unknown) => (typeof v === 'string' && v !== 'nusa-009' && v !== 'vertical' && v !== 'lockedShelves' && v !== 'tracks' && v !== 'shelves' && v !== 'track' ? 'x' : v));
     expect(shape(other)).toBe(shape(level));
@@ -68,9 +75,8 @@ describe('level generator', () => {
   });
 
   it('makes arrangements that meet the rules and the band, the same each time', () => {
-    const base = recipeFor(9);
-    const recipe: LevelRecipe = { ...base, winBand: [0.3, 1], time: { ...base.time, timeUp: [0, 1] } };
-    const level = generateLevel(base).level;
+    const recipe: LevelRecipe = { ...loose, winBand: [0.3, 1] };
+    const level = generateLevel(loose).level;
     const found = generateArrangements(level, recipe, 1);
     expect(found).toHaveLength(ARRANGEMENTS - 1);
     expect(generateArrangements(level, recipe, 1)).toEqual(found);
