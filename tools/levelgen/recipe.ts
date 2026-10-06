@@ -60,6 +60,11 @@ export interface LevelRecipe {
   readonly emptyFront: number;
   /** Locked shelves: triples needed to open each one. */
   readonly locked?: readonly number[];
+  /**
+   * A roaming blocker on one of the empty front slots of an unlocked shelf; a combo of `removeAtCombo`
+   * removes it.
+   */
+  readonly blocker?: { readonly removeAtCombo: number };
   /** Combo multipliers, when they differ from the defaults. */
   readonly comboMultipliers?: readonly number[];
   /** Special levels carry a theme. */
@@ -74,7 +79,14 @@ export interface LevelRecipe {
   /**
    * How the time limit is set: the limit that gives a win rate in the band, never less than `slack` times the
    * time 90% of the simulator's wins need. `timeUp` bounds the share of games lost to the clock. `fixed` sets the
-   * limit outright (special levels that keep their time); the win band is then only checked.
+   * limit outright (special levels that keep their time); the win band is then only checked. `typical` sets the
+   * limit from the board together with a few reshuffles of it, so it suits the level's arrangements rather than
+   * one lucky board (see generateArrangements).
    */
-  readonly time: { readonly slack: number; readonly timeUp: readonly [number, number]; readonly fixed?: number };
+  readonly time: {
+    readonly slack: number;
+    readonly timeUp: readonly [number, number];
+    readonly fixed?: number;
+    readonly typical?: boolean;
+  };
 }

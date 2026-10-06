@@ -26,13 +26,16 @@ describe('choosing a level’s item types', () => {
     expect(chooseTypes(3, 6, history, { ...ROTATION, rest: 1 })).toEqual(STARTER_KINDS.slice(0, 6));
   });
 
-  it('shows a theme’s objects more often in the levels after its own', () => {
-    const levels = [5, 6, 7, 8, 9].map((number) => ({ number, types: 10 }));
-    const count = (plan: Map<number, string[]>) =>
-      [6, 7, 8, 9].reduce((sum, n) => sum + plan.get(n)!.filter((t) => kindOf(t).theme === 'budaya-jawa').length, 0);
-    const featured = count(planTypes(levels));
-    const plain = count(planTypes(levels, { ...ROTATION, featureBonus: 0 }));
-    expect(featured).toBeGreaterThan(plain);
+  it('features some of a theme’s objects in each of the levels after its own, taking turns', () => {
+    const levels = [5, 6, 7, 8, 9, 10, 11].map((number) => ({ number, types: 10 }));
+    const plan = planTypes(levels);
+    const javanese = (n: number) => plan.get(n)!.filter((t) => kindOf(t).theme === 'budaya-jawa');
+    for (const n of [6, 7, 8, 9]) expect(javanese(n).length, `level ${n}`).toBeGreaterThanOrEqual(ROTATION.featureCount);
+    // The most rested go first: level 7 brings the ones level 6 left out.
+    expect(javanese(7).filter((t) => javanese(6).includes(t))).toEqual([]);
+    expect(javanese(11)).toEqual([]);
+    const none = planTypes(levels, { ...ROTATION, featureCount: 0 });
+    expect([6, 7, 8, 9].some((n) => none.get(n)!.filter((t) => kindOf(t).theme === 'budaya-jawa').length < ROTATION.featureCount)).toBe(true);
   });
 
   it('keeps look-alikes apart while it can, and uses colour variants only when every unlocked kind is in', () => {

@@ -10,21 +10,22 @@ export const KIND_ORDER: readonly string[] = [...STARTER_KINDS, ...ITEM_KINDS.ma
  * How levels rotate their item types.
  * - `rest`: a kind used in a level scores lower for this many levels after it, so kinds take a break and come
  *   back; after that it is as due as a kind never used.
- * - `featureLevels` and `featureBonus`: for this many levels after a theme's level, its cultural objects score
- *   higher, so players notice them before they join the general rotation.
+ * - `featureLevels` and `featureCount`: in each of the this many levels after a theme's level, `featureCount` of its
+ *   cultural objects are in for sure (the most rested first, so they take turns), so players see them again
+ *   before they join the general rotation.
  */
 export interface RotationParams {
   readonly rest: number;
   readonly featureLevels: number;
-  readonly featureBonus: number;
+  readonly featureCount: number;
 }
 
-export const ROTATION: RotationParams = { rest: 3, featureLevels: 4, featureBonus: 3 };
+export const ROTATION: RotationParams = { rest: 3, featureLevels: 4, featureCount: 3 };
 
 /**
  * The types of level `level`, one triple each: kinds unlocked by then, the most due first (see RotationParams;
- * a themed level takes all its own objects first), keeping look-alikes apart while it can, and colour variants
- * only when every unlocked kind is in. `history` holds the types of the levels before it, by level number.
+ * a themed level takes all its own objects first, and the levels after it some of them), keeping look-alikes
+ * apart while it can, and colour variants only when every unlocked kind is in. `history` holds the types of the levels before it, by level number.
  */
 export function chooseTypes(
   level: number,
@@ -37,17 +38,18 @@ export function chooseTypes(
     if (n >= level) continue;
     for (const type of types) lastUsed.set(type.split(':')[0]!, n);
   }
-  const score = (id: string) => {
-    const kind = ITEM_KINDS.find((k) => k.id === id)!;
-    const unlock = unlockLevel(kind);
+  const rest = (id: string) => {
     const last = lastUsed.get(id);
-    const rest = last === undefined ? params.rest + 1 : Math.min(level - last, params.rest + 1);
-    const featured = kind.theme !== undefined && level > unlock && level - unlock <= params.featureLevels;
-    return (unlock === level && kind.theme !== undefined ? 1000 : 0) + rest + (featured ? params.featureBonus : 0);
+    return last === undefined ? params.rest + 1 : Math.min(level - last, params.rest + 1);
   };
   const eligible = KIND_ORDER.filter((id) => unlockLevel(ITEM_KINDS.find((k) => k.id === id)!) <= level);
-  // Stable sort: equal scores keep KIND_ORDER.
-  const ranked = [...eligible].sort((a, b) => score(b) - score(a));
+  // Stable sorts: equal scores keep KIND_ORDER.
+  const byRest = [...eligible].sort((a, b) => rest(b) - rest(a));
+  const cultural = (id: string) => ITEM_KINDS.find((k) => k.id === id)!.theme !== undefined;
+  const sinceUnlock = (id: string) => level - unlockLevel(ITEM_KINDS.find((k) => k.id === id)!);
+  const own = byRest.filter((id) => cultural(id) && sinceUnlock(id) === 0);
+  const featured = byRest.filter((id) => cultural(id) && sinceUnlock(id) > 0 && sinceUnlock(id) <= params.featureLevels).slice(0, params.featureCount);
+  const ranked = [...own, ...featured, ...byRest.filter((id) => !own.includes(id) && !featured.includes(id))];
   const picked: string[] = [];
   const deferred: string[] = [];
   for (const id of ranked) {

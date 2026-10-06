@@ -1,5 +1,5 @@
 import type { LevelDefinition } from '../../src/core';
-import { REPORT_RUNS, type GeneratedLevel } from './generate';
+import { REPORT_RUNS, winRange, type WithArrangements } from './generate';
 
 /** A value as TypeScript source: single quotes, short arrays and objects on one line. */
 function literal(value: unknown, indent: string): string {
@@ -28,7 +28,7 @@ export const constName = (id: string) => id.replace(/-([a-z0-9])/g, (_, c: strin
 const percent = (share: number) => `${Math.round(share * 100)}%`;
 
 /** The level's source file, with how it was made and what the simulator makes of it. */
-export function levelSource(generated: GeneratedLevel): string {
+export function levelSource(generated: WithArrangements): string {
   const { level, recipe, seed, attempt, stats } = generated;
   // Fixed key order, so regenerating a level only changes what really changed.
   const ordered: Record<string, unknown> = { id: level.id };
@@ -37,6 +37,8 @@ export function levelSource(generated: GeneratedLevel): string {
   ordered.shelves = level.shelves;
   if (level.mechanics) ordered.mechanics = level.mechanics;
   if (level.layout) ordered.layout = level.layout;
+  if (level.arrangements?.length) ordered.arrangements = level.arrangements;
+  const [low, high] = winRange(generated);
   return `import type { LevelDefinition } from '../../core';
 
 /**
@@ -48,6 +50,9 @@ export function levelSource(generated: GeneratedLevel): string {
  *
  * Simulated casual player, ${REPORT_RUNS} games: wins ${percent(stats.winRate)}, out of space ${percent(stats.blockedRate)}, out of time ${percent(stats.timeUpRate)}.
  * A guide only: real players may find it easier or harder.
+ *
+ * ${generated.arrangements.length + 1} arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins ${percent(low)} to ${percent(high)} of games across them.
  */
 export const ${constName(level.id)}: LevelDefinition = ${literal(ordered as unknown as LevelDefinition, '')};
 `;

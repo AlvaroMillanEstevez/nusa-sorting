@@ -1,5 +1,6 @@
 import {
   COMBO_DEFAULTS,
+  type Arrangement,
   createGame,
   LevelError,
   startTriples,
@@ -168,6 +169,15 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
       shelves: lockedShelves.map((shelf, i) => ({ shelf, triplesRequired: recipe.locked![i]! })),
     });
   }
+  if (recipe.blocker) {
+    const locked = new Set(mechanics.flatMap((m) => (m.kind === 'lockedShelves' ? m.shelves.map((s) => s.shelf) : [])));
+    const free = shelves.flatMap((layers, shelf) =>
+      locked.has(shelf) ? [] : layers[0]!.flatMap((type, slot) => (type === null ? [{ shelf, slot }] : [])),
+    );
+    if (free.length === 0) return null;
+    const start = free[Math.floor(random() * free.length)]!;
+    mechanics.push({ kind: 'roamingBlocker', start, seed: Math.floor(random() * 1_000_000), removeAtCombo: recipe.blocker.removeAtCombo });
+  }
   if (tracks.length > 0) {
     mechanics.push({
       kind: 'tracks',
@@ -222,13 +232,14 @@ export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, '
 }
 
 /**
- * Whether the level can be won: some untimed game of the simulated player wins (a won game is a solution),
- * or else the solver finds a way; its search can run out on big boards, which is why the player goes first.
- * The player's wins only count without a roaming blocker, whose removal depends on combos the solver does not
- * assume.
+ * Whether the level can be won without combos: some untimed game of the simulated player wins (a won game is a
+ * solution), or else the solver finds a way; its search can run out on big boards, which is why the player goes
+ * first. A roaming blocker never goes away in those games, since its removal depends on a combo: where it jumps
+ * does not.
  */
 function isSolvable(state: GameState): boolean {
-  if (!state.blocker && playMany({ ...state, timeLeftMs: null }, 40, 7).some((o) => o.won)) return true;
+  const blocker = state.blocker && { ...state.blocker, removeAtCombo: Number.POSITIVE_INFINITY };
+  if (playMany({ ...state, blocker, timeLeftMs: null }, 40, 7).some((o) => o.won)) return true;
   return solve(state) !== undefined;
 }
 
@@ -241,7 +252,8 @@ const inRange = (value: number, [min, max]: readonly [number, number]) => value 
  * shortest one (never under the recipe's floor) whose predicted win rate reaches the band while the share of
  * games lost to the clock stays in its range, checked with timed games.
  */
-function chooseTime(level: LevelDefinition, recipe: LevelRecipe): { seconds: number; stats: SimulationStats } | null {
+function chooseTime(level: LevelDefinition, recipe: LevelRecipe, seed: number): { seconds: number; stats: SimulationStats } | null {
+  if (recipe.time.typical) return chooseTypicalTime(level, recipe, seed);
   if (recipe.time.fixed !== undefined) {
     const stats = simulate(createGame({ ...level, timeLimitSeconds: recipe.time.fixed }), SEARCH_RUNS, 1);
     const fits = inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp);
@@ -273,6 +285,52 @@ function chooseTime(level: LevelDefinition, recipe: LevelRecipe): { seconds: num
   return null;
 }
 
+/** Boards a typical time is set from: the board and this many reshuffles of it that meet the rules. */
+const TYPICAL_RESHUFFLES = 4;
+const TYPICAL_RUNS = 40;
+/** Mixed into a candidate's seed for its reshuffles, so they differ from the board's own random choices. */
+const TYPICAL_SALT = 0x5eed;
+
+/**
+ * Like chooseTime, for recipes with `time.typical`: the shortest limit (never under the floor) at which the
+ * board and a few reshuffles of it, together, land in the band. Null if none does, or if too few reshuffles
+ * meet the rules.
+ */
+function chooseTypicalTime(level: LevelDefinition, recipe: LevelRecipe, seed: number): { seconds: number; stats: SimulationStats } | null {
+  const random = rng(seed);
+  const boards = [level];
+  for (let i = 0; i < TYPICAL_RESHUFFLES * 3 && boards.length <= TYPICAL_RESHUFFLES; i++) {
+    const other = rearrange(level, random);
+    if (ruleFailures(other, recipe).length === 0) boards.push(other);
+  }
+  if (boards.length <= TYPICAL_RESHUFFLES) return null;
+  const runs = boards.length * TYPICAL_RUNS;
+  const winTimes = boards
+    .flatMap((b) => playMany(createGame(b), TYPICAL_RUNS, 1))
+    .filter((o) => o.won)
+    .map((o) => o.seconds)
+    .sort((a, b) => a - b);
+  const untimedRate = winTimes.length / runs;
+  if (untimedRate < recipe.winBand[0]) return null;
+  const p90 = winTimes[Math.floor(winTimes.length * 0.9)] ?? winTimes.at(-1)!;
+  const floor = roundUp(recipe.time.slack * p90);
+  const predicted = (limit: number) => winTimes.filter((s) => s <= limit).length / runs;
+  const last = Math.max(floor, roundUp(winTimes.at(-1)!) + TIME_STEP);
+  const near = ([min, max]: readonly [number, number]) => [min - 0.05, max + 0.05] as const;
+  let checks = 0;
+  for (let limit = floor; limit <= last && checks < 6; limit += TIME_STEP) {
+    const win = predicted(limit);
+    if (win < recipe.winBand[0] - 0.05 || !inRange(untimedRate - win, near(recipe.time.timeUp))) continue;
+    checks++;
+    const all = boards.map((b) => simulate(createGame({ ...b, timeLimitSeconds: limit }), TYPICAL_RUNS, 1));
+    const mean = (key: 'winRate' | 'timeUpRate') => all.reduce((sum, s) => sum + s[key], 0) / all.length;
+    if (inRange(mean('winRate'), recipe.winBand) && inRange(mean('timeUpRate'), recipe.time.timeUp)) {
+      return { seconds: limit, stats: all[0]! };
+    }
+  }
+  return null;
+}
+
 /** The seed of a candidate: the recipe's seed and the attempt number, mixed. */
 const candidateSeed = (seed: number, attempt: number) => (Math.imul(seed, 1_000_003) + attempt * 7_919) >>> 0;
 
@@ -280,14 +338,14 @@ const candidateSeed = (seed: number, attempt: number) => (Math.imul(seed, 1_000_
  * Generates the recipe's level: tries candidate boards in a fixed order (from the seed) until one meets every
  * rule and lands in the win band with a fitting time limit. Same recipe and seed, same level.
  */
-export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttempts = 4000): GeneratedLevel {
+export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttempts = 4000, from = 0): GeneratedLevel {
   // A recipe that names its candidate (with its own seed) keeps that board: only the time is worked out.
-  if (recipe.candidate !== undefined && seed === recipe.seed) return retime(recipe, seed, recipe.candidate);
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  if (isPinned(recipe, seed)) return retime(recipe, seed, recipe.candidate!);
+  for (let attempt = from; attempt < maxAttempts; attempt++) {
     if (attempt > 0 && attempt % 250 === 0) console.log(`  ${recipe.id}: ${attempt} candidates tried`);
     const board = buildCandidate(recipe, rng(candidateSeed(seed, attempt)));
     if (!board || ruleFailures(board, recipe).length > 0) continue;
-    const timed = chooseTime(board, recipe);
+    const timed = chooseTime(board, recipe, candidateSeed(seed, attempt) ^ TYPICAL_SALT);
     if (!timed) continue;
     const level = { ...board, timeLimitSeconds: timed.seconds };
     const stats = simulate(createGame(level), REPORT_RUNS, 1);
@@ -297,12 +355,15 @@ export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttemp
   throw new Error(`${recipe.id}: no level found in ${maxAttempts} attempts with seed ${seed}`);
 }
 
+/** Whether the recipe names the board to use for this seed, rather than searching for one. */
+export const isPinned = (recipe: LevelRecipe, seed: number) => recipe.candidate !== undefined && seed === recipe.seed;
+
 function retime(recipe: LevelRecipe, seed: number, attempt: number): GeneratedLevel {
   const board = buildCandidate(recipe, rng(candidateSeed(seed, attempt)));
   if (!board) throw new Error(`${recipe.id}: candidate ${attempt} no longer fits the recipe`);
   const failures = ruleFailures(board, recipe);
   if (failures.length > 0) throw new Error(`${recipe.id}: candidate ${attempt} breaks the rules: ${failures.join('; ')}`);
-  const timed = chooseTime(board, recipe);
+  const timed = chooseTime(board, recipe, candidateSeed(seed, attempt) ^ TYPICAL_SALT);
   if (!timed) throw new Error(`${recipe.id}: no time limit puts candidate ${attempt} in the win band`);
   const level = { ...board, timeLimitSeconds: timed.seconds };
   return { level, recipe, seed, attempt, stats: simulate(createGame(level), REPORT_RUNS, 1), itemPx: itemPx(level) };
@@ -314,3 +375,88 @@ export function itemPx(level: LevelDefinition): { portrait: number; landscape: n
   return { portrait: at(390, 844), landscape: at(844, 390) };
 }
 
+
+/** Arrangements per level, the level as written included (see Arrangement in src/core). */
+export const ARRANGEMENTS = 8;
+/**
+ * Arrangements a newly searched board needs, the board itself included: a board most of whose reshuffles leave
+ * the band is a lucky exception of its recipe, so the search moves on to the next candidate.
+ */
+export const MIN_NEW_ARRANGEMENTS = 6;
+/** With quickReject: reshuffles after which a board with fewer than two good ones is given up. */
+const QUICK_REJECT_AFTER = 60;
+/** Reshuffles tried per level before settling for fewer arrangements. */
+const ARRANGEMENT_ATTEMPTS = 400;
+
+export interface GeneratedArrangement {
+  readonly arrangement: Arrangement;
+  readonly stats: SimulationStats;
+}
+
+/**
+ * The same board with its items in other places: every occupied shelf slot and stack position keeps being
+ * occupied (so empty slots, layers, stack depths and a roaming blocker's start stay put) and gets a random item.
+ */
+export function rearrange(level: LevelDefinition, random: Random): LevelDefinition {
+  const items: string[] = [];
+  level.shelves.forEach((layers) => layers.forEach((slots) => slots.forEach((t) => t !== null && items.push(t))));
+  for (const m of level.mechanics ?? []) {
+    if (m.kind === 'tracks') for (const track of m.tracks) for (const c of track.carriers) if (!('shelf' in c)) items.push(...c);
+  }
+  shuffle(random, items);
+  let next = 0;
+  const shelves = level.shelves.map((layers) => layers.map((slots) => slots.map((t) => (t === null ? null : items[next++]!))));
+  const mechanics = level.mechanics?.map((m): MechanicDefinition => {
+    if (m.kind !== 'tracks') return m;
+    const tracks = m.tracks.map((track) => ({
+      ...track,
+      carriers: track.carriers.map((c) => ('shelf' in c ? c : c.map(() => items[next++]!))),
+    }));
+    return { ...m, tracks };
+  });
+  return { ...level, shelves, ...(mechanics ? { mechanics } : {}) };
+}
+
+/** The arrangement (items only) of a level. */
+export function arrangementOf(level: LevelDefinition): Arrangement {
+  const tracks = level.mechanics?.find((m) => m.kind === 'tracks');
+  if (tracks?.kind !== 'tracks') return { shelves: level.shelves };
+  const stacks = tracks.tracks.map((track) =>
+    track.carriers.some((c) => 'shelf' in c) ? null : (track.carriers as readonly (readonly string[])[]),
+  );
+  return { shelves: level.shelves, stacks };
+}
+
+/**
+ * Up to ARRANGEMENTS - 1 other arrangements of a generated level, each meeting every rule and landing in the
+ * recipe's win band with the level's own time limit (checked with the same simulated games as the level).
+ * Reshuffles that miss are discarded. Same level, recipe and seed, same arrangements. With `quickReject` (while
+ * searching for a new board) it gives up early on a board whose reshuffles clearly miss the band too often to
+ * reach MIN_NEW_ARRANGEMENTS.
+ */
+export function generateArrangements(level: LevelDefinition, recipe: LevelRecipe, seed: number, quickReject = false): GeneratedArrangement[] {
+  const found: GeneratedArrangement[] = [];
+  const seen = new Set([JSON.stringify(arrangementOf(level))]);
+  const random = rng(candidateSeed(seed, 1_000_000));
+  for (let attempt = 0; attempt < ARRANGEMENT_ATTEMPTS && found.length < ARRANGEMENTS - 1; attempt++) {
+    if (quickReject && attempt === QUICK_REJECT_AFTER && found.length < 2) return found;
+    const candidate = rearrange(level, random);
+    const key = JSON.stringify(arrangementOf(candidate));
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (ruleFailures(candidate, recipe).length > 0) continue;
+    const stats = simulate(createGame(candidate), REPORT_RUNS, 1);
+    if (!inRange(stats.winRate, recipe.winBand) || !inRange(stats.timeUpRate, recipe.time.timeUp)) continue;
+    found.push({ arrangement: arrangementOf(candidate), stats });
+  }
+  return found;
+}
+
+/** A generated level with the arrangements made for it (also in `level.arrangements`). */
+export type WithArrangements = GeneratedLevel & { readonly arrangements: readonly GeneratedArrangement[] };
+
+/** Lowest and highest simulated win rate over all of a level's arrangements, the level as written included. */
+export function winRange(generated: WithArrangements): [number, number] {
+  const rates = [generated.stats.winRate, ...generated.arrangements.map((a) => a.stats.winRate)];
+  return [Math.min(...rates), Math.max(...rates)];
+}

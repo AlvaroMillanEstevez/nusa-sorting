@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createGame } from '../src/core';
-import { buildCandidate, generateLevel, ruleFailures } from '../tools/levelgen/generate';
+import { createGame, withArrangement } from '../src/core';
+import { ARRANGEMENTS, arrangementOf, buildCandidate, generateArrangements, generateLevel, rearrange, ruleFailures } from '../tools/levelgen/generate';
 import { constName, levelSource } from '../tools/levelgen/format';
 import type { LevelRecipe } from '../tools/levelgen/recipe';
 import { RECIPES, recipeFor } from '../tools/levelgen/recipes';
-import { levels, upcomingLevels } from '../src/data/levels';
+import { levels } from '../src/data/levels';
 
 /** A small recipe that generates in a moment, for testing the generator itself. */
 const small: LevelRecipe = {
@@ -58,8 +58,32 @@ describe('level generator', () => {
     expect(() => createGame(other.level)).not.toThrow();
   });
 
+  it('rearranges only where items are: occupied places, stacks and blocker start stay', () => {
+    const level = generateLevel(recipeFor(9)).level;
+    const other = rearrange(level, rng(5));
+    const shape = (l: typeof level) => JSON.stringify(l, (_k, v: unknown) => (typeof v === 'string' && v !== 'nusa-009' && v !== 'vertical' && v !== 'lockedShelves' && v !== 'tracks' && v !== 'shelves' && v !== 'track' ? 'x' : v));
+    expect(shape(other)).toBe(shape(level));
+    expect(other.shelves).not.toEqual(level.shelves);
+    expect(withArrangement({ ...level, arrangements: [arrangementOf(other)] }, 1)).toEqual(other);
+  });
+
+  it('makes arrangements that meet the rules and the band, the same each time', () => {
+    const base = recipeFor(9);
+    const recipe: LevelRecipe = { ...base, winBand: [0.3, 1], time: { ...base.time, timeUp: [0, 1] } };
+    const level = generateLevel(base).level;
+    const found = generateArrangements(level, recipe, 1);
+    expect(found).toHaveLength(ARRANGEMENTS - 1);
+    expect(generateArrangements(level, recipe, 1)).toEqual(found);
+    const keys = new Set([level, ...found.map((f) => withArrangement({ ...level, arrangements: [f.arrangement] }, 1))].map((l) => JSON.stringify(l.shelves)));
+    expect(keys.size).toBe(ARRANGEMENTS);
+    for (const { arrangement, stats } of found) {
+      expect(ruleFailures(withArrangement({ ...level, arrangements: [arrangement] }, 1), recipe)).toEqual([]);
+      expect(stats.winRate).toBeGreaterThanOrEqual(0.3);
+    }
+  }, 120_000);
+
   it('writes a reviewable level file', () => {
-    const generated = generateLevel(small);
+    const generated = { ...generateLevel(small), arrangements: [] };
     const source = levelSource(generated);
     expect(source).toContain("export const nusa001: LevelDefinition = {");
     expect(source).toContain("id: 'nusa-001',");
@@ -68,9 +92,8 @@ describe('level generator', () => {
     expect(constName('nusa-010')).toBe('nusa010');
   });
 
-  it('has one recipe per level in order, the game\'s levels then the upcoming ones, with unique ids and seeds', () => {
-    const numbers = [...levels.map((_, i) => i + 1), ...upcomingLevels.map((l) => l.number)];
-    expect(RECIPES.map((r) => r.number)).toEqual(numbers);
+  it('has one recipe per level, in order, with unique ids and seeds', () => {
+    expect(RECIPES.map((r) => r.number)).toEqual(levels.map((_, i) => i + 1));
     expect(RECIPES.map((r) => r.id)).toEqual(RECIPES.map((r) => `nusa-${String(r.number).padStart(3, '0')}`));
     expect(new Set(RECIPES.map((r) => r.id)).size).toBe(RECIPES.length);
     expect(new Set(RECIPES.map((r) => r.seed)).size).toBe(RECIPES.length);

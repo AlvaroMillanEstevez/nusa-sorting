@@ -1,4 +1,4 @@
-import { generateLevel, type GeneratedLevel } from './generate';
+import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, winRange, type WithArrangements } from './generate';
 import { constName, levelSource } from './format';
 import { RECIPES, recipeFor } from './recipes';
 
@@ -26,11 +26,20 @@ export function main(args: readonly string[]): RunResult {
     throw new Error('--seed takes an integer and applies to one level at a time');
   }
 
-  const generated: GeneratedLevel[] = recipes.map((recipe) => {
+  const generated: WithArrangements[] = recipes.map((recipe) => {
     const started = Date.now();
-    const result = generateLevel(recipe, seed ?? recipe.seed);
-    console.log(`${recipe.id}: candidate ${result.attempt} in ${((Date.now() - started) / 1000).toFixed(1)} s`);
-    return result;
+    const levelSeed = seed ?? recipe.seed;
+    let result = generateLevel(recipe, levelSeed);
+    const searching = !isPinned(recipe, levelSeed);
+    let arrangements = generateArrangements(result.level, recipe, result.seed, searching);
+    while (searching && arrangements.length + 1 < MIN_NEW_ARRANGEMENTS) {
+      console.log(`  ${recipe.id}: candidate ${result.attempt} has only ${arrangements.length + 1} arrangements, searching on`);
+      result = generateLevel(recipe, levelSeed, 4000, result.attempt + 1);
+      arrangements = generateArrangements(result.level, recipe, result.seed, true);
+    }
+    const seconds = ((Date.now() - started) / 1000).toFixed(1);
+    console.log(`${recipe.id}: candidate ${result.attempt}, ${arrangements.length + 1} arrangements, in ${seconds} s`);
+    return { ...result, level: { ...result.level, arrangements: arrangements.map((a) => a.arrangement) }, arrangements };
   });
   const files = generated.map((g) => ({ path: `src/data/levels/${g.level.id}.ts`, content: levelSource(g) }));
   return { files, summary: summaryTable(generated) };
@@ -39,9 +48,11 @@ export function main(args: readonly string[]): RunResult {
 const pct = (share: number) => `${Math.round(share * 100)}%`;
 
 /** One line per level: its shape and the simulator's figures. */
-export function summaryTable(levels: readonly GeneratedLevel[]): string {
+export function summaryTable(levels: readonly WithArrangements[]): string {
   return levels
-    .map(({ level, stats, itemPx, recipe }) => {
+    .map((generated) => {
+      const { level, stats, itemPx, recipe } = generated;
+      const [low, high] = winRange(generated);
       const kinds = new Set([...level.shelves.flat(2), ...(level.mechanics ?? []).flatMap((m) => (m.kind === 'tracks' ? m.tracks.flatMap((t) => t.carriers.flat()) : []))].filter((k) => typeof k === 'string'));
       const layers = Math.max(...level.shelves.map((s) => s.length));
       return [
@@ -51,6 +62,7 @@ export function summaryTable(levels: readonly GeneratedLevel[]): string {
         `${kinds.size} kinds`,
         `${level.timeLimitSeconds}s`,
         `win ${pct(stats.winRate)} blocked ${pct(stats.blockedRate)} timeUp ${pct(stats.timeUpRate)}`,
+        `${generated.arrangements.length + 1} arrangements, win ${pct(low)}-${pct(high)}`,
         `items ${itemPx.portrait}/${itemPx.landscape}px`,
       ].join(' | ');
     })
