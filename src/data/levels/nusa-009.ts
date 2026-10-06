@@ -9,17 +9,20 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 66%, out of space 28%, out of time 7%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 8 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 60% to 75% of games across them.
  */
 export const nusa009: LevelDefinition = {
   id: 'nusa-009',
   timeLimitSeconds: 80,
   shelves: [
-    [['mie-goreng', 'blangkon', null], ['tempe', 'martabak-manis', null]],
-    [['mie-goreng', 'tempe', null], [null, 'ikan-bakar', 'tempe']],
-    [['pisang-goreng', 'martabak-manis', 'kipas'], ['ayam-goreng', 'caping', 'caping']],
-    [[null, null, 'blangkon']],
-    [['batik', 'batik', 'ayam-goreng']],
-    [['batik', 'pisang-goreng', 'pisang-goreng']],
+    [['gong', 'salak', null], ['es-kelapa-muda', 'es-cendol', null]],
+    [['gong', 'es-kelapa-muda', null], [null, 'klepon', 'es-kelapa-muda']],
+    [['jamu', 'es-cendol', 'kendang'], ['bakso', 'wayang-kulit', 'wayang-kulit']],
+    [[null, null, 'salak']],
+    [['cabai', 'cabai', 'bakso']],
+    [['cabai', 'jamu', 'jamu']],
   ],
   mechanics: [
     { kind: 'lockedShelves', shelves: [{ shelf: 4, triplesRequired: 2 }] },
@@ -30,11 +33,11 @@ export const nusa009: LevelDefinition = {
           orientation: 'vertical',
           speed: 0.6,
           carriers: [
-            ['caping'],
+            ['wayang-kulit'],
             [],
-            ['ikan-bakar', 'kipas'],
-            ['mie-goreng', 'blangkon', 'ayam-goreng'],
-            ['ikan-bakar', 'kipas', 'martabak-manis'],
+            ['klepon', 'kendang'],
+            ['gong', 'salak', 'bakso'],
+            ['klepon', 'kendang', 'es-cendol'],
           ],
         },
       ],
@@ -47,4 +50,139 @@ export const nusa009: LevelDefinition = {
       { kind: 'shelves', shelves: [3, 4, 5] },
     ],
   },
+  arrangements: [
+    {
+      shelves: [
+        [['kendang', 'es-cendol', null], ['es-kelapa-muda', 'cabai', null]],
+        [['es-cendol', 'klepon', null], [null, 'jamu', 'gong']],
+        [['bakso', 'bakso', 'wayang-kulit'], ['es-kelapa-muda', 'kendang', 'es-cendol']],
+        [[null, null, 'kendang']],
+        [['gong', 'salak', 'jamu']],
+        [['wayang-kulit', 'klepon', 'klepon']],
+      ],
+      stacks: [
+        [
+          ['cabai'],
+          [],
+          ['gong', 'salak'],
+          ['cabai', 'bakso', 'es-kelapa-muda'],
+          ['wayang-kulit', 'jamu', 'salak'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['gong', 'jamu', null], ['bakso', 'bakso', null]],
+        [['klepon', 'cabai', null], [null, 'wayang-kulit', 'kendang']],
+        [['wayang-kulit', 'es-cendol', 'es-cendol'], ['cabai', 'salak', 'klepon']],
+        [[null, null, 'wayang-kulit']],
+        [['bakso', 'jamu', 'kendang']],
+        [['gong', 'es-cendol', 'es-kelapa-muda']],
+      ],
+      stacks: [
+        [
+          ['gong'],
+          [],
+          ['es-kelapa-muda', 'kendang'],
+          ['es-kelapa-muda', 'salak', 'salak'],
+          ['cabai', 'jamu', 'klepon'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['salak', 'salak', null], ['klepon', 'es-cendol', null]],
+        [['cabai', 'es-cendol', null], [null, 'bakso', 'jamu']],
+        [['kendang', 'cabai', 'bakso'], ['bakso', 'es-kelapa-muda', 'gong']],
+        [[null, null, 'gong']],
+        [['es-cendol', 'gong', 'kendang']],
+        [['wayang-kulit', 'jamu', 'wayang-kulit']],
+      ],
+      stacks: [
+        [
+          ['cabai'],
+          [],
+          ['klepon', 'wayang-kulit'],
+          ['jamu', 'es-kelapa-muda', 'es-kelapa-muda'],
+          ['salak', 'klepon', 'kendang'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['wayang-kulit', 'jamu', null], ['klepon', 'bakso', null]],
+        [['gong', 'cabai', null], [null, 'salak', 'bakso']],
+        [['cabai', 'gong', 'salak'], ['es-kelapa-muda', 'kendang', 'kendang']],
+        [[null, null, 'cabai']],
+        [['gong', 'salak', 'klepon']],
+        [['wayang-kulit', 'es-kelapa-muda', 'es-cendol']],
+      ],
+      stacks: [
+        [
+          ['jamu'],
+          [],
+          ['jamu', 'klepon'],
+          ['es-cendol', 'kendang', 'bakso'],
+          ['es-cendol', 'wayang-kulit', 'es-kelapa-muda'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['kendang', 'klepon', null], ['wayang-kulit', 'salak', null]],
+        [['jamu', 'klepon', null], [null, 'cabai', 'es-cendol']],
+        [['salak', 'bakso', 'gong'], ['cabai', 'jamu', 'salak']],
+        [[null, null, 'kendang']],
+        [['jamu', 'bakso', 'es-kelapa-muda']],
+        [['wayang-kulit', 'klepon', 'wayang-kulit']],
+      ],
+      stacks: [
+        [
+          ['kendang'],
+          [],
+          ['cabai', 'es-kelapa-muda'],
+          ['es-kelapa-muda', 'es-cendol', 'gong'],
+          ['bakso', 'gong', 'es-cendol'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['es-cendol', 'wayang-kulit', null], ['gong', 'jamu', null]],
+        [['wayang-kulit', 'es-cendol', null], [null, 'bakso', 'kendang']],
+        [['cabai', 'jamu', 'salak'], ['klepon', 'gong', 'klepon']],
+        [[null, null, 'gong']],
+        [['salak', 'jamu', 'kendang']],
+        [['klepon', 'salak', 'bakso']],
+      ],
+      stacks: [
+        [
+          ['es-cendol'],
+          [],
+          ['bakso', 'cabai'],
+          ['wayang-kulit', 'cabai', 'es-kelapa-muda'],
+          ['es-kelapa-muda', 'kendang', 'es-kelapa-muda'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['gong', 'kendang', null], ['gong', 'wayang-kulit', null]],
+        [['jamu', 'es-kelapa-muda', null], [null, 'es-cendol', 'salak']],
+        [['cabai', 'es-kelapa-muda', 'kendang'], ['salak', 'bakso', 'wayang-kulit']],
+        [[null, null, 'cabai']],
+        [['bakso', 'salak', 'jamu']],
+        [['es-cendol', 'es-kelapa-muda', 'es-cendol']],
+      ],
+      stacks: [
+        [
+          ['klepon'],
+          [],
+          ['klepon', 'jamu'],
+          ['cabai', 'gong', 'wayang-kulit'],
+          ['bakso', 'kendang', 'klepon'],
+        ],
+      ],
+    },
+  ],
 };

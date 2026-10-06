@@ -9,6 +9,9 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 67%, out of space 0%, out of time 33%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 4 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 60% to 73% of games across them.
  */
 export const nusa004: LevelDefinition = {
   id: 'nusa-004',
@@ -44,4 +47,66 @@ export const nusa004: LevelDefinition = {
       { kind: 'shelves', shelves: [5, 6, 7] },
     ],
   },
+  arrangements: [
+    {
+      shelves: [
+        [
+          ['onde-onde', null, 'nasi-goreng'],
+          ['kerupuk-udang', 'es-teh-manis', 'nasi-goreng'],
+          ['gado-gado', 'ketupat', 'rambutan'],
+        ],
+        [['rambutan', 'manggis', 'rendang']],
+        [['gado-gado', 'bakso', 'bakso']],
+        [['onde-onde', 'manggis', null]],
+        [['nasi-goreng', 'ketupat', 'sate']],
+        [['kerupuk-udang', 'kerupuk-udang', 'onde-onde'], ['sate', 'durian', 'rendang']],
+        [['ketupat', null, null], ['es-teh-manis', 'durian', 'gado-gado']],
+        [
+          [null, 'manggis', 'bakso'],
+          ['sate', 'es-teh-manis', 'durian'],
+          [null, 'rambutan', 'rendang'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['manggis', null, 'nasi-goreng'],
+          ['rendang', 'es-teh-manis', 'rendang'],
+          ['bakso', 'onde-onde', 'rendang'],
+        ],
+        [['rambutan', 'es-teh-manis', 'kerupuk-udang']],
+        [['sate', 'onde-onde', 'rambutan']],
+        [['onde-onde', 'durian', null]],
+        [['sate', 'bakso', 'gado-gado']],
+        [['sate', 'kerupuk-udang', 'nasi-goreng'], ['durian', 'bakso', 'es-teh-manis']],
+        [['rambutan', null, null], ['gado-gado', 'nasi-goreng', 'ketupat']],
+        [
+          [null, 'ketupat', 'ketupat'],
+          ['kerupuk-udang', 'manggis', 'manggis'],
+          [null, 'durian', 'gado-gado'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['bakso', null, 'manggis'],
+          ['sate', 'sate', 'nasi-goreng'],
+          ['nasi-goreng', 'gado-gado', 'durian'],
+        ],
+        [['manggis', 'ketupat', 'ketupat']],
+        [['rendang', 'onde-onde', 'kerupuk-udang']],
+        [['ketupat', 'rendang', null]],
+        [['onde-onde', 'rambutan', 'durian']],
+        [['onde-onde', 'es-teh-manis', 'durian'], ['es-teh-manis', 'nasi-goreng', 'gado-gado']],
+        [['manggis', null, null], ['bakso', 'rambutan', 'es-teh-manis']],
+        [
+          [null, 'bakso', 'sate'],
+          ['rendang', 'rambutan', 'gado-gado'],
+          [null, 'kerupuk-udang', 'kerupuk-udang'],
+        ],
+      ],
+    },
+  ],
 };

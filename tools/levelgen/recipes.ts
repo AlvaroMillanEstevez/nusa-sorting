@@ -1,22 +1,24 @@
 import type { LevelRecipe } from './recipe';
 
 /**
- * Levels 1-10, and the themed levels 15 and 20 made ahead of the levels before them. A sawtooth: after a
- * level with something new or demanding comes a slightly easier one. Every fifth level is a themed level with
- * its own decoration and cultural objects (src/data/themes.ts).
+ * Levels 1-24. A sawtooth: after a level with something new or demanding comes a slightly easier one, and the
+ * hardest so far is level 24. Every fifth level is a themed level with its own decoration and cultural objects
+ * (src/data/themes.ts).
  *
- * Every level holds exactly one triple of each of its types, taken in the generator's type order (types.ts):
- * the starter kinds, then the rest of the catalogue keeping look-alikes apart, then colour variants. So the
- * number of types is the number of items over three, and new kinds appear as levels grow.
+ * Every level holds exactly one triple of each of its types, chosen by the rotation (types.ts): kinds rest a few
+ * levels between uses, a themed level brings all its objects and the levels after it some of them, look-alikes
+ * stay apart and colour variants only come in when every unlocked kind is in. So the number of types is the
+ * number of items over three.
  *
- * Win bands are for the simulated casual player (tools/simulator.ts), not real people. That player rarely runs
- * out of space on shelves alone, so on the harder levels the clock does much of the work: `time.slack` below 1
- * lets the limit cut into its slower wins. Its time per move grows with the number of types. Special levels
- * keep a fixed time (time.fixed) and get harder through more items instead. Levels 1 and 2, played by new
- * players, keep a generous floor (slack) so they never frustrate.
+ * Win bands are for the simulated casual player (tools/simulator.ts), not real people, and that player never
+ * uses help of any kind: every level can be won without it (see CLAUDE.md). That player rarely runs out of
+ * space on shelves alone, so on the harder levels the clock does much of the work: `time.slack` below 1 lets
+ * the limit cut into its slower wins. Its time per move grows with the number of types. Levels 1 and 2, played
+ * by new players, keep a generous floor (slack) so they never frustrate. Each level also has other arrangements
+ * of its items, all in the same band (generate.ts).
  */
 
-/** Combo multipliers doubled (special level 5). */
+/** Combo multipliers doubled (themed level 10). */
 const DOUBLE_COMBO = [2, 3, 4, 5, 6, 8, 10];
 
 export const RECIPES: readonly LevelRecipe[] = [
@@ -103,20 +105,20 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-005',
     purpose: 'Themed level, Budaya Jawa: calm, with a few more layers than levels 4 and 6 and comfortable time; brings the Javanese objects.',
     seed: 505,
-    candidate: 48,
+    candidate: 20,
     theme: 'budaya-jawa',
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
     ],
-    types: 13,
-    backLayers: { shelves: 6, layers: [2, 3] },
-    emptyFront: 7,
+    types: 11,
+    backLayers: { shelves: 6, layers: [2, 2] },
+    emptyFront: 6,
     maxDepth: 2,
     minStartTriples: 3,
     winBand: [0.8, 0.96],
-    time: { slack: 1.2, timeUp: [0, 0.1] },
+    time: { slack: 1.2, timeUp: [0, 0.1], typical: true },
   },
   {
     number: 6,
@@ -219,25 +221,185 @@ export const RECIPES: readonly LevelRecipe[] = [
     time: { slack: 0, timeUp: [0.3, 0.55] },
   },
   {
+    number: 11,
+    id: 'nusa-011',
+    purpose: 'A breather after the special level: an open board mixing food and the cultural objects unlocked so far.',
+    seed: 1111,
+    candidate: 0,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 12,
+    backLayers: { shelves: 5, layers: [2, 2] },
+    emptyFront: 6,
+    maxDepth: 1,
+    minStartTriples: 3,
+    winBand: [0.75, 0.9],
+    time: { slack: 0.85, timeUp: [0.05, 0.22] },
+  },
+  {
+    number: 12,
+    id: 'nusa-012',
+    purpose: 'The first roaming blocker: an empty slot that cannot be used and jumps after each triple; a combo of 4 removes it.',
+    seed: 1212,
+    candidate: 1,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 12,
+    backLayers: { shelves: 5, layers: [2, 2] },
+    emptyFront: 6,
+    blocker: { removeAtCombo: 4 },
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.6, 0.76],
+    time: { slack: 0.7, timeUp: [0.1, 0.35] },
+  },
+  {
+    number: 13,
+    id: 'nusa-013',
+    purpose: 'The first track of shelves outside a themed level, slow, between two columns of shelves.',
+    seed: 1313,
+    candidate: 0,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelfTrack', speed: 0.25, count: 4 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 12,
+    backLayers: { shelves: 5, layers: [2, 2] },
+    emptyFront: 9,
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.62, 0.78],
+    time: { slack: 0.8, timeUp: [0.05, 0.3] },
+  },
+  {
+    number: 14,
+    id: 'nusa-014',
+    purpose: 'Locked shelves with a track of stacks between the columns.',
+    seed: 1414,
+    candidate: 7,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'track', speed: 0.6, carriers: 5 },
+      { kind: 'shelves', count: 3 },
+    ],
+    stacks: { depth: [1, 3], empty: 0 },
+    types: 10,
+    backLayers: { shelves: 4, layers: [2, 2] },
+    emptyFront: 7,
+    locked: [2, 4],
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.45, 0.62],
+    time: { slack: 0.7, timeUp: [0, 0.3] },
+  },
+  {
     number: 15,
     id: 'nusa-015',
     purpose: 'Themed level, Pasar malam: two fast belts full of stacks around a column of shelves; brings the night market objects.',
     seed: 1515,
-    candidate: 48,
+    candidate: 2,
     theme: 'pasar-malam',
     layout: [
       { kind: 'track', speed: 0.9, carriers: 5 },
-      { kind: 'shelves', count: 4 },
+      { kind: 'shelves', count: 5 },
       { kind: 'track', speed: -0.9, carriers: 5 },
     ],
     stacks: { depth: [2, 3], empty: 1 },
     types: 10,
     backLayers: { shelves: 1, layers: [2, 2] },
-    emptyFront: 5,
+    emptyFront: 7,
     maxDepth: 2,
     minStartTriples: 3,
     winBand: [0.45, 0.65],
     time: { slack: 1, timeUp: [0, 0.2] },
+  },
+  {
+    number: 16,
+    id: 'nusa-016',
+    purpose: 'A breather after the night market: an open board with shallow layers.',
+    seed: 1616,
+    candidate: 4,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 13,
+    backLayers: { shelves: 6, layers: [2, 2] },
+    emptyFront: 6,
+    maxDepth: 1,
+    minStartTriples: 3,
+    winBand: [0.72, 0.88],
+    time: { slack: 0.9, timeUp: [0.05, 0.22] },
+  },
+  {
+    number: 17,
+    id: 'nusa-017',
+    purpose: 'The roaming blocker together with a locked shelf.',
+    seed: 1717,
+    candidate: 1,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 12,
+    backLayers: { shelves: 6, layers: [2, 2] },
+    emptyFront: 7,
+    locked: [3],
+    blocker: { removeAtCombo: 5 },
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.5, 0.68],
+    time: { slack: 0.7, timeUp: [0.1, 0.4] },
+  },
+  {
+    number: 18,
+    id: 'nusa-018',
+    purpose: 'Three columns: two tracks of shelves running opposite ways around a column of shelves.',
+    seed: 1818,
+    candidate: 2,
+    layout: [
+      { kind: 'shelfTrack', speed: 0.3, count: 4 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelfTrack', speed: -0.3, count: 4 },
+    ],
+    types: 14,
+    backLayers: { shelves: 7, layers: [2, 2] },
+    emptyFront: 10,
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.5, 0.68],
+    time: { slack: 0.8, timeUp: [0.1, 0.4] },
+  },
+  {
+    number: 19,
+    id: 'nusa-019',
+    purpose: 'A demanding mix: a track of stacks, a locked shelf and the roaming blocker.',
+    seed: 1919,
+    candidate: 3,
+    layout: [
+      { kind: 'shelves', count: 4 },
+      { kind: 'track', speed: 0.7, carriers: 5 },
+      { kind: 'shelves', count: 4 },
+    ],
+    stacks: { depth: [1, 3], empty: 1 },
+    types: 12,
+    backLayers: { shelves: 4, layers: [2, 2] },
+    emptyFront: 6,
+    locked: [3],
+    blocker: { removeAtCombo: 5 },
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.42, 0.6],
+    time: { slack: 0.65, timeUp: [0.05, 0.4] },
   },
   {
     number: 20,
@@ -258,6 +420,89 @@ export const RECIPES: readonly LevelRecipe[] = [
     minStartTriples: 3,
     winBand: [0.5, 0.7],
     time: { slack: 0.8, timeUp: [0.1, 0.35] },
+  },
+  {
+    number: 21,
+    id: 'nusa-021',
+    purpose: 'A breather after the sea level: an open board, roomier than the levels around it.',
+    seed: 2121,
+    candidate: 1,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelves', count: 3 },
+    ],
+    types: 12,
+    backLayers: { shelves: 6, layers: [2, 2] },
+    emptyFront: 7,
+    maxDepth: 1,
+    minStartTriples: 3,
+    winBand: [0.7, 0.86],
+    time: { slack: 0.9, timeUp: [0.05, 0.25] },
+  },
+  {
+    number: 22,
+    id: 'nusa-022',
+    purpose: 'Advanced mix: a track of shelves and a track of stacks, with a locked shelf.',
+    seed: 2222,
+    candidate: 4,
+    layout: [
+      { kind: 'shelves', count: 3 },
+      { kind: 'shelfTrack', speed: 0.35, count: 4 },
+      { kind: 'track', speed: -0.8, carriers: 5 },
+    ],
+    stacks: { depth: [1, 3], empty: 1 },
+    types: 11,
+    backLayers: { shelves: 5, layers: [2, 2] },
+    emptyFront: 10,
+    locked: [3],
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.45, 0.62],
+    time: { slack: 0.7, timeUp: [0.05, 0.4] },
+  },
+  {
+    number: 23,
+    id: 'nusa-023',
+    purpose: 'Advanced mix: a fast track of stacks and a track of shelves around a column of shelves, with the roaming blocker.',
+    seed: 2323,
+    candidate: 8,
+    layout: [
+      { kind: 'track', speed: 0.9, carriers: 5 },
+      { kind: 'shelves', count: 4 },
+      { kind: 'shelfTrack', speed: -0.35, count: 4 },
+    ],
+    stacks: { depth: [1, 3], empty: 1 },
+    types: 12,
+    backLayers: { shelves: 5, layers: [2, 2] },
+    emptyFront: 10,
+    blocker: { removeAtCombo: 5 },
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.42, 0.6],
+    time: { slack: 0.65, timeUp: [0.15, 0.45] },
+  },
+  {
+    number: 24,
+    id: 'nusa-024',
+    purpose: 'The hardest level so far: a fast track of stacks, two locked shelves and the roaming blocker on a big board.',
+    seed: 2424,
+    candidate: 4,
+    layout: [
+      { kind: 'shelves', count: 4 },
+      { kind: 'track', speed: 0.9, carriers: 6 },
+      { kind: 'shelves', count: 4 },
+    ],
+    stacks: { depth: [1, 3], empty: 1 },
+    types: 14,
+    backLayers: { shelves: 6, layers: [2, 2] },
+    emptyFront: 10,
+    locked: [2, 4],
+    blocker: { removeAtCombo: 6 },
+    maxDepth: 2,
+    minStartTriples: 3,
+    winBand: [0.35, 0.5],
+    time: { slack: 0.6, timeUp: [0.1, 0.5] },
   },
 ];
 

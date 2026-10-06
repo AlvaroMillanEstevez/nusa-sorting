@@ -8,10 +8,11 @@ import {
   stackOf,
   typesNotOneTriple,
   validateLevel,
+  withArrangement,
   type GameState,
   type LevelDefinition,
 } from '../src/core';
-import { levels, upcomingLevels } from '../src/data/levels';
+import { levels } from '../src/data/levels';
 import { ITEM_KINDS } from '../src/data/itemCatalog';
 import { generateLevel, ruleFailures } from '../tools/levelgen/generate';
 import { recipeFor } from '../tools/levelgen/recipes';
@@ -33,8 +34,8 @@ const deepest = (level: LevelDefinition) => Math.max(...level.shelves.map((s) =>
 const mechanic = <K extends string>(level: LevelDefinition, kind: K) => level.mechanics?.find((m) => m.kind === kind);
 const lockCounts = (state: GameState) => state.unlockAt.filter((at) => at !== null) as number[];
 
-/** Every level made so far, with its number: levels 1-10 and the themed levels made ahead of their turn. */
-const numbered = [...levels.map((level, i) => ({ number: i + 1, level })), ...upcomingLevels];
+/** Every level with its number. */
+const numbered = levels.map((level, i) => ({ number: i + 1, level }));
 
 // Simulated once per level, as the generator does for its report (200 games, seed 1).
 const stats = new Map(numbered.map(({ level }) => [level.id, simulate(createGame(level))]));
@@ -50,7 +51,7 @@ describe.each(numbered.map(({ number, level }) => [number, level] as const))('le
 
   it('is exactly what its recipe generates (board and time), so regenerating never changes a shipped board', () => {
     expect(recipe.candidate).toBeDefined();
-    expect(generateLevel(recipe).level).toEqual(level);
+    expect(generateLevel(recipe).level).toEqual(withArrangement(level, 0));
   }, 120_000);
 
   it('meets every rule for generated levels', () => {
@@ -79,14 +80,18 @@ describe.each(numbered.map(({ number, level }) => [number, level] as const))('le
   });
 });
 
-describe('the curve of levels 1-10', () => {
+describe('the curve of levels 1-24', () => {
   const [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10] = levels as [LevelDefinition, ...LevelDefinition[]] & LevelDefinition[];
+  const at = (n: number) => levels[n - 1]!;
   const win = (level: LevelDefinition) => stats.get(level.id)!.winRate;
+  const has = (level: LevelDefinition, kind: string) => (level.mechanics ?? []).some((m) => m.kind === kind);
+  const hasShelfTrack = (level: LevelDefinition) => level.layout?.columns.some((c) => c.kind === 'shelfTrack') ?? false;
+  const hasStackTrack = (level: LevelDefinition) => createGame(level).tracks.some((t) => t.carriers.some((c) => c.kind === 'stack'));
 
-  it('has ten levels plus the themed ones made ahead, with new ids, none shared with the demo levels', () => {
-    expect(levels).toHaveLength(10);
+  it('has 24 levels with their own ids, none shared with the demo levels', () => {
+    expect(levels).toHaveLength(24);
     const ids = numbered.map((entry) => entry.level.id);
-    expect(new Set(ids).size).toBe(12);
+    expect(new Set(ids).size).toBe(24);
     for (const demo of demoLevels) expect(ids).not.toContain(demo.id);
   });
 
@@ -116,15 +121,16 @@ describe('the curve of levels 1-10', () => {
     expect(Math.max(...four)).toBeGreaterThan(Math.max(...lockCounts(createGame(l3!))));
   });
 
-  const [l15, l20] = upcomingLevels.map((entry) => entry.level) as [LevelDefinition, LevelDefinition];
+  const [l15, l20] = [at(15), at(20)];
   const bringsItsObjects = (level: LevelDefinition) => {
     const kinds = kindsOf(level);
     for (const kind of ITEM_KINDS.filter((k) => k.theme === level.theme)) expect(kinds, kind.id).toContain(kind.id);
   };
 
   it('every fifth level is a themed level, bringing all its theme’s objects', () => {
-    expect(levels.filter(isSpecialLevel).map((l) => l.theme)).toEqual(['budaya-jawa', '17-agustus']);
-    expect(upcomingLevels.map((entry) => [entry.number, entry.level.theme])).toEqual([
+    expect(numbered.filter(({ level }) => isSpecialLevel(level)).map(({ number, level }) => [number, level.theme])).toEqual([
+      [5, 'budaya-jawa'],
+      [10, '17-agustus'],
       [15, 'pasar-malam'],
       [20, 'laut-nusantara'],
     ]);
@@ -191,12 +197,58 @@ describe('the curve of levels 1-10', () => {
     expect(createGame(l20).tracks.some((t) => t.carriers.every((c) => c.kind === 'shelf'))).toBe(true);
   });
 
+  it('11: a breather after 10, mixing food and cultural objects', () => {
+    expect(win(at(11))).toBeGreaterThan(win(l10!));
+    const kinds = [...kindsOf(at(11))].map((t) => parseItemType(t)!.kind);
+    expect(kinds.some((k) => k.theme)).toBe(true);
+    expect(kinds.some((k) => !k.theme)).toBe(true);
+  });
+
+  it('12: the first roaming blocker, which a combo removes', () => {
+    for (const level of levels.slice(0, 11)) expect(has(level, 'roamingBlocker')).toBe(false);
+    const blocker = mechanic(at(12), 'roamingBlocker');
+    expect(blocker?.kind === 'roamingBlocker' && blocker.removeAtCombo).toBeLessThanOrEqual(5);
+  });
+
+  it('13: the first track of shelves outside a themed level', () => {
+    for (const level of levels.slice(0, 12).filter((l) => !isSpecialLevel(l))) expect(hasShelfTrack(level)).toBe(false);
+    expect(isSpecialLevel(at(13))).toBe(false);
+    expect(hasShelfTrack(at(13))).toBe(true);
+  });
+
+  it('14: locked shelves with a track of stacks', () => {
+    expect(lockCounts(createGame(at(14))).length).toBeGreaterThanOrEqual(2);
+    expect(hasStackTrack(at(14))).toBe(true);
+  });
+
+  it('17: the roaming blocker with a locked shelf; 18: three columns with a track of shelves', () => {
+    expect(has(at(17), 'roamingBlocker') && has(at(17), 'lockedShelves')).toBe(true);
+    expect(columnsOf(at(18))).toHaveLength(3);
+    expect(hasShelfTrack(at(18))).toBe(true);
+  });
+
+  it('19 and 22-24: mixes of several mechanics', () => {
+    const count = (level: LevelDefinition) =>
+      [has(level, 'roamingBlocker'), has(level, 'lockedShelves'), hasStackTrack(level), hasShelfTrack(level)].filter(Boolean).length;
+    for (const n of [19, 22, 23, 24]) expect(count(at(n)), `level ${n}`).toBeGreaterThanOrEqual(2);
+    expect(count(at(19))).toBeGreaterThanOrEqual(3);
+    expect(count(at(24))).toBeGreaterThanOrEqual(3);
+  });
+
+  it('24 is the hardest level so far', () => {
+    for (const level of levels.slice(0, 23)) expect(win(at(24))).toBeLessThan(win(level));
+  });
+
   it('is a sawtooth: after something new or demanding comes an easier level', () => {
     expect(win(l1!)).toBeGreaterThan(win(l3!));
     expect(win(l5!)).toBeGreaterThan(win(l4!));
     expect(win(l6!)).toBeGreaterThan(win(l7!));
     expect(win(l8!)).toBeGreaterThan(win(l7!));
     expect(win(l8!)).toBeGreaterThan(win(l9!));
+    for (const n of [11, 16, 21]) {
+      expect(win(at(n)), `level ${n}`).toBeGreaterThan(win(at(n - 1)));
+      expect(win(at(n)), `level ${n}`).toBeGreaterThan(win(at(n + 1)));
+    }
   });
 });
 

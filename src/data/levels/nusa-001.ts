@@ -9,6 +9,9 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 100%, out of space 0%, out of time 0%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 8 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 100% to 100% of games across them.
  */
 export const nusa001: LevelDefinition = {
   id: 'nusa-001',
@@ -21,5 +24,84 @@ export const nusa001: LevelDefinition = {
     [['kerupuk-udang', 'ketupat', 'bakso']],
     [['onde-onde', 'sate', 'onde-onde']],
     [['onde-onde', 'kerupuk-udang', null]],
+  ],
+  arrangements: [
+    {
+      shelves: [
+        [[null, 'bakso', null]],
+        [['nasi-goreng', 'ketupat', 'sate']],
+        [['bakso', 'bakso', 'onde-onde']],
+        [['kerupuk-udang', 'ketupat', 'nasi-goreng']],
+        [['kerupuk-udang', 'sate', 'nasi-goreng']],
+        [['onde-onde', 'ketupat', 'kerupuk-udang']],
+        [['onde-onde', 'sate', null]],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'bakso', null]],
+        [['nasi-goreng', 'kerupuk-udang', 'onde-onde']],
+        [['ketupat', 'ketupat', 'onde-onde']],
+        [['sate', 'ketupat', 'nasi-goreng']],
+        [['sate', 'kerupuk-udang', 'nasi-goreng']],
+        [['bakso', 'bakso', 'kerupuk-udang']],
+        [['onde-onde', 'sate', null]],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'bakso', null]],
+        [['bakso', 'kerupuk-udang', 'sate']],
+        [['onde-onde', 'ketupat', 'sate']],
+        [['nasi-goreng', 'nasi-goreng', 'kerupuk-udang']],
+        [['onde-onde', 'bakso', 'ketupat']],
+        [['ketupat', 'sate', 'kerupuk-udang']],
+        [['onde-onde', 'nasi-goreng', null]],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'kerupuk-udang', null]],
+        [['ketupat', 'ketupat', 'onde-onde']],
+        [['kerupuk-udang', 'nasi-goreng', 'sate']],
+        [['ketupat', 'kerupuk-udang', 'nasi-goreng']],
+        [['bakso', 'onde-onde', 'bakso']],
+        [['nasi-goreng', 'onde-onde', 'sate']],
+        [['bakso', 'sate', null]],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'sate', null]],
+        [['sate', 'nasi-goreng', 'nasi-goreng']],
+        [['bakso', 'ketupat', 'sate']],
+        [['onde-onde', 'bakso', 'onde-onde']],
+        [['ketupat', 'nasi-goreng', 'onde-onde']],
+        [['bakso', 'kerupuk-udang', 'ketupat']],
+        [['kerupuk-udang', 'kerupuk-udang', null]],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'onde-onde', null]],
+        [['kerupuk-udang', 'bakso', 'bakso']],
+        [['sate', 'ketupat', 'sate']],
+        [['kerupuk-udang', 'nasi-goreng', 'kerupuk-udang']],
+        [['bakso', 'nasi-goreng', 'ketupat']],
+        [['ketupat', 'onde-onde', 'onde-onde']],
+        [['nasi-goreng', 'sate', null]],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'ketupat', null]],
+        [['nasi-goreng', 'sate', 'kerupuk-udang']],
+        [['onde-onde', 'onde-onde', 'kerupuk-udang']],
+        [['sate', 'kerupuk-udang', 'bakso']],
+        [['bakso', 'ketupat', 'onde-onde']],
+        [['bakso', 'nasi-goreng', 'nasi-goreng']],
+        [['sate', 'ketupat', null]],
+      ],
+    },
   ],
 };

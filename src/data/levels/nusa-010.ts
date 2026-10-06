@@ -9,6 +9,9 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 46%, out of space 0%, out of time 54%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 8 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 46% to 56% of games across them.
  */
 export const nusa010: LevelDefinition = {
   id: 'nusa-010',
@@ -16,23 +19,23 @@ export const nusa010: LevelDefinition = {
   timeLimitSeconds: 70,
   shelves: [
     [
-      ['panjat-pinang', 'karung', 'es-kelapa-muda'],
-      ['es-cendol', 'tahu-goreng', 'tahu-goreng'],
+      ['panjat-pinang', 'karung', 'onde-onde'],
+      ['kerupuk-udang', 'nasi-goreng', 'nasi-goreng'],
       ['peci', 'terompet', 'panjat-pinang'],
     ],
-    [['es-kelapa-muda', null, 'kelereng']],
+    [['onde-onde', null, 'kelereng']],
     [
-      ['es-cendol', 'klepon', 'es-cendol'],
-      ['panjat-pinang', null, 'klepon'],
+      ['kerupuk-udang', 'ketupat', 'kerupuk-udang'],
+      ['panjat-pinang', null, 'ketupat'],
       ['peci', 'terompet', null],
     ],
     [
       ['karung', 'bendera', null],
-      ['terompet', 'tahu-goreng', 'peci'],
-      ['bendera', 'klepon', 'kelereng'],
+      ['terompet', 'nasi-goreng', 'peci'],
+      ['bendera', 'ketupat', 'kelereng'],
     ],
     [['kelereng', null, 'karung']],
-    [[null, null, 'es-kelapa-muda'], [null, 'bendera', null]],
+    [[null, null, 'onde-onde'], [null, 'bendera', null]],
   ],
   mechanics: [{ kind: 'combo', windowSeconds: 5, multipliers: [2, 3, 4, 5, 6, 8, 10] }],
   layout: {
@@ -42,4 +45,160 @@ export const nusa010: LevelDefinition = {
       { kind: 'shelves', shelves: [4, 5] },
     ],
   },
+  arrangements: [
+    {
+      shelves: [
+        [
+          ['terompet', 'bendera', 'peci'],
+          ['kelereng', 'kerupuk-udang', 'ketupat'],
+          ['ketupat', 'kerupuk-udang', 'kerupuk-udang'],
+        ],
+        [['terompet', null, 'bendera']],
+        [
+          ['nasi-goreng', 'nasi-goreng', 'onde-onde'],
+          ['panjat-pinang', null, 'peci'],
+          ['onde-onde', 'kelereng', null],
+        ],
+        [
+          ['bendera', 'panjat-pinang', null],
+          ['kelereng', 'karung', 'peci'],
+          ['onde-onde', 'karung', 'ketupat'],
+        ],
+        [['karung', null, 'nasi-goreng']],
+        [[null, null, 'terompet'], [null, 'panjat-pinang', null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['nasi-goreng', 'panjat-pinang', 'kerupuk-udang'],
+          ['bendera', 'karung', 'kelereng'],
+          ['karung', 'peci', 'karung'],
+        ],
+        [['ketupat', null, 'onde-onde']],
+        [
+          ['bendera', 'terompet', 'kerupuk-udang'],
+          ['bendera', null, 'onde-onde'],
+          ['kelereng', 'ketupat', null],
+        ],
+        [
+          ['terompet', 'terompet', null],
+          ['ketupat', 'kelereng', 'kerupuk-udang'],
+          ['peci', 'nasi-goreng', 'nasi-goreng'],
+        ],
+        [['panjat-pinang', null, 'peci']],
+        [[null, null, 'panjat-pinang'], [null, 'onde-onde', null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['onde-onde', 'kelereng', 'onde-onde'],
+          ['nasi-goreng', 'terompet', 'kerupuk-udang'],
+          ['bendera', 'bendera', 'kelereng'],
+        ],
+        [['ketupat', null, 'peci']],
+        [
+          ['peci', 'panjat-pinang', 'onde-onde'],
+          ['ketupat', null, 'peci'],
+          ['karung', 'ketupat', null],
+        ],
+        [
+          ['terompet', 'nasi-goreng', null],
+          ['karung', 'panjat-pinang', 'kelereng'],
+          ['bendera', 'karung', 'kerupuk-udang'],
+        ],
+        [['terompet', null, 'nasi-goreng']],
+        [[null, null, 'panjat-pinang'], [null, 'kerupuk-udang', null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['onde-onde', 'nasi-goreng', 'nasi-goreng'],
+          ['terompet', 'bendera', 'terompet'],
+          ['peci', 'onde-onde', 'karung'],
+        ],
+        [['karung', null, 'karung']],
+        [
+          ['kelereng', 'ketupat', 'onde-onde'],
+          ['kelereng', null, 'kerupuk-udang'],
+          ['peci', 'kerupuk-udang', null],
+        ],
+        [
+          ['nasi-goreng', 'panjat-pinang', null],
+          ['bendera', 'panjat-pinang', 'bendera'],
+          ['peci', 'panjat-pinang', 'terompet'],
+        ],
+        [['ketupat', null, 'ketupat']],
+        [[null, null, 'kerupuk-udang'], [null, 'kelereng', null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['kerupuk-udang', 'panjat-pinang', 'ketupat'],
+          ['kelereng', 'nasi-goreng', 'onde-onde'],
+          ['peci', 'onde-onde', 'peci'],
+        ],
+        [['ketupat', null, 'bendera']],
+        [
+          ['onde-onde', 'kerupuk-udang', 'panjat-pinang'],
+          ['terompet', null, 'terompet'],
+          ['kelereng', 'karung', null],
+        ],
+        [
+          ['bendera', 'bendera', null],
+          ['ketupat', 'kerupuk-udang', 'panjat-pinang'],
+          ['karung', 'nasi-goreng', 'peci'],
+        ],
+        [['kelereng', null, 'terompet']],
+        [[null, null, 'nasi-goreng'], [null, 'karung', null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['nasi-goreng', 'karung', 'nasi-goreng'],
+          ['onde-onde', 'onde-onde', 'terompet'],
+          ['panjat-pinang', 'ketupat', 'ketupat'],
+        ],
+        [['kelereng', null, 'peci']],
+        [
+          ['peci', 'kelereng', 'panjat-pinang'],
+          ['terompet', null, 'karung'],
+          ['onde-onde', 'ketupat', null],
+        ],
+        [
+          ['kelereng', 'bendera', null],
+          ['panjat-pinang', 'kerupuk-udang', 'terompet'],
+          ['nasi-goreng', 'kerupuk-udang', 'kerupuk-udang'],
+        ],
+        [['bendera', null, 'peci']],
+        [[null, null, 'karung'], [null, 'bendera', null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['terompet', 'karung', 'karung'],
+          ['panjat-pinang', 'bendera', 'onde-onde'],
+          ['peci', 'onde-onde', 'ketupat'],
+        ],
+        [['kerupuk-udang', null, 'kerupuk-udang']],
+        [
+          ['kelereng', 'panjat-pinang', 'kelereng'],
+          ['terompet', null, 'ketupat'],
+          ['peci', 'nasi-goreng', null],
+        ],
+        [
+          ['peci', 'nasi-goreng', null],
+          ['karung', 'bendera', 'bendera'],
+          ['ketupat', 'nasi-goreng', 'onde-onde'],
+        ],
+        [['panjat-pinang', null, 'terompet']],
+        [[null, null, 'kelereng'], [null, 'kerupuk-udang', null]],
+      ],
+    },
+  ],
 };

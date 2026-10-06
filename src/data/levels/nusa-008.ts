@@ -9,18 +9,21 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 78%, out of space 14%, out of time 8%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 8 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 77% to 88% of games across them.
  */
 export const nusa008: LevelDefinition = {
   id: 'nusa-008',
   timeLimitSeconds: 55,
   shelves: [
-    [['gong', 'blangkon', 'rambutan'], ['gado-gado', 'gado-gado', 'kendang']],
-    [[null, 'wayang-kulit', 'durian'], ['batik', 'manggis', 'manggis']],
-    [['gado-gado', 'kendang', 'durian']],
-    [['gong', 'rambutan', null]],
-    [['rambutan', 'blangkon', 'gong']],
-    [[null, 'rendang', 'wayang-kulit']],
-    [['rendang', null, 'manggis']],
+    [['pisang-goreng', 'ikan-bakar', 'kipas'], ['ayam-goreng', 'ayam-goreng', 'tempe']],
+    [[null, 'sate', 'batik'], ['martabak-manis', 'blangkon', 'blangkon']],
+    [['ayam-goreng', 'tempe', 'batik']],
+    [['pisang-goreng', 'kipas', null]],
+    [['kipas', 'ikan-bakar', 'pisang-goreng']],
+    [[null, 'mie-goreng', 'sate']],
+    [['mie-goreng', null, 'blangkon']],
   ],
   mechanics: [
     {
@@ -30,15 +33,171 @@ export const nusa008: LevelDefinition = {
           orientation: 'horizontal',
           speed: 0.35,
           carriers: [
-            ['batik', 'rendang'],
-            ['blangkon'],
-            ['wayang-kulit', 'batik'],
+            ['martabak-manis', 'mie-goreng'],
+            ['ikan-bakar'],
+            ['sate', 'martabak-manis'],
             [],
             [],
-            ['kendang'],
-            ['durian'],
+            ['tempe'],
+            ['batik'],
           ],
         },
+      ],
+    },
+  ],
+  arrangements: [
+    {
+      shelves: [
+        [['tempe', 'ikan-bakar', 'blangkon'], ['sate', 'batik', 'batik']],
+        [[null, 'ikan-bakar', 'tempe'], ['kipas', 'sate', 'martabak-manis']],
+        [['mie-goreng', 'pisang-goreng', 'martabak-manis']],
+        [['mie-goreng', 'blangkon', null]],
+        [['batik', 'mie-goreng', 'tempe']],
+        [[null, 'ayam-goreng', 'blangkon']],
+        [['ayam-goreng', null, 'ayam-goreng']],
+      ],
+      stacks: [
+        [
+          ['ikan-bakar', 'pisang-goreng'],
+          ['kipas'],
+          ['kipas', 'pisang-goreng'],
+          [],
+          [],
+          ['martabak-manis'],
+          ['sate'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['martabak-manis', 'sate', 'tempe'], ['ayam-goreng', 'blangkon', 'batik']],
+        [[null, 'mie-goreng', 'mie-goreng'], ['blangkon', 'sate', 'blangkon']],
+        [['kipas', 'ikan-bakar', 'ikan-bakar']],
+        [['tempe', 'pisang-goreng', null]],
+        [['batik', 'kipas', 'kipas']],
+        [[null, 'batik', 'ayam-goreng']],
+        [['pisang-goreng', null, 'tempe']],
+      ],
+      stacks: [
+        [
+          ['martabak-manis', 'mie-goreng'],
+          ['ayam-goreng'],
+          ['ikan-bakar', 'martabak-manis'],
+          [],
+          [],
+          ['sate'],
+          ['pisang-goreng'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['pisang-goreng', 'sate', 'tempe'], ['batik', 'ayam-goreng', 'batik']],
+        [[null, 'martabak-manis', 'martabak-manis'], ['ikan-bakar', 'kipas', 'ayam-goreng']],
+        [['ikan-bakar', 'tempe', 'sate']],
+        [['blangkon', 'ikan-bakar', null]],
+        [['mie-goreng', 'tempe', 'blangkon']],
+        [[null, 'mie-goreng', 'ayam-goreng']],
+        [['martabak-manis', null, 'sate']],
+      ],
+      stacks: [
+        [
+          ['blangkon', 'batik'],
+          ['kipas'],
+          ['pisang-goreng', 'kipas'],
+          [],
+          [],
+          ['mie-goreng'],
+          ['pisang-goreng'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['sate', 'ikan-bakar', 'ikan-bakar'], ['sate', 'ayam-goreng', 'pisang-goreng']],
+        [[null, 'blangkon', 'sate'], ['kipas', 'pisang-goreng', 'mie-goreng']],
+        [['ayam-goreng', 'blangkon', 'martabak-manis']],
+        [['blangkon', 'batik', null]],
+        [['mie-goreng', 'kipas', 'tempe']],
+        [[null, 'ayam-goreng', 'pisang-goreng']],
+        [['batik', null, 'batik']],
+      ],
+      stacks: [
+        [
+          ['mie-goreng', 'martabak-manis'],
+          ['ikan-bakar'],
+          ['kipas', 'tempe'],
+          [],
+          [],
+          ['martabak-manis'],
+          ['tempe'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['ayam-goreng', 'sate', 'ayam-goreng'], ['blangkon', 'batik', 'blangkon']],
+        [[null, 'mie-goreng', 'mie-goreng'], ['tempe', 'pisang-goreng', 'ikan-bakar']],
+        [['tempe', 'martabak-manis', 'martabak-manis']],
+        [['batik', 'kipas', null]],
+        [['sate', 'blangkon', 'pisang-goreng']],
+        [[null, 'sate', 'martabak-manis']],
+        [['ayam-goreng', null, 'tempe']],
+      ],
+      stacks: [
+        [
+          ['batik', 'mie-goreng'],
+          ['kipas'],
+          ['ikan-bakar', 'pisang-goreng'],
+          [],
+          [],
+          ['kipas'],
+          ['ikan-bakar'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['batik', 'ikan-bakar', 'mie-goreng'], ['martabak-manis', 'blangkon', 'ikan-bakar']],
+        [[null, 'tempe', 'batik'], ['martabak-manis', 'pisang-goreng', 'martabak-manis']],
+        [['ikan-bakar', 'tempe', 'kipas']],
+        [['mie-goreng', 'blangkon', null]],
+        [['ayam-goreng', 'batik', 'pisang-goreng']],
+        [[null, 'blangkon', 'ayam-goreng']],
+        [['kipas', null, 'kipas']],
+      ],
+      stacks: [
+        [
+          ['tempe', 'sate'],
+          ['sate'],
+          ['mie-goreng', 'sate'],
+          [],
+          [],
+          ['ayam-goreng'],
+          ['pisang-goreng'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['tempe', 'blangkon', 'tempe'], ['batik', 'kipas', 'pisang-goreng']],
+        [[null, 'blangkon', 'martabak-manis'], ['sate', 'ikan-bakar', 'mie-goreng']],
+        [['ikan-bakar', 'batik', 'kipas']],
+        [['sate', 'ayam-goreng', null]],
+        [['martabak-manis', 'blangkon', 'mie-goreng']],
+        [[null, 'ayam-goreng', 'ayam-goreng']],
+        [['batik', null, 'pisang-goreng']],
+      ],
+      stacks: [
+        [
+          ['ikan-bakar', 'tempe'],
+          ['martabak-manis'],
+          ['mie-goreng', 'kipas'],
+          [],
+          [],
+          ['pisang-goreng'],
+          ['sate'],
+        ],
       ],
     },
   ],

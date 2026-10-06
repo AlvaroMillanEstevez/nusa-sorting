@@ -11,8 +11,9 @@ export default defineConfig({
     strictPort: true,
   },
   build: {
-    // Phaser alone is ~1.3 MB minified; the default 500 kB warning is just noise.
-    chunkSizeWarningLimit: 1600,
+    // Phaser alone is ~1.3 MB minified and the levels with their arrangements ~0.1 MB; the default 500 kB
+    // warning is just noise.
+    chunkSizeWarningLimit: 1800,
   },
   preview: {
     host: true,

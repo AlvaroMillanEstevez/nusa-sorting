@@ -9,6 +9,9 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 83%, out of space 0%, out of time 17%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 8 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 82% to 89% of games across them.
  */
 export const nusa003: LevelDefinition = {
   id: 'nusa-003',
@@ -32,4 +35,97 @@ export const nusa003: LevelDefinition = {
       { kind: 'shelves', shelves: [6, 7, 8] },
     ],
   },
+  arrangements: [
+    {
+      shelves: [
+        [['manggis', 'durian', 'onde-onde']],
+        [[null, 'kerupuk-udang', 'bakso']],
+        [['sate', null, 'es-teh-manis']],
+        [['sate', 'onde-onde', 'ketupat'], [null, 'nasi-goreng', 'manggis']],
+        [[null, 'onde-onde', 'kerupuk-udang'], ['es-teh-manis', 'rambutan', 'bakso']],
+        [['rambutan', null, 'ketupat']],
+        [['durian', 'bakso', 'kerupuk-udang']],
+        [['ketupat', 'nasi-goreng', 'durian'], ['rambutan', 'nasi-goreng', 'manggis']],
+        [['es-teh-manis', 'sate', null]],
+      ],
+    },
+    {
+      shelves: [
+        [['nasi-goreng', 'kerupuk-udang', 'bakso']],
+        [[null, 'manggis', 'sate']],
+        [['manggis', null, 'onde-onde']],
+        [['durian', 'nasi-goreng', 'onde-onde'], [null, 'onde-onde', 'durian']],
+        [[null, 'kerupuk-udang', 'sate'], ['durian', 'rambutan', 'es-teh-manis']],
+        [['bakso', null, 'sate']],
+        [['es-teh-manis', 'rambutan', 'ketupat']],
+        [['bakso', 'manggis', 'ketupat'], ['kerupuk-udang', 'nasi-goreng', 'rambutan']],
+        [['es-teh-manis', 'ketupat', null]],
+      ],
+    },
+    {
+      shelves: [
+        [['es-teh-manis', 'bakso', 'onde-onde']],
+        [[null, 'bakso', 'bakso']],
+        [['nasi-goreng', null, 'kerupuk-udang']],
+        [['manggis', 'sate', 'ketupat'], [null, 'onde-onde', 'manggis']],
+        [[null, 'durian', 'ketupat'], ['kerupuk-udang', 'kerupuk-udang', 'sate']],
+        [['nasi-goreng', null, 'es-teh-manis']],
+        [['sate', 'rambutan', 'durian']],
+        [['durian', 'rambutan', 'ketupat'], ['onde-onde', 'nasi-goreng', 'es-teh-manis']],
+        [['manggis', 'rambutan', null]],
+      ],
+    },
+    {
+      shelves: [
+        [['ketupat', 'es-teh-manis', 'es-teh-manis']],
+        [[null, 'nasi-goreng', 'rambutan']],
+        [['nasi-goreng', null, 'rambutan']],
+        [['manggis', 'bakso', 'durian'], [null, 'ketupat', 'sate']],
+        [[null, 'kerupuk-udang', 'onde-onde'], ['durian', 'nasi-goreng', 'sate']],
+        [['rambutan', null, 'onde-onde']],
+        [['bakso', 'kerupuk-udang', 'kerupuk-udang']],
+        [['durian', 'bakso', 'ketupat'], ['sate', 'onde-onde', 'es-teh-manis']],
+        [['manggis', 'manggis', null]],
+      ],
+    },
+    {
+      shelves: [
+        [['onde-onde', 'ketupat', 'nasi-goreng']],
+        [[null, 'nasi-goreng', 'nasi-goreng']],
+        [['sate', null, 'manggis']],
+        [['ketupat', 'rambutan', 'sate'], [null, 'kerupuk-udang', 'rambutan']],
+        [[null, 'onde-onde', 'es-teh-manis'], ['es-teh-manis', 'kerupuk-udang', 'manggis']],
+        [['bakso', null, 'bakso']],
+        [['sate', 'manggis', 'kerupuk-udang']],
+        [['ketupat', 'durian', 'onde-onde'], ['es-teh-manis', 'durian', 'durian']],
+        [['rambutan', 'bakso', null]],
+      ],
+    },
+    {
+      shelves: [
+        [['sate', 'es-teh-manis', 'rambutan']],
+        [[null, 'onde-onde', 'kerupuk-udang']],
+        [['kerupuk-udang', null, 'manggis']],
+        [['kerupuk-udang', 'bakso', 'nasi-goreng'], [null, 'bakso', 'es-teh-manis']],
+        [[null, 'nasi-goreng', 'bakso'], ['onde-onde', 'ketupat', 'durian']],
+        [['manggis', null, 'sate']],
+        [['durian', 'ketupat', 'ketupat']],
+        [['es-teh-manis', 'onde-onde', 'rambutan'], ['manggis', 'durian', 'sate']],
+        [['nasi-goreng', 'rambutan', null]],
+      ],
+    },
+    {
+      shelves: [
+        [['ketupat', 'sate', 'nasi-goreng']],
+        [[null, 'durian', 'manggis']],
+        [['onde-onde', null, 'ketupat']],
+        [['onde-onde', 'rambutan', 'durian'], [null, 'bakso', 'durian']],
+        [[null, 'bakso', 'es-teh-manis'], ['manggis', 'rambutan', 'sate']],
+        [['es-teh-manis', null, 'ketupat']],
+        [['nasi-goreng', 'manggis', 'rambutan']],
+        [['es-teh-manis', 'kerupuk-udang', 'nasi-goreng'], ['bakso', 'sate', 'onde-onde']],
+        [['kerupuk-udang', 'kerupuk-udang', null]],
+      ],
+    },
+  ],
 };

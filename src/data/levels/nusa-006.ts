@@ -9,23 +9,23 @@ import type { LevelDefinition } from '../../core';
  *
  * Simulated casual player, 200 games: wins 80%, out of space 0%, out of time 20%.
  * A guide only: real players may find it easier or harder.
+ *
+ * 8 arrangements of the items (the level as written is the first; each attempt plays the next one):
+ * the same player wins 78% to 87% of games across them.
  */
 export const nusa006: LevelDefinition = {
   id: 'nusa-006',
   timeLimitSeconds: 95,
   shelves: [
-    [['kendang', 'salak', 'batik'], ['cabai', 'klepon', 'batik']],
-    [['wayang-kulit', 'gong', 'jamu']],
-    [[null, 'kendang', 'klepon']],
-    [['gong', 'salak', 'blangkon']],
-    [
-      ['tahu-goreng', 'tahu-goreng', 'es-cendol'],
-      ['es-kelapa-muda', 'wayang-kulit', 'es-kelapa-muda'],
-    ],
-    [['caping', 'blangkon', null]],
-    [['caping', null, 'jamu'], ['cabai', 'wayang-kulit', 'klepon']],
-    [['tahu-goreng', 'caping', 'cabai'], ['es-cendol', 'batik', 'es-cendol']],
-    [['kendang', 'blangkon', 'jamu'], ['gong', 'es-kelapa-muda', 'salak']],
+    [['cabai', 'klepon', 'jamu'], ['es-cendol', 'batik', 'jamu']],
+    [['salak', 'sate', 'pisang-goreng']],
+    [[null, 'cabai', 'batik']],
+    [['sate', 'klepon', 'es-kelapa-muda']],
+    [['blangkon', 'blangkon', 'wayang-kulit'], ['tempe', 'salak', 'tempe']],
+    [['bakso', 'es-kelapa-muda', null]],
+    [['bakso', null, 'pisang-goreng'], ['es-cendol', 'salak', 'batik']],
+    [['blangkon', 'bakso', 'es-cendol'], ['wayang-kulit', 'jamu', 'wayang-kulit']],
+    [['cabai', 'es-kelapa-muda', 'pisang-goreng'], ['sate', 'tempe', 'klepon']],
   ],
   mechanics: [{ kind: 'lockedShelves', shelves: [{ shelf: 2, triplesRequired: 1 }] }],
   layout: {
@@ -35,4 +35,97 @@ export const nusa006: LevelDefinition = {
       { kind: 'shelves', shelves: [6, 7, 8] },
     ],
   },
+  arrangements: [
+    {
+      shelves: [
+        [['klepon', 'jamu', 'salak'], ['cabai', 'batik', 'es-kelapa-muda']],
+        [['es-cendol', 'bakso', 'pisang-goreng']],
+        [[null, 'cabai', 'salak']],
+        [['blangkon', 'batik', 'blangkon']],
+        [['wayang-kulit', 'salak', 'es-cendol'], ['jamu', 'sate', 'klepon']],
+        [['bakso', 'pisang-goreng', null]],
+        [['jamu', null, 'es-cendol'], ['batik', 'es-kelapa-muda', 'tempe']],
+        [['wayang-kulit', 'blangkon', 'wayang-kulit'], ['klepon', 'bakso', 'tempe']],
+        [['cabai', 'sate', 'pisang-goreng'], ['tempe', 'es-kelapa-muda', 'sate']],
+      ],
+    },
+    {
+      shelves: [
+        [['klepon', 'tempe', 'cabai'], ['bakso', 'blangkon', 'jamu']],
+        [['pisang-goreng', 'sate', 'cabai']],
+        [[null, 'jamu', 'bakso']],
+        [['batik', 'wayang-kulit', 'batik']],
+        [['batik', 'tempe', 'cabai'], ['salak', 'blangkon', 'wayang-kulit']],
+        [['klepon', 'pisang-goreng', null]],
+        [['es-cendol', null, 'sate'], ['es-kelapa-muda', 'wayang-kulit', 'tempe']],
+        [['es-cendol', 'salak', 'sate'], ['klepon', 'blangkon', 'es-kelapa-muda']],
+        [['salak', 'bakso', 'es-cendol'], ['es-kelapa-muda', 'jamu', 'pisang-goreng']],
+      ],
+    },
+    {
+      shelves: [
+        [['pisang-goreng', 'klepon', 'bakso'], ['batik', 'bakso', 'es-cendol']],
+        [['klepon', 'tempe', 'jamu']],
+        [[null, 'wayang-kulit', 'es-cendol']],
+        [['es-kelapa-muda', 'jamu', 'sate']],
+        [['sate', 'tempe', 'es-kelapa-muda'], ['batik', 'salak', 'pisang-goreng']],
+        [['salak', 'batik', null]],
+        [['wayang-kulit', null, 'es-kelapa-muda'], ['salak', 'blangkon', 'cabai']],
+        [['tempe', 'wayang-kulit', 'jamu'], ['sate', 'blangkon', 'pisang-goreng']],
+        [['klepon', 'cabai', 'cabai'], ['bakso', 'es-cendol', 'blangkon']],
+      ],
+    },
+    {
+      shelves: [
+        [['batik', 'cabai', 'tempe'], ['tempe', 'wayang-kulit', 'jamu']],
+        [['blangkon', 'blangkon', 'es-cendol']],
+        [[null, 'sate', 'es-kelapa-muda']],
+        [['pisang-goreng', 'cabai', 'jamu']],
+        [['es-kelapa-muda', 'es-kelapa-muda', 'sate'], ['wayang-kulit', 'wayang-kulit', 'klepon']],
+        [['pisang-goreng', 'jamu', null]],
+        [['salak', null, 'klepon'], ['salak', 'tempe', 'salak']],
+        [['batik', 'batik', 'klepon'], ['pisang-goreng', 'es-cendol', 'es-cendol']],
+        [['bakso', 'sate', 'cabai'], ['bakso', 'bakso', 'blangkon']],
+      ],
+    },
+    {
+      shelves: [
+        [['wayang-kulit', 'cabai', 'wayang-kulit'], ['batik', 'bakso', 'blangkon']],
+        [['tempe', 'cabai', 'pisang-goreng']],
+        [[null, 'batik', 'tempe']],
+        [['klepon', 'tempe', 'pisang-goreng']],
+        [['salak', 'klepon', 'salak'], ['sate', 'jamu', 'jamu']],
+        [['es-kelapa-muda', 'bakso', null]],
+        [['es-kelapa-muda', null, 'es-kelapa-muda'], ['es-cendol', 'es-cendol', 'cabai']],
+        [['jamu', 'sate', 'klepon'], ['batik', 'blangkon', 'es-cendol']],
+        [['blangkon', 'salak', 'wayang-kulit'], ['pisang-goreng', 'bakso', 'sate']],
+      ],
+    },
+    {
+      shelves: [
+        [['wayang-kulit', 'tempe', 'klepon'], ['es-kelapa-muda', 'es-kelapa-muda', 'blangkon']],
+        [['cabai', 'batik', 'batik']],
+        [[null, 'batik', 'sate']],
+        [['sate', 'jamu', 'bakso']],
+        [['pisang-goreng', 'salak', 'jamu'], ['es-cendol', 'salak', 'cabai']],
+        [['es-cendol', 'bakso', null]],
+        [['bakso', null, 'sate'], ['wayang-kulit', 'blangkon', 'cabai']],
+        [['pisang-goreng', 'pisang-goreng', 'klepon'], ['tempe', 'wayang-kulit', 'blangkon']],
+        [['es-cendol', 'klepon', 'jamu'], ['tempe', 'es-kelapa-muda', 'salak']],
+      ],
+    },
+    {
+      shelves: [
+        [['tempe', 'es-cendol', 'wayang-kulit'], ['blangkon', 'pisang-goreng', 'pisang-goreng']],
+        [['sate', 'wayang-kulit', 'salak']],
+        [[null, 'cabai', 'batik']],
+        [['salak', 'es-kelapa-muda', 'sate']],
+        [['jamu', 'wayang-kulit', 'jamu'], ['cabai', 'cabai', 'tempe']],
+        [['es-cendol', 'jamu', null]],
+        [['salak', null, 'batik'], ['bakso', 'klepon', 'es-kelapa-muda']],
+        [['es-cendol', 'blangkon', 'es-kelapa-muda'], ['blangkon', 'klepon', 'bakso']],
+        [['tempe', 'sate', 'batik'], ['klepon', 'pisang-goreng', 'bakso']],
+      ],
+    },
+  ],
 };
