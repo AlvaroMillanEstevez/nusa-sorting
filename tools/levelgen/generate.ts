@@ -6,6 +6,7 @@ import {
   startTriples,
   trapWithin,
   tripleDepthIssues,
+  tripleMoves,
   typesNotOneTriple,
   type ColumnDefinition,
   type GameState,
@@ -260,10 +261,10 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
 /**
  * The rules every generated level must meet, as a list of failures (empty when it passes): a valid level whose
  * items are big enough on a phone; exactly one triple of each type; no layer that starts as a triple; no defeat within the first two moves; no
- * triple buried deeper than the recipe allows; enough triples in reach at the start; solvable even without
- * combos.
+ * triple buried deeper than the recipe allows; enough triples in reach at the start; a move completing a triple
+ * for a level with the tutorial; solvable even without combos.
  */
-export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, 'maxDepth' | 'minStartTriples'>): string[] {
+export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, 'maxDepth' | 'minStartTriples' | 'tutorial'>): string[] {
   let state: GameState;
   try {
     state = createGame(level);
@@ -285,6 +286,7 @@ export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, '
   if (deep.length > 0) failures.push(`triples buried too deep: ${deep.map((d) => `${d.type} #${d.triple + 1}`).join(', ')}`);
   const reachable = startTriples(state);
   if (reachable < recipe.minStartTriples) failures.push(`only ${reachable} triple(s) in reach at the start`);
+  if (recipe.tutorial && tripleMoves(state).length === 0) failures.push('no single move completes a triple for the tutorial');
   if (failures.length === 0 && !isSolvable(state)) failures.push('no solution found');
   return failures;
 }

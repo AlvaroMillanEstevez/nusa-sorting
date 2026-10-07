@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { prepareItemTextures } from './itemTextures';
+import { prepareTutorialTextures } from './TutorialHint';
 
 /** Prepares shared resources and hands over to the game. */
 export class BootScene extends Phaser.Scene {
@@ -8,6 +9,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    void prepareItemTextures(this).then(() => this.scene.start('Game'));
+    void Promise.all([prepareItemTextures(this), prepareTutorialTextures(this)]).then(() => this.scene.start('Game'));
   }
 }

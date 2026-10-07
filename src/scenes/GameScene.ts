@@ -1,7 +1,9 @@
 import * as Phaser from 'phaser';
 import {
   arrangementCount,
+  completesFirstTriple,
   createGame,
+  FIRST_TRIPLE_TUTORIAL,
   findItem,
   freeFrontSlots,
   isShelfLocked,
@@ -11,6 +13,7 @@ import {
   moveItem,
   tick,
   triplesToUnlock,
+  tutorialMove,
   withArrangement,
   type GameEvent,
   type GameState,
@@ -55,6 +58,7 @@ import { playList } from './playList';
 import { ResultOverlay } from './ResultOverlay';
 import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
+import { TutorialHint } from './TutorialHint';
 import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
 
 const SELECTED_LIFT = 0.15;
@@ -117,6 +121,12 @@ export class GameScene extends Phaser.Scene {
   private overlay!: ResultOverlay;
   private decor!: ThemeDecor;
   private themeIntro!: ThemeIntro;
+  private tutorial!: TutorialHint;
+  /**
+   * The first-triple tutorial is on: level 1 until the player clears a triple, once ever. The clock does not run
+   * meanwhile.
+   */
+  private tutorialActive = false;
   /** The current press landed on the theme intro screen: its release is not a tap on the board. */
   private pressOnIntro = false;
   private locks!: LockOverlays;
@@ -185,6 +195,7 @@ export class GameScene extends Phaser.Scene {
     this.overlay = new ResultOverlay(this);
     this.decor = new ThemeDecor(this);
     this.themeIntro = new ThemeIntro(this);
+    this.tutorial = new TutorialHint(this);
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     // Pointer distances are in canvas pixels, hence the render ratio.
@@ -227,7 +238,8 @@ export class GameScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     this.hud.setWaiting(this.state.status === 'playing' && !this.state.clockStarted);
-    if (this.state.status === 'playing') {
+    // The tutorial holds the clock (and everything timed) until it is completed.
+    if (this.state.status === 'playing' && !this.tutorialActive) {
       const result = tick(this.state, delta);
       this.state = result.state;
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
@@ -394,6 +406,34 @@ export class GameScene extends Phaser.Scene {
     if (look && themeId && themeById(themeId) && !this.store.themesSeen.includes(themeId)) {
       this.themeIntro.show(themeId as ThemeId, look, this.store.colorBlindMode, () => this.store.markThemeSeen(themeId));
     }
+    // The first time in level 1: how to make a triple, until the player makes one.
+    this.tutorial.clear();
+    this.tutorialActive = index === 0 && !this.store.isTutorialDone(FIRST_TRIPLE_TUTORIAL);
+    this.showTutorial();
+  }
+
+  /** Shows the tutorial, pointing at a move that completes a triple on the board as it is now. */
+  private showTutorial(): void {
+    if (!this.tutorialActive) return;
+    const move = tutorialMove(this.state);
+    const item = move && itemAt(this.state, move.from);
+    this.tutorial.show({
+      text: t('tutorial.firstTriple'),
+      move,
+      itemTexture: item ? itemTextureKey(item.type, this.store.colorBlindMode) : null,
+    });
+  }
+
+  /** After a move during the tutorial: done for good with a triple, else it points at the board's new state. */
+  private advanceTutorial(events: readonly GameEvent[]): void {
+    if (!this.tutorialActive) return;
+    if (completesFirstTriple(events)) {
+      this.tutorialActive = false;
+      this.store.markTutorialDone(FIRST_TRIPLE_TUTORIAL);
+      this.tutorial.finish();
+    } else {
+      this.showTutorial();
+    }
   }
 
   private createSprite(item: Item): void {
@@ -421,6 +461,7 @@ export class GameScene extends Phaser.Scene {
     for (const sprite of this.sprites.values()) {
       if (sprite.texture.key !== itemBackTextureKey(sprite.getData('type') as string)) this.setLook(sprite, true);
     }
+    this.showTutorial();
   }
 
   /** Shows the win or defeat panel once the final animations have had time to play. */
@@ -505,6 +546,7 @@ export class GameScene extends Phaser.Scene {
     this.overlay.layout(width, height);
     this.decor.draw(themeLook(this.level.theme), width, height, this.layout);
     this.themeIntro.layout(width, height);
+    this.tutorial.layout(width, height, this.layout, this.baseScale());
     this.locks.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
@@ -626,6 +668,7 @@ export class GameScene extends Phaser.Scene {
     this.sfx.unlock();
     this.pressOnIntro = this.themeIntro.visible;
     if (this.overlay.visible || this.pressOnIntro) return;
+    this.tutorial.setTouching(true);
     if (this.belt.onPointerDown(pointer)) return;
     if (this.state.status !== 'playing' || this.shelfPress) return;
     this.pointerPos = pointerAt(pointer);
@@ -719,6 +762,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
+    this.tutorial.setTouching(false);
     // The intro screen closes itself on this release; it is no tap on the board, and does not start the clock.
     if (this.pressOnIntro) {
       this.pressOnIntro = false;
@@ -871,6 +915,7 @@ export class GameScene extends Phaser.Scene {
     // Advance: items behind slide forward after the pop; everything else settles immediately.
     this.sync(ADVANCE_MS, (pos) => (advancedShelves.has(pos.shelf) ? ADVANCE_DELAY_MS : 0), moved?.itemId);
     this.playMechanics(events);
+    this.advanceTutorial(events);
 
     if (this.state.status !== 'playing') this.endLevel(RESULT_DELAY_MS);
   }

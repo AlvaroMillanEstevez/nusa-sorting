@@ -32,6 +32,18 @@ export class ProgressStore {
     this.saves.save(this.data);
   }
 
+  /** Whether the player has completed a tutorial; it then never shows again. */
+  isTutorialDone(id: string): boolean {
+    return this.data.tutorialsDone.includes(id);
+  }
+
+  /** Remembers that a tutorial was completed; call it once, when the player does what it teaches. */
+  markTutorialDone(id: string): void {
+    if (this.data.tutorialsDone.includes(id)) return;
+    this.data = { ...this.data, tutorialsDone: [...this.data.tutorialsDone, id] };
+    this.saves.save(this.data);
+  }
+
   /**
    * The arrangement of a level's items to play now, out of `count`: 0 the first time, then a different one each
    * attempt. Remembers it, so the next attempt (even after closing the game) moves on to another.

@@ -47,6 +47,7 @@ export const en = {
   'gallery.loading': 'Drawing…',
   'themeIntro.newItems': 'New items in this level',
   'themeIntro.continue': 'Tap to continue',
+  'tutorial.firstTriple': 'Put 3 matching items on the same shelf',
 } as const;
 
 export type MessageKey = keyof typeof en;

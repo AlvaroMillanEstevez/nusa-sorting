@@ -6,7 +6,7 @@ export const SAVE_VERSION = 1;
 const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false };
 
 export function emptySave(): SaveData {
-  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {} };
+  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {}, tutorialsDone: [] };
 }
 
 /**
@@ -48,6 +48,7 @@ export function parseSave(raw: string | null): SaveData {
     settings: parseSettings(data.settings),
     themesSeen: parseIdList(data.themesSeen),
     lastArrangements: parseArrangements(data.lastArrangements),
+    tutorialsDone: parseIdList(data.tutorialsDone),
   };
 }
 

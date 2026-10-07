@@ -79,6 +79,11 @@ export interface LevelRecipe {
   /** Triples completable at the start with what is in view and the layer behind it. */
   readonly minStartTriples: number;
   /**
+   * The level shows the first-triple tutorial: every arrangement must have a move from one shelf to another that
+   * completes a triple at once, for the tutorial to point at.
+   */
+  readonly tutorial?: boolean;
+  /**
    * Share of games the casual simulated player wins, inclusive range: the level is fair and can be won without
    * help (tools/simulator.ts, CASUAL).
    */

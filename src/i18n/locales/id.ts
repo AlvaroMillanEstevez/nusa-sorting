@@ -49,4 +49,5 @@ export const id: Record<MessageKey, string> = {
   'gallery.loading': 'Menggambar…',
   'themeIntro.newItems': 'Barang baru di level ini',
   'themeIntro.continue': 'Ketuk untuk lanjut',
+  'tutorial.firstTriple': 'Kumpulkan 3 barang yang sama di satu rak',
 };

@@ -15,6 +15,8 @@ export interface SaveData {
   readonly themesSeen: readonly string[];
   /** Per level id, the arrangement of its items played last (see nextArrangement). */
   readonly lastArrangements: Readonly<Record<string, number>>;
+  /** Tutorials the player has completed (such as FIRST_TRIPLE_TUTORIAL); they never show again. */
+  readonly tutorialsDone: readonly string[];
 }
 
 /** Persistence boundary. The game never touches storage APIs directly. */
