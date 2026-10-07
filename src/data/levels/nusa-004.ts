@@ -7,16 +7,16 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 4`, or try another seed with `npm run levelgen -- 4 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 65%, out of space 28%,
- * out of time 7%, space pressure 46%. Expert: wins 84%.
+ * Simulated players, 200 games each. Casual: wins 59%, out of space 33%,
+ * out of time 8%, space pressure 48%. Expert: wins 82%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 41% to 74%, the expert 20% to 97%; pressure 3% to 53%.
+ * Across them the casual player wins 40% to 74%, the expert 20% to 97%; pressure 4% to 51%.
  */
 export const nusa004: LevelDefinition = {
   id: 'nusa-004',
-  timeLimitSeconds: 115,
+  timeLimitSeconds: 70,
   shelves: [
     [['rendang', null, null], ['gado-gado', 'kerupuk-udang', 'durian']],
     [['ikan-bakar', 'rendang', 'gado-gado'], ['es-teh-manis', null, 'manggis']],
@@ -43,18 +43,6 @@ export const nusa004: LevelDefinition = {
   arrangements: [
     {
       shelves: [
-        [['es-teh-manis', null, null], ['gado-gado', 'es-teh-manis', 'durian']],
-        [['gado-gado', 'ayam-goreng', 'es-teh-manis'], ['gado-gado', null, 'manggis']],
-        [['ikan-bakar', 'kerupuk-udang', 'dadar-gulung'], ['manggis', 'onde-onde', 'rendang']],
-        [['mie-goreng', 'durian', null], ['ikan-bakar', 'ayam-goreng', 'ikan-bakar']],
-        [[null, 'kerupuk-udang', 'mie-goreng'], ['rendang', 'mie-goreng', 'onde-onde']],
-        [[null, 'dadar-gulung', 'onde-onde'], ['rambutan', 'rambutan', 'rendang']],
-        [['rambutan', 'ayam-goreng', 'manggis']],
-        [['kerupuk-udang', 'dadar-gulung', 'durian']],
-      ],
-    },
-    {
-      shelves: [
         [['durian', null, null], ['rambutan', 'mie-goreng', 'es-teh-manis']],
         [['es-teh-manis', 'rambutan', 'mie-goreng'], ['manggis', null, 'gado-gado']],
         [['onde-onde', 'gado-gado', 'kerupuk-udang'], ['rambutan', 'dadar-gulung', 'kerupuk-udang']],
@@ -63,6 +51,18 @@ export const nusa004: LevelDefinition = {
         [[null, 'onde-onde', 'dadar-gulung'], ['ayam-goreng', 'manggis', 'ikan-bakar']],
         [['onde-onde', 'ayam-goreng', 'es-teh-manis']],
         [['ayam-goreng', 'rendang', 'rendang']],
+      ],
+    },
+    {
+      shelves: [
+        [['ikan-bakar', null, null], ['durian', 'rambutan', 'ikan-bakar']],
+        [['rendang', 'kerupuk-udang', 'onde-onde'], ['kerupuk-udang', null, 'ikan-bakar']],
+        [['dadar-gulung', 'rambutan', 'gado-gado'], ['durian', 'manggis', 'onde-onde']],
+        [['es-teh-manis', 'mie-goreng', null], ['gado-gado', 'durian', 'ayam-goreng']],
+        [[null, 'dadar-gulung', 'kerupuk-udang'], ['rendang', 'ayam-goreng', 'manggis']],
+        [[null, 'rambutan', 'gado-gado'], ['rendang', 'mie-goreng', 'dadar-gulung']],
+        [['mie-goreng', 'manggis', 'ayam-goreng']],
+        [['es-teh-manis', 'es-teh-manis', 'onde-onde']],
       ],
     },
     {
@@ -91,18 +91,6 @@ export const nusa004: LevelDefinition = {
     },
     {
       shelves: [
-        [['rendang', null, null], ['ayam-goreng', 'rambutan', 'durian']],
-        [['dadar-gulung', 'gado-gado', 'onde-onde'], ['mie-goreng', null, 'onde-onde']],
-        [['dadar-gulung', 'ayam-goreng', 'rendang'], ['kerupuk-udang', 'onde-onde', 'es-teh-manis']],
-        [['dadar-gulung', 'ikan-bakar', null], ['mie-goreng', 'manggis', 'es-teh-manis']],
-        [[null, 'mie-goreng', 'durian'], ['manggis', 'ikan-bakar', 'rambutan']],
-        [[null, 'gado-gado', 'kerupuk-udang'], ['ayam-goreng', 'ikan-bakar', 'gado-gado']],
-        [['rambutan', 'rendang', 'kerupuk-udang']],
-        [['durian', 'es-teh-manis', 'manggis']],
-      ],
-    },
-    {
-      shelves: [
         [['rendang', null, null], ['manggis', 'rambutan', 'rambutan']],
         [['durian', 'kerupuk-udang', 'mie-goreng'], ['es-teh-manis', null, 'rendang']],
         [['onde-onde', 'ayam-goreng', 'ayam-goreng'], ['es-teh-manis', 'gado-gado', 'ikan-bakar']],
@@ -111,6 +99,18 @@ export const nusa004: LevelDefinition = {
         [[null, 'rambutan', 'mie-goreng'], ['ikan-bakar', 'es-teh-manis', 'mie-goreng']],
         [['gado-gado', 'dadar-gulung', 'dadar-gulung']],
         [['ayam-goreng', 'durian', 'manggis']],
+      ],
+    },
+    {
+      shelves: [
+        [['dadar-gulung', null, null], ['kerupuk-udang', 'dadar-gulung', 'ikan-bakar']],
+        [['dadar-gulung', 'manggis', 'rambutan'], ['es-teh-manis', null, 'mie-goreng']],
+        [['manggis', 'rendang', 'gado-gado'], ['rambutan', 'durian', 'mie-goreng']],
+        [['kerupuk-udang', 'ikan-bakar', null], ['ayam-goreng', 'rambutan', 'durian']],
+        [[null, 'mie-goreng', 'kerupuk-udang'], ['onde-onde', 'rendang', 'durian']],
+        [[null, 'ayam-goreng', 'es-teh-manis'], ['rendang', 'manggis', 'gado-gado']],
+        [['onde-onde', 'es-teh-manis', 'ayam-goreng']],
+        [['gado-gado', 'onde-onde', 'ikan-bakar']],
       ],
     },
     {

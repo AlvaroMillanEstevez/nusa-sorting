@@ -17,7 +17,7 @@ import type { LevelDefinition } from '../../core';
 export const nusa015: LevelDefinition = {
   id: 'nusa-015',
   theme: 'pasar-malam',
-  timeLimitSeconds: 150,
+  timeLimitSeconds: 90,
   shelves: [
     [['manggis', null, null], ['topeng', 'rendang', 'durian'], ['cabai', 'gado-gado', 'bianglala']],
     [[null, 'durian', null], ['lampion', 'cabai', 'lampion'], ['gado-gado', 'bianglala', 'manggis']],

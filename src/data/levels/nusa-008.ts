@@ -7,16 +7,16 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 8`, or try another seed with `npm run levelgen -- 8 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 83%, out of space 17%,
- * out of time 1%, space pressure 15%. Expert: wins 97%.
+ * Simulated players, 200 games each. Casual: wins 80%, out of space 19%,
+ * out of time 2%, space pressure 17%. Expert: wins 97%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 63% to 85%, the expert 90% to 98%; pressure 8% to 27%.
+ * Across them the casual player wins 62% to 85%, the expert 90% to 98%; pressure 7% to 26%.
  */
 export const nusa008: LevelDefinition = {
   id: 'nusa-008',
-  timeLimitSeconds: 160,
+  timeLimitSeconds: 100,
   shelves: [
     [
       ['klepon', 'batik', 'rambutan'],
@@ -110,26 +110,6 @@ export const nusa008: LevelDefinition = {
     {
       shelves: [
         [
-          ['es-teh-manis', 'bakso', 'rambutan'],
-          ['klepon', 'wayang-kulit', 'bakso'],
-          ['klepon', 'es-teh-manis', 'salak'],
-        ],
-        [[null, null, null]],
-        [['tahu-goreng', null, null], ['batik', 'es-cendol', 'jamu']],
-        [
-          ['rambutan', 'onde-onde', 'bakso'],
-          ['klepon', 'blangkon', 'es-kelapa-muda'],
-          ['es-cendol', 'tahu-goreng', 'salak'],
-        ],
-        [['jamu', 'onde-onde', 'wayang-kulit'], ['batik', 'jamu', 'es-kelapa-muda']],
-        [['onde-onde', 'blangkon', null], ['kerupuk-udang', 'kerupuk-udang', 'tahu-goreng']],
-        [[null, 'es-teh-manis', null], ['salak', 'wayang-kulit', 'blangkon']],
-      ],
-      stacks: [[[], [], ['es-kelapa-muda'], ['rambutan'], ['kerupuk-udang'], ['es-cendol'], ['batik']]],
-    },
-    {
-      shelves: [
-        [
           ['bakso', 'bakso', 'tahu-goreng'],
           ['rambutan', 'batik', 'kerupuk-udang'],
           ['es-teh-manis', 'rambutan', 'es-cendol'],
@@ -186,6 +166,26 @@ export const nusa008: LevelDefinition = {
         [[null, 'kerupuk-udang', null], ['salak', 'es-cendol', 'bakso']],
       ],
       stacks: [[[], [], ['tahu-goreng'], ['rambutan'], ['batik'], ['batik'], ['kerupuk-udang']]],
+    },
+    {
+      shelves: [
+        [
+          ['kerupuk-udang', 'es-kelapa-muda', 'salak'],
+          ['es-kelapa-muda', 'klepon', 'jamu'],
+          ['bakso', 'es-teh-manis', 'batik'],
+        ],
+        [[null, null, null]],
+        [['es-cendol', null, null], ['kerupuk-udang', 'rambutan', 'onde-onde']],
+        [
+          ['es-teh-manis', 'blangkon', 'tahu-goreng'],
+          ['salak', 'bakso', 'rambutan'],
+          ['blangkon', 'es-teh-manis', 'onde-onde'],
+        ],
+        [['jamu', 'wayang-kulit', 'wayang-kulit'], ['es-cendol', 'blangkon', 'jamu']],
+        [['es-kelapa-muda', 'klepon', null], ['onde-onde', 'klepon', 'salak']],
+        [[null, 'kerupuk-udang', null], ['bakso', 'batik', 'wayang-kulit']],
+      ],
+      stacks: [[[], [], ['rambutan'], ['es-cendol'], ['tahu-goreng'], ['batik'], ['tahu-goreng']]],
     },
   ],
 };

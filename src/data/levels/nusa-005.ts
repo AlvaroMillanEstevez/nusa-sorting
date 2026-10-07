@@ -12,12 +12,12 @@ import type { LevelDefinition } from '../../core';
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 76% to 91%, the expert 29% to 99%; pressure 2% to 19%.
+ * Across them the casual player wins 76% to 94%, the expert 29% to 99%; pressure 2% to 18%.
  */
 export const nusa005: LevelDefinition = {
   id: 'nusa-005',
   theme: 'budaya-jawa',
-  timeLimitSeconds: 165,
+  timeLimitSeconds: 100,
   shelves: [
     [['caping', 'martabak-manis', 'ketupat'], ['pisang-goreng', 'sate', 'kipas']],
     [[null, null, null]],
@@ -117,15 +117,15 @@ export const nusa005: LevelDefinition = {
     },
     {
       shelves: [
-        [['caping', 'sate', 'ketupat'], ['kipas', 'tempe', 'bakso']],
+        [['tempe', 'wayang-kulit', 'pisang-goreng'], ['pisang-goreng', 'kendang', 'pisang-goreng']],
         [[null, null, null]],
-        [['tempe', 'nasi-goreng', 'blangkon'], ['blangkon', 'martabak-manis', 'gong']],
-        [['kendang', 'kipas', 'caping'], ['sate', 'sate', 'nasi-goreng']],
-        [['wayang-kulit', 'martabak-manis', 'tempe'], ['pisang-goreng', 'kipas', 'ketupat']],
-        [['wayang-kulit', 'ketupat', null], ['gong', null, 'gong']],
-        [['kendang', 'pisang-goreng', null], ['nasi-goreng', null, 'wayang-kulit']],
-        [['bakso', null, 'batik'], ['batik', 'caping', 'kendang']],
-        [['pisang-goreng', null, 'blangkon'], ['batik', 'bakso', 'martabak-manis']],
+        [['kipas', 'ketupat', 'bakso'], ['gong', 'kendang', 'caping']],
+        [['sate', 'wayang-kulit', 'caping'], ['nasi-goreng', 'batik', 'gong']],
+        [['tempe', 'kipas', 'martabak-manis'], ['tempe', 'kipas', 'ketupat']],
+        [['blangkon', 'nasi-goreng', null], ['batik', null, 'ketupat']],
+        [['kendang', 'nasi-goreng', null], ['martabak-manis', null, 'sate']],
+        [['bakso', null, 'blangkon'], ['sate', 'wayang-kulit', 'gong']],
+        [['caping', null, 'martabak-manis'], ['blangkon', 'batik', 'bakso']],
       ],
     },
   ],

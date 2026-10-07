@@ -7,16 +7,16 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 11`, or try another seed with `npm run levelgen -- 11 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 85%, out of space 14%,
- * out of time 2%, space pressure 22%. Expert: wins 98%.
+ * Simulated players, 200 games each. Casual: wins 83%, out of space 16%,
+ * out of time 2%, space pressure 25%. Expert: wins 98%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 74% to 90%, the expert 33% to 98%; pressure 3% to 26%.
+ * Across them the casual player wins 72% to 90%, the expert 33% to 98%; pressure 3% to 30%.
  */
 export const nusa011: LevelDefinition = {
   id: 'nusa-011',
-  timeLimitSeconds: 165,
+  timeLimitSeconds: 100,
   shelves: [
     [['onde-onde', 'es-kelapa-muda', 'kipas'], ['kipas', 'es-kelapa-muda', null]],
     [['kelereng', 'es-teh-manis', 'kelereng'], ['bakso', 'klepon', 'onde-onde']],
@@ -36,19 +36,6 @@ export const nusa011: LevelDefinition = {
     ],
   },
   arrangements: [
-    {
-      shelves: [
-        [['rambutan', 'es-kelapa-muda', 'klepon'], ['klepon', 'tahu-goreng', null]],
-        [['klepon', 'rambutan', 'karung'], ['kipas', 'kipas', 'salak']],
-        [['es-cendol', 'jamu', 'es-kelapa-muda'], ['kerupuk-udang', 'kelereng', 'bendera']],
-        [['bakso', 'bakso', 'bendera'], ['kerupuk-udang', 'es-kelapa-muda', 'bakso']],
-        [['bendera', 'kerupuk-udang', 'karung'], ['es-teh-manis', 'es-teh-manis', 'es-cendol']],
-        [['tahu-goreng', 'kelereng', 'es-cendol'], ['jamu', 'onde-onde', 'rambutan']],
-        [[null, 'kipas', 'jamu'], ['karung', 'onde-onde', 'kelereng']],
-        [['tahu-goreng', 'salak', null], ['salak', 'es-teh-manis', 'onde-onde']],
-        [[null, null, null]],
-      ],
-    },
     {
       shelves: [
         [['tahu-goreng', 'jamu', 'karung'], ['es-teh-manis', 'kipas', null]],
@@ -106,6 +93,32 @@ export const nusa011: LevelDefinition = {
     },
     {
       shelves: [
+        [['kerupuk-udang', 'kipas', 'es-cendol'], ['es-teh-manis', 'bakso', null]],
+        [['tahu-goreng', 'salak', 'jamu'], ['tahu-goreng', 'bendera', 'bakso']],
+        [['es-teh-manis', 'rambutan', 'salak'], ['bendera', 'kelereng', 'karung']],
+        [['klepon', 'rambutan', 'karung'], ['onde-onde', 'bendera', 'klepon']],
+        [['salak', 'es-kelapa-muda', 'tahu-goreng'], ['onde-onde', 'kerupuk-udang', 'onde-onde']],
+        [['es-cendol', 'jamu', 'kelereng'], ['es-cendol', 'es-teh-manis', 'es-kelapa-muda']],
+        [[null, 'kelereng', 'bakso'], ['kipas', 'rambutan', 'jamu']],
+        [['es-kelapa-muda', 'klepon', null], ['karung', 'kerupuk-udang', 'kipas']],
+        [[null, null, null]],
+      ],
+    },
+    {
+      shelves: [
+        [['kipas', 'tahu-goreng', 'jamu'], ['kelereng', 'onde-onde', null]],
+        [['salak', 'salak', 'es-teh-manis'], ['onde-onde', 'tahu-goreng', 'bendera']],
+        [['kerupuk-udang', 'rambutan', 'kelereng'], ['jamu', 'bakso', 'es-teh-manis']],
+        [['bakso', 'kelereng', 'es-cendol'], ['es-kelapa-muda', 'klepon', 'es-cendol']],
+        [['es-teh-manis', 'klepon', 'bakso'], ['bendera', 'klepon', 'onde-onde']],
+        [['kerupuk-udang', 'karung', 'rambutan'], ['rambutan', 'salak', 'karung']],
+        [[null, 'jamu', 'kerupuk-udang'], ['tahu-goreng', 'es-cendol', 'karung']],
+        [['es-kelapa-muda', 'kipas', null], ['bendera', 'es-kelapa-muda', 'kipas']],
+        [[null, null, null]],
+      ],
+    },
+    {
+      shelves: [
         [['es-cendol', 'onde-onde', 'tahu-goreng'], ['kipas', 'kelereng', null]],
         [['kipas', 'salak', 'jamu'], ['jamu', 'bakso', 'rambutan']],
         [['rambutan', 'tahu-goreng', 'onde-onde'], ['karung', 'kerupuk-udang', 'salak']],
@@ -114,19 +127,6 @@ export const nusa011: LevelDefinition = {
         [['karung', 'es-teh-manis', 'bakso'], ['klepon', 'es-cendol', 'es-cendol']],
         [[null, 'kerupuk-udang', 'bendera'], ['bendera', 'tahu-goreng', 'onde-onde']],
         [['klepon', 'kipas', null], ['rambutan', 'salak', 'es-teh-manis']],
-        [[null, null, null]],
-      ],
-    },
-    {
-      shelves: [
-        [['rambutan', 'bendera', 'jamu'], ['tahu-goreng', 'kerupuk-udang', null]],
-        [['salak', 'kipas', 'jamu'], ['kelereng', 'es-cendol', 'bakso']],
-        [['karung', 'klepon', 'bakso'], ['es-cendol', 'es-teh-manis', 'es-teh-manis']],
-        [['bendera', 'kerupuk-udang', 'es-teh-manis'], ['es-kelapa-muda', 'kerupuk-udang', 'bakso']],
-        [['onde-onde', 'kipas', 'onde-onde'], ['salak', 'kelereng', 'tahu-goreng']],
-        [['es-kelapa-muda', 'salak', 'klepon'], ['tahu-goreng', 'kipas', 'kelereng']],
-        [[null, 'rambutan', 'karung'], ['es-cendol', 'rambutan', 'jamu']],
-        [['onde-onde', 'es-kelapa-muda', null], ['klepon', 'karung', 'bendera']],
         [[null, null, null]],
       ],
     },

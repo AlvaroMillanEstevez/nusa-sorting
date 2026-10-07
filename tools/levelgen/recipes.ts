@@ -75,7 +75,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     minStartTriples: 2,
     winBand: [0.7, 0.95],
     pressure: [0.03, 0.8],
-    time: { slack: 1.3, timeUp: [0, 0.15], typical: true },
+    time: { slack: 1.15, timeUp: [0, 0.15], typical: true },
   },
   {
     number: 4,
@@ -226,7 +226,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     minStartTriples: 2,
     winBand: [0.3, 0.6],
     expertBand: [0, 0.98],
-    time: { slack: 0.7, timeUp: [0.3, 0.6], typical: true },
+    time: { slack: 0.7, timeUp: [0.3, 0.6], typical: true, step: 1 },
   },
   {
     number: 11,
@@ -254,7 +254,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-012',
     purpose: 'The first roaming blocker: an empty slot that cannot be used and jumps after each triple; a combo of 4 removes it.',
     seed: 1212,
-    candidate: 13,
+    candidate: 21,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
@@ -364,7 +364,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-017',
     purpose: 'The roaming blocker together with a locked shelf.',
     seed: 1717,
-    candidate: 4,
+    candidate: 8,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },

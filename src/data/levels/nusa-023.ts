@@ -7,16 +7,16 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 23`, or try another seed with `npm run levelgen -- 23 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 44%, out of space 55%,
- * out of time 1%, space pressure 29%. Expert: wins 85%.
+ * Simulated players, 200 games each. Casual: wins 40%, out of space 60%,
+ * out of time 1%, space pressure 30%. Expert: wins 85%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 26% to 44%, the expert 19% to 85%; pressure 23% to 36%.
+ * Across them the casual player wins 26% to 42%, the expert 22% to 85%; pressure 24% to 37%.
  */
 export const nusa023: LevelDefinition = {
   id: 'nusa-023',
-  timeLimitSeconds: 310,
+  timeLimitSeconds: 190,
   shelves: [
     [
       ['kerupuk-udang', 'tahu-goreng', 'mie-goreng'],
@@ -109,6 +109,43 @@ export const nusa023: LevelDefinition = {
         ],
       ],
       stacks: [[['kerang'], ['ketupat'], [], ['es-cendol'], ['pinisi']], null],
+    },
+    {
+      shelves: [
+        [
+          ['rambutan', 'es-teh-manis', 'karung'],
+          ['onde-onde', 'tahu-goreng', 'ketupat'],
+          ['karung', 'pinisi', 'jamu'],
+        ],
+        [[null, null, null]],
+        [
+          [null, 'caping', 'pinisi'],
+          ['durian', 'jamu', 'jamu'],
+          ['tahu-goreng', 'mie-goreng', 'bintang-laut'],
+        ],
+        [[null, 'kerupuk-udang', null], ['kerang', 'bianglala', 'kerang']],
+        [
+          [null, null, 'onde-onde'],
+          ['mie-goreng', 'caping', 'es-cendol'],
+          ['durian', 'manggis', 'gong'],
+        ],
+        [
+          ['es-teh-manis', null, 'rambutan'],
+          ['es-cendol', 'tahu-goreng', 'rambutan'],
+          ['kerupuk-udang', 'mie-goreng', 'manggis'],
+        ],
+        [
+          ['onde-onde', null, 'caping'],
+          ['kerang', 'ketupat', 'bianglala'],
+          ['kerupuk-udang', 'durian', 'pinisi'],
+        ],
+        [
+          ['bintang-laut', 'karung', 'manggis'],
+          ['bendera', 'bintang-laut', 'bendera'],
+          ['bianglala', 'bendera', 'gong'],
+        ],
+      ],
+      stacks: [[['es-cendol'], ['es-teh-manis'], [], ['ketupat'], ['gong']], null],
     },
     {
       shelves: [
@@ -294,43 +331,6 @@ export const nusa023: LevelDefinition = {
         ],
       ],
       stacks: [[['mie-goreng'], ['caping'], [], ['caping'], ['bianglala']], null],
-    },
-    {
-      shelves: [
-        [
-          ['durian', 'rambutan', 'tahu-goreng'],
-          ['es-cendol', 'durian', 'jamu'],
-          ['rambutan', 'kerupuk-udang', 'pinisi'],
-        ],
-        [[null, null, null]],
-        [
-          [null, 'tahu-goreng', 'karung'],
-          ['bianglala', 'bendera', 'es-cendol'],
-          ['bendera', 'gong', 'es-cendol'],
-        ],
-        [[null, 'caping', null], ['tahu-goreng', 'jamu', 'karung']],
-        [
-          [null, null, 'rambutan'],
-          ['onde-onde', 'ketupat', 'jamu'],
-          ['karung', 'kerupuk-udang', 'manggis'],
-        ],
-        [
-          ['pinisi', null, 'caping'],
-          ['pinisi', 'bintang-laut', 'gong'],
-          ['mie-goreng', 'onde-onde', 'kerupuk-udang'],
-        ],
-        [
-          ['bintang-laut', null, 'durian'],
-          ['mie-goreng', 'mie-goreng', 'ketupat'],
-          ['es-teh-manis', 'es-teh-manis', 'ketupat'],
-        ],
-        [
-          ['bendera', 'bianglala', 'kerang'],
-          ['kerang', 'kerang', 'gong'],
-          ['es-teh-manis', 'manggis', 'onde-onde'],
-        ],
-      ],
-      stacks: [[['bianglala'], ['caping'], [], ['bintang-laut'], ['manggis']], null],
     },
   ],
 };

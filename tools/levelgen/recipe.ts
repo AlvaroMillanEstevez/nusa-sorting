@@ -92,15 +92,20 @@ export interface LevelRecipe {
   readonly pressure?: readonly [number, number];
   /**
    * How the time limit is set: the limit that gives a win rate in the band, never less than `slack` times the
-   * time 90% of the simulator's wins need. `timeUp` bounds the share of games lost to the clock. `fixed` sets the
-   * limit outright (special levels that keep their time); the win band is then only checked. `typical` sets the
-   * limit from the board together with a few reshuffles of it, so it suits the level's arrangements rather than
-   * one lucky board (see generateArrangements).
+   * time 90% of the simulator's wins need, and never more than four minutes (MAX_TIME). `timeUp` bounds the share
+   * of games lost to the clock. `fixed` sets the limit outright (special levels that keep their time); the win
+   * band is then only checked. `typical` sets the limit from the board together with a few reshuffles of it, so
+   * it suits the level's arrangements rather than one lucky board (see generateArrangements).
    */
   readonly time: {
     readonly slack: number;
     readonly timeUp: readonly [number, number];
     readonly fixed?: number;
     readonly typical?: boolean;
+    /**
+     * Seconds the limit moves in, 5 by default. A race against the clock (level 10) has a narrow window between
+     * too short and too easy, so it uses finer steps.
+     */
+    readonly step?: number;
   };
 }

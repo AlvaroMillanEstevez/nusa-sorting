@@ -8,15 +8,15 @@ import type { LevelDefinition } from '../../core';
  * Change the recipe rather than this file.
  *
  * Simulated players, 200 games each. Casual: wins 53%, out of space 47%,
- * out of time 1%, space pressure 8%. Expert: wins 15%.
+ * out of time 1%, space pressure 11%. Expert: wins 15%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 47% to 72%, the expert 14% to 94%; pressure 6% to 13%.
+ * Across them the casual player wins 47% to 73%, the expert 14% to 94%; pressure 6% to 13%.
  */
 export const nusa013: LevelDefinition = {
   id: 'nusa-013',
-  timeLimitSeconds: 280,
+  timeLimitSeconds: 170,
   shelves: [
     [['es-kelapa-muda', 'ayam-goreng', null], ['ikan-bakar', null, 'kerupuk-udang']],
     [['rambutan', null, 'es-teh-manis'], ['bakso', 'es-cendol', 'tempe']],

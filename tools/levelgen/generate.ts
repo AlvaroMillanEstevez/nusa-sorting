@@ -21,9 +21,11 @@ import type { LevelRecipe } from './recipe';
 /** Simulated games while searching, and for the final figures. */
 const SEARCH_RUNS = 100;
 export const REPORT_RUNS = 200;
-/** Time limits are whole multiples of this many seconds. */
+/** Time limits are whole multiples of this many seconds, unless a recipe sets its own step. */
 const TIME_STEP = 5;
 const MIN_TIME = 30;
+/** No level gives more than four minutes. */
+export const MAX_TIME = 240;
 
 export interface GeneratedLevel {
   readonly level: LevelDefinition;
@@ -299,20 +301,20 @@ function isSolvable(state: GameState): boolean {
   return solve(state) !== undefined;
 }
 
-const roundUp = (seconds: number) => Math.max(MIN_TIME, Math.ceil(seconds / TIME_STEP) * TIME_STEP);
+const roundUp = (seconds: number, step = TIME_STEP) => Math.min(MAX_TIME, Math.max(MIN_TIME, Math.ceil(seconds / step) * step));
 
 const inRange = (value: number, [min, max]: readonly [number, number]) => value >= min - 1e-9 && value <= max + 1e-9;
 
 /**
  * A time limit for a board that puts the simulated win rate in the recipe's band, or null if none does: the
- * shortest one (never under the recipe's floor) whose predicted win rate reaches the band while the share of
+ * shortest one (never under the recipe's floor, never over MAX_TIME) whose predicted win rate reaches the band while the share of
  * games lost to the clock stays in its range, checked with timed games.
  */
 function chooseTime(level: LevelDefinition, recipe: LevelRecipe, seed: number): { seconds: number; stats: SimulationStats } | null {
   if (recipe.time.typical) return chooseTypicalTime(level, recipe, seed);
   if (recipe.time.fixed !== undefined) {
     const stats = simulate(createGame({ ...level, timeLimitSeconds: recipe.time.fixed }), SEARCH_RUNS, 1);
-    const fits = inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp);
+    const fits = recipe.time.fixed <= MAX_TIME && inRange(stats.winRate, recipe.winBand) && inRange(stats.timeUpRate, recipe.time.timeUp);
     return fits ? { seconds: recipe.time.fixed, stats } : null;
   }
   const untimed = playMany(createGame(level), SEARCH_RUNS, 1);
@@ -323,15 +325,16 @@ function chooseTime(level: LevelDefinition, recipe: LevelRecipe, seed: number): 
   const untimedRate = winTimes.length / SEARCH_RUNS;
   if (untimedRate < recipe.winBand[0]) return null;
   const p90 = winTimes[Math.floor(winTimes.length * 0.9)] ?? winTimes.at(-1)!;
-  const floor = roundUp(recipe.time.slack * p90);
+  const step = recipe.time.step ?? TIME_STEP;
+  const floor = roundUp(recipe.time.slack * p90, step);
   // Predicted win rate for a limit: untimed wins that finish in time; the rest of those wins become time-ups.
   const predicted = (limit: number) => winTimes.filter((s) => s <= limit).length / SEARCH_RUNS;
   // Up to past the slowest win; at least the floor itself, which can be above it with a generous slack.
-  const last = Math.max(floor, roundUp(winTimes.at(-1)!) + TIME_STEP);
+  const last = Math.min(MAX_TIME, Math.max(floor, roundUp(winTimes.at(-1)!, step) + step));
   // Timed games differ a little from the prediction, so a few limits near it are checked, shortest first.
   const near = ([min, max]: readonly [number, number]) => [min - 0.05, max + 0.05] as const;
   let checks = 0;
-  for (let limit = floor; limit <= last && checks < 6; limit += TIME_STEP) {
+  for (let limit = floor; limit <= last && checks < 6; limit += step) {
     const win = predicted(limit);
     if (win < recipe.winBand[0] - 0.05 || !inRange(untimedRate - win, near(recipe.time.timeUp))) continue;
     checks++;
@@ -369,12 +372,13 @@ function chooseTypicalTime(level: LevelDefinition, recipe: LevelRecipe, seed: nu
   const untimedRate = winTimes.length / runs;
   if (untimedRate < recipe.winBand[0]) return null;
   const p90 = winTimes[Math.floor(winTimes.length * 0.9)] ?? winTimes.at(-1)!;
-  const floor = roundUp(recipe.time.slack * p90);
+  const step = recipe.time.step ?? TIME_STEP;
+  const floor = roundUp(recipe.time.slack * p90, step);
   const predicted = (limit: number) => winTimes.filter((s) => s <= limit).length / runs;
-  const last = Math.max(floor, roundUp(winTimes.at(-1)!) + TIME_STEP);
+  const last = Math.min(MAX_TIME, Math.max(floor, roundUp(winTimes.at(-1)!, step) + step));
   const near = ([min, max]: readonly [number, number]) => [min - 0.05, max + 0.05] as const;
   let checks = 0;
-  for (let limit = floor; limit <= last && checks < 6; limit += TIME_STEP) {
+  for (let limit = floor; limit <= last && checks < 6; limit += step) {
     const win = predicted(limit);
     if (win < recipe.winBand[0] - 0.05 || !inRange(untimedRate - win, near(recipe.time.timeUp))) continue;
     checks++;

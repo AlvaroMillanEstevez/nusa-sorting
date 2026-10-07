@@ -17,7 +17,7 @@ import type { LevelDefinition } from '../../core';
 export const nusa020: LevelDefinition = {
   id: 'nusa-020',
   theme: 'laut-nusantara',
-  timeLimitSeconds: 375,
+  timeLimitSeconds: 225,
   shelves: [
     [['gong', 'caping', 'kerang'], ['jaring', 'gong', 'kerang'], ['layangan', 'jaring', 'jamu']],
     [['bintang-laut', 'caping', 'bendera'], ['onde-onde', 'layangan', 'kerupuk-udang']],

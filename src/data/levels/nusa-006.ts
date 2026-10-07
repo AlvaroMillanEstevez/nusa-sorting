@@ -12,11 +12,11 @@ import type { LevelDefinition } from '../../core';
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 76% to 90%, the expert 95% to 98%; pressure 17% to 37%.
+ * Across them the casual player wins 77% to 90%, the expert 95% to 98%; pressure 17% to 38%.
  */
 export const nusa006: LevelDefinition = {
   id: 'nusa-006',
-  timeLimitSeconds: 165,
+  timeLimitSeconds: 100,
   shelves: [
     [['cabai', 'es-cendol', 'blangkon'], ['jamu', 'es-kelapa-muda', 'klepon']],
     [['es-kelapa-muda', null, 'jamu'], ['batik', 'wayang-kulit', 'jamu']],

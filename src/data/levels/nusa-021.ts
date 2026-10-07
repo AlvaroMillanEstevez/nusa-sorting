@@ -7,8 +7,8 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 21`, or try another seed with `npm run levelgen -- 21 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 77%, out of space 23%,
- * out of time 1%, space pressure 14%. Expert: wins 94%.
+ * Simulated players, 200 games each. Casual: wins 77%, out of space 22%,
+ * out of time 2%, space pressure 15%. Expert: wins 94%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
@@ -16,7 +16,7 @@ import type { LevelDefinition } from '../../core';
  */
 export const nusa021: LevelDefinition = {
   id: 'nusa-021',
-  timeLimitSeconds: 240,
+  timeLimitSeconds: 145,
   shelves: [
     [
       ['arum-manis', 'pinisi', 'gado-gado'],

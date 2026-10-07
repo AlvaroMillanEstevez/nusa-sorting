@@ -14,7 +14,7 @@ import {
 } from '../src/core';
 import { levels } from '../src/data/levels';
 import { ITEM_KINDS } from '../src/data/itemCatalog';
-import { generateLevel, levelStats, ruleFailures } from '../tools/levelgen/generate';
+import { generateLevel, levelStats, MAX_TIME, ruleFailures } from '../tools/levelgen/generate';
 import { itemCount } from '../tools/levelgen/report';
 import { recipeFor } from '../tools/levelgen/recipes';
 import { typesFor } from '../tools/levelgen/plan';
@@ -49,6 +49,7 @@ describe.each(numbered.map(({ number, level }) => [number, level] as const))('le
     expect(level.id).toBe(recipe.id);
     expect(isSpecialLevel(level)).toBe(recipe.theme !== undefined);
     expect(level.timeLimitSeconds).toBeGreaterThan(0);
+    expect(level.timeLimitSeconds).toBeLessThanOrEqual(MAX_TIME);
   });
 
   it('is exactly what its recipe generates (board and time), so regenerating never changes a shipped board', () => {

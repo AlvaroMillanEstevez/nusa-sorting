@@ -17,7 +17,7 @@ import type { LevelDefinition } from '../../core';
 export const nusa010: LevelDefinition = {
   id: 'nusa-010',
   theme: '17-agustus',
-  timeLimitSeconds: 80,
+  timeLimitSeconds: 48,
   shelves: [
     [[null, null, null]],
     [

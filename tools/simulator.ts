@@ -166,10 +166,11 @@ export function rng(seed: number): () => number {
 
 /**
  * How fast the simulated player acts, as a share of the first guess (2.5 s per move). Played on phones,
- * levels 1-10 left far too much time over: real players move about twice as fast, so every time cost below is
- * halved.
+ * levels 1-10 left far too much time over: real players move about twice as fast, so every time cost below was
+ * halved (0.5). Levels then still left far too much: Koke cleared in about 2 minutes levels giving 6, so it is
+ * 0.3 now, which shortens every time limit by the same share (0.6) and keeps them in proportion.
  */
-export const PACE = 0.5;
+export const PACE = 0.3;
 
 /** Seconds a casual player needs per move on a level with five item types (the demo levels' usual count). */
 export const SECONDS_PER_MOVE = 2.5 * PACE;
