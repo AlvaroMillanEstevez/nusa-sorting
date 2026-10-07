@@ -54,7 +54,7 @@ export class KitProgressBar extends Phaser.GameObjects.Container {
   private draw(): void {
     const { skin, barW: w, barH: h } = this;
     const g = this.g.clear();
-    const r = skin.id === 'modern' ? h / 2 : 5;
+    const r = 5;
     g.fillStyle(hexNumber(skin.well), 1);
     roundRect(g, -w / 2, -h / 2, w, h, r);
     g.fillStyle(0x000000, 0.25);

@@ -5,7 +5,7 @@ import { getLocale, t, type MessageKey } from '../i18n';
 import { shelfHeightUnits, shelfLayoutAt } from '../ui/boardLayout';
 import { mapWood } from '../ui/art/wood';
 import { simulateSvg, simulateVision, type Vision } from '../ui/icons/color';
-import { renderItemSvg, V3_KINDS, type IconStyle } from '../ui/icons/icons';
+import { renderItemSvg } from '../ui/icons/icons';
 import { ITEM_FILL } from '../ui/levelLayout';
 import { theme } from '../ui/theme';
 import { makeWoodArt } from '../scenes/art/woodArt';
@@ -59,8 +59,6 @@ interface Section {
   readonly shelvesLabel: string;
   /** Kinds with a card each: their three variants at every size. */
   readonly cards: readonly ItemKind[];
-  /** Draw each card twice, in the current and the v3 icon style. */
-  readonly compareStyles?: boolean;
 }
 
 export class GalleryScene extends Phaser.Scene {
@@ -131,18 +129,11 @@ export class GalleryScene extends Phaser.Scene {
       },
       ...themed,
       { title: t('gallery.lookAlikes'), shelves: LOOK_ALIKES, shelvesLabel: t('gallery.together'), cards: [] },
-      {
-        title: t('gallery.v3'),
-        shelves: [],
-        shelvesLabel: t('gallery.v3.note'),
-        cards: ITEM_KINDS.filter((k) => V3_KINDS.includes(k.id)),
-        compareStyles: true,
-      },
     ];
   }
 
-  private textureKey(type: string, px: number, style: IconStyle = 'current'): string {
-    return `gallery:${this.vision}:${this.marks ? 'marked' : 'plain'}:${style}:${px}:${type}`;
+  private textureKey(type: string, px: number): string {
+    return `gallery:${this.vision}:${this.marks ? 'marked' : 'plain'}:${px}:${type}`;
   }
 
   /** Rasterizes every icon the gallery shows, for the current vision, then draws the page. */
@@ -154,13 +145,12 @@ export class GalleryScene extends Phaser.Scene {
     const jobs: Promise<void>[] = [];
     for (const section of this.sections())
       for (const kind of section.cards)
-        for (const variant of VARIANTS)
-          for (const style of section.compareStyles ? (['current', 'v3'] as const) : (['current'] as const)) {
-            const type = itemTypeId(kind.id, variant);
-            const svg = simulateSvg(renderItemSvg(type, this.marks, style), vision);
-            // Rasterized at exactly the size they show at, in device pixels.
-            for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px, style), svg, px * RENDER_RATIO));
-          }
+        for (const variant of VARIANTS) {
+          const type = itemTypeId(kind.id, variant);
+          const svg = simulateSvg(renderItemSvg(type, this.marks), vision);
+          // Rasterized at exactly the size they show at, in device pixels.
+          for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px), svg, px * RENDER_RATIO));
+        }
     await Promise.all(jobs);
     if (run === this.drawing) this.redraw();
   }
@@ -183,11 +173,10 @@ export class GalleryScene extends Phaser.Scene {
       const cardW = LABEL_W + shelfLayoutAt(0, 0, s).rect.width;
       const columns = Math.max(1, Math.floor((width - 2 * PAD + GAP) / (cardW + GAP)));
       let rowBottom = y;
-      const cards = section.cards.flatMap((kind) => (section.compareStyles ? (['current', 'v3'] as const) : (['current'] as const)).map((style) => ({ kind, style })));
-      cards.forEach(({ kind, style }, i) => {
+      section.cards.forEach((kind, i) => {
         const col = i % columns;
         if (col === 0) y = rowBottom;
-        const bottom = this.drawCard(kind, PAD + col * (cardW + GAP), y, section.compareStyles ? style : null);
+        const bottom = this.drawCard(kind, PAD + col * (cardW + GAP), y);
         rowBottom = Math.max(rowBottom, bottom + GAP);
       });
       y = rowBottom + GAP;
@@ -229,10 +218,8 @@ export class GalleryScene extends Phaser.Scene {
     return bottom;
   }
 
-  /** A kind's card; `style` labels it and picks the icon style when comparing styles (null: the current one). */
-  private drawCard(kind: ItemKind, x: number, top: number, style: IconStyle | null = null): number {
-    const name = kind.name[getLocale()];
-    this.content.add(this.label(x, top, style ? `${name} · ${t(style === 'v3' ? 'gallery.style.v3' : 'gallery.style.current')}` : name, 15, theme.textColor));
+  private drawCard(kind: ItemKind, x: number, top: number): number {
+    this.content.add(this.label(x, top, kind.name[getLocale()], 15, theme.textColor));
     let y = top + 22;
     for (const px of SIZES) {
       const s = px / ITEM_FILL;
@@ -243,15 +230,15 @@ export class GalleryScene extends Phaser.Scene {
       this.content.add(this.label(x, shelf.slots[0]!.y - 8, t('gallery.px', { n: px }), 12, theme.textColor));
       VARIANTS.forEach((variant, i) => {
         const slot = shelf.slots[i]!;
-        this.content.add(this.icon(itemTypeId(kind.id, variant), px, slot.x, slot.y, style ?? 'current'));
+        this.content.add(this.icon(itemTypeId(kind.id, variant), px, slot.x, slot.y));
       });
       y = shelf.rect.y + shelf.rect.height + s * 0.25;
     }
     return y;
   }
 
-  private icon(type: string, px: number, x: number, y: number, style: IconStyle = 'current'): Phaser.GameObjects.Image {
-    return this.add.image(Math.round(x), Math.round(y), this.textureKey(type, px, style)).setDisplaySize(px, px);
+  private icon(type: string, px: number, x: number, y: number): Phaser.GameObjects.Image {
+    return this.add.image(Math.round(x), Math.round(y), this.textureKey(type, px)).setDisplaySize(px, px);
   }
 
   private label(x: number, y: number, text: string, size: number, color: string): Phaser.GameObjects.Text {

@@ -2,7 +2,7 @@
 
 Esta guía es la referencia de toda pantalla de interfaz: HUD, paneles, lista de niveles, transiciones y las que vienen (monedas, tienda, potenciadores). Todo valor sale de los **tokens** de `src/ui/design/tokens.ts` y todo componente del **kit** de `src/scenes/kit/`. Una pantalla nueva no elige colores, tamaños ni tiempos por su cuenta.
 
-- Ver el kit: `npm run dev` y abrir `?uikit` (páginas directas: `?uikit=components|hud|victory|icons|slots`, `&dir=b` para la dirección B, `&vision=deuteranopia|protanopia|grayscale`).
+- Ver el kit: `npm run dev` y abrir `?uikit` (páginas directas: `?uikit=components|hud|victory|icons|slots`, `&vision=deuteranopia|protanopia|grayscale`).
 - Estado: **propuesta**. El juego todavía usa su interfaz antigua (`src/ui/theme.ts`, `Hud`, `ResultOverlay`, `LevelSelectScene`). Cuando Koke elija dirección, esas pantallas se pasan al kit una a una y la otra dirección se borra.
 
 ## 1. Auditoría de la interfaz actual (octubre 2026)
@@ -21,13 +21,9 @@ Esta guía es la referencia de toda pantalla de interfaz: HUD, paneles, lista de
 
 Lo que sí funciona y se conserva: el tablero nunca espera a las animaciones, el reloj espera al primer toque, el aviso de poco tiempo combina color, pulso y sonido, y el modo daltónico marca las variantes con un símbolo.
 
-## 2. Dos direcciones visuales
+## 2. Dirección visual: A «warung cálido»
 
-Comparten todos los tokens salvo color, profundidad y forma de las esquinas (`Skin` en `tokens.ts`).
-
-**A · «Warung cálido»** (`WARUNG`). Madera y tonos tierra: paneles de tabla con veta y marco, botones color cúrcuma (primario) y bambú (secundario) con relieve y un **borde inferior marcado** de 5 px en el que se hunden al pulsar. Píldoras del HUD en madera oscura. Continúa directamente las estanterías aprobadas.
-
-**B · «Moderno limpio»** (`MODERN`). Superficies oscuras semitransparentes (84 %) sobre el fondo y el tablero, borde de 1,5 px blanco al 14 %, acentos vivos (mango, menta, coral, rosa para el combo), **bordes muy redondeados** (píldoras; paneles de 28 px) y sombras amplias y suaves en vez de relieve.
+Koke eligió la dirección A en octubre de 2026 (la B, «moderno limpio», se descartó y se borró). Madera y tonos tierra: paneles de tabla con veta y marco, botones color cúrcuma (primario) y bambú (secundario) con relieve y un **borde inferior marcado** de 5 px en el que se hunden al pulsar, y píldoras del HUD en madera oscura. Continúa directamente las estanterías aprobadas. Sus colores, profundidad y esquinas están en `SKIN` (`tokens.ts`).
 
 ## 3. Tokens
 
@@ -104,11 +100,9 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
   - **390 × 844**: sin cambios (manda el ancho): 36,5 en la mayoría; 45,3 en 9, 14, 19, 22–24; 59,8 en 15.
   - **844 × 390** (manda el alto): 70,0 → 61,4 (3–6, 11, 12, 16, 17, 21) · 51,8 → 45,5 (7) · 42,6 → 38,2 (13, 18, 20, 22, 23) · 49,7 → 45,5 (19) · 41,1 → **36,1** (15, en el límite de 36 px) · sin cambio en 9, 10, 14 y 24.
 
-## 7. Estilo de iconos v3 (prueba con sate, es teh manis y rambután)
+## 7. Estilo de los iconos de objetos
 
-`?art=v3` en partida; actual y v3 lado a lado en `?uikit=icons` y al final de `?gallery`.
-Reglas del estilo: colores naturales y menos saturados; sombreado de cinco tonos con transiciones suaves; texturas sutiles con patrones SVG irregulares y girados (fibra del palo, motas de brasa, poros de la piel, gotas de condensación); **sin contorno grueso** (como mucho una línea fina del tono más oscuro del propio material); **sombra de contacto** (núcleo oscuro y estrecho bajo uno ancho y difuso); **luz de borde** recortada al interior de la forma. Mismos materiales que los iconos actuales, así que las variantes de color siguen funcionando.
-Legibilidad a 36–40 px: el sate y el rambután se reconocen; el té se distingue menos de su versión actual. Al bajar la saturación, el contraste con la pared oscura baja un poco: vigilarlo en cada icono nuevo.
+Se probó un estilo más ilustrado («v3»: colores menos saturados, sombreado de cinco tonos, texturas, sin contorno grueso) con sate, es teh manis y rambután. No aportó una diferencia visible a tamaño de juego y se descartó (octubre de 2026): se quedan los iconos actuales.
 
 ## 8. Referencias e ideas aplicables
 

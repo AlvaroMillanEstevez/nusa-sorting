@@ -17,13 +17,11 @@ import {
   type ButtonVariant,
 } from '../scenes/kit';
 import { playList } from '../scenes/playList';
-import { addSvgTexture } from '../scenes/svgTexture';
-import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from '../scenes/view';
+import { fitCamera, pointerAt, viewSize } from '../scenes/view';
 import { BACK_SCALE, SILHOUETTE_ALPHA, setSlotAspect, shelfLayoutAt, type BoardLayout } from '../ui/boardLayout';
-import { DURATION, EASE, hexNumber, mapSkin, MODERN, SPACE, TYPE, WARUNG, type Skin, type TypeRole } from '../ui/design/tokens';
+import { DURATION, EASE, hexNumber, mapSkin, SKIN, SPACE, TYPE, type Skin, type TypeRole } from '../ui/design/tokens';
 import { UI_ICON_NAMES } from '../ui/design/uiIcons';
 import { simulateVision, type Vision } from '../ui/icons/color';
-import { renderItemSvg, type IconStyle } from '../ui/icons/icons';
 import { itemFit, placeItem } from '../ui/itemFit';
 import { ITEM_FILL, itemSize, layoutForLevel } from '../ui/levelLayout';
 
@@ -42,15 +40,12 @@ const FRAMES: readonly (readonly [number, number])[] = [
 ];
 /** The board under the HUD and victory mock-ups: level 7, eleven shelves, a typical mid-game board. */
 const MOCK_LEVEL = 6;
-const ITEM_KINDS_SHOWN = ['sate', 'es-teh-manis', 'rambutan'] as const;
-const ITEM_SIZES = [36, 40, 52] as const;
 /** Kinds on the tall-slot shelves: tall ones (glass, kite, balloon, lantern) next to low and floating ones. */
 const SLOT_SAMPLE = ['es-teh-manis', 'layangan', 'balon', 'lampion', 'sate', 'peci', 'kendang', 'rambutan', 'bakso'];
 const PAD = SPACE.s;
 const TAP_SLOP = 10;
 
 export class UikitScene extends Phaser.Scene {
-  private skinId: Skin['id'] = 'warung';
   private page: Page = 'components';
   private vision: Vision = 'normal';
   private ready = false;
@@ -71,7 +66,6 @@ export class UikitScene extends Phaser.Scene {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('uikit') as Page;
     if (PAGES.includes(page)) this.page = page;
-    if (params.get('dir') === 'b') this.skinId = 'modern';
     const vision = params.get('vision') as Vision;
     if (VISIONS.includes(vision)) this.vision = vision;
     fitCamera(this);
@@ -79,7 +73,7 @@ export class UikitScene extends Phaser.Scene {
     this.content = this.add.container(0, 0);
     this.header = this.add.container(0, 0).setDepth(10);
     const { width } = viewSize(this);
-    this.header.add(kitText(this, 'title', t('uikit.loading'), WARUNG.text.primary).setPosition(width / 2, 60));
+    this.header.add(kitText(this, 'title', t('uikit.loading'), SKIN.text.primary).setPosition(width / 2, 60));
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.press = { y: pointerAt(pointer).y, scroll: this.scroll, moved: false };
@@ -104,22 +98,14 @@ export class UikitScene extends Phaser.Scene {
   /** Fonts, the board's item textures and the item icons in both styles at the sizes shown. */
   private async prepare(): Promise<void> {
     const jobs: Promise<void>[] = [loadUiFonts(), prepareItemTextures(this)];
-    for (const kind of ITEM_KINDS_SHOWN)
-      for (const style of ['current', 'v3'] as const)
-        for (const px of [...ITEM_SIZES, 160]) jobs.push(addSvgTexture(this.textures, this.itemKey(kind, style, px), renderItemSvg(kind, false, style), px * RENDER_RATIO));
     await Promise.all(jobs);
     this.ready = true;
     this.rebuild();
   }
 
-  private itemKey(kind: string, style: IconStyle, px: number): string {
-    return `uikit:${style}:${kind}:${px}`;
-  }
-
-  /** The current direction, seen through the chosen colour vision. */
+  /** The game's skin, seen through the chosen colour vision. */
   private skin(): Skin {
-    const base = this.skinId === 'warung' ? WARUNG : MODERN;
-    return this.vision === 'normal' ? base : mapSkin(base, (hex) => simulateVision(hex, this.vision));
+    return this.vision === 'normal' ? SKIN : mapSkin(SKIN, (hex) => simulateVision(hex, this.vision));
   }
 
   private rebuild(): void {
@@ -170,9 +156,6 @@ export class UikitScene extends Phaser.Scene {
     const title = kitText(this, 'label', t('uikit.title').toUpperCase(), skin.text.secondary).setOrigin(0, 0.5).setPosition(PAD, PAD + 2);
     this.header.add(title);
     y += 4;
-    choice(t('uikit.directionA'), this.skinId === 'warung', () => this.set({ skinId: 'warung' }));
-    choice(t('uikit.directionB'), this.skinId === 'modern', () => this.set({ skinId: 'modern' }));
-    x = width;
     for (const page of PAGES) choice(t(`uikit.page.${page}` as MessageKey), this.page === page, () => this.set({ page, scroll: 0 }));
     x = width;
     for (const vision of VISIONS) choice(t(`gallery.vision.${vision}` as MessageKey), this.vision === vision, () => this.set({ vision }));
@@ -181,8 +164,7 @@ export class UikitScene extends Phaser.Scene {
     bar.fillStyle(0x000000, 0.25).fillRect(0, this.headerHeight, width, 3);
   }
 
-  private set(change: { skinId?: Skin['id']; page?: Page; vision?: Vision; scroll?: number }): void {
-    if (change.skinId) this.skinId = change.skinId;
+  private set(change: { page?: Page; vision?: Vision; scroll?: number }): void {
     if (change.page) this.page = change.page;
     if (change.vision) this.vision = change.vision;
     if (change.scroll !== undefined) this.scroll = change.scroll;
@@ -491,31 +473,6 @@ export class UikitScene extends Phaser.Scene {
     }
     for (const name of UI_ICON_NAMES) {
       f.add(48, 48, (cx, cy) => this.content.add(new KitIconButton(this, cx, cy, { skin, icon: name, look: 'primary', size: 44 })));
-    }
-    f.section(t('uikit.icons.items'));
-    for (const px of ITEM_SIZES) {
-      for (const style of ['current', 'v3'] as const) {
-        const s = px / ITEM_FILL;
-        const shelf = shelfLayoutAt(0, 0, s);
-        const shelfW = shelf.rect.width;
-        f.add(shelfW, shelf.rect.height, (cx, cy) => {
-          const placed = shelfLayoutAt(cx - shelfW / 2, cy - shelf.rect.height / 2, s);
-          const g = this.add.graphics();
-          art().drawShelf(g, placed, s);
-          this.content.add(g);
-          ITEM_KINDS_SHOWN.forEach((kind, i) => {
-            const slot = placed.slots[i]!;
-            this.content.add(this.add.image(slot.x, slot.y, this.itemKey(kind, style, px)).setDisplaySize(px, px));
-          });
-        }, `${t(style === 'v3' ? 'uikit.icons.v3' : 'uikit.icons.current')} · ${px} px`);
-      }
-      f.newline();
-    }
-    for (const kind of ITEM_KINDS_SHOWN) {
-      for (const style of ['current', 'v3'] as const) {
-        f.add(160, 160, (cx, cy) => this.content.add(this.add.image(cx, cy, this.itemKey(kind, style, 160)).setDisplaySize(160, 160)), `${kind} · ${t(style === 'v3' ? 'uikit.icons.v3' : 'uikit.icons.current')}`);
-      }
-      f.newline();
     }
     return f.end();
   }

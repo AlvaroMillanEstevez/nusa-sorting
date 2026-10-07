@@ -6,7 +6,7 @@ import {
   MIN_BODY_TEXT,
   MIN_TEXT,
   MIN_TOUCH,
-  SKINS,
+  SKIN,
   SPACE,
   TYPE,
   mapSkin,
@@ -23,7 +23,7 @@ const over = (color: string, alpha: number, under: string) => mix(under, color, 
 const AA = 4.5;
 const AA_LARGE = 3;
 
-describe.each(SKINS.map((skin) => [skin.id, skin] as const))('skin %s', (_id, skin) => {
+describe.each([[SKIN.id, SKIN] as const])('skin %s', (_id, skin) => {
   it('keeps text on panels readable whatever shows through them', () => {
     for (const under of behind(skin)) {
       const surface = over(skin.surface.fill, skin.surface.alpha, under);

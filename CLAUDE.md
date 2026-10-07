@@ -28,9 +28,8 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.
 - `?gallery` — abre la galería de iconos (tamaños reales, variantes, estanterías de madera y simulación de daltonismo y escala de grises) en vez del juego.
-- `?uikit` — abre el kit de interfaz con sus dos direcciones visuales (componentes, maquetas de HUD y victoria en 390×844 y 844×390, iconos y huecos altos). Página directa con `?uikit=components|hud|victory|icons|slots`, `&dir=b` para la dirección B y `&vision=deuteranopia|protanopia|grayscale`.
+- `?uikit` — abre el kit de interfaz (componentes, maquetas de HUD y victoria en 390×844 y 844×390, iconos y huecos altos). Página directa con `?uikit=components|hud|victory|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
 - `?slotAspect=1.2` — huecos más altos que anchos (de 1 a 1,6) en cualquier nivel, con los objetos apoyados en la base.
-- `?art=v3` — dibuja sate, es teh manis y rambután con el estilo de iconos v3 de prueba.
 
 ## Estructura
 

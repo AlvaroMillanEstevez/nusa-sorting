@@ -4,7 +4,6 @@ import { CULTURAL_TEMPLATES } from './culturalIcons';
 import { MORE_TEMPLATES } from './moreIcons';
 import { STARTER_TEMPLATES } from './starterIcons';
 import { OUTLINE, r1, type IconTemplate, type Paint, type Palette } from './template';
-import { renderV3Icon, V3_TEMPLATES } from './v3Icons';
 
 /**
  * Item icons as SVG templates (viewBox 0 0 100 100). Each template paints named MATERIALS (e.g. 'meat',
@@ -103,27 +102,8 @@ function svgDocument(defs: string[], body: string): string {
   );
 }
 
-/**
- * Which icon style the game draws: the current one, or the illustrated 'v3' test (only some kinds have it; the
- * others keep the current style). Development only for now (?art=v3).
- */
-export type IconStyle = 'current' | 'v3';
-let iconStyle: IconStyle = 'current';
-
-export function setIconStyle(style: IconStyle): void {
-  iconStyle = style;
-}
-
-/** Kinds drawn in the v3 style. */
-export const V3_KINDS = Object.keys(V3_TEMPLATES);
-
 /** SVG for a drawn kind in a variant; `marks` adds the colour-blind variant badge. */
-export function renderIcon(kindId: string, variant: Variant, marks = false, style: IconStyle = iconStyle): string {
-  const v3 = style === 'v3' ? V3_TEMPLATES[kindId] : undefined;
-  if (v3) {
-    const palette = variant === 'original' ? v3.palette : { ...v3.palette, ...v3.variants[variant] };
-    return renderV3Icon(palette, v3, variantBadge(variant, marks));
-  }
+export function renderIcon(kindId: string, variant: Variant, marks = false): string {
   const template = ICON_TEMPLATES[kindId];
   if (!template) throw new Error(`no icon for ${kindId}`);
   const defs: string[] = [];
@@ -133,11 +113,11 @@ export function renderIcon(kindId: string, variant: Variant, marks = false, styl
   return svgDocument(defs, `<g transform="translate(50 52) scale(1.07) translate(-50 -52)">${body}</g>` + variantBadge(variant, marks));
 }
 
-/** SVG for any item type id (`marks`, `style`: see renderIcon). */
-export function renderItemSvg(type: string, marks = false, style: IconStyle = iconStyle): string {
+/** SVG for any item type id (`marks`: see renderIcon). */
+export function renderItemSvg(type: string, marks = false): string {
   const parsed = parseItemType(type);
   if (!parsed) throw new Error(`unknown item type ${type}`);
-  return renderIcon(parsed.kind.id, parsed.variant, marks, style);
+  return renderIcon(parsed.kind.id, parsed.variant, marks);
 }
 
 /** Flat colour of a silhouette, and of the thin rim that lifts it off the dark wood. */
@@ -150,9 +130,7 @@ export const SILHOUETTE_RIM = '#8c6a48';
  * purpose, so players can plan; the item's soft shadow is left out.
  */
 export function renderSilhouette(type: string): string {
-  const svg = renderItemSvg(type)
-    .replace('<ellipse cx="50" cy="91" rx="34" ry="6" fill="url(#shadow)"/>', '')
-    .replace(/<g class="contact-shadow">.*?<\/g>/, '');
+  const svg = renderItemSvg(type).replace('<ellipse cx="50" cy="91" rx="34" ry="6" fill="url(#shadow)"/>', '');
   const open = svg.indexOf('</defs>') + '</defs>'.length;
   const filter =
     '<filter id="silhouette" x="-10%" y="-10%" width="120%" height="120%">' +

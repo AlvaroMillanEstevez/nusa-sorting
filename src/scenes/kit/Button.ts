@@ -80,15 +80,10 @@ export class KitButton extends Pressable {
     g.fillStyle(hexNumber(fill.face), 1);
     roundRect(g, x, y, w, h, radius);
     // Light from above: a soft band along the top, stronger on the raised (warung) look.
-    g.fillStyle(hexNumber(fill.light), skin.lip > 0 ? 0.55 : 0.25);
+    g.fillStyle(hexNumber(fill.light), 0.55);
     roundRect(g, x + 5, y + 3, w - 10, h * 0.3, Math.min(radius, h * 0.15));
-    if (skin.lip === 0) {
-      g.lineStyle(1.5, 0xffffff, this.options.variant === 'secondary' ? 0.22 : 0.3);
-      strokeRoundRect(g, x + 0.75, y + 0.75, w - 1.5, h - 1.5, radius);
-    } else {
-      g.lineStyle(2, hexNumber(fill.lip), 1);
-      strokeRoundRect(g, x + 1, y + 1, w - 2, h - 2, radius);
-    }
+    g.lineStyle(2, hexNumber(fill.lip), 1);
+    strokeRoundRect(g, x + 1, y + 1, w - 2, h - 2, radius);
     const cy = y + h / 2;
     this.label.setY(cy).setAlpha(this.disabled ? DISABLED.label : 1);
     this.icon?.setY(cy).setAlpha(this.disabled ? DISABLED.label : 1);
@@ -144,7 +139,7 @@ export class KitIconButton extends Pressable {
     const d = this.diameter;
     const lip = look === 'chip' || this.disabled ? 0 : skin.lip;
     const sink = this.pressed ? lip * 0.7 : 0;
-    const radius = skin.id === 'modern' ? d / 2 : d * 0.3;
+    const radius = d * 0.3;
     const x = -d / 2;
     const top = -(d + lip) / 2;
     const s = this.shadow.clear();
@@ -163,7 +158,7 @@ export class KitIconButton extends Pressable {
       }
       g.fillStyle(hexNumber(fill.face), 1);
       roundRect(g, x, top + sink, d, d, radius);
-      g.fillStyle(hexNumber(fill.light), skin.lip > 0 ? 0.55 : 0.25);
+      g.fillStyle(hexNumber(fill.light), 0.55);
       roundRect(g, x + 5, top + sink + 3, d - 10, d * 0.28, Math.min(radius, d * 0.14));
     }
     this.icon.setY(top + sink + d / 2).setAlpha(this.disabled ? DISABLED.label : 1);

@@ -68,7 +68,7 @@ export class KitModal extends Phaser.GameObjects.Container {
 
   constructor(scene: Phaser.Scene, screenW: number, screenH: number, options: PanelOptions) {
     super(scene, 0, 0);
-    this.dim = scene.add.rectangle(0, 0, screenW, screenH, 0x05080c, options.skin.id === 'modern' ? 0.55 : 0.62).setOrigin(0).setInteractive();
+    this.dim = scene.add.rectangle(0, 0, screenW, screenH, 0x05080c, 0.62).setOrigin(0).setInteractive();
     this.panel = new KitPanel(scene, screenW / 2, screenH / 2, options);
     this.add([this.dim, this.panel]);
     scene.add.existing(this);

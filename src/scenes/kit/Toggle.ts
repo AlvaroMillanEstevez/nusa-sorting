@@ -56,7 +56,7 @@ export class KitToggle extends Pressable {
   protected redraw(): void {
     const { skin } = this;
     const g = this.track.clear();
-    const radius = skin.id === 'modern' ? TRACK_H / 2 : 10;
+    const radius = 10;
     g.fillStyle(hexNumber(this.isOn ? skin.fills.positive.face : skin.well), 1);
     roundRect(g, -TRACK_W / 2, -TRACK_H / 2, TRACK_W, TRACK_H, radius);
     g.lineStyle(1.5, hexNumber(this.isOn ? skin.fills.positive.lip : skin.chip.border), 0.9);
@@ -65,7 +65,7 @@ export class KitToggle extends Pressable {
     const k = this.knobFace.clear();
     k.fillStyle(0x000000, 0.25).fillCircle(0, 2, d / 2);
     k.fillStyle(0xffffff, 1);
-    roundRect(k, -d / 2, -d / 2, d, d, skin.id === 'modern' ? d / 2 : 7);
+    roundRect(k, -d / 2, -d / 2, d, d, 7);
     this.marks.on.setVisible(this.isOn);
     this.marks.off.setVisible(!this.isOn);
   }

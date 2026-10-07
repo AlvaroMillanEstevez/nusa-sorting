@@ -3,9 +3,8 @@
  * (see docs/ui-style.md). Pure data, so it is tested (contrast, minimum sizes, the 8 px grid) and can be mapped
  * through a colour-vision simulation like the board art.
  *
- * Two visual directions share every token except colour, depth and corner style: A "warung" (warm wood, raised
- * buttons with a marked bottom lip) and B "modern" (dark see-through surfaces, vivid accents, very round
- * corners). Koke picks one; the other goes.
+ * The game uses direction A, "warung": warm wood, earth tones, raised buttons with a marked bottom lip. Its
+ * colours, depth and corner style live in a Skin, so the colour-vision simulation can map them.
  */
 
 // ---------------------------------------------------------------- spacing: an 8 px grid
@@ -171,7 +170,7 @@ export interface Elevation {
 }
 
 export interface Skin {
-  readonly id: 'warung' | 'modern';
+  readonly id: 'warung';
   /** Behind everything: top and bottom of a vertical gradient. */
   readonly backdrop: readonly [string, string];
   /** Panels and modals. */
@@ -250,38 +249,8 @@ export const WARUNG: Skin = {
   elevation: { low: { offsetY: 3, blur: 4, alpha: 0.35 }, high: { offsetY: 8, blur: 14, alpha: 0.45 } },
 };
 
-/** B: "moderno limpio". Dark see-through surfaces over the board, vivid accents, very round corners. */
-export const MODERN: Skin = {
-  id: 'modern',
-  backdrop: ['#16212d', '#0b1118'],
-  surface: {
-    fill: '#101923',
-    alpha: 0.84,
-    border: '#ffffff',
-    borderAlpha: 0.14,
-    borderWidth: 1.5,
-    highlight: '#ffffff',
-    highlightAlpha: 0.1,
-    grain: null,
-  },
-  chip: { fill: '#0c131b', alpha: 0.8, border: '#ffffff', borderAlpha: 0.12 },
-  well: '#26323f',
-  text: { primary: '#f6f8fb', secondary: '#b4c0cd', accent: '#ffc531' },
-  fills: {
-    primary: { face: '#ffc531', lip: '#d99a00', light: '#ffe08a', text: '#231800' },
-    secondary: { face: '#2a3746', lip: '#1b2530', light: '#3c4c5e', text: '#f6f8fb' },
-    positive: { face: '#2fd3a8', lip: '#159c79', light: '#8cf0d4', text: '#04251c' },
-    danger: { face: '#ff5f57', lip: '#c8322b', light: '#ff9c96', text: '#2a0402' },
-  },
-  status: { combo: '#ff8fd0', lowTime: '#ffc531', criticalTime: '#ff7d73' },
-  lip: 0,
-  buttonRound: 0.5,
-  panelRadius: 28,
-  chipRadius: 999,
-  elevation: { low: { offsetY: 4, blur: 10, alpha: 0.3 }, high: { offsetY: 14, blur: 28, alpha: 0.5 } },
-};
-
-export const SKINS: readonly Skin[] = [WARUNG, MODERN];
+/** The game's skin: direction A, chosen by Koke in October 2026. */
+export const SKIN: Skin = WARUNG;
 
 /** A skin with every colour passed through `map` (for the colour-vision simulation). */
 export function mapSkin(skin: Skin, map: (hex: string) => string): Skin {
