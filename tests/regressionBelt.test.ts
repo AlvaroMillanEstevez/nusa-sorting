@@ -95,10 +95,13 @@ describe('layouts are unchanged', () => {
     const state = createGame(level);
     for (const { w, h, layout } of entry.layouts) {
       const now = layoutForLevel(level, state, w, h);
-      // Fields added after the snapshot are not compared.
+      // Fields added after the snapshot are not compared (slotHeight, on each shelf, came with the slot aspect).
       const current = JSON.parse(JSON.stringify(now)) as Record<string, unknown>;
+      current.shelves = now.shelves.map(({ rect, slots }) => ({ rect, slots }));
       const recorded = layout as Record<string, unknown>;
       for (const key of Object.keys(recorded)) expect(current[key]).toEqual(recorded[key]);
+      // With square slots (the game), a slot is as tall as it is wide.
+      for (const shelf of now.shelves) expect(shelf.slotHeight).toBe(now.slotSize);
     }
   });
 });

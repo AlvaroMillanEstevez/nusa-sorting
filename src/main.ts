@@ -3,6 +3,7 @@ import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
+import { parseSlotAspect, wantsArtV3 } from './dev/uiParams';
 import { GameScene } from './scenes/GameScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { LocalSaveService } from './services/LocalSaveService';
@@ -10,6 +11,8 @@ import { ProgressStore } from './services/ProgressStore';
 import { WebAudioSoundService } from './services/WebAudioSoundService';
 import { preventPageGestures } from './ui/preventPageGestures';
 import { theme } from './ui/theme';
+import { setSlotAspect } from './ui/boardLayout';
+import { setIconStyle } from './ui/icons/icons';
 import { RENDER_RATIO } from './scenes/view';
 
 setLocale(resolveLocale(navigator.languages));
@@ -19,6 +22,12 @@ preventPageGestures();
 const store = new ProgressStore(new LocalSaveService());
 // Development only: ?resetSave starts from an empty save. Production builds drop this branch.
 if (import.meta.env.DEV && wantsSaveReset(window.location.search)) store.reset();
+// Development only: ?slotAspect=1.2 tries taller slots, ?art=v3 the illustrated icon test.
+if (import.meta.env.DEV) {
+  const aspect = parseSlotAspect(window.location.search);
+  if (aspect !== null) setSlotAspect(aspect);
+  if (wantsArtV3(window.location.search)) setIconStyle('v3');
+}
 
 const sound = new WebAudioSoundService();
 sound.setMuted(store.muted);

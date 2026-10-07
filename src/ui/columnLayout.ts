@@ -4,7 +4,7 @@ import {
   shelfLayoutCentred,
   MARGIN,
   MAX_SLOT_SIZE,
-  SHELF_HEIGHT_UNITS,
+  shelfHeightUnits,
   SHELF_WIDTH_UNITS,
   shelfLayoutAt,
   type BoardLayout,
@@ -31,7 +31,7 @@ const SIDE_MARGIN = 8;
 /** Room at each end of a vertical track for its roller (half a slot). */
 const ROLLER_UNITS = 0.5;
 /** Distance between shelves riding a track, in slots: a shelf and the gap to the next one. */
-export const SHELF_TRACK_PITCH_UNITS = SHELF_HEIGHT_UNITS + GAP;
+export const shelfTrackPitchUnits = (): number => shelfHeightUnits() + GAP;
 
 function columnWidthUnitsOf(column: ColumnSpec): number {
   return column.kind === 'track' ? TRACK_COLUMN_UNITS : SHELF_WIDTH_UNITS(3);
@@ -39,9 +39,9 @@ function columnWidthUnitsOf(column: ColumnSpec): number {
 
 function columnHeightUnits(column: ColumnSpec): number {
   if (column.kind === 'track') return column.slots + ROLLER_UNITS * 2;
-  if (column.kind === 'shelfTrack') return column.shelves.length * SHELF_TRACK_PITCH_UNITS + ROLLER_UNITS * 2;
+  if (column.kind === 'shelfTrack') return column.shelves.length * shelfTrackPitchUnits() + ROLLER_UNITS * 2;
   const n = column.shelves.length;
-  return n * SHELF_HEIGHT_UNITS + (n - 1) * GAP;
+  return n * shelfHeightUnits() + (n - 1) * GAP;
 }
 
 /**
@@ -74,11 +74,11 @@ export function computeColumnLayout(
     const top = areaTop + (areaHeight - columnHeightUnits(column) * s) / 2;
     if (column.kind === 'shelves') {
       column.shelves.forEach((shelf, i) => {
-        shelves[shelf] = shelfLayoutAt(x, top + i * (SHELF_HEIGHT_UNITS + GAP) * s, s);
+        shelves[shelf] = shelfLayoutAt(x, top + i * (shelfHeightUnits() + GAP) * s, s);
       });
     } else if (column.kind === 'shelfTrack') {
       // Shelves ride the track centred on it; layout.shelves holds where each is at time 0 (its carrier index).
-      const pitch = SHELF_TRACK_PITCH_UNITS * s;
+      const pitch = shelfTrackPitchUnits() * s;
       const loopStart = top + ROLLER_UNITS * s;
       const cross = x + columnWidth / 2;
       tracks[column.track] = {

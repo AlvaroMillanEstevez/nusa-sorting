@@ -12,8 +12,13 @@ export interface Rect {
 
 export interface ShelfLayout {
   readonly rect: Rect;
-  /** Centers of the slots. Back layers sit right under the front items, at the same points. */
+  /**
+   * Where items are placed: the centre of a square item standing on the shelf's base (the slot's centre when
+   * slots are square). Back layers sit right under the front items, at the same points.
+   */
   readonly slots: readonly Point[];
+  /** Height of each slot in px: the slot size times the slot aspect (see setSlotAspect). */
+  readonly slotHeight: number;
 }
 
 export interface BeltLayout {
@@ -71,7 +76,23 @@ export const MARGIN = 16;
 export const MAX_SLOT_SIZE = 110;
 
 export const SHELF_WIDTH_UNITS = (slotsPerLayer: number) => slotsPerLayer + SIDE_PAD * 2;
-export const SHELF_HEIGHT_UNITS = TOP_PAD + 1 + PLANK;
+
+let aspect = 1;
+
+/**
+ * Slot height over slot width: 1 (square) is the game; taller slots (e.g. 1.2) are a test of items standing on
+ * the base like real goods, with tall items using the extra height (see itemFit). Development only for now.
+ */
+export function setSlotAspect(value: number): void {
+  aspect = Math.max(1, Math.min(1.6, value));
+}
+
+export function slotAspect(): number {
+  return aspect;
+}
+
+/** A shelf's height in slot sizes: the frame on top, a slot and the front board. */
+export const shelfHeightUnits = (): number => TOP_PAD + aspect + PLANK;
 /**
  * The layer behind the front sits exactly under it, a little smaller so the front item covers it. Where the
  * front slot is empty it shows as a dark silhouette of its shape (renderSilhouette), so players can plan.
@@ -100,7 +121,7 @@ export function computeBoardLayout(
 ): BoardLayout {
   const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow);
   const shelfW = SHELF_WIDTH_UNITS(slotsPerLayer);
-  const shelfH = SHELF_HEIGHT_UNITS;
+  const shelfH = shelfHeightUnits();
   const contentWidth = Math.max(1, width - MARGIN * 2);
   // Height for the shelves plus, with a belt, its strip and the margin above it.
   const contentHeight = Math.max(1, height - hud.height - MARGIN * 2 - (beltSlots > 0 ? MARGIN : 0));
@@ -172,17 +193,19 @@ export function trackFromBelt(belt: BeltLayout): TrackLayout {
 
 /** Builds a shelf's slots from its top-left corner and the slot size (shared by every layout). */
 export function shelfLayoutAt(x: number, y: number, s: number, slotsPerLayer = 3): ShelfLayout {
-  const rect: Rect = { x, y, width: SHELF_WIDTH_UNITS(slotsPerLayer) * s, height: SHELF_HEIGHT_UNITS * s };
-  const slotY = rect.y + (TOP_PAD + 0.5) * s;
+  const rect: Rect = { x, y, width: SHELF_WIDTH_UNITS(slotsPerLayer) * s, height: shelfHeightUnits() * s };
+  // A square item resting on the base: the slot's centre when slots are square.
+  const slotY = rect.y + (TOP_PAD + 0.5 + (aspect - 1)) * s;
   return {
     rect,
     slots: Array.from({ length: slotsPerLayer }, (_, j) => ({ x: rect.x + (SIDE_PAD + j + 0.5) * s, y: slotY })),
+    slotHeight: aspect * s,
   };
 }
 
 /** A shelf whose centre is at (cx, cy): how shelves riding a track are placed. */
 export function shelfLayoutCentred(cx: number, cy: number, s: number, slotsPerLayer = 3): ShelfLayout {
-  return shelfLayoutAt(cx - (SHELF_WIDTH_UNITS(slotsPerLayer) * s) / 2, cy - (SHELF_HEIGHT_UNITS * s) / 2, s, slotsPerLayer);
+  return shelfLayoutAt(cx - (SHELF_WIDTH_UNITS(slotsPerLayer) * s) / 2, cy - (shelfHeightUnits() * s) / 2, s, slotsPerLayer);
 }
 
 /** Where a carrier at `offset` (carriers, in [0, K)) is drawn on a track. Writes into `out` to avoid allocations. */

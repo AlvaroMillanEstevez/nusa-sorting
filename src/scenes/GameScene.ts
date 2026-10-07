@@ -37,6 +37,7 @@ import {
   nearestFreeSlot,
   nearestSlot,
   shelfAt,
+  slotAspect,
   boundsAround,
   type BoardLayout,
 } from '../ui/boardLayout';
@@ -45,6 +46,8 @@ import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/leve
 import { theme } from '../ui/theme';
 import { themeLook } from '../ui/themeLook';
 import { themeById, type ThemeId } from '../data/themes';
+import { parseItemType } from '../data/itemCatalog';
+import { itemFit, placeItem } from '../ui/itemFit';
 import { CRITICAL_TIME_MS, timeStage, type TimeStage } from '../ui/timeWarning';
 import { art, useShelfTrim } from './art/ArtSet';
 import { BakedLayer } from './art/BakedLayer';
@@ -577,14 +580,19 @@ export class GameScene extends Phaser.Scene {
   private targetFor(itemId: number, pos: Position): SpriteTarget {
     const s = this.layout.slotSize;
     const shelf = this.layout.shelves[pos.shelf]!;
+    const slot = shelf.slots[pos.slot]!;
+    // In square slots (the game) every item is centred in its slot; taller test slots rest it on the base.
+    const type = itemAt(this.state, pos)?.type;
+    const fit = itemFit(type ? (parseItemType(type)?.kind.id ?? type) : '', slotAspect());
+    const place = (scale: number) => ({ y: placeItem(slot.y, s, ITEM_FILL, fit, scale).y, scale: this.baseScale() * fit.scale * scale });
 
     if (pos.layer === 0) {
-      const slot = shelf.slots[pos.slot]!;
       const selected = itemId === this.selectedId;
+      const at = place(selected ? SELECTED_SCALE : 1);
       return {
         x: slot.x,
-        y: selected ? slot.y - s * SELECTED_LIFT : slot.y,
-        scale: selected ? this.baseScale() * SELECTED_SCALE : this.baseScale(),
+        y: selected ? at.y - s * SELECTED_LIFT : at.y,
+        scale: at.scale,
         alpha: 1,
         depth: DEPTH_FRONT,
         front: true,
@@ -592,11 +600,11 @@ export class GameScene extends Phaser.Scene {
     }
     // The layer right behind the front sits under it, a silhouette seen only through an empty front slot;
     // deeper layers wait hidden.
-    const slot = shelf.slots[pos.slot]!;
+    const at = place(BACK_SCALE);
     return {
       x: slot.x,
-      y: slot.y,
-      scale: this.baseScale() * BACK_SCALE,
+      y: at.y,
+      scale: at.scale,
       alpha: pos.layer === 1 ? SILHOUETTE_ALPHA : 0,
       depth: DEPTH_BACK - pos.layer,
       front: false,

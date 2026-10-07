@@ -119,8 +119,9 @@ export function drawWoodShelf(
 
   // A slightly lighter panel behind each slot, so slots read at a glance.
   g.fillStyle(hex(p.wallSlat), 0.55);
+  const panelH = shelf.slotHeight - s * 0.08;
   for (const slot of shelf.slots) {
-    g.fillRoundedRect(slot.x + dx - s * 0.46, slot.y + dy - s * 0.46, s * 0.92, s * 0.92, s * 0.1);
+    g.fillRoundedRect(slot.x + dx - s * 0.46, plankTop - s * 0.04 - panelH, s * 0.92, panelH, s * 0.1);
   }
 
   // Front board: overhangs a little, with a lit top edge, a dark lower edge and grain.
