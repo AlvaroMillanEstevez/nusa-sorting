@@ -535,3 +535,11 @@ export function simulate(start: GameState, runs = 200, seed = 1, profile: Player
 export function greedyWinRate(start: GameState, runs = 200, seed = 1): number {
   return simulate(start, runs, seed).winRate;
 }
+
+/**
+ * The move the careful (expert) player would make now, or any valid move if it sees none; null when there is
+ * none. For the game's development autoplay (?show=autoplay).
+ */
+export function suggestedMove(state: GameState): Move | null {
+  return plannedMove(state, new Set(), true) ?? validMoves(state)[0] ?? null;
+}

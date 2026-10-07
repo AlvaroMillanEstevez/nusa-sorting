@@ -33,12 +33,15 @@ export function parseLang(search: string): 'en' | 'id' | null {
 }
 
 /** Panels `?show=` can open over a level, to review them without playing it. */
-export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost';
+export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost' | 'blocked' | 'autoplay';
 
-/** Development only: `?show=pause|confirm|won|lost` opens that panel when the level starts. */
+/**
+ * Development only: `?show=pause|confirm|won|lost` opens that panel when the level starts; `blocked` plays the
+ * full-board warning and its defeat; `autoplay` plays the level by itself.
+ */
 export function parseShowParam(search: string): ShowParam | null {
   const value = new URLSearchParams(search).get('show');
-  return value === 'pause' || value === 'confirm' || value === 'won' || value === 'lost' ? value : null;
+  return value === 'pause' || value === 'confirm' || value === 'won' || value === 'lost' || value === 'blocked' || value === 'autoplay' ? value : null;
 }
 
 /** Development only: `?home` opens the home screen whatever the save says. */

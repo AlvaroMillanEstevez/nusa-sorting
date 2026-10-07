@@ -210,6 +210,18 @@ export class Hud {
     this.combo.setValue(`×${combo}`).setProgress(windowMs > 0 ? Math.max(0, Math.min(1, windowLeftMs / windowMs)) : 0);
   }
 
+  /** Where the score pill is: the points scored fly there. */
+  scoreAnchor(): { x: number; y: number } {
+    return { x: this.score.x, y: this.score.y };
+  }
+
+  /** A little bump on the score pill when points land in it. */
+  bumpScore(): void {
+    this.scene.tweens.killTweensOf(this.score);
+    this.score.setScale(1);
+    this.scene.tweens.add({ targets: this.score, scale: 1.12, duration: DURATION.press, yoyo: true, ease: EASE.enter });
+  }
+
   /** A little bump on the combo pill when the combo grows. */
   pulseCombo(): void {
     this.scene.tweens.killTweensOf(this.combo);

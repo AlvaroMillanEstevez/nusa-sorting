@@ -66,6 +66,7 @@ import { ResultOverlay } from './ResultOverlay';
 import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
 import { TutorialHint } from './TutorialHint';
+import { Effects } from './Effects';
 import type { Arrival } from './map/arrival';
 import { fadeIn, fadeToScene } from './transitions';
 import type { HapticsService } from '../services/HapticsService';
@@ -88,6 +89,8 @@ const ADVANCE_MS = 200;
 const SELECT_MS = 90;
 /** Pause after the last animation before the result panel appears. */
 const RESULT_DELAY_MS = 550;
+/** How long the board shows it is full before the defeat panel. */
+const BLOCKED_WARNING_MS = 1100;
 const FADE_MS = 220;
 
 const DEPTH_BACK = 5;
@@ -143,6 +146,9 @@ export class GameScene extends Phaser.Scene {
   private decor!: ThemeDecor;
   private themeIntro!: ThemeIntro;
   private tutorial!: TutorialHint;
+  private effects!: Effects;
+  /** Development only: what the win panel's main button does (for ?show=autoplay). */
+  private overlayNext: (() => void) | null = null;
   /**
    * The first-triple tutorial is on: level 1 until the player clears a triple, once ever. The clock does not run
    * meanwhile.
@@ -245,6 +251,7 @@ export class GameScene extends Phaser.Scene {
     this.decor = new ThemeDecor(this);
     this.themeIntro = new ThemeIntro(this);
     this.tutorial = new TutorialHint(this);
+    this.effects = new Effects(this);
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     // Pointer distances are in canvas pixels, hence the render ratio.
@@ -280,6 +287,27 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Development only (?show=autoplay): plays the level with the solver, a move every 0.7 s, to review the effects
+   * and the whole way to the map without touching the screen. Shelf moves only (levels without tracks).
+   */
+  private async devAutoplay(): Promise<void> {
+    // The condition lets production builds drop the solver altogether.
+    const simulator = import.meta.env.DEV ? await import('../../tools/simulator') : null;
+    if (!simulator) return;
+    const step = () => {
+      if (this.state.status !== 'playing') {
+        // Then on to the map, as the player would.
+        this.time.delayedCall(3200, () => this.overlay.visible && this.overlayNext?.());
+        return;
+      }
+      const move = simulator.suggestedMove(this.state);
+      if (move && !('carrier' in move[0])) this.tryMove(move[0], move[1]);
+      this.time.delayedCall(650, step);
+    };
+    this.time.delayedCall(1200, step);
+  }
+
   /** Back to the home screen (with the sequence that follows a win, when there is one). */
   private goHome(arrival?: Arrival): void {
     this.holdBoard();
@@ -288,7 +316,9 @@ export class GameScene extends Phaser.Scene {
 
   /** Development only (?show=): opens a panel at once, to review it without playing the level. */
   private devShow(show: ShowParam | null): void {
-    if (show === 'pause' || show === 'confirm') {
+    if (show === 'autoplay') {
+      void this.devAutoplay();
+    } else if (show === 'pause' || show === 'confirm') {
       this.state = startClock(this.state);
       this.openPause();
       if (show === 'confirm') this.pauseMenu.showConfirm('restart');
@@ -310,6 +340,15 @@ export class GameScene extends Phaser.Scene {
         replay: () => this.transitionTo(this.levelIndex),
         breakdown: this.scoreBreakdown(score),
       });
+    } else if (show === 'blocked') {
+      // After a moment, so the board is seen first.
+      this.time.delayedCall(1500, () => {
+        this.sfx.play('blocked');
+        this.effects.blockedWarning(this.layout.shelves.map((shelf) => shelf.rect), BLOCKED_WARNING_MS, t('result.lost.blocked'));
+      });
+      this.time.delayedCall(1500 + BLOCKED_WARNING_MS, () =>
+        this.overlay.show({ kind: 'lost', title: t('result.lost.blocked'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() }),
+      );
     } else if (show === 'lost') {
       this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() });
     }
@@ -610,6 +649,7 @@ export class GameScene extends Phaser.Scene {
           totalBefore,
           next: this.store.firstIncomplete(ids) ?? this.levelIndex,
         };
+        this.overlayNext = () => this.goHome(arrival);
         this.overlay.show({
           kind: 'won',
           title: t(this.levelIndex === playList.length - 1 ? 'result.allDone.title' : 'result.won.title'),
@@ -1062,7 +1102,18 @@ export class GameScene extends Phaser.Scene {
     this.playMechanics(events);
     this.advanceTutorial(events);
 
-    if (this.state.status !== 'playing') this.endLevel(RESULT_DELAY_MS);
+    if (this.state.status === 'won') {
+      const { width, height } = viewSize(this);
+      this.time.delayedCall(CLEAR_DELAY_MS + CLEAR_MS, () => this.effects.celebrate(width, height));
+      this.endLevel(RESULT_DELAY_MS);
+    } else if (this.state.status === 'lost') {
+      // No space left: the full shelves flash red and the board shakes before the panel says so.
+      this.time.delayedCall(SNAP_MS, () => {
+        this.sfx.play('blocked');
+        this.effects.blockedWarning(this.layout.shelves.map((shelf) => shelf.rect), BLOCKED_WARNING_MS, t('result.lost.blocked'));
+      });
+      this.endLevel(SNAP_MS + BLOCKED_WARNING_MS);
+    }
   }
 
   /** Score and combo popups, shelf unlocks and blocker hops, timed to land with the triple pop. */
@@ -1075,18 +1126,31 @@ export class GameScene extends Phaser.Scene {
         case 'comboChanged':
           combo = event.combo;
           break;
+        case 'tripleCleared': {
+          const { rect } = this.layout.shelves[event.shelf]!;
+          const at = { x: rect.x + rect.width / 2, y: rect.y + rect.height * 0.45 };
+          const chain = combo;
+          this.time.delayedCall(popAt, () => this.effects.tripleBurst(at.x, at.y, rect.width, Math.max(1, chain + 1)));
+          this.haptics.pulse('triple');
+          break;
+        }
         case 'scoreChanged': {
           const { rect } = this.layout.shelves[event.shelf]!;
           const x = rect.x + rect.width / 2;
-          this.popup(x, rect.y + rect.height * 0.35, t('popup.points', { points: event.delta }), SKIN.text.primary, popAt);
+          // The points fly to the score pill, which counts up as they land.
+          const score = event.score;
+          this.effects.flyPoints(t('popup.points', { points: event.delta }), { x, y: rect.y + rect.height * 0.35 }, this.hud.scoreAnchor(), popAt, () => {
+            this.hud.setScore(score, true);
+            this.hud.bumpScore();
+          });
           if (combo >= 2) {
-            this.popup(x, rect.y, t('popup.combo', { n: combo }), SKIN.status.combo, popAt + 60);
+            this.effects.comboBurst(x, rect.y - this.layout.slotSize * 0.55, combo, popAt + 60, viewSize(this).width);
+            if (combo >= 4) this.haptics.pulse('combo');
             this.time.delayedCall(popAt, () => {
               this.sfx.play('combo');
               this.hud.pulseCombo();
             });
           }
-          this.time.delayedCall(popAt, () => this.hud.setScore(event.score, true));
           break;
         }
         case 'shelfUnlocked': {
@@ -1097,6 +1161,7 @@ export class GameScene extends Phaser.Scene {
             // The shelf's items become draggable now.
             this.sync(0);
           });
+          this.effects.unlockBurst(rect, popAt + 120);
           this.popup(rect.x + rect.width / 2, rect.y + rect.height / 2, t('popup.unlocked'), SKIN.text.accent, popAt + 120);
           break;
         }
@@ -1106,6 +1171,7 @@ export class GameScene extends Phaser.Scene {
         case 'blockerRemoved': {
           const slot = this.layout.shelves[event.at.shelf]!.slots[event.at.slot]!;
           this.blocker.remove(popAt);
+          this.effects.crateBreak(slot.x, slot.y, popAt);
           this.popup(slot.x, slot.y - this.layout.slotSize * 0.6, t('popup.blockerRemoved'), SKIN.status.combo, popAt);
           this.time.delayedCall(popAt, () => this.sfx.play('blockerGone'));
           break;

@@ -110,6 +110,18 @@ Huecos reservados para el siguiente hito, sin botones vacíos: a la izquierda de
 
 **Zonas seguras**: la página usa `viewport-fit=cover`; el lienzo ocupa toda la pantalla y la cámara coloca el origen del mundo en la esquina de la zona segura (`safeInsets` en `view.ts`). Layouts, HUD y paneles se calculan para la zona segura; fondos y atenuados cubren la pantalla entera.
 
+**Efectos** (`Effects.ts`; ninguno bloquea la siguiente jugada: son animaciones sobre objetos que no reciben toques, con emisores de partículas creados una vez):
+- Trío: chispas y un aro que se abre desde la estantería, más grandes con el combo; vibración breve.
+- Puntos: «+N» sube del trío y vuela a la píldora de puntuación, que cuenta y da un saltito al recibirlo.
+- Combo: «Combo ×N!» más grande y más cálido con cada paso; desde ×5, una sacudida suave de la pantalla y vibración desde ×4.
+- Estantería desbloqueada: destello y chispas a lo largo de ella, además de la persiana que se levanta.
+- Hueco errante eliminado: la caja estalla en astillas.
+- Tablero lleno: todas las estanterías se enmarcan en rojo, la pantalla se sacude, suena un golpe sordo y el motivo aparece grande sobre el tablero durante 1,1 s antes del panel.
+- Victoria: confeti desde las esquinas, panel con rebote, estrellas una a una con su campanada, la puntuación contando y los botones al final.
+- Transiciones: fundido por el color de fondo entre inicio, mapa y nivel (`transitions.ts`).
+- Sonidos de interfaz: cada botón del kit suena al pulsarse y los paneles al abrirse y cerrarse (`kit/feedback.ts`).
+- Vibración (`HapticsService`): trío, combo desde ×4 y derrota; solo donde existe la API (Android). Se desactiva en ajustes.
+
 ## 7. Huecos 1:1,2
 
 Los huecos son 1,2 veces más altos que anchos (`SLOT_ASPECT` en `boardLayout.ts`; `?slotAspect` prueba otros valores).

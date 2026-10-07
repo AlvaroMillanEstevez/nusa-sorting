@@ -63,6 +63,11 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
       height: Math.round(height * RENDER_RATIO),
       zoom: 1 / RENDER_RATIO,
     },
+    // Development only (?headless): a timer-driven loop without delta smoothing, so a headless browser's virtual
+    // time moves the game (for screenshots of animations).
+    ...(import.meta.env.DEV && new URLSearchParams(window.location.search).has('headless')
+      ? { fps: { forceSetTimeOut: true, target: 30, smoothStep: false } }
+      : {}),
     render: {
       // Item icons are drawn larger than they show; mipmaps keep them smooth when scaled down.
       mipmapFilter: 'LINEAR_MIPMAP_LINEAR',
