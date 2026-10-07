@@ -37,6 +37,7 @@ export function levelSource(generated: WithArrangements): string {
   ordered.shelves = level.shelves;
   if (level.mechanics) ordered.mechanics = level.mechanics;
   if (level.layout) ordered.layout = level.layout;
+  if (level.stars) ordered.stars = level.stars;
   if (level.arrangements?.length) ordered.arrangements = level.arrangements;
   const { casual, expert } = stats;
   const range = (figure: Parameters<typeof statRange>[1]) => statRange(generated, figure).map(percent).join(' to ');
@@ -55,6 +56,7 @@ export function levelSource(generated: WithArrangements): string {
  *
  * ${generated.arrangements.length + 1} arrangements of the items (the level as written is the first; each attempt plays the next one).
  * Across them the casual player wins ${range((s) => s.casual.winRate)}, the expert ${range((s) => s.expert.winRate)}; pressure ${range((s) => s.casual.pressure)}.
+ *${level.stars ? ` Stars: two from ${level.stars.two} points, three from ${level.stars.three} (median and 85th percentile of the expert's wins).` : ''}
  */
 export const ${constName(level.id)}: LevelDefinition = ${literal(ordered as unknown as LevelDefinition, '')};
 `;

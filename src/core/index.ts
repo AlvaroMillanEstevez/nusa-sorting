@@ -6,3 +6,4 @@ export * from './validation';
 export * from './progress';
 export * from './arrangement';
 export * from './tutorial';
+export * from './stars';

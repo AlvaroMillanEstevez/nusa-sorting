@@ -89,6 +89,12 @@ export const COMBO_DEFAULTS = {
   multipliers: [1, 1.5, 2, 2.5, 3, 4, 5],
 } as const;
 
+/**
+ * Winning a timed level adds this many points for each whole second left, so the score (and with it the stars)
+ * rewards speed as well as combos.
+ */
+export const TIME_BONUS_PER_SECOND = 20;
+
 export const ROAMING_BLOCKER_DEFAULTS = {
   removeAtCombo: 7,
 } as const;

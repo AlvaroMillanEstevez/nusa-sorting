@@ -34,7 +34,7 @@ class BrokenStorage implements StorageLike {
 
 const sample: SaveData = {
   version: SAVE_VERSION,
-  progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 } },
+  progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 }, bestStars: { level004: 2 } },
   settings: { muted: true, colorBlindMode: true },
   themesSeen: ['budaya-jawa'],
   lastArrangements: { 'nusa-003': 2 },
@@ -65,6 +65,7 @@ describe('save format', () => {
       progress: {
         completed: ['level001', 7, '', null, 'level001', 'level003'],
         bestScores: { level004: 900, level005: -1, level006: 'lots', level007: null },
+        bestStars: { level004: 3, level005: 4, level006: '2', level007: 0, level008: 1.5 },
       },
       settings: { muted: 'yes', colorBlindMode: 1 },
       themesSeen: ['budaya-jawa', 7, '', 'budaya-jawa', '17-agustus'],
@@ -73,7 +74,7 @@ describe('save format', () => {
     });
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
-      progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 } },
+      progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 }, bestStars: { level004: 3 } },
       settings: { muted: false, colorBlindMode: false },
       themesSeen: ['budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3 },

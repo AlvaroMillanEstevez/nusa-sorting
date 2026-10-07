@@ -54,7 +54,9 @@ describe.each(numbered.map(({ number, level }) => [number, level] as const))('le
 
   it('is exactly what its recipe generates (board and time), so regenerating never changes a shipped board', () => {
     expect(recipe.candidate).toBeDefined();
-    expect(generateLevel(recipe).level).toEqual(withArrangement(level, 0));
+    // The star thresholds come from all the arrangements; levelArrangements.test.ts checks them.
+    const { stars: _stars, ...board } = withArrangement(level, 0);
+    expect(generateLevel(recipe).level).toEqual(board);
   }, 120_000);
 
   it('meets every rule for generated levels', () => {
@@ -267,7 +269,7 @@ describe('the curve of levels 1-24', () => {
 
 describe('saved progress from the demo levels', () => {
   it('is ignored without errors: the game starts at level 1', () => {
-    const old = { completed: demoLevels.map((l) => l.id), bestScores: { level004: 1200 } };
+    const old = { completed: demoLevels.map((l) => l.id), bestScores: { level004: 1200 }, bestStars: {} };
     expect(firstIncomplete(old, levels.map((l) => l.id))).toBe(0);
   });
 });

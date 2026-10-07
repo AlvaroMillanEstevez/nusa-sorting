@@ -13,6 +13,7 @@ import type { LevelDefinition } from '../../core';
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
  * Across them the casual player wins 100% to 100%, the expert 100% to 100%; pressure 0% to 0%.
+ * Stars: two from 2580 points, three from 2600 (median and 85th percentile of the expert's wins).
  */
 export const nusa001: LevelDefinition = {
   id: 'nusa-001',
@@ -27,6 +28,7 @@ export const nusa001: LevelDefinition = {
     [['sate', 'ketupat', null]],
     [['bakso', 'onde-onde', 'nasi-goreng']],
   ],
+  stars: { two: 2580, three: 2600 },
   arrangements: [
     {
       shelves: [

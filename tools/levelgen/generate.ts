@@ -12,6 +12,7 @@ import {
   type GameState,
   type LevelDefinition,
   type MechanicDefinition,
+  type StarThresholds,
   type TrackDefinition,
 } from '../../src/core';
 import { CHECKED_SCREENS, itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
@@ -515,6 +516,28 @@ export function generateArrangements(level: LevelDefinition, recipe: LevelRecipe
 
 /** A generated level with the arrangements made for it (also in `level.arrangements`). */
 export type WithArrangements = GeneratedLevel & { readonly arrangements: readonly GeneratedArrangement[] };
+
+/** Star thresholds are rounded to this many points. */
+const STAR_STEP = 10;
+
+/**
+ * Star thresholds for a level from the scores of the expert simulated player's wins over all its arrangements:
+ * two stars at the median, three at the 85th percentile. The expert plays well but never plans combos and
+ * moves at the casual pace, so a person playing well can reach both. Null if the expert never wins.
+ */
+export function starThresholds(expertWins: readonly (readonly number[])[]): StarThresholds | null {
+  const scores = expertWins.flat().sort((a, b) => a - b);
+  if (scores.length === 0) return null;
+  const at = (share: number) => scores[Math.min(scores.length - 1, Math.floor(share * scores.length))]!;
+  const round = (score: number) => Math.max(STAR_STEP, Math.round(score / STAR_STEP) * STAR_STEP);
+  const two = round(at(0.5));
+  return { two, three: Math.max(two + STAR_STEP, round(at(0.85))) };
+}
+
+/** The star thresholds of a generated level, from the expert's wins on the level and its arrangements. */
+export function generatedThresholds(generated: WithArrangements): StarThresholds | null {
+  return starThresholds([generated.stats.expert.wonScores, ...generated.arrangements.map((a) => a.stats.expert.wonScores)]);
+}
 
 /** Lowest and highest value of a figure over all of a level's arrangements, the level as written included. */
 export function statRange(generated: WithArrangements, figure: (stats: LevelStats) => number): [number, number] {

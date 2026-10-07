@@ -1,4 +1,5 @@
 import { EMPTY_PROGRESS, type Progress } from '../core/progress';
+import type { Stars } from '../core/stars';
 import type { SaveData, Settings } from './SaveService';
 
 export const SAVE_VERSION = 1;
@@ -63,7 +64,13 @@ function parseProgress(value: unknown): Progress {
       if (typeof score === 'number' && Number.isFinite(score) && score >= 0) bestScores[id] = score;
     }
   }
-  return { completed, bestScores };
+  const bestStars: Record<string, Stars> = {};
+  if (isRecord(value.bestStars)) {
+    for (const [id, stars] of Object.entries(value.bestStars)) {
+      if (stars === 1 || stars === 2 || stars === 3) bestStars[id] = stars;
+    }
+  }
+  return { completed, bestScores, bestStars };
 }
 
 /** A list of non-empty ids, without duplicates; anything else is dropped (missing in older saves: empty). */

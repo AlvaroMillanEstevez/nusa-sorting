@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame, moveItem, tick, type GameEvent, type LevelDefinition } from '../src/core';
 import { demoLevels as levels } from './fixtures/demo-levels';
 import fixture from './fixtures/regression-v1.json';
-import { asRecorded, hadCombo } from './helpers';
+import { asRecorded, comboBeforeTimeBonus, hadCombo } from './helpers';
 import fixtureV2 from './fixtures/regression-v2.json';
 
 /**
@@ -84,7 +84,7 @@ describe.each(fixtureV2.map((entry) => [entry.level, entry] as const))('regressi
       expect(state.timeLeftMs).toBe(step.timeLeftMs);
       expect(state.triplesCleared).toBe(step.triplesCleared);
       // Recorded as null for levels without combos then; they all have one now.
-      if (hadCombo(level)) expect(state.combo).toEqual(step.combo);
+      if (hadCombo(level)) expect(comboBeforeTimeBonus(state.combo, result.events)).toEqual(step.combo);
       expect(state.blocker).toEqual(step.blocker);
     }
   });

@@ -1,3 +1,4 @@
+import { TIME_BONUS_PER_SECOND } from './mechanics';
 import { nextRandom } from './random';
 import type {
   BlockerState,
@@ -227,13 +228,24 @@ function checkTargetSlot(state: GameState, to: Position): InvalidMoveReason | nu
 function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
   let next = applyTriples(state, events);
   if (isWon(next)) {
-    next = { ...next, status: 'won' };
+    next = addTimeBonus({ ...next, status: 'won' }, events);
     events.push({ kind: 'won' });
   } else if (isBlocked(next)) {
     next = { ...next, status: 'lost', loseReason: 'blocked' };
     events.push({ kind: 'lost', reason: 'blocked' });
   }
   return { state: next, events };
+}
+
+/** On a win with time left: TIME_BONUS_PER_SECOND points for each whole second, added to the score. */
+function addTimeBonus(state: GameState, events: GameEvent[]): GameState {
+  if (state.timeLeftMs === null) return state;
+  const seconds = Math.floor(state.timeLeftMs / 1000);
+  if (seconds <= 0) return state;
+  const points = seconds * TIME_BONUS_PER_SECOND;
+  const score = state.combo.score + points;
+  events.push({ kind: 'timeBonus', seconds, points, score });
+  return { ...state, combo: { ...state.combo, score } };
 }
 
 /**

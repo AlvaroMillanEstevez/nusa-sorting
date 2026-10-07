@@ -507,6 +507,8 @@ export interface SimulationStats {
   readonly avgFree: number;
   /** Space pressure: share of moves made with TIGHT_FREE_SLOTS free slots or fewer, averaged over games. */
   readonly pressure: number;
+  /** Final scores of the games won (time bonus included), lowest first. */
+  readonly wonScores: readonly number[];
 }
 
 /** Plays `runs` simulated games with a fixed seed so the outcomes are reproducible. */
@@ -529,6 +531,10 @@ export function simulate(start: GameState, runs = 200, seed = 1, profile: Player
     avgScore: mean((o) => o.score),
     avgFree: mean((o) => o.meanFree),
     pressure: mean((o) => o.tightShare),
+    wonScores: outcomes
+      .filter((o) => o.won)
+      .map((o) => o.score)
+      .sort((a, b) => a - b),
   };
 }
 

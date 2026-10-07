@@ -1,4 +1,5 @@
 import type { Arrangement } from './arrangement';
+import { validThresholds, type StarThresholds } from './stars';
 import { isBlocked } from './game';
 import {
   COMBO_DEFAULTS,
@@ -58,6 +59,8 @@ export interface LevelDefinition {
    * are 1 and up. Each attempt plays one of them (withArrangement), so the solution cannot be memorised.
    */
   readonly arrangements?: readonly Arrangement[];
+  /** Scores for two and three stars (one star is any win). Set by the level generator. */
+  readonly stars?: StarThresholds;
 }
 
 /** Special levels are the ones with a theme. */
@@ -76,6 +79,9 @@ export function createGame(level: LevelDefinition): GameState {
   }
   if (level.theme !== undefined && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(level.theme)) {
     throw new LevelError(`${level.id}: theme must be a kebab-case id`);
+  }
+  if (level.stars !== undefined && !validThresholds(level.stars)) {
+    throw new LevelError(`${level.id}: star thresholds must be positive whole numbers, three above two`);
   }
 
   const counts = new Map<ItemType, number>();

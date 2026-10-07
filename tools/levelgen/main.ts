@@ -1,5 +1,5 @@
 import { CHECKED_SCREENS } from '../../src/ui/levelLayout';
-import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, statRange, type WithArrangements } from './generate';
+import { generateArrangements, generatedThresholds, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, statRange, type WithArrangements } from './generate';
 import { constName, levelSource } from './format';
 import { RECIPES, recipeFor } from './recipes';
 import { spaceReport } from './report';
@@ -44,7 +44,9 @@ export function main(args: readonly string[]): RunResult {
     }
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     console.log(`${recipe.id}: candidate ${result.attempt}, ${arrangements.length + 1} arrangements, in ${seconds} s`);
-    return { ...result, level: { ...result.level, arrangements: arrangements.map((a) => a.arrangement) }, arrangements };
+    const withArrangements = { ...result, level: { ...result.level, arrangements: arrangements.map((a) => a.arrangement) }, arrangements };
+    const stars = generatedThresholds(withArrangements);
+    return stars ? { ...withArrangements, level: { ...withArrangements.level, stars } } : withArrangements;
   });
   const files = generated.map((g) => ({ path: `src/data/levels/${g.level.id}.ts`, content: levelSource(g) }));
   return { files, summary: summaryTable(generated) };
@@ -69,6 +71,7 @@ export function summaryTable(levels: readonly WithArrangements[]): string {
         `${level.timeLimitSeconds}s`,
         `casual win ${pct(casual.winRate)} space ${pct(casual.blockedRate + casual.stuckRate)} timeUp ${pct(casual.timeUpRate)} pressure ${pct(casual.pressure)}`,
         `expert win ${pct(expert.winRate)}`,
+        `stars ${level.stars ? `${level.stars.two}/${level.stars.three}` : '-'}`,
         `${generated.arrangements.length + 1} arrangements: casual ${range((s) => s.casual.winRate)}, expert ${range((s) => s.expert.winRate)}, pressure ${range((s) => s.casual.pressure)}`,
         `items ${itemPx.join('/')}px (${CHECKED_SCREENS.map((s) => `${s.width}x${s.height}`).join('/')})`,
       ].join(' | ');

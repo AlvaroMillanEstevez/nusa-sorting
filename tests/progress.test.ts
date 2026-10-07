@@ -10,12 +10,12 @@ describe('unlocking', () => {
   });
 
   it('opens the next level once one is completed', () => {
-    const progress: Progress = { completed: ['a', 'b'], bestScores: {} };
+    const progress: Progress = { completed: ['a', 'b'], bestScores: {}, bestStars: {} };
     expect(ids.map((_, i) => isUnlocked(progress, ids, i))).toEqual([true, true, true, false]);
   });
 
   it('works by level id, so reordering or inserting levels keeps progress', () => {
-    const progress: Progress = { completed: ['a', 'b'], bestScores: {} };
+    const progress: Progress = { completed: ['a', 'b'], bestScores: {}, bestStars: {} };
     // A new level 'x' inserted after 'a', and 'b' moved to the end.
     const reordered = ['a', 'x', 'c', 'b'];
     expect(reordered.map((_, i) => isUnlocked(progress, reordered, i))).toEqual([true, true, false, true]);
@@ -26,12 +26,12 @@ describe('unlocking', () => {
 describe('where to start', () => {
   it('is the first level not completed, or null when all are done', () => {
     expect(firstIncomplete(EMPTY_PROGRESS, ids)).toBe(0);
-    expect(firstIncomplete({ completed: ['a', 'c'], bestScores: {} }, ids)).toBe(1);
-    expect(firstIncomplete({ completed: ids, bestScores: {} }, ids)).toBeNull();
+    expect(firstIncomplete({ completed: ['a', 'c'], bestScores: {}, bestStars: {} }, ids)).toBe(1);
+    expect(firstIncomplete({ completed: ids, bestScores: {}, bestStars: {} }, ids)).toBeNull();
   });
 
   it('ignores completed ids of levels that no longer exist', () => {
-    expect(firstIncomplete({ completed: ['gone', 'a'], bestScores: {} }, ids)).toBe(1);
+    expect(firstIncomplete({ completed: ['gone', 'a'], bestScores: {}, bestStars: {} }, ids)).toBe(1);
   });
 });
 
@@ -39,7 +39,7 @@ describe('recording a win', () => {
   it('marks the level completed once and keeps the best score', () => {
     const first = recordWin(EMPTY_PROGRESS, 'a', 500);
     expect(first).toMatchObject({ newBest: false, best: 500, firstClear: true });
-    expect(first.progress).toEqual({ completed: ['a'], bestScores: { a: 500 } });
+    expect(first.progress).toEqual({ completed: ['a'], bestScores: { a: 500 }, bestStars: { a: 1 } });
 
     const better = recordWin(first.progress, 'a', 800);
     expect(better).toMatchObject({ newBest: true, best: 800, firstClear: false });
@@ -53,11 +53,11 @@ describe('recording a win', () => {
   it('records levels without a score as completed only', () => {
     const result = recordWin(EMPTY_PROGRESS, 'b', null);
     expect(result).toMatchObject({ newBest: false, best: null, firstClear: true });
-    expect(result.progress).toEqual({ completed: ['b'], bestScores: {} });
+    expect(result.progress).toEqual({ completed: ['b'], bestScores: {}, bestStars: { b: 1 } });
   });
 
   it('does not change the progress it was given', () => {
-    const progress: Progress = { completed: ['a'], bestScores: { a: 100 } };
+    const progress: Progress = { completed: ['a'], bestScores: { a: 100 }, bestStars: {} };
     const snapshot = structuredClone(progress);
     recordWin(progress, 'a', 900);
     recordWin(progress, 'b', 50);

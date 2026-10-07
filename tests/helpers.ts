@@ -1,5 +1,5 @@
 import { expect } from 'vitest';
-import { stackOf, type GameEvent, type GameState, type LevelDefinition } from '../src/core';
+import { stackOf, type ComboState, type GameEvent, type GameState, type LevelDefinition } from '../src/core';
 import type { LevelStats } from '../tools/levelgen/generate';
 import type { LevelRecipe } from '../tools/levelgen/recipe';
 
@@ -25,8 +25,16 @@ export function hadCombo(level: LevelDefinition): boolean {
 }
 
 export function boardEvents(events: readonly GameEvent[], level: LevelDefinition): GameEvent[] {
-  if (hadCombo(level)) return [...events];
-  return events.filter((e) => e.kind !== 'comboChanged' && e.kind !== 'scoreChanged');
+  // The time bonus on a win came after every recording.
+  const recorded = events.filter((e) => e.kind !== 'timeBonus');
+  if (hadCombo(level)) return recorded;
+  return recorded.filter((e) => e.kind !== 'comboChanged' && e.kind !== 'scoreChanged');
+}
+
+/** The combo state as the recordings knew it: without the time bonus a win may have added to the score. */
+export function comboBeforeTimeBonus(combo: ComboState, events: readonly GameEvent[]): ComboState {
+  const bonus = events.find((e) => e.kind === 'timeBonus');
+  return bonus?.kind === 'timeBonus' ? { ...combo, score: combo.score - bonus.points } : combo;
 }
 
 /** Event kinds without the score and combo ones, for tests about how the board itself behaves. */

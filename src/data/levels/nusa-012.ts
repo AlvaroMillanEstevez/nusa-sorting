@@ -13,6 +13,7 @@ import type { LevelDefinition } from '../../core';
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
  * Across them the casual player wins 44% to 65%, the expert 16% to 88%; pressure 42% to 59%.
+ * Stars: two from 6000 points, three from 7260 (median and 85th percentile of the expert's wins).
  */
 export const nusa012: LevelDefinition = {
   id: 'nusa-012',
@@ -40,6 +41,7 @@ export const nusa012: LevelDefinition = {
       { kind: 'shelves', shelves: [6, 7, 8] },
     ],
   },
+  stars: { two: 6000, three: 7260 },
   arrangements: [
     {
       shelves: [

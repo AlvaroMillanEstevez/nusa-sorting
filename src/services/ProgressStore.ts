@@ -1,5 +1,6 @@
 import { nextArrangement } from '../core/arrangement';
-import { firstIncomplete, isUnlocked, recordWin, type Progress, type WinRecord } from '../core/progress';
+import { firstIncomplete, isUnlocked, recordWin, totalStars, type Progress, type WinRecord } from '../core/progress';
+import type { Stars } from '../core/stars';
 import type { SaveData, SaveService, Settings } from './SaveService';
 
 /**
@@ -71,8 +72,17 @@ export class ProgressStore {
     return this.data.progress.bestScores[levelId] ?? null;
   }
 
-  recordWin(levelId: string, score: number | null): WinRecord {
-    const record = recordWin(this.data.progress, levelId, score);
+  /** Most stars earned in a level, or null if it has none yet. */
+  bestStars(levelId: string): Stars | null {
+    return this.data.progress.bestStars[levelId] ?? null;
+  }
+
+  get totalStars(): number {
+    return totalStars(this.data.progress);
+  }
+
+  recordWin(levelId: string, score: number | null, stars: Stars = 1): WinRecord {
+    const record = recordWin(this.data.progress, levelId, score, stars);
     this.data = { ...this.data, progress: record.progress };
     this.saves.save(this.data);
     return record;

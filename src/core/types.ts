@@ -156,6 +156,8 @@ export type GameEvent =
     }
   | { readonly kind: 'layerAdvanced'; readonly shelf: number; readonly remainingLayers: number }
   | { readonly kind: 'won' }
+  /** Points for the time left when a timed level is won, already added to the score. */
+  | { readonly kind: 'timeBonus'; readonly seconds: number; readonly points: number; readonly score: number }
   | { readonly kind: 'lost'; readonly reason: LoseReason }
   | { readonly kind: 'comboChanged'; readonly combo: number; readonly windowMs: number }
   | { readonly kind: 'scoreChanged'; readonly score: number; readonly delta: number; readonly shelf: number }
