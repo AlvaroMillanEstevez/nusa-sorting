@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { DURATION, EASE, hexNumber, SPACE, type Skin } from '../../ui/design/tokens';
 import { roundRect, softShadow, strokeRoundRect, woodGrain } from './draw';
 import { kitText } from './kitText';
+import { kitFeedback } from './feedback';
 
 export interface PanelOptions {
   readonly skin: Skin;
@@ -74,8 +75,15 @@ export class KitModal extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  /** Plays the closing sound and removes the modal (for a panel the player dismisses). */
+  dismiss(): void {
+    kitFeedback().close();
+    this.destroy();
+  }
+
   /** The entrance: the dim fades in while the panel rises and pops to size. */
   popIn(): this {
+    kitFeedback().open();
     this.dim.setAlpha(0);
     this.scene.tweens.add({ targets: this.dim, alpha: 1, duration: DURATION.base, ease: EASE.enter });
     const y = this.panel.y;

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { DURATION, EASE, MIN_TOUCH, PRESS } from '../../ui/design/tokens';
 import { RENDER_RATIO } from '../view';
+import { kitFeedback } from './feedback';
 
 /** Pointer travel (CSS px) after which a press is a drag, not a tap. */
 const TAP_SLOP = 10;
@@ -39,7 +40,10 @@ export abstract class Pressable extends Phaser.GameObjects.Container {
       const was = this.pressed;
       this.setPressed(false, was);
       // A press that travelled is a drag (e.g. scrolling a list), not a tap.
-      if (was && !this.disabled && pointer.getDistance() <= TAP_SLOP * RENDER_RATIO) this.onPress?.();
+      if (was && !this.disabled && pointer.getDistance() <= TAP_SLOP * RENDER_RATIO) {
+        kitFeedback().press();
+        this.onPress?.();
+      }
     });
   }
 

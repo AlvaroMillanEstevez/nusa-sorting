@@ -16,7 +16,16 @@ export type SoundEffect =
   /** Each star filling in on the victory panel, rising: the first, second and third. */
   | 'star1'
   | 'star2'
-  | 'star3';
+  | 'star3'
+  /** Interface: a button pressed, a panel opening and closing. */
+  | 'tap'
+  | 'open'
+  | 'close'
+  /** A star landing on the map's total; the player's marker stepping along the path. */
+  | 'starCollect'
+  | 'mapStep'
+  /** The board fills up: no free slot left. */
+  | 'blocked';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {

@@ -2,7 +2,8 @@ import * as Phaser from 'phaser';
 import { t, type MessageKey } from '../i18n';
 import { SKIN, SPACE } from '../ui/design/tokens';
 import type { UiIconName } from '../ui/design/uiIcons';
-import { KitButton, KitIconButton, KitModal, KitPill, KitToggle, kitText, uiIcon, type KitPanel } from './kit';
+import { KitButton, KitIconButton, KitModal, KitPill, kitText, type KitPanel } from './kit';
+import { settingsRowCount, settingsRows, SETTINGS_ROW } from './SettingsRows';
 import { screenRect, viewSize } from './view';
 
 /** Over the board, the HUD and popups; under the result panel. */
@@ -11,9 +12,10 @@ const DEPTH_PAUSE = 290;
 export interface PauseHandlers {
   onResume(): void;
   onRestart(): void;
-  onLevels(): void;
+  onHome(): void;
   onSound(on: boolean): void;
   onColorBlind(on: boolean): void;
+  onVibration(on: boolean): void;
 }
 
 export interface PauseInfo {
@@ -21,6 +23,8 @@ export interface PauseInfo {
   readonly special: boolean;
   readonly soundOn: boolean;
   readonly colorBlind: boolean;
+  readonly vibration: boolean;
+  readonly canVibrate: boolean;
   /** The level has started (a move or a touch): restarting or leaving asks first. */
   readonly started: boolean;
 }
@@ -82,7 +86,8 @@ export class PauseMenu {
     const wide = safe.height < 540;
     const confirm = this.view !== 'menu';
     const panelW = Math.min(safe.width - SPACE.s * 2, confirm ? 360 : wide ? 600 : 360);
-    const panelH = confirm ? 280 : wide ? Math.min(safe.height - SPACE.s * 2, 300) : 470;
+    const extraRows = (settingsRowCount(info) - 2) * SETTINGS_ROW;
+    const panelH = confirm ? 280 : wide ? Math.min(safe.height - SPACE.s * 2, 300 + extraRows / 2) : 470 + extraRows;
     const modal = new KitModal(this.scene, screen.width, screen.height, {
       skin: SKIN,
       width: panelW,
@@ -127,9 +132,9 @@ export class PauseMenu {
         if (info.started) this.show('confirmRestart');
         else this.leave(() => this.handlers.onRestart());
       }),
-      button('secondary', 'result.levels', 'levels', () => {
+      button('secondary', 'pause.home', 'home', () => {
         if (info.started) this.show('confirmLeave');
-        else this.leave(() => this.handlers.onLevels());
+        else this.leave(() => this.handlers.onHome());
       }),
     ];
   }
@@ -139,26 +144,21 @@ export class PauseMenu {
     then();
   }
 
-  /** A setting row: icon and label on the left, a switch on the right. */
-  private toggleRow(panel: KitPanel, x: number, y: number, width: number, icon: UiIconName, label: MessageKey, on: boolean, onChange: (on: boolean) => void): void {
-    panel.add(uiIcon(this.scene, icon, SKIN.text.secondary, 24).setPosition(x + 12, y));
-    const text = kitText(this.scene, 'body', t(label), SKIN.text.primary).setOrigin(0, 0.5).setPosition(x + 32, y);
-    // Long translations shrink to fit beside the switch.
-    const room = width - 32 - 60 - SPACE.s;
-    if (text.width > room) text.setScale(Math.max(0.75, room / text.width));
-    panel.add(text);
-    panel.add(new KitToggle(this.scene, x + width - 30, y, SKIN, on, onChange));
-  }
-
   private settings(panel: KitPanel, x: number, top: number, width: number): void {
     const info = this.info!;
-    this.toggleRow(panel, x, top, width, info.soundOn ? 'sound' : 'mute', 'pause.sound', info.soundOn, (on) => {
-      this.info = { ...info, soundOn: on };
-      this.handlers.onSound(on);
-    });
-    this.toggleRow(panel, x, top + 52, width, 'eye', 'pause.colorBlind', info.colorBlind, (on) => {
-      this.info = { ...this.info!, colorBlind: on };
-      this.handlers.onColorBlind(on);
+    settingsRows(this.scene, panel, x, top, width, info, {
+      onSound: (on) => {
+        this.info = { ...this.info!, soundOn: on };
+        this.handlers.onSound(on);
+      },
+      onColorBlind: (on) => {
+        this.info = { ...this.info!, colorBlind: on };
+        this.handlers.onColorBlind(on);
+      },
+      onVibration: (on) => {
+        this.info = { ...this.info!, vibration: on };
+        this.handlers.onVibration(on);
+      },
     });
   }
 
@@ -200,9 +200,9 @@ export class PauseMenu {
       skin: SKIN,
       variant: 'danger',
       label: t(restart ? 'confirm.restart' : 'confirm.leave'),
-      icon: restart ? 'restart' : 'levels',
+      icon: restart ? 'restart' : 'home',
       width: inner,
-      onPress: () => this.leave(() => (restart ? this.handlers.onRestart() : this.handlers.onLevels())),
+      onPress: () => this.leave(() => (restart ? this.handlers.onRestart() : this.handlers.onHome())),
     });
     const no = new KitButton(this.scene, 0, h / 2 - SPACE.m - 24, {
       skin: SKIN,

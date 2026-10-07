@@ -40,6 +40,14 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   star1: [note(0, 784, 0.16, 'triangle', 0.24), note(0.02, 1568, 0.12, 'sine', 0.07)],
   star2: [note(0, 988, 0.16, 'triangle', 0.24), note(0.02, 1976, 0.12, 'sine', 0.07)],
   star3: [note(0, 1175, 0.24, 'triangle', 0.26), note(0.02, 2349, 0.18, 'sine', 0.08), note(0.12, 1568, 0.2, 'sine', 0.06)],
+  // A soft wooden knock: quiet, so tapping around never gets tiring.
+  tap: [{ at: 0, duration: 0.05, freq: 420, freqEnd: 300, wave: 'triangle', gain: 0.12 }],
+  open: [{ at: 0, duration: 0.14, freq: 300, freqEnd: 640, wave: 'sine', gain: 0.1 }],
+  close: [{ at: 0, duration: 0.12, freq: 560, freqEnd: 280, wave: 'sine', gain: 0.08 }],
+  starCollect: [note(0, 1568, 0.08, 'sine', 0.12), note(0.05, 2093, 0.1, 'sine', 0.08)],
+  mapStep: [{ at: 0, duration: 0.07, freq: 520, freqEnd: 600, wave: 'triangle', gain: 0.08 }],
+  // Something heavy settling: a low thud and a dull buzz, before the defeat panel.
+  blocked: [{ at: 0, duration: 0.25, freq: 140, freqEnd: 70, wave: 'triangle', gain: 0.3 }, note(0.08, 98, 0.3, 'square', 0.05)],
 };
 
 export class WebAudioSoundService implements SoundService {

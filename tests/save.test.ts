@@ -35,7 +35,7 @@ class BrokenStorage implements StorageLike {
 const sample: SaveData = {
   version: SAVE_VERSION,
   progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 }, bestStars: { level004: 2 } },
-  settings: { muted: true, colorBlindMode: true },
+  settings: { muted: true, colorBlindMode: true, vibration: false },
   themesSeen: ['budaya-jawa'],
   lastArrangements: { 'nusa-003': 2 },
   tutorialsDone: ['first-triple'],
@@ -67,7 +67,7 @@ describe('save format', () => {
         bestScores: { level004: 900, level005: -1, level006: 'lots', level007: null },
         bestStars: { level004: 3, level005: 4, level006: '2', level007: 0, level008: 1.5 },
       },
-      settings: { muted: 'yes', colorBlindMode: 1 },
+      settings: { muted: 'yes', colorBlindMode: 1, vibration: 'no' },
       themesSeen: ['budaya-jawa', 7, '', 'budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3, 'nusa-002': -1, 'nusa-004': 1.5, 'nusa-005': '2', '': 1 },
       tutorialsDone: 'first-triple',
@@ -75,7 +75,7 @@ describe('save format', () => {
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
       progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 }, bestStars: { level004: 3 } },
-      settings: { muted: false, colorBlindMode: false },
+      settings: { muted: false, colorBlindMode: false, vibration: true },
       themesSeen: ['budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3 },
       tutorialsDone: [],
@@ -84,7 +84,7 @@ describe('save format', () => {
 
   it('reads saves from before colour-blind mode existed with the mode off', () => {
     const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: { muted: true } });
-    expect(parseSave(old).settings).toEqual({ muted: true, colorBlindMode: false });
+    expect(parseSave(old).settings).toEqual({ muted: true, colorBlindMode: false, vibration: true });
   });
 
   it('still loads saves holding the mechanic notes once seen, dropping that field', () => {

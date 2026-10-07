@@ -88,6 +88,14 @@ export class ProgressStore {
     return record;
   }
 
+  get vibration(): boolean {
+    return this.data.settings.vibration;
+  }
+
+  setVibration(on: boolean): void {
+    this.setSetting('vibration', on);
+  }
+
   setMuted(muted: boolean): void {
     this.setSetting('muted', muted);
   }

@@ -8,3 +8,4 @@ export { KitStars, STAR_STEP_MS } from './Stars';
 export { kitText } from './kitText';
 export { loadUiFonts } from './fonts';
 export { prepareUiIcon, uiIcon, uiIconKey } from './uiIconTextures';
+export { kitFeedback, setKitFeedback, type KitFeedback } from './feedback';

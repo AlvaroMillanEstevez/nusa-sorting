@@ -1,9 +1,9 @@
 # Nusa Sorting · Guía de estilo de interfaz
 
-Esta guía es la referencia de toda pantalla de interfaz: HUD, paneles, lista de niveles, transiciones y las que vienen (monedas, tienda, potenciadores). Todo valor sale de los **tokens** de `src/ui/design/tokens.ts` y todo componente del **kit** de `src/scenes/kit/`. Una pantalla nueva no elige colores, tamaños ni tiempos por su cuenta.
+Esta guía es la referencia de toda pantalla de interfaz: HUD, paneles, inicio y mapa, transiciones y las que vienen (monedas, tienda, potenciadores). Todo valor sale de los **tokens** de `src/ui/design/tokens.ts` y todo componente del **kit** de `src/scenes/kit/`. Una pantalla nueva no elige colores, tamaños ni tiempos por su cuenta.
 
 - Ver el kit: `npm run dev` y abrir `?uikit` (páginas directas: `?uikit=components|icons|slots`, `&vision=deuteranopia|protanopia|grayscale`). Los paneles del juego se abren sin jugar con `?show=pause|confirm|won|lost|levels`; `?lang=id` y `?safeArea=47,0,34,0` sirven para revisar el indonesio y la muesca.
-- Estado: **en uso** desde octubre de 2026 (dirección A). Todo el juego —HUD, menú de pausa, paneles de victoria y derrota, lista de niveles, pantalla de tema, tutorial y textos flotantes— usa los tokens y el kit; el antiguo `src/ui/theme.ts` se borró.
+- Estado: **en uso** desde octubre de 2026 (dirección A). Todo el juego —HUD, menú de pausa, paneles de victoria y derrota, inicio y mapa, pantalla de tema, tutorial y textos flotantes— usa los tokens y el kit; el antiguo `src/ui/theme.ts` se borró.
 
 ## 1. Auditoría de la interfaz anterior (octubre 2026, antes del kit)
 
@@ -96,11 +96,15 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
 
 **HUD** (`src/scenes/Hud.ts`): solo lo esencial. El reloj en el centro de la fila superior, con el botón de pausa a la izquierda y, en los niveles especiales, su distintivo (estrella + «Especial») a la derecha. Puntuación y combo en la segunda fila en vertical, o en la misma fila en horizontal. El combo aparece desde ×2, con la barra de su ventana. El número de nivel no está siempre: ocupa el sitio de la puntuación al empezar («NIVEL 12 · Toca para empezar») hasta el primer toque, y está en el menú de pausa.
 
-**Menú de pausa** (`PauseMenu.ts`): continuar, reiniciar, salir a la lista de niveles, sonido y modo daltónico, con el número de nivel. Mientras está abierto, el reloj, las cintas y el combo se detienen. Reiniciar y salir piden confirmación si el nivel ya ha empezado. En horizontal, acciones a la izquierda y ajustes a la derecha. En ordenador, Escape o P lo abren y cierran.
+**Menú de pausa** (`PauseMenu.ts`): continuar, reiniciar, volver al inicio, sonido, modo daltónico y vibración (donde exista), con el número de nivel. Mientras está abierto, el reloj, las cintas y el combo se detienen. Reiniciar y salir piden confirmación si el nivel ya ha empezado. En horizontal, acciones a la izquierda y ajustes a la derecha. En ordenador, Escape o P lo abren y cierran.
 
-**Victoria y derrota** (`ResultOverlay.ts`): la victoria rellena sus estrellas una a una, cada una con su campanada (cada vez más aguda), mientras la puntuación sube; debajo, el bonus por tiempo y el récord. Acciones: siguiente nivel (principal), lista de niveles y repetir (para mejorar estrellas). La derrota dice el motivo y ofrece reintentar.
+**Victoria y derrota** (`ResultOverlay.ts`): la victoria rellena sus estrellas una a una, cada una con su campanada (cada vez más aguda), mientras la puntuación sube; debajo, el bonus por tiempo y el récord. Acciones: continuar al mapa (principal) y repetir (para mejorar estrellas). La derrota dice el motivo y ofrece reintentar o volver al inicio. Los botones entran al final, pero funcionan desde el principio.
 
-**Lista de niveles** (`LevelSelectScene.ts`): casillas de madera con el número y las estrellas conseguidas (rellenas o huecas, nunca solo color); las bloqueadas, hundidas y con candado; la actual, con marco claro; las especiales, con una insignia del color de su tema y una estrella. En la cabecera, el total de estrellas.
+**Inicio y mapa** (`HomeScene.ts`, `map/MapView.ts`, geometría en `src/ui/mapLayout.ts`): la primera visita entra directamente al nivel 1 (los portales como CrazyGames lo piden); las siguientes abren el inicio. Es el mapa de niveles a pantalla completa: islas en un océano como el archipiélago indonesio, con arena, vegetación y palmeras, muelles, cuerdas con boya entre islas, barcas y nubes sobre el mar sin explorar. Cada tema es una isla propia con su cartel y banderines; los demás niveles comparten islas de hasta cuatro. Cada nivel es una placa de madera con su número y estrellas; el actual, más grande, con aro y el marcador del jugador; solo se ven 2 niveles bloqueados por delante. Arriba: el título, el total de estrellas y ajustes (sonido, modo daltónico y vibración donde exista). Abajo: el botón grande «Jugar · Nivel N». Tocar un nivel completado lo repite.
+
+Huecos reservados para el siguiente hito, sin botones vacíos: a la izquierda de la barra, junto a las estrellas, irán monedas y nivel de jugador; a la derecha, junto a ajustes, el inventario; a los lados del botón de jugar, tienda y cofres.
+
+**Tras ganar** siempre se vuelve al mapa («Continuar»): las estrellas nuevas vuelan al total y el marcador recorre el camino hasta el siguiente nivel (unos 2 s; un toque lo salta) y el botón de jugar queda latiendo. La secuencia es una lista de pasos (`map/arrival.ts`) donde el siguiente hito añadirá subida de nivel, regalos y cofres. Tras perder: reintentar o inicio.
 
 **Estrellas**: ganar da siempre 1; 2 y 3 dependen de la puntuación, que incluye un bonus de 20 puntos por segundo que sobra. Los umbrales salen de una fórmula sobre el propio nivel (`STAR_FORMULA` en `src/core/stars.ts`): con B = tríos × puntos por trío (sin combo) y F = el bonus de tiempo completo (tiempo límite × 20), **2 estrellas = 1,25·B + 0,2·F** y **3 estrellas = 1,7·B + 0,4·F**. En desarrollo, el panel de victoria desglosa la puntuación (base, combos, tiempo) y muestra los umbrales.
 
@@ -148,7 +152,7 @@ Lo que hacen bien los juegos bien valorados del género y los casuales premium, 
 7. **Transición con identidad**: sustituir el fundido entre niveles por un barrido con un motivo de batik (o la persiana de la tienda del warung) en menos de 420 ms.
 8. **Vibración háptica** en el trío y la victoria (Android con `navigator.vibrate`; iOS Safari no la permite) detrás de un servicio como `SoundService` y con su ajuste.
 9. **Zonas seguras**: `viewport-fit=cover` ya está activado; el HUD debe respetar `env(safe-area-inset-*)` en móviles con muesca.
-10. **Progreso a la vista**: barra hacia el próximo tema en el panel de victoria y en la lista de niveles (el componente ya existe).
+10. **Progreso a la vista**: barra hacia el próximo tema en el panel de victoria y en el mapa (el componente ya existe).
 11. **Lista de niveles como recorrido**: un camino por islas de Nusantara agrupado por temas, en vez de una cuadrícula.
 12. **Monedas y tienda con el mismo kit**: la moneda es una `KitPill` con el icono `coin`; la tienda, un `KitPanel` con botones `KitButton`; los potenciadores, `KitIconButton` con contador.
 

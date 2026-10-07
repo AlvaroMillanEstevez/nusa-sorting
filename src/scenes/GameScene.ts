@@ -30,7 +30,7 @@ import {
 } from '../core';
 import { applyBeltOverrides } from '../dev/beltOverrides';
 import { applyTimeScale } from '../dev/timeScale';
-import { parseArrangementParam, parseLevelParam } from '../dev/levelParam';
+import { parseArrangementParam } from '../dev/levelParam';
 import { parseShowParam, type ShowParam } from '../dev/uiParams';
 import { formatScore } from '../ui/format';
 import { getLocale, t, type MessageKey } from '../i18n';
@@ -60,13 +60,15 @@ import { BeltController } from './BeltController';
 import { BlockerView, LockOverlays } from './BoardDecor';
 import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
-import type { LevelSelectData } from './LevelSelectScene';
 import { MovingShelves } from './MovingShelves';
 import { playList } from './playList';
 import { ResultOverlay } from './ResultOverlay';
 import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
 import { TutorialHint } from './TutorialHint';
+import type { Arrival } from './map/arrival';
+import { fadeIn, fadeToScene } from './transitions';
+import type { HapticsService } from '../services/HapticsService';
 import { PauseMenu } from './PauseMenu';
 import { kitText } from './kit';
 import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
@@ -96,6 +98,15 @@ const DEPTH_DROP_MARK = 9;
 /** Shelves riding a track this faded out (at the ends of their loop) take no taps and no drops. */
 const MIN_INTERACTIVE_ALPHA = 0.3;
 const DEPTH_POPUP = 120;
+
+/** What the game scene is started with. */
+export interface GameData {
+  /** The level to play (index in play order); by default the first one not completed. */
+  readonly levelIndex?: number;
+}
+
+/** Development only: ?show= opens its panel once, not again after the player moves on. */
+let devShown = false;
 
 const LOSE_TITLES: Record<LoseReason, MessageKey> = {
   timeUp: 'result.lost.timeUp',
@@ -170,14 +181,23 @@ export class GameScene extends Phaser.Scene {
   /** How urgent the clock was last frame, to chime once when time starts running low. */
   private timeStage: TimeStage = 'normal';
 
+  /** The level to start with (index in play order), from whoever started this scene. */
+  private startIndex: number | null = null;
+
   constructor(
     private readonly sfx: SoundService,
     private readonly store: ProgressStore,
+    private readonly haptics: HapticsService,
   ) {
     super('Game');
   }
 
+  init(data: GameData): void {
+    this.startIndex = data?.levelIndex ?? null;
+  }
+
   create(): void {
+    this.haptics.setEnabled(this.store.vibration);
     this.board = new BakedLayer(this, 0);
     this.movingShelves = new MovingShelves(this);
     this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
@@ -203,10 +223,9 @@ export class GameScene extends Phaser.Scene {
         this.paused = false;
         this.transitionTo(this.levelIndex);
       },
-      onLevels: () => {
-        // Leaving a level under way gives it up: back from the list, it starts again.
-        const started = this.state.clockStarted;
-        this.openLevelList(started ? () => this.transitionTo(this.levelIndex) : () => this.resume());
+      onHome: () => {
+        this.paused = false;
+        this.goHome();
       },
       onSound: (on: boolean) => {
         this.sfx.setMuted(!on);
@@ -217,11 +236,12 @@ export class GameScene extends Phaser.Scene {
         this.store.setColorBlindMode(on);
         this.applyColorBlindMode();
       },
+      onVibration: (on: boolean) => {
+        this.haptics.setEnabled(on);
+        this.store.setVibration(on);
+      },
     });
     this.overlay = new ResultOverlay(this, (effect) => this.sfx.play(effect));
-    // On a computer, Escape (or P) opens and closes the pause menu.
-    this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
-    this.input.keyboard?.on('keydown-P', () => this.togglePause());
     this.decor = new ThemeDecor(this);
     this.themeIntro = new ThemeIntro(this);
     this.tutorial = new TutorialHint(this);
@@ -238,14 +258,32 @@ export class GameScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
     });
 
-    // Straight into play: the first level not completed yet (level 1 on a first visit). With everything
-    // completed, show the list over the last level. Dev builds can force a level with ?level=N.
+    // The level asked for, or else the first one not completed yet (the last one once all are done).
     const ids = playList.map((entry) => entry.level.id);
-    const devLevel = import.meta.env.DEV ? parseLevelParam(window.location.search, playList.map((entry) => entry.number)) : null;
-    const next = this.store.firstIncomplete(ids);
-    this.loadLevel(devLevel ?? next ?? playList.length - 1);
-    if (devLevel === null && next === null) this.openLevelList(() => {});
-    if (import.meta.env.DEV) this.devShow(parseShowParam(window.location.search));
+    this.loadLevel(this.startIndex ?? this.store.firstIncomplete(ids) ?? playList.length - 1);
+    fadeIn(this);
+    // On a computer, Escape (or P) opens and closes the pause menu.
+    const keyboard = this.input.keyboard;
+    keyboard?.on('keydown-ESC', this.togglePause, this);
+    keyboard?.on('keydown-P', this.togglePause, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      keyboard?.off('keydown-ESC', this.togglePause, this);
+      keyboard?.off('keydown-P', this.togglePause, this);
+    });
+    if (import.meta.env.DEV) {
+      const show = parseShowParam(window.location.search);
+      // Only once: the panel is not shown again when the player moves on.
+      if (show && !devShown) {
+        devShown = true;
+        this.devShow(show);
+      }
+    }
+  }
+
+  /** Back to the home screen (with the sequence that follows a win, when there is one). */
+  private goHome(arrival?: Arrival): void {
+    this.holdBoard();
+    fadeToScene(this, 'Home', arrival ? { arrival } : {});
   }
 
   /** Development only (?show=): opens a panel at once, to review it without playing the level. */
@@ -254,8 +292,6 @@ export class GameScene extends Phaser.Scene {
       this.state = startClock(this.state);
       this.openPause();
       if (show === 'confirm') this.pauseMenu.showConfirm('restart');
-    } else if (show === 'levels') {
-      this.openLevelList(() => {});
     } else if (show === 'won') {
       const timeLeftMs = this.state.timeLeftMs === null ? null : this.state.timeLeftMs * 0.4;
       const timeBonus = timeLeftMs === null ? 0 : Math.floor(timeLeftMs / 1000) * TIME_BONUS_PER_SECOND;
@@ -270,37 +306,13 @@ export class GameScene extends Phaser.Scene {
         timeLeftMs,
         bestLine: t('result.newBest'),
         newBest: true,
-        primary: { label: t('result.next'), onPress: () => this.transitionTo(this.levelIndex + 1) },
-        levels: () => this.openLevelList(() => {}),
+        next: () => this.goHome(),
         replay: () => this.transitionTo(this.levelIndex),
         breakdown: this.scoreBreakdown(score),
       });
     } else if (show === 'lost') {
-      this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), levels: () => this.openLevelList(() => {}) });
+      this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() });
     }
-  }
-
-  /**
-   * Pauses the game and shows the level list on top. `onBack` runs when the player goes back from it without
-   * choosing a level.
-   */
-  private openLevelList(onBack: () => void): void {
-    if (this.scene.isPaused()) return;
-    this.holdBoard();
-    const data: LevelSelectData = {
-      currentIndex: this.levelIndex,
-      onChoose: (index) => {
-        this.scene.resume();
-        this.paused = false;
-        this.transitionTo(index);
-      },
-      onClose: () => {
-        this.scene.resume();
-        onBack();
-      },
-    };
-    this.scene.launch('LevelSelect', data);
-    this.scene.pause();
   }
 
   /** Drops whatever the player was holding or had selected. */
@@ -319,6 +331,8 @@ export class GameScene extends Phaser.Scene {
       special: isSpecialLevel(this.level),
       soundOn: !this.sfx.muted,
       colorBlind: this.store.colorBlindMode,
+      vibration: this.store.vibration,
+      canVibrate: this.haptics.supported,
       started: this.state.clockStarted,
     });
   }
@@ -574,39 +588,44 @@ export class GameScene extends Phaser.Scene {
     this.pauseMenu.close();
     // Saved right away, when the level ends, not when the panel appears.
     const stars = starsFor(score, starThresholds(this.level));
+    const totalBefore = this.store.totalStars;
+    const starsBefore = this.store.bestStars(this.level.id) ?? 0;
     const record = status === 'won' ? this.store.recordWin(this.level.id, score, stars) : null;
-    // Back from the list, the panel is still there to choose from.
-    const levels = () => this.openLevelList(() => {});
     const retry = () => this.transitionTo(this.levelIndex);
+    if (status === 'lost') this.haptics.pulse('lose');
     this.time.delayedCall(delay, () => {
       if (record) {
         this.sfx.play('win');
-        const isLast = this.levelIndex === playList.length - 1;
         const bestLine = record.newBest
           ? t('result.newBest')
           : record.best !== null && record.best > score
             ? t('result.best', { score: formatScore(record.best, getLocale()) })
             : null;
+        // After a win the player always goes back to the map: the stars land there and the next level waits.
+        const ids = playList.map((entry) => entry.level.id);
+        const arrival: Arrival = {
+          level: this.levelIndex,
+          starsBefore,
+          starsAfter: record.bestStars,
+          totalBefore,
+          next: this.store.firstIncomplete(ids) ?? this.levelIndex,
+        };
         this.overlay.show({
           kind: 'won',
-          title: t(isLast ? 'result.allDone.title' : 'result.won.title'),
+          title: t(this.levelIndex === playList.length - 1 ? 'result.allDone.title' : 'result.won.title'),
           stars,
           score,
           timeBonus: this.timeBonus,
           timeLeftMs,
           bestLine,
           newBest: record.newBest,
-          primary: {
-            label: t(isLast ? 'result.playAgain' : 'result.next'),
-            onPress: () => this.transitionTo(isLast ? 0 : this.levelIndex + 1),
-          },
-          levels,
+          next: () => this.goHome(arrival),
           replay: retry,
           ...(import.meta.env.DEV ? { breakdown: this.scoreBreakdown(score) } : {}),
         });
       } else {
         this.sfx.play('lose');
-        this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, levels });
+        this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, home: () => this.goHome() });
       }
     });
   }

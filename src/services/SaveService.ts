@@ -4,6 +4,8 @@ export interface Settings {
   readonly muted: boolean;
   /** Colour-blind mode: item variants also carry a mark that does not rely on colour. */
   readonly colorBlindMode: boolean;
+  /** Short vibrations on triples, big combos and defeats (where the device has them). */
+  readonly vibration: boolean;
 }
 
 /** Everything the game persists. `version` is the schema version, bumped on any incompatible change. */

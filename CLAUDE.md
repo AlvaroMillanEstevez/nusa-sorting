@@ -22,14 +22,17 @@ WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP d
 
 Solo en `npm run dev`; el build de producción no los incluye.
 
-- `?level=N` — abre el nivel N aunque esté bloqueado; el progreso se sigue guardando con normalidad.
+- `?level=N` — abre directamente el nivel N aunque esté bloqueado; el progreso se sigue guardando con normalidad.
 - `?arrangement=K` — juega siempre la distribución K del nivel abierto (0 es la del fichero del nivel), sin avanzar la del guardado.
 - `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.
 - `?gallery` — abre la galería de iconos (tamaños reales, variantes, estanterías de madera y simulación de daltonismo y escala de grises) en vez del juego.
 - `?uikit` — abre el kit de interfaz (componentes en todos sus estados, iconos y formas de hueco). Página directa con `?uikit=components|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
-- `?show=pause|confirm|won|lost|levels` — abre ese panel al empezar el nivel, para revisarlo sin jugar (`won` usa una puntuación de 3 estrellas).
+- `?show=pause|confirm|won|lost` — abre ese panel al empezar el nivel, para revisarlo sin jugar (`won` usa una puntuación de 3 estrellas).
+- `?home` — abre la pantalla de inicio (el mapa) aunque sea la primera visita.
+- `?progress=N` — marca como completados los N primeros niveles (con 3, 2 y 1 estrellas alternas) antes de empezar, para ver el mapa más adelante.
+- `?arrival=N` — abre el mapa como si se acabara de ganar el nivel N con 3 estrellas, para ver la secuencia de llegada (combínalo con `?progress=N`).
 - `?slotAspect=X` — otra proporción de hueco (de 1 a 1,6) en cualquier nivel; el juego usa 1,2.
 - `?safeArea=arriba,dcha,abajo,izda` — simula las zonas seguras de un móvil con muesca, en px (por ejemplo `47,0,34,0` en vertical).
 - `?lang=en|id` — muestra el juego en ese idioma, sea cual sea el del navegador.

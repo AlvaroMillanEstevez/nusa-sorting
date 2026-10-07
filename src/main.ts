@@ -3,9 +3,12 @@ import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
-import { parseLang, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
+import { parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
+import { playList } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
-import { LevelSelectScene } from './scenes/LevelSelectScene';
+import { HomeScene } from './scenes/HomeScene';
+import { setKitFeedback } from './scenes/kit';
+import { WebHapticsService } from './services/HapticsService';
 import { LocalSaveService } from './services/LocalSaveService';
 import { ProgressStore } from './services/ProgressStore';
 import { WebAudioSoundService } from './services/WebAudioSoundService';
@@ -26,6 +29,10 @@ if (import.meta.env.DEV) {
   const aspect = parseSlotAspect(window.location.search);
   if (aspect !== null) setSlotAspect(aspect);
   forceSafeArea(parseSafeArea(window.location.search));
+  const progress = parseProgressParam(window.location.search, playList.length);
+  if (progress !== null) {
+    playList.slice(0, progress).forEach(({ level }, i) => store.recordWin(level.id, 1000, ([3, 2, 1] as const)[i % 3]));
+  }
 }
 
 const sound = new WebAudioSoundService();
@@ -70,7 +77,12 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
   window.visualViewport?.addEventListener('resize', resize);
 }
 
-const gameScenes = () => [BootScene, new GameScene(sound, store), new LevelSelectScene(sound, store)];
+const haptics = new WebHapticsService();
+haptics.setEnabled(store.vibration);
+// Every kit button and panel answers with a sound.
+setKitFeedback({ press: () => sound.play('tap'), open: () => sound.play('open'), close: () => sound.play('close') });
+
+const gameScenes = () => [new BootScene(store), new HomeScene(sound, store, haptics), new GameScene(sound, store, haptics)];
 
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
 if (import.meta.env.DEV && wantsGallery(window.location.search)) {

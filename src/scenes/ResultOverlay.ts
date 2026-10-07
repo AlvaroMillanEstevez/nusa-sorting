@@ -11,11 +11,6 @@ const DEPTH_OVERLAY = 300;
 /** When the first star fills, after the panel has popped in. */
 const FIRST_STAR_MS = 420;
 
-export interface ResultButton {
-  readonly label: string;
-  readonly onPress: () => void;
-}
-
 /** A won level: its stars, score (time bonus included) and buttons. */
 export interface WinContent {
   readonly kind: 'won';
@@ -28,8 +23,8 @@ export interface WinContent {
   /** "New best!" or "Best: 1 250", or nothing. */
   readonly bestLine: string | null;
   readonly newBest: boolean;
-  readonly primary: ResultButton;
-  readonly levels: () => void;
+  /** Goes on: to the map, where the stars land and the next level waits. */
+  readonly next: () => void;
   readonly replay: () => void;
   /** Development only: lines breaking the score down, and the level's thresholds. */
   readonly breakdown?: readonly string[];
@@ -41,7 +36,7 @@ export interface LoseContent {
   readonly title: string;
   readonly hint: string;
   readonly retry: () => void;
-  readonly levels: () => void;
+  readonly home: () => void;
 }
 
 export type ResultContent = WinContent | LoseContent;
@@ -54,6 +49,8 @@ export class ResultOverlay {
   private modal: KitModal | null = null;
   private content: ResultContent | null = null;
   private pressed = false;
+  /** The win panel's buttons, which the victory choreography brings in last. */
+  private buttons: Phaser.GameObjects.Container[] = [];
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -143,29 +140,30 @@ export class ResultOverlay {
       panel.add(text);
     });
 
-    const levels = this.once(c.levels, false);
+    // One way on (to the map, for the stars to land and the next level), and a replay for more stars.
     const replay = this.once(c.replay);
-    const next = this.once(c.primary.onPress);
-    if (wide) {
-      const bw = (inner - 56 - SPACE.xs * 2) / 2;
-      const y = h / 2 - SPACE.m - 28;
-      panel.add(new KitButton(this.scene, -inner / 2 + bw / 2, y, { skin: SKIN, variant: 'secondary', label: t('result.levels'), icon: 'levels', width: bw, height: 56, onPress: levels }));
-      panel.add(new KitIconButton(this.scene, -inner / 2 + bw + SPACE.xs + 28, y, { skin: SKIN, icon: 'restart', look: 'secondary', size: 52, onPress: replay }));
-      panel.add(new KitButton(this.scene, inner / 2 - bw / 2, y, { skin: SKIN, variant: 'primary', label: c.primary.label, icon: 'next', width: bw, onPress: next }));
-    } else {
-      const y = h / 2 - SPACE.m - 24;
-      panel.add(new KitButton(this.scene, 0, y - 56 - SPACE.xs, { skin: SKIN, variant: 'primary', label: c.primary.label, icon: 'next', width: inner, onPress: next }));
-      const bw = inner - 52 - SPACE.xs;
-      panel.add(new KitButton(this.scene, -inner / 2 + bw / 2, y, { skin: SKIN, variant: 'secondary', label: t('result.levels'), icon: 'levels', width: bw, onPress: levels }));
-      panel.add(new KitIconButton(this.scene, inner / 2 - 26, y, { skin: SKIN, icon: 'restart', look: 'secondary', size: 48, onPress: replay }));
-    }
+    const next = this.once(c.next);
+    const y = h / 2 - SPACE.m - 30;
+    const replaySize = 52;
+    const bw = inner - replaySize - SPACE.xs;
+    const replayButton = new KitIconButton(this.scene, -inner / 2 + replaySize / 2, y, { skin: SKIN, icon: 'restart', look: 'secondary', size: replaySize, onPress: replay });
+    const nextButton = new KitButton(this.scene, inner / 2 - bw / 2, y, { skin: SKIN, variant: 'primary', label: t('result.continue'), icon: 'next', width: bw, onPress: next });
+    panel.add([replayButton, nextButton]);
+    this.buttons = [replayButton, nextButton];
+    void wide;
 
     if (!animate) {
       stars.setStars(c.stars);
       return;
     }
-    // Stars fill one by one with a rising chime; the score counts up meanwhile.
+    // Stars fill one by one with a rising chime; the score counts up meanwhile; the buttons come in last (they
+    // work at once all the same, so nobody has to wait).
     stars.fill(c.stars, FIRST_STAR_MS, (n) => this.play(n === 1 ? 'star1' : n === 2 ? 'star2' : 'star3'));
+    for (const [i, button] of this.buttons.entries()) {
+      const y = button.y;
+      button.setAlpha(0).setY(y + 12);
+      this.scene.tweens.add({ targets: button, alpha: 1, y, delay: FIRST_STAR_MS + c.stars * STAR_STEP_MS + i * 80, duration: DURATION.base, ease: EASE.enter });
+    }
     const counter = { v: 0 };
     score.setText('0');
     this.scene.tweens.add({
@@ -185,16 +183,16 @@ export class ResultOverlay {
     hint.setWordWrapWidth(inner);
     panel.add(hint);
     const retry = this.once(c.retry);
-    const levels = this.once(c.levels, false);
+    const home = this.once(c.home);
     if (wide) {
       const bw = (inner - SPACE.s) / 2;
       const y = h / 2 - SPACE.m - 28;
-      panel.add(new KitButton(this.scene, -bw / 2 - SPACE.s / 2, y, { skin: SKIN, variant: 'secondary', label: t('result.levels'), icon: 'levels', width: bw, height: 56, onPress: levels }));
+      panel.add(new KitButton(this.scene, -bw / 2 - SPACE.s / 2, y, { skin: SKIN, variant: 'secondary', label: t('pause.home'), icon: 'home', width: bw, height: 56, onPress: home }));
       panel.add(new KitButton(this.scene, bw / 2 + SPACE.s / 2, y, { skin: SKIN, variant: 'primary', label: t('result.retry'), icon: 'restart', width: bw, onPress: retry }));
     } else {
       const y = h / 2 - SPACE.m - 24;
       panel.add(new KitButton(this.scene, 0, y - 56 - SPACE.xs, { skin: SKIN, variant: 'primary', label: t('result.retry'), icon: 'restart', width: inner, onPress: retry }));
-      panel.add(new KitButton(this.scene, 0, y, { skin: SKIN, variant: 'secondary', label: t('result.levels'), icon: 'levels', width: inner, onPress: levels }));
+      panel.add(new KitButton(this.scene, 0, y, { skin: SKIN, variant: 'secondary', label: t('pause.home'), icon: 'home', width: inner, onPress: home }));
     }
   }
 }

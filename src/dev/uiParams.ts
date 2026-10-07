@@ -33,10 +33,37 @@ export function parseLang(search: string): 'en' | 'id' | null {
 }
 
 /** Panels `?show=` can open over a level, to review them without playing it. */
-export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost' | 'levels';
+export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost';
 
-/** Development only: `?show=pause|confirm|won|lost|levels` opens that panel when the level starts. */
+/** Development only: `?show=pause|confirm|won|lost` opens that panel when the level starts. */
 export function parseShowParam(search: string): ShowParam | null {
   const value = new URLSearchParams(search).get('show');
-  return value === 'pause' || value === 'confirm' || value === 'won' || value === 'lost' || value === 'levels' ? value : null;
+  return value === 'pause' || value === 'confirm' || value === 'won' || value === 'lost' ? value : null;
+}
+
+/** Development only: `?home` opens the home screen whatever the save says. */
+export function wantsHome(search: string): boolean {
+  const params = new URLSearchParams(search);
+  return params.has('home') || params.has('arrival');
+}
+
+/**
+ * Development only: `?arrival=N` opens the home screen as if level N had just been won with three stars (from
+ * none), to review the arrival sequence. Returns N's index (N - 1), or null.
+ */
+export function parseArrivalParam(search: string, count: number): number | null {
+  const raw = new URLSearchParams(search).get('arrival');
+  if (raw === null || !/^\d+$/.test(raw)) return null;
+  const n = Number(raw);
+  return n >= 1 && n <= count ? n - 1 : null;
+}
+
+/**
+ * Development only: `?progress=N` marks the first N levels completed (with 3, 2 and 1 stars in turn) before the
+ * game starts, to see the map further on. Returns N, or null.
+ */
+export function parseProgressParam(search: string, count: number): number | null {
+  const raw = new URLSearchParams(search).get('progress');
+  if (raw === null || !/^\d+$/.test(raw)) return null;
+  return Math.min(count, Number(raw));
 }
