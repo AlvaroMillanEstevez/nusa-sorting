@@ -1,3 +1,5 @@
+import { parseItemType } from '../data/itemCatalog';
+
 /**
  * How items sit in taller-than-wide slots (a test, see setSlotAspect): every item rests on the shelf's base, and
  * items that are tall by nature (glasses, kites, lanterns) grow into the extra height. Icons are only ever
@@ -100,4 +102,9 @@ export function itemFit(kind: string, aspect: number): ItemFit {
 export function placeItem(slotY: number, slotSize: number, fill: number, fit: ItemFit, scale = 1): { y: number; size: number } {
   const size = slotSize * fill * fit.scale * scale;
   return { y: slotY + (slotSize * fill * scale) / 2 - size / 2 + fit.drop * size, size };
+}
+
+/** The fit of an item type id (variants fit like their kind) in slots of the current aspect. */
+export function typeFit(type: string, aspect: number): ItemFit {
+  return itemFit(parseItemType(type)?.kind.id ?? type, aspect);
 }

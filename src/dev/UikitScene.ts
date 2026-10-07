@@ -18,7 +18,7 @@ import {
 } from '../scenes/kit';
 import { playList } from '../scenes/playList';
 import { fitCamera, pointerAt, viewSize } from '../scenes/view';
-import { BACK_SCALE, SILHOUETTE_ALPHA, setSlotAspect, shelfLayoutAt, type BoardLayout } from '../ui/boardLayout';
+import { BACK_SCALE, SILHOUETTE_ALPHA, setSlotAspect, shelfLayoutAt, SLOT_ASPECT, type BoardLayout } from '../ui/boardLayout';
 import { DURATION, EASE, hexNumber, mapSkin, SKIN, SPACE, TYPE, type Skin, type TypeRole } from '../ui/design/tokens';
 import { UI_ICON_NAMES } from '../ui/design/uiIcons';
 import { simulateVision, type Vision } from '../ui/icons/color';
@@ -508,7 +508,7 @@ export class UikitScene extends Phaser.Scene {
       }
       f.newline();
     }
-    setSlotAspect(1);
+    setSlotAspect(SLOT_ASPECT);
     // Item sizes in the three-column levels, square and 1.2 tall.
     for (const [w, h] of FRAMES) {
       const sizes = (aspect: number) => {
@@ -516,7 +516,7 @@ export class UikitScene extends Phaser.Scene {
         const px = playList
           .filter(({ level }) => (level.layout?.columns.length ?? 0) === 3)
           .map(({ level }) => itemSize(layoutForLevel(level, createGame(level), w, h)));
-        setSlotAspect(1);
+        setSlotAspect(SLOT_ASPECT);
         return `${Math.min(...px).toFixed(1)}–${Math.max(...px).toFixed(1)}`;
       };
       const line = `${t('uikit.slots.screen', { w, h })}: ${t('uikit.slots.sizes', { square: sizes(1), tall: sizes(1.2) })}`;

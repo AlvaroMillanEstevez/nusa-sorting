@@ -4,7 +4,7 @@ import { demoLevels as levels } from './fixtures/demo-levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
 import { asRecorded } from './helpers';
-import layoutsFixture from './fixtures/layouts-v3.json';
+import layoutsFixture from './fixtures/layouts-v4.json';
 
 /**
  * Golden recordings made before the belt became a set of tracks with stacks (tests/fixtures/regression-v3.json):
@@ -85,9 +85,9 @@ describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regre
 });
 
 /**
- * Layouts of every level (tests/fixtures/layouts-v3.json), recorded when shelves became compact: back layers
- * moved under the front items (no more room above them), thinner frames and gaps, and items filling more of
- * each slot. Earlier snapshots were replaced then; see the commit message for the size changes.
+ * Layouts of every level (tests/fixtures/layouts-v4.json), recorded when slots became 1.2 times taller than
+ * wide (October 2026): taller shelves, items standing on the base, vertical tracks with a slot's height between
+ * carriers. Earlier snapshots were replaced then (v3 recorded the compact square shelves).
  */
 describe('layouts are unchanged', () => {
   it.each(layoutsFixture.map((entry) => [entry.level, entry] as const))('%s', (id, entry) => {
@@ -95,13 +95,10 @@ describe('layouts are unchanged', () => {
     const state = createGame(level);
     for (const { w, h, layout } of entry.layouts) {
       const now = layoutForLevel(level, state, w, h);
-      // Fields added after the snapshot are not compared (slotHeight, on each shelf, came with the slot aspect).
+      // Fields added after the snapshot are not compared.
       const current = JSON.parse(JSON.stringify(now)) as Record<string, unknown>;
-      current.shelves = now.shelves.map(({ rect, slots }) => ({ rect, slots }));
       const recorded = layout as Record<string, unknown>;
       for (const key of Object.keys(recorded)) expect(current[key]).toEqual(recorded[key]);
-      // With square slots (the game), a slot is as tall as it is wide.
-      for (const shelf of now.shelves) expect(shelf.slotHeight).toBe(now.slotSize);
     }
   });
 });

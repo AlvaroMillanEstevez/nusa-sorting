@@ -5,6 +5,7 @@ import {
   MARGIN,
   MAX_SLOT_SIZE,
   shelfHeightUnits,
+  slotAspect,
   SHELF_WIDTH_UNITS,
   shelfLayoutAt,
   type BoardLayout,
@@ -38,7 +39,7 @@ function columnWidthUnitsOf(column: ColumnSpec): number {
 }
 
 function columnHeightUnits(column: ColumnSpec): number {
-  if (column.kind === 'track') return column.slots + ROLLER_UNITS * 2;
+  if (column.kind === 'track') return column.slots * slotAspect() + ROLLER_UNITS * 2;
   if (column.kind === 'shelfTrack') return column.shelves.length * shelfTrackPitchUnits() + ROLLER_UNITS * 2;
   const n = column.shelves.length;
   return n * shelfHeightUnits() + (n - 1) * GAP;
@@ -88,6 +89,7 @@ export function computeColumnLayout(
         pitch,
         slots: column.shelves.length,
         cross,
+        slotSize: s,
       };
       column.shelves.forEach((shelf, c) => {
         shelves[shelf] = shelfLayoutCentred(cross, loopStart + c * pitch, s);
@@ -95,13 +97,16 @@ export function computeColumnLayout(
     } else {
       const cross = x + columnWidth / 2;
       const loopStart = top + ROLLER_UNITS * s;
+      // Carriers are a slot's height apart, so tall items standing on them never reach the next one.
+      const pitch = s * slotAspect();
       tracks[column.track] = {
         orientation: 'vertical',
-        rect: { x, y: loopStart, width: columnWidth, height: column.slots * s },
+        rect: { x, y: loopStart, width: columnWidth, height: column.slots * pitch },
         loopStart,
-        pitch: s,
+        pitch,
         slots: column.slots,
         cross,
+        slotSize: s,
       };
     }
     x += columnWidth + COLUMN_GAP_UNITS * s;

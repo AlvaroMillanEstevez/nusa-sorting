@@ -183,10 +183,10 @@ export function makeWoodArt(p: WoodPalette = WOOD): ArtSet {
     },
 
     drawStackTrack(rails, rollers, layout: TrackLayout) {
-      const { rect, pitch, cross } = layout;
-      const t = pitch * 0.92;
-      const pole = pitch * 0.11;
-      const edge = Math.max(1, pitch * 0.025);
+      const { rect, pitch, cross, slotSize } = layout;
+      const t = slotSize * 0.92;
+      const pole = slotSize * 0.11;
+      const edge = Math.max(1, slotSize * 0.025);
       // A dark wooden bed between two bamboo rails.
       const horizontal = layout.orientation === 'horizontal';
       const bed = horizontal
@@ -204,13 +204,14 @@ export function makeWoodArt(p: WoodPalette = WOOD): ArtSet {
         bamboo(rails, p, bed.x + bed.w - pole * 0.7, bed.y, pole, bed.h, pitch * 0.8, edge);
       }
       // Log rollers centred on the loop's ends, covering where carriers fade out and back in.
-      const r = Math.max(t / 2, pitch * 0.5);
+      const r = Math.max(t / 2, slotSize * 0.5);
       for (const [x, y] of trackEnds(layout)) roller(rollers, p, x, y, r, edge);
     },
 
     drawShelfTrack(rails, rollers, layout) {
       const { rect } = layout;
-      const s = layout.pitch / 1.95;
+      // The poles and caps keep the proportions they were drawn with (about 0.77 of a slot).
+      const s = layout.slotSize * 0.77;
       const pole = Math.max(3, s * 0.11);
       const edge = Math.max(1, s * 0.03);
       // Bamboo poles up both sides, in the gaps beside the column, and a log across each end of the loop.

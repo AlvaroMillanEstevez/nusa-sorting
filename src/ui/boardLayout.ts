@@ -46,6 +46,8 @@ export interface TrackLayout {
   readonly pitch: number;
   readonly slots: number;
   readonly cross: number;
+  /** The shelves' slot size: items and plates on the track are drawn this big, whatever the pitch. */
+  readonly slotSize: number;
 }
 
 export interface BoardLayout {
@@ -77,12 +79,15 @@ export const MAX_SLOT_SIZE = 110;
 
 export const SHELF_WIDTH_UNITS = (slotsPerLayer: number) => slotsPerLayer + SIDE_PAD * 2;
 
-let aspect = 1;
-
 /**
- * Slot height over slot width: 1 (square) is the game; taller slots (e.g. 1.2) are a test of items standing on
- * the base like real goods, with tall items using the extra height (see itemFit). Development only for now.
+ * Slot height over slot width. Slots are taller than wide: items stand on the shelf's base like real goods,
+ * and items tall by nature use the extra height (see itemFit). Tracks keep the same room around each item.
  */
+export const SLOT_ASPECT = 1.2;
+
+let aspect = SLOT_ASPECT;
+
+/** Changes the slot aspect (1 to 1.6): development only (?slotAspect) and tests. */
 export function setSlotAspect(value: number): void {
   aspect = Math.max(1, Math.min(1.6, value));
 }
@@ -126,7 +131,7 @@ export function computeBoardLayout(
   // Height for the shelves plus, with a belt, its strip and the margin above it.
   const contentHeight = Math.max(1, height - hud.height - MARGIN * 2 - (beltSlots > 0 ? MARGIN : 0));
   // The belt strip is sized in slots too, so belt items are exactly as big as shelf items.
-  const beltUnits = beltSlots > 0 ? BELT_STRIP : 0;
+  const beltUnits = beltSlots > 0 ? beltStripUnits() : 0;
 
   let best = { cols: 1, rows: shelfCount, size: 0 };
   for (let cols = 1; cols <= Math.max(1, shelfCount); cols++) {
@@ -188,7 +193,7 @@ export function hudArea(
 
 /** The automatic layout's horizontal strip as a generic track. */
 export function trackFromBelt(belt: BeltLayout): TrackLayout {
-  return { orientation: 'horizontal', rect: belt.rect, loopStart: belt.loopX, pitch: belt.pitch, slots: belt.slots, cross: belt.y };
+  return { orientation: 'horizontal', rect: belt.rect, loopStart: belt.loopX, pitch: belt.pitch, slots: belt.slots, cross: belt.y, slotSize: belt.pitch };
 }
 
 /** Builds a shelf's slots from its top-left corner and the slot size (shared by every layout). */
@@ -201,6 +206,16 @@ export function shelfLayoutAt(x: number, y: number, s: number, slotsPerLayer = 3
     slots: Array.from({ length: slotsPerLayer }, (_, j) => ({ x: rect.x + (SIDE_PAD + j + 0.5) * s, y: slotY })),
     slotHeight: aspect * s,
   };
+}
+
+/**
+ * A slot's whole cell: a slot wide and the slot's height tall, standing on the shelf's base (for outlines of a
+ * slot: drop targets, the tutorial).
+ */
+export function slotRect(shelf: ShelfLayout, slot: number, slotSize: number): Rect {
+  const at = shelf.slots[slot]!;
+  const base = at.y + slotSize / 2;
+  return { x: at.x - slotSize / 2, y: base - shelf.slotHeight, width: slotSize, height: shelf.slotHeight };
 }
 
 /** A shelf whose centre is at (cx, cy): how shelves riding a track are placed. */
@@ -250,14 +265,14 @@ export function trackCarrierAt(track: TrackLayout, offsets: readonly (number | n
   return best;
 }
 
-/** Strip height in slots: a full-size item plus room for the rail around it. */
-export const BELT_STRIP = 1.3;
+/** Strip height in slots: a full-height slot plus room for the rail around it. */
+export const beltStripUnits = (): number => aspect + 0.3;
 /** The belt may run closer to the screen edges than the shelves. */
 const BELT_SIDE_MARGIN = 8;
 
 /** The belt pitch is the shelves' slot size, so items keep their size when they move between the two. */
 function layoutBelt(width: number, height: number, slots: number, pitch: number): BeltLayout {
-  const stripHeight = pitch * BELT_STRIP;
+  const stripHeight = pitch * beltStripUnits();
   const loopWidth = slots * pitch;
   const loopX = (width - loopWidth) / 2;
   const rect: Rect = { x: loopX, y: height - MARGIN - stripHeight, width: loopWidth, height: stripHeight };

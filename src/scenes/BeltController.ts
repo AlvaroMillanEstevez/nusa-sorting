@@ -13,7 +13,9 @@ import {
   stackOf,
 } from '../core';
 import type { SoundService } from '../services/SoundService';
-import { BACK_SCALE, isOnTrack, SILHOUETTE_ALPHA, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
+import { BACK_SCALE, isOnTrack, SILHOUETTE_ALPHA, slotAspect, trackCarrierAt, trackPose, type BeltPose, type BoardLayout } from '../ui/boardLayout';
+import { placeItem, typeFit } from '../ui/itemFit';
+import { ITEM_FILL } from '../ui/levelLayout';
 import { BeltView, DEPTH_BELT_ITEM } from './BeltView';
 import { pointerAt, viewSize } from './view';
 
@@ -136,10 +138,13 @@ export class BeltController {
             if (sprite.visible) sprite.setVisible(false);
             continue;
           }
-          // The second item sits under the top one as a silhouette, like a shelf's back layer.
+          // The second item sits under the top one as a silhouette, like a shelf's back layer. Items stand on
+          // their carrier like on a shelf's base, and tall ones grow the same way (see itemFit).
+          const fit = typeFit(sprite.getData('type') as string, slotAspect());
+          const depthScale = depth === 0 ? 1 : BACK_SCALE;
           let x = pose.x;
-          let y = pose.y;
-          let itemScale = depth === 0 ? scale : scale * BACK_SCALE;
+          let y = placeItem(pose.y, layout.slotSize, ITEM_FILL, fit, depthScale).y;
+          let itemScale = scale * fit.scale * depthScale;
           let alpha = depth === 0 ? pose.alpha : pose.alpha * SILHOUETTE_ALPHA;
           sprite.setVisible(true).setDepth(DEPTH_BELT_ITEM - depth);
           this.host.setLook(sprite, depth === 0);
@@ -156,7 +161,7 @@ export class BeltController {
             sprite.setDepth(k >= 1 ? DEPTH_BELT_ITEM : DEPTH_HELD);
           } else if (depth === 0 && promotedAt !== undefined) {
             const k = Phaser.Math.Easing.Quadratic.Out(Math.min(1, (now - promotedAt) / PROMOTE_MS));
-            itemScale = Phaser.Math.Linear(scale * BACK_SCALE, itemScale, k);
+            itemScale = Phaser.Math.Linear(scale * fit.scale * BACK_SCALE, itemScale, k);
             alpha = Phaser.Math.Linear(pose.alpha * SILHOUETTE_ALPHA, alpha, k);
             if (k >= 1) this.promoting.delete(id);
           }
@@ -205,7 +210,8 @@ export class BeltController {
       this.host.scene.tweens.killTweensOf(sprite);
       this.host.setLook(sprite, true);
       sprite.setDepth(DEPTH_HELD).setAlpha(1).setVisible(true).setPosition(at.x, at.y);
-      this.host.scene.tweens.add({ targets: sprite, scale: this.itemScale() * HELD_SCALE, duration: 80, ease: 'Quad.easeOut' });
+      const fit = typeFit(sprite.getData('type') as string, slotAspect()).scale;
+      this.host.scene.tweens.add({ targets: sprite, scale: this.itemScale() * fit * HELD_SCALE, duration: 80, ease: 'Quad.easeOut' });
     }
     return true;
   }

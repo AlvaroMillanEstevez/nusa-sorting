@@ -8,10 +8,23 @@ export const ITEM_FILL = 0.95;
 /** Smallest item, in CSS px, that is still comfortable to grab with a finger. */
 export const MIN_ITEM_PX = 36;
 
-/** Screens every level must fit with items of at least MIN_ITEM_PX: a phone in portrait and in landscape. */
-export const CHECKED_SCREENS: readonly (readonly [number, number])[] = [
-  [390, 844],
-  [844, 390],
+/** A screen every level must fit, and the smallest item allowed on it. */
+export interface CheckedScreen {
+  readonly width: number;
+  readonly height: number;
+  readonly minItem: number;
+  readonly name: string;
+}
+
+/**
+ * Screens every level must fit: a phone in portrait, and the window CrazyGames shows games in on a computer
+ * (its requirements cite 1080 x 607), both with items of at least MIN_ITEM_PX. A phone held sideways is rare,
+ * so it may go a little smaller: 32 px still keeps five shelves per column within reach.
+ */
+export const CHECKED_SCREENS: readonly CheckedScreen[] = [
+  { width: 390, height: 844, minItem: MIN_ITEM_PX, name: 'phone portrait' },
+  { width: 1080, height: 607, minItem: MIN_ITEM_PX, name: 'desktop window' },
+  { width: 844, height: 390, minItem: 32, name: 'phone landscape' },
 ];
 
 /**
@@ -40,17 +53,15 @@ export function itemSize(layout: BoardLayout): number {
 }
 
 /**
- * Rejects a level whose items would be smaller than MIN_ITEM_PX on a phone in portrait or landscape.
+ * Rejects a level whose items would be smaller than allowed on any of the CHECKED_SCREENS.
  * Kept in the UI layer because it depends on how boards are drawn, not on the rules.
  */
 export function validateLevelLayout(level: LevelDefinition): void {
   const state = createGame(level);
-  for (const [width, height] of CHECKED_SCREENS) {
+  for (const { width, height, minItem } of CHECKED_SCREENS) {
     const size = itemSize(layoutForLevel(level, state, width, height));
-    if (size < MIN_ITEM_PX) {
-      throw new Error(
-        `${level.id}: items would be ${size.toFixed(1)} px on a ${width}x${height} screen (minimum ${MIN_ITEM_PX} px)`,
-      );
+    if (size < minItem) {
+      throw new Error(`${level.id}: items would be ${size.toFixed(1)} px on a ${width}x${height} screen (minimum ${minItem} px)`);
     }
   }
 }

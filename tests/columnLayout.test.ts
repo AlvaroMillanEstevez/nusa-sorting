@@ -7,6 +7,7 @@ import { demoLevels } from './fixtures/demo-levels';
 const levels = [...gameLevels, ...demoLevels];
 import { computeBoardLayout, trackCarrierAt, trackPose, type Rect } from '../src/ui/boardLayout';
 import { computeColumnLayout, type ColumnSpec } from '../src/ui/columnLayout';
+import { slotAspect } from '../src/ui/boardLayout';
 import { CHECKED_SCREENS, itemSize, layoutForLevel, liveBoard, MIN_ITEM_PX, validateLevelLayout } from '../src/ui/levelLayout';
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -20,7 +21,7 @@ const examples: [string, ColumnSpec[], number, number][] = [
 ];
 
 describe.each(examples)('column layout %s', (_name, columns, shelfCount, trackCount) => {
-  describe.each(CHECKED_SCREENS.map(([w, h]) => [`${w}x${h}`, w, h] as const))('on %s', (_screen, width, height) => {
+  describe.each(CHECKED_SCREENS.map(({ width: w, height: h, minItem }) => [`${w}x${h}`, w, h, minItem] as const))('on %s', (_screen, width, height, minItem) => {
     const layout = computeColumnLayout(width, height, columns, shelfCount, trackCount);
     const rects = [...layout.shelves.map((s) => s.rect), ...layout.tracks.map((t) => t.rect)];
 
@@ -42,9 +43,11 @@ describe.each(examples)('column layout %s', (_name, columns, shelfCount, trackCo
     });
 
     it('keeps items big enough for a finger, the same size on tracks and shelves', () => {
-      expect(itemSize(layout)).toBeGreaterThanOrEqual(MIN_ITEM_PX);
+      expect(itemSize(layout)).toBeGreaterThanOrEqual(minItem);
       for (const track of layout.tracks) {
-        expect(track.pitch).toBe(layout.slotSize);
+        // Items on a track are as big as on shelves; carriers are a slot's height apart.
+        expect(track.slotSize).toBe(layout.slotSize);
+        expect(track.pitch).toBeCloseTo(layout.slotSize * slotAspect());
         expect(track.rect.height).toBeCloseTo(track.slots * track.pitch);
       }
     });
@@ -96,7 +99,7 @@ describe('layouts per level', () => {
       mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'vertical', speed: 1, carriers: [['C', 'C', 'C'], ...Array<string[]>(11).fill([])] }] }],
       layout: { columns: [{ kind: 'shelves', shelves: [0, 1, 2] }, { kind: 'track', track: 0 }] },
     };
-    expect(() => validateLevelLayout(cramped)).toThrow(/px on a 844x390 screen \(minimum 36 px\)/);
+    expect(() => validateLevelLayout(cramped)).toThrow(/px on a 1080x607 screen \(minimum 36 px\)/);
   });
 });
 
@@ -108,9 +111,9 @@ describe('shelf track columns', () => {
   ];
 
   describe.each(configs)('%s', (_name, columns, shelfCount, trackCount) => {
-    it.each(CHECKED_SCREENS.map(([w, h]) => [`${w}x${h}`, w, h] as const))('fits %s with finger-sized items', (_s, w, h) => {
+    it.each(CHECKED_SCREENS.map(({ width: w, height: h, minItem }) => [`${w}x${h}`, w, h, minItem] as const))('fits %s with finger-sized items', (_s, w, h, minItem) => {
       const layout = computeColumnLayout(w, h, columns, shelfCount, trackCount, true);
-      expect(itemSize(layout)).toBeGreaterThanOrEqual(MIN_ITEM_PX);
+      expect(itemSize(layout)).toBeGreaterThanOrEqual(minItem);
       const track = layout.tracks.find((t) => t.pitch > layout.slotSize)!;
       // The loop of shelves, with half a slot at each end, stays below the HUD and on screen.
       expect(track.rect.y - layout.slotSize / 2).toBeGreaterThanOrEqual(layout.hud.height);

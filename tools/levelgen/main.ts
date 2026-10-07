@@ -1,3 +1,4 @@
+import { CHECKED_SCREENS } from '../../src/ui/levelLayout';
 import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, statRange, type WithArrangements } from './generate';
 import { constName, levelSource } from './format';
 import { RECIPES, recipeFor } from './recipes';
@@ -69,7 +70,7 @@ export function summaryTable(levels: readonly WithArrangements[]): string {
         `casual win ${pct(casual.winRate)} space ${pct(casual.blockedRate + casual.stuckRate)} timeUp ${pct(casual.timeUpRate)} pressure ${pct(casual.pressure)}`,
         `expert win ${pct(expert.winRate)}`,
         `${generated.arrangements.length + 1} arrangements: casual ${range((s) => s.casual.winRate)}, expert ${range((s) => s.expert.winRate)}, pressure ${range((s) => s.casual.pressure)}`,
-        `items ${itemPx.portrait}/${itemPx.landscape}px`,
+        `items ${itemPx.join('/')}px (${CHECKED_SCREENS.map((s) => `${s.width}x${s.height}`).join('/')})`,
       ].join(' | ');
     })
     .join('\n');

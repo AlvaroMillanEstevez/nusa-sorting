@@ -14,7 +14,7 @@ import {
   type MechanicDefinition,
   type TrackDefinition,
 } from '../../src/core';
-import { itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
+import { CHECKED_SCREENS, itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
 import { CASUAL, EXPERT, playMany, rng, simulate, solve, type SimulationStats } from '../simulator';
 import { typesFor } from './plan';
 import type { LevelRecipe } from './recipe';
@@ -35,8 +35,8 @@ export interface GeneratedLevel {
   /** Which candidate of the seed's sequence passed. */
   readonly attempt: number;
   readonly stats: LevelStats;
-  /** Item size in px on a phone in portrait and in landscape. */
-  readonly itemPx: { readonly portrait: number; readonly landscape: number };
+  /** Item size in px on each of the CHECKED_SCREENS. */
+  readonly itemPx: readonly number[];
 }
 
 type Random = () => number;
@@ -431,10 +431,9 @@ function retime(recipe: LevelRecipe, seed: number, attempt: number): GeneratedLe
   return { level, recipe, seed, attempt, stats: levelStats(level), itemPx: itemPx(level) };
 }
 
-export function itemPx(level: LevelDefinition): { portrait: number; landscape: number } {
+export function itemPx(level: LevelDefinition): readonly number[] {
   const state = createGame(level);
-  const at = (w: number, h: number) => Math.round(itemSize(layoutForLevel(level, state, w, h)) * 10) / 10;
-  return { portrait: at(390, 844), landscape: at(844, 390) };
+  return CHECKED_SCREENS.map(({ width, height }) => Math.round(itemSize(layoutForLevel(level, state, width, height)) * 10) / 10);
 }
 
 

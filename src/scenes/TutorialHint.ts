@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import type { ShelfMove } from '../core';
-import type { BoardLayout } from '../ui/boardLayout';
+import { slotRect, type BoardLayout } from '../ui/boardLayout';
 import { theme } from '../ui/theme';
 import { addSvgTexture } from './svgTexture';
 import { RENDER_RATIO } from './view';
@@ -168,11 +168,16 @@ export class TutorialHint {
     // Outlines on the item to move and on its destination.
     const g = this.marks.clear().setVisible(true).setAlpha(1);
     const slots = this.slots();
-    if (slots) {
+    const move = shown.move;
+    if (slots && move) {
       const color = Phaser.Display.Color.HexStringToColor(theme.comboColor).color;
-      const size = s * 0.98;
       g.lineStyle(Math.max(3, s * 0.08), color, 1);
-      for (const at of [slots.from, slots.to]) g.strokeRoundedRect(at.x - size / 2, at.y - size / 2, size, size, s * 0.16);
+      // Each outline takes the whole slot, as tall as it is.
+      for (const at of [move.from, move.to]) {
+        const cell = slotRect(board.shelves[at.shelf]!, at.slot, s);
+        const inset = s * 0.01;
+        g.strokeRoundedRect(cell.x + inset, cell.y + inset, cell.width - inset * 2, cell.height - inset * 2, s * 0.16);
+      }
     }
 
     // The text: in the gap above the board if it fits there, else at the screen edge farthest from the move.

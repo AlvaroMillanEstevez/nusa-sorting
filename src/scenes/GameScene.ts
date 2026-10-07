@@ -38,6 +38,7 @@ import {
   nearestSlot,
   shelfAt,
   slotAspect,
+  slotRect,
   boundsAround,
   type BoardLayout,
 } from '../ui/boardLayout';
@@ -46,8 +47,7 @@ import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/leve
 import { theme } from '../ui/theme';
 import { themeLook } from '../ui/themeLook';
 import { themeById, type ThemeId } from '../data/themes';
-import { parseItemType } from '../data/itemCatalog';
-import { itemFit, placeItem } from '../ui/itemFit';
+import { placeItem, typeFit } from '../ui/itemFit';
 import { CRITICAL_TIME_MS, timeStage, type TimeStage } from '../ui/timeWarning';
 import { art, useShelfTrim } from './art/ArtSet';
 import { BakedLayer } from './art/BakedLayer';
@@ -332,11 +332,12 @@ export class GameScene extends Phaser.Scene {
     const backHome = from !== null && from.shelf === target.shelf && from.slot === target.slot;
     if (backHome || itemAt(this.state, target) || isSlotBlocked(this.state, target.shelf, target.slot)) return;
     if (isShelfLocked(this.state, target.shelf)) return;
-    const slot = this.layout.shelves[target.shelf]!.slots[target.slot]!;
     const s = this.layout.slotSize;
-    const size = s * 0.96;
+    // The whole slot, as tall as it is.
+    const cell = slotRect(this.layout.shelves[target.shelf]!, target.slot, s);
+    const inset = s * 0.02;
     const color = Phaser.Display.Color.HexStringToColor(theme.comboColor).color;
-    g.lineStyle(Math.max(3, s * 0.07), color, 1).strokeRoundedRect(slot.x - size / 2, slot.y - size / 2, size, size, s * 0.14);
+    g.lineStyle(Math.max(3, s * 0.07), color, 1).strokeRoundedRect(cell.x + inset, cell.y + inset, cell.width - inset * 2, cell.height - inset * 2, s * 0.14);
   }
 
   // ---------------------------------------------------------------- level lifecycle
@@ -583,7 +584,7 @@ export class GameScene extends Phaser.Scene {
     const slot = shelf.slots[pos.slot]!;
     // In square slots (the game) every item is centred in its slot; taller test slots rest it on the base.
     const type = itemAt(this.state, pos)?.type;
-    const fit = itemFit(type ? (parseItemType(type)?.kind.id ?? type) : '', slotAspect());
+    const fit = typeFit(type ?? '', slotAspect());
     const place = (scale: number) => ({ y: placeItem(slot.y, s, ITEM_FILL, fit, scale).y, scale: this.baseScale() * fit.scale * scale });
 
     if (pos.layer === 0) {
@@ -718,7 +719,9 @@ export class GameScene extends Phaser.Scene {
     // Lift: the item grows a little and comes to the front while held.
     this.tweens.killTweensOf(sprite);
     sprite.setDepth(DEPTH_DRAG);
-    this.tweens.add({ targets: sprite, scale: this.baseScale() * PICKUP_SCALE, duration: PICKUP_MS, ease: 'Quad.easeOut' });
+    // Tall items keep their size in the hand: only the pickup scale is added.
+    const fit = typeFit(sprite.getData('type') as string, slotAspect()).scale;
+    this.tweens.add({ targets: sprite, scale: this.baseScale() * fit * PICKUP_SCALE, duration: PICKUP_MS, ease: 'Quad.easeOut' });
     this.sfx.play('pick');
     return true;
   }

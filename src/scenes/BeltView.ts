@@ -66,7 +66,7 @@ export class BeltView {
     // Rollers and poles reach a little beyond each track's area.
     const bounds = boundsAround(
       layouts.map((layout) => layout.rect),
-      Math.max(0, ...layouts.map((layout) => layout.pitch * 0.6)),
+      Math.max(0, ...layouts.map((layout) => layout.slotSize * 0.6)),
     );
     // Rails sit under the carriers and rollers over them, so they are two layers drawn together.
     this.rails.draw(bounds, (rails) =>
@@ -78,9 +78,9 @@ export class BeltView {
       ),
     );
     layouts.forEach((layout, t) => {
-      const plateScale = (layout.pitch * 0.9) / this.plate.size;
+      const plateScale = (layout.slotSize * 0.9) / this.plate.size;
       for (const plate of this.plates[t] ?? []) plate.setScale(plateScale);
-      for (const pip of this.pips[t] ?? []) pip.setScale((layout.pitch * 0.42) / (MAX_PIPS * 16));
+      for (const pip of this.pips[t] ?? []) pip.setScale((layout.slotSize * 0.42) / (MAX_PIPS * 16));
     });
   }
 
@@ -103,7 +103,7 @@ export class BeltView {
           if (pip.texture.key !== key) pip.setTexture(key);
           pip
             .setVisible(true)
-            .setPosition(pose.x + layout.pitch * 0.22, pose.y + layout.pitch * 0.36)
+            .setPosition(pose.x + layout.slotSize * 0.22, pose.y + layout.slotSize * 0.36)
             .setAlpha(pose.alpha);
         } else if (pip.visible) {
           pip.setVisible(false);

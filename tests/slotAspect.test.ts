@@ -2,15 +2,20 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ITEM_KINDS } from '../src/data/itemCatalog';
 import { createGame } from '../src/core';
 import { levels } from '../src/data/levels';
-import { setSlotAspect, shelfHeightUnits, shelfLayoutAt, slotAspect } from '../src/ui/boardLayout';
+import { setSlotAspect, shelfHeightUnits, shelfLayoutAt, SLOT_ASPECT, slotAspect, slotRect } from '../src/ui/boardLayout';
 import { BASELINE, ITEM_BOUNDS, itemFit, placeItem } from '../src/ui/itemFit';
 import { itemSize, layoutForLevel, MIN_ITEM_PX } from '../src/ui/levelLayout';
 
-afterEach(() => setSlotAspect(1));
+afterEach(() => setSlotAspect(SLOT_ASPECT));
 
 describe('slot aspect', () => {
-  it('is square by default, so the game looks exactly as before', () => {
-    expect(slotAspect()).toBe(1);
+  it('is 1.2 by default', () => {
+    expect(SLOT_ASPECT).toBe(1.2);
+    expect(slotAspect()).toBe(1.2);
+  });
+
+  it('with square slots, places items exactly as the square game did', () => {
+    setSlotAspect(1);
     const shelf = shelfLayoutAt(0, 0, 100);
     expect(shelf.slotHeight).toBe(100);
     expect(shelf.slots[0]!.y).toBeCloseTo(58);
@@ -25,6 +30,8 @@ describe('slot aspect', () => {
     expect(shelf.slotHeight).toBeCloseTo(120);
     // The base (top of the front board) is at y = 8 + 120; a square item stands on it.
     expect(shelf.slots[0]!.y + 50).toBeCloseTo(128);
+    // The whole slot, for outlines: a slot wide, as tall as the slot, standing on the base.
+    expect(slotRect(shelf, 1, 100)).toEqual({ x: 105, y: expect.closeTo(8, 5), width: 100, height: expect.closeTo(120, 5) });
   });
 
   it('keeps the value between 1 and 1.6', () => {
@@ -69,7 +76,6 @@ describe('items in tall slots', () => {
   });
 
   it('keeps items big enough on phones in every three-column level with slots 1.2 tall', () => {
-    setSlotAspect(1.2);
     for (const level of levels.filter((l) => (l.layout?.columns.length ?? 0) === 3)) {
       for (const [w, h] of [
         [390, 844],
