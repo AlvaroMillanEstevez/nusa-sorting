@@ -31,11 +31,11 @@ describe('t', () => {
 
   it('fills in parameters and leaves unknown placeholders alone', () => {
     setLocale('en');
-    expect(t('hud.level', { n: 3 })).toBe('Level 3');
-    expect(t('result.won.timeLeft', { time: '0:42' })).toBe('Time left: 0:42');
-    expect(t('hud.level')).toBe('Level {n}');
+    expect(t('result.best', { score: '1,250' })).toBe('Best: 1,250');
+    expect(t('shelf.locked', { n: 2 })).toBe('2 more');
+    expect(t('shelf.locked')).toBe('{n} more');
     setLocale('id');
-    expect(t('result.won.timeLeft', { time: '0:42' })).toBe('Sisa waktu: 0:42');
+    expect(t('result.best', { score: '1.250' })).toBe('Terbaik: 1.250');
   });
 
   it('uses the same placeholders in every catalog', () => {

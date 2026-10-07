@@ -2,10 +2,10 @@
 
 Esta guía es la referencia de toda pantalla de interfaz: HUD, paneles, lista de niveles, transiciones y las que vienen (monedas, tienda, potenciadores). Todo valor sale de los **tokens** de `src/ui/design/tokens.ts` y todo componente del **kit** de `src/scenes/kit/`. Una pantalla nueva no elige colores, tamaños ni tiempos por su cuenta.
 
-- Ver el kit: `npm run dev` y abrir `?uikit` (páginas directas: `?uikit=components|hud|victory|icons|slots`, `&vision=deuteranopia|protanopia|grayscale`).
-- Estado: **propuesta**. El juego todavía usa su interfaz antigua (`src/ui/theme.ts`, `Hud`, `ResultOverlay`, `LevelSelectScene`). Cuando Koke elija dirección, esas pantallas se pasan al kit una a una y la otra dirección se borra.
+- Ver el kit: `npm run dev` y abrir `?uikit` (páginas directas: `?uikit=components|icons|slots`, `&vision=deuteranopia|protanopia|grayscale`). Los paneles del juego se abren sin jugar con `?show=pause|confirm|won|lost|levels`; `?lang=id` y `?safeArea=47,0,34,0` sirven para revisar el indonesio y la muesca.
+- Estado: **en uso** desde octubre de 2026 (dirección A). Todo el juego —HUD, menú de pausa, paneles de victoria y derrota, lista de niveles, pantalla de tema, tutorial y textos flotantes— usa los tokens y el kit; el antiguo `src/ui/theme.ts` se borró.
 
-## 1. Auditoría de la interfaz actual (octubre 2026)
+## 1. Auditoría de la interfaz anterior (octubre 2026, antes del kit)
 
 | Elemento | Qué lo hace parecer anticuado |
 |---|---|
@@ -78,6 +78,7 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
 | Panel / modal | `KitPanel`, `KitModal` | El modal atenúa el tablero, se traga la entrada y entra con `popIn()`. |
 | Interruptor | `KitToggle` | Encendido y apagado se distinguen por el lado del botón y por la marca ✓/✗. |
 | Barra de progreso | `KitProgressBar` | Siempre con su valor escrito al lado. |
+| Estrellas | `KitStars` | Tres estrellas: conseguidas rellenas, pendientes huecas con borde claro. `fill()` las rellena una a una con un rebote y una llamada por estrella (su sonido). |
 
 **Estados**: *normal*; *pulsado* (escala 0,95, se hunde en el labio, y al soltar un pequeño rebote a 1,04); *desactivado* (colores apagados hacia el color del pozo, etiqueta al 55 %, sin labio, sin sombra y sin entrada).
 **Área de toque**: nunca menos de 44 × 44 px, aunque el dibujo sea menor. Un arrastre que recorre más de 10 px no cuenta como pulsación (las listas se pueden desplazar empezando sobre un botón).
@@ -91,20 +92,50 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
 - **Tamaños**: texto mínimo 12 px; lectura, 14; botones de 48 a 56 px de alto; toque mínimo de 44 px.
 - `?uikit&vision=…` aplica la simulación a la interfaz; la galería (`?gallery`) la aplica a los objetos.
 
-## 6. Huecos más altos (prueba)
+## 6. Pantallas del juego
 
-- `?slotAspect=1.2` (solo en desarrollo, de 1 a 1,6) hace los huecos así de altos en cualquier nivel. Con 1 todo queda exactamente como hoy (`setSlotAspect` en `boardLayout.ts`).
-- Los objetos se **apoyan en la base**: los iconos que «flotaban» en su caja (gorro peci, kendang, sate) bajan hasta la misma línea (`ITEM_BOUNDS`, medido rasterizando cada icono).
-- Solo crecen los objetos altos por naturaleza (ancho/alto ≤ 0,85: vaso de té, cometa, globo, farolillo, fuegos artificiales…), **siempre con escala uniforme**, sin pasar del ancho del hueco ni de su altura.
-- Tamaño de objeto en los niveles de 3 columnas (px), huecos cuadrados → 1,2:
-  - **390 × 844**: sin cambios (manda el ancho): 36,5 en la mayoría; 45,3 en 9, 14, 19, 22–24; 59,8 en 15.
-  - **844 × 390** (manda el alto): 70,0 → 61,4 (3–6, 11, 12, 16, 17, 21) · 51,8 → 45,5 (7) · 42,6 → 38,2 (13, 18, 20, 22, 23) · 49,7 → 45,5 (19) · 41,1 → **36,1** (15, en el límite de 36 px) · sin cambio en 9, 10, 14 y 24.
+**HUD** (`src/scenes/Hud.ts`): solo lo esencial. El reloj en el centro de la fila superior, con el botón de pausa a la izquierda y, en los niveles especiales, su distintivo (estrella + «Especial») a la derecha. Puntuación y combo en la segunda fila en vertical, o en la misma fila en horizontal. El combo aparece desde ×2, con la barra de su ventana. El número de nivel no está siempre: ocupa el sitio de la puntuación al empezar («NIVEL 12 · Toca para empezar») hasta el primer toque, y está en el menú de pausa.
 
-## 7. Estilo de los iconos de objetos
+**Menú de pausa** (`PauseMenu.ts`): continuar, reiniciar, salir a la lista de niveles, sonido y modo daltónico, con el número de nivel. Mientras está abierto, el reloj, las cintas y el combo se detienen. Reiniciar y salir piden confirmación si el nivel ya ha empezado. En horizontal, acciones a la izquierda y ajustes a la derecha. En ordenador, Escape o P lo abren y cierran.
+
+**Victoria y derrota** (`ResultOverlay.ts`): la victoria rellena sus estrellas una a una, cada una con su campanada (cada vez más aguda), mientras la puntuación sube; debajo, el bonus por tiempo y el récord. Acciones: siguiente nivel (principal), lista de niveles y repetir (para mejorar estrellas). La derrota dice el motivo y ofrece reintentar.
+
+**Lista de niveles** (`LevelSelectScene.ts`): casillas de madera con el número y las estrellas conseguidas (rellenas o huecas, nunca solo color); las bloqueadas, hundidas y con candado; la actual, con marco claro; las especiales, con una insignia del color de su tema y una estrella. En la cabecera, el total de estrellas.
+
+**Estrellas**: ganar da siempre 1; 2 y 3 dependen de la puntuación, que incluye un bonus de 20 puntos por segundo que sobra. Los umbrales de cada nivel están en sus datos (`stars`) y los calcula el generador: 2 estrellas con la mediana de las victorias del jugador experto simulado y 3 con su percentil 85, sobre todas las distribuciones del nivel.
+
+**Zonas seguras**: la página usa `viewport-fit=cover`; el lienzo ocupa toda la pantalla y la cámara coloca el origen del mundo en la esquina de la zona segura (`safeInsets` en `view.ts`). Layouts, HUD y paneles se calculan para la zona segura; fondos y atenuados cubren la pantalla entera.
+
+## 7. Huecos 1:1,2
+
+Los huecos son 1,2 veces más altos que anchos (`SLOT_ASPECT` en `boardLayout.ts`; `?slotAspect` prueba otros valores).
+- Los objetos se **apoyan en la base**: los iconos que «flotaban» en su caja (gorro peci, kendang, sate) bajan a la misma línea (`ITEM_BOUNDS`, medido rasterizando cada icono).
+- Solo crecen los altos por naturaleza (ancho/alto ≤ 0,85: vaso de té, cometa, globo, farolillo…), **siempre con escala uniforme**, sin pasar del ancho del hueco ni de su altura. Mantienen su tamaño al arrastrarlos.
+- Los contornos de destino y del tutorial cubren el hueco entero.
+- En las cintas, la misma regla: en las verticales los portadores están a la altura de un hueco unos de otros, y la franja de la cinta horizontal crece igual.
+
+**Pantallas validadas** (`CHECKED_SCREENS` en `levelLayout.ts`; el generador rechaza niveles que no cumplan):
+| Pantalla | Mínimo de objeto |
+|---|---|
+| Móvil en vertical, 390 × 844 | 36 px |
+| Ventana de CrazyGames en ordenador, 1080 × 607 | 36 px |
+| Móvil en horizontal, 844 × 390 (poco habitual) | 32 px |
+
+**Estanterías por columna** que caben con esos mínimos (layouts de columnas, sin contar zonas seguras):
+| Forma | 390 × 844 | 1080 × 607 | 844 × 390 |
+|---|---|---|---|
+| 3 columnas de estanterías | 10 | 8 | 5 |
+| 2 columnas de estanterías | 10 | 8 | 5 |
+| estanterías · cinta de 6 · estanterías | 10 | 8 | 5 |
+| Cuadrícula automática (total) | 20 | 24+ | 24+ |
+
+El límite real de los próximos niveles es el móvil en horizontal: **5 estanterías por columna**. Con 6 bajaría a 30 px.
+
+## 8. Estilo de los iconos de objetos
 
 Se probó un estilo más ilustrado («v3»: colores menos saturados, sombreado de cinco tonos, texturas, sin contorno grueso) con sate, es teh manis y rambután. No aportó una diferencia visible a tamaño de juego y se descartó (octubre de 2026): se quedan los iconos actuales.
 
-## 8. Referencias e ideas aplicables
+## 9. Referencias e ideas aplicables
 
 Lo que hacen bien los juegos bien valorados del género y los casuales premium, traducido a ideas concretas para Nusa Sorting. Son ideas, no copias: ningún diseño, nombre ni recurso de otro juego.
 

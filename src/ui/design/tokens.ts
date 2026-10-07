@@ -209,6 +209,8 @@ export interface Skin {
     readonly lowTime: string;
     readonly criticalTime: string;
   };
+  /** Stars: an earned star is filled; one still to earn is a dark hollow with a light rim (shape, not colour). */
+  readonly star: { readonly filled: string; readonly rim: string; readonly empty: string };
   /** Height of the lip under raised controls, in px (0: flat). */
   readonly lip: number;
   /** Corner radius of buttons as a share of their height (0.5: pills). */
@@ -242,6 +244,7 @@ export const WARUNG: Skin = {
     danger: { face: '#e8604a', lip: '#8a2a1a', light: '#f8a08c', text: '#2a0805' },
   },
   status: { combo: '#ffc95a', lowTime: '#ffc23d', criticalTime: '#ff7a68' },
+  star: { filled: '#ffc93c', rim: '#f0d7b0', empty: '#2e1b0d' },
   lip: 5,
   buttonRound: 0.32,
   panelRadius: 18,

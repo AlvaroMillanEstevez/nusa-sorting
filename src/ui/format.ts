@@ -5,3 +5,8 @@ export function formatTime(ms: number): string {
   const seconds = total % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
+
+/** A score with the thousands separator of the language: 12,450 in English, 12.450 in Indonesian. */
+export function formatScore(score: number, locale: 'en' | 'id'): string {
+  return score.toLocaleString(locale === 'id' ? 'id-ID' : 'en-US');
+}

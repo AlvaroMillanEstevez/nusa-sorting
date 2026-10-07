@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import type { ShelfMove } from '../core';
 import { slotRect, type BoardLayout } from '../ui/boardLayout';
-import { theme } from '../ui/theme';
+import { FONTS, hexNumber, SKIN, TYPE } from '../ui/design/tokens';
 import { addSvgTexture } from './svgTexture';
 import { RENDER_RATIO } from './view';
 
@@ -76,7 +76,7 @@ export class TutorialHint {
     this.hand = scene.add.image(0, 0, '__DEFAULT').setDepth(DEPTH_HAND).setOrigin(TIP.x, TIP.y).setVisible(false);
     this.panel = scene.add.graphics().setDepth(DEPTH_BANNER).setVisible(false);
     this.label = scene.add
-      .text(0, 0, '', { fontFamily: theme.fontFamily, fontStyle: 'bold', color: theme.titleColor, align: 'center' })
+      .text(0, 0, '', { fontFamily: FONTS.display, fontStyle: String(TYPE.button.weight), color: SKIN.text.primary, align: 'center' })
       .setOrigin(0.5)
       .setResolution(RENDER_RATIO)
       .setDepth(DEPTH_BANNER + 1)
@@ -170,7 +170,7 @@ export class TutorialHint {
     const slots = this.slots();
     const move = shown.move;
     if (slots && move) {
-      const color = Phaser.Display.Color.HexStringToColor(theme.comboColor).color;
+      const color = hexNumber(SKIN.status.combo);
       g.lineStyle(Math.max(3, s * 0.08), color, 1);
       // Each outline takes the whole slot, as tall as it is.
       for (const at of [move.from, move.to]) {
@@ -181,7 +181,7 @@ export class TutorialHint {
     }
 
     // The text: in the gap above the board if it fits there, else at the screen edge farthest from the move.
-    const fontSize = Math.round(Math.max(15, Math.min(22, this.width / 22)));
+    const fontSize = Math.round(Math.max(16, Math.min(TYPE.button.size, this.width / 20)));
     this.label.setFontSize(fontSize).setWordWrapWidth(Math.min(this.width - 48, 460)).setText(shown.text).setVisible(true).setAlpha(1);
     const boxW = this.label.width + 28;
     const boxH = this.label.height + 16;
@@ -198,8 +198,10 @@ export class TutorialHint {
     const x = this.width / 2;
     this.label.setPosition(x, y);
     this.panel.clear().setVisible(true).setAlpha(1);
-    this.panel.fillStyle(theme.panelColor, 0.92).fillRoundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 12);
-    this.panel.lineStyle(2, Phaser.Display.Color.HexStringToColor(theme.comboColor).color, 0.9).strokeRoundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 12);
+    // A small wooden sign, like the interface's panels.
+    this.panel.fillStyle(hexNumber(SKIN.surface.border), 1).fillRoundedRect(x - boxW / 2, y - boxH / 2 + 4, boxW, boxH, 12);
+    this.panel.fillStyle(hexNumber(SKIN.surface.fill), 1).fillRoundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 12);
+    this.panel.lineStyle(2, hexNumber(SKIN.status.combo), 0.9).strokeRoundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 12);
     this.animate();
   }
 

@@ -28,15 +28,18 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.
 - `?gallery` — abre la galería de iconos (tamaños reales, variantes, estanterías de madera y simulación de daltonismo y escala de grises) en vez del juego.
-- `?uikit` — abre el kit de interfaz (componentes, maquetas de HUD y victoria en 390×844 y 844×390, iconos y huecos altos). Página directa con `?uikit=components|hud|victory|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
-- `?slotAspect=1.2` — huecos más altos que anchos (de 1 a 1,6) en cualquier nivel, con los objetos apoyados en la base.
+- `?uikit` — abre el kit de interfaz (componentes en todos sus estados, iconos y formas de hueco). Página directa con `?uikit=components|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
+- `?show=pause|confirm|won|lost|levels` — abre ese panel al empezar el nivel, para revisarlo sin jugar (`won` usa una puntuación de 3 estrellas).
+- `?slotAspect=X` — otra proporción de hueco (de 1 a 1,6) en cualquier nivel; el juego usa 1,2.
+- `?safeArea=arriba,dcha,abajo,izda` — simula las zonas seguras de un móvil con muesca, en px (por ejemplo `47,0,34,0` en vertical).
+- `?lang=en|id` — muestra el juego en ese idioma, sea cual sea el del navegador.
 
 ## Estructura
 
 - `src/core` — lógica del juego, TypeScript puro
 - `src/scenes` — escenas de Phaser
-- `src/ui` — utilidades de presentación (layout, tema); `src/ui/design` — tokens del sistema de diseño e iconos de interfaz
-- `src/scenes/kit` — kit de componentes de interfaz en Phaser (botones, píldoras, paneles, interruptor, barra de progreso)
+- `src/ui` — utilidades de presentación (layout); `src/ui/design` — tokens del sistema de diseño e iconos de interfaz
+- `src/scenes/kit` — kit de componentes de interfaz en Phaser (botones, píldoras, paneles, interruptor, barra de progreso, estrellas)
 - `src/assets/fonts` — fuentes de interfaz incluidas en el build (OFL), generadas con `tools/fonts/build_fonts.py`
 - `docs/ui-style.md` — guía de estilo de interfaz
 - `src/services` — fronteras con el exterior (guardado, anuncios, sonido)

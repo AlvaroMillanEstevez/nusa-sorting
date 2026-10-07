@@ -11,7 +11,9 @@ import {
   isSlotBlocked,
   itemAt,
   moveItem,
+  starsFor,
   tick,
+  TIME_BONUS_PER_SECOND,
   triplesToUnlock,
   tutorialMove,
   withArrangement,
@@ -27,7 +29,9 @@ import {
 import { applyBeltOverrides } from '../dev/beltOverrides';
 import { applyTimeScale } from '../dev/timeScale';
 import { parseArrangementParam, parseLevelParam } from '../dev/levelParam';
-import { t, type MessageKey } from '../i18n';
+import { parseShowParam, type ShowParam } from '../dev/uiParams';
+import { formatScore } from '../ui/format';
+import { getLocale, t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import {
@@ -42,9 +46,8 @@ import {
   boundsAround,
   type BoardLayout,
 } from '../ui/boardLayout';
-import { formatTime } from '../ui/format';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
-import { theme } from '../ui/theme';
+import { hexNumber, SKIN } from '../ui/design/tokens';
 import { themeLook } from '../ui/themeLook';
 import { themeById, type ThemeId } from '../data/themes';
 import { placeItem, typeFit } from '../ui/itemFit';
@@ -62,7 +65,9 @@ import { ResultOverlay } from './ResultOverlay';
 import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
 import { TutorialHint } from './TutorialHint';
-import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from './view';
+import { PauseMenu } from './PauseMenu';
+import { kitText } from './kit';
+import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
 
 const SELECTED_LIFT = 0.15;
 const SELECTED_SCALE = 1.12;
@@ -130,6 +135,11 @@ export class GameScene extends Phaser.Scene {
    * meanwhile.
    */
   private tutorialActive = false;
+  private pauseMenu!: PauseMenu;
+  /** The pause menu (or the level list over it) is open: nothing timed moves and the board takes no input. */
+  private paused = false;
+  /** Points the time left added when the level was won (for the victory panel). */
+  private timeBonus = 0;
   /** The current press landed on the theme intro screen: its release is not a tap on the board. */
   private pressOnIntro = false;
   private locks!: LockOverlays;
@@ -184,18 +194,32 @@ export class GameScene extends Phaser.Scene {
       onPlaced: (events) => this.play(events),
       onPick: () => this.select(null),
     });
-    this.hud = new Hud(this, {
-      onRestart: () => this.transitionTo(this.levelIndex),
-      onToggleMute: () => {
-        this.sfx.setMuted(!this.sfx.muted);
-        this.hud.setMuted(this.sfx.muted);
-        // Settings are saved when they change.
-        this.store.setMuted(this.sfx.muted);
+    this.hud = new Hud(this, { onPause: () => this.openPause() });
+    this.pauseMenu = new PauseMenu(this, {
+      onResume: () => this.resume(),
+      onRestart: () => {
+        this.paused = false;
+        this.transitionTo(this.levelIndex);
       },
-      onLevels: () => this.openLevelList(),
+      onLevels: () => {
+        // Leaving a level under way gives it up: back from the list, it starts again.
+        const started = this.state.clockStarted;
+        this.openLevelList(started ? () => this.transitionTo(this.levelIndex) : () => this.resume());
+      },
+      onSound: (on: boolean) => {
+        this.sfx.setMuted(!on);
+        // Settings are saved when they change.
+        this.store.setMuted(!on);
+      },
+      onColorBlind: (on: boolean) => {
+        this.store.setColorBlindMode(on);
+        this.applyColorBlindMode();
+      },
     });
-    this.hud.setMuted(this.sfx.muted);
-    this.overlay = new ResultOverlay(this);
+    this.overlay = new ResultOverlay(this, (effect) => this.sfx.play(effect));
+    // On a computer, Escape (or P) opens and closes the pause menu.
+    this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
+    this.input.keyboard?.on('keydown-P', () => this.togglePause());
     this.decor = new ThemeDecor(this);
     this.themeIntro = new ThemeIntro(this);
     this.tutorial = new TutorialHint(this);
@@ -218,31 +242,97 @@ export class GameScene extends Phaser.Scene {
     const devLevel = import.meta.env.DEV ? parseLevelParam(window.location.search, playList.map((entry) => entry.number)) : null;
     const next = this.store.firstIncomplete(ids);
     this.loadLevel(devLevel ?? next ?? playList.length - 1);
-    if (devLevel === null && next === null) this.openLevelList();
+    if (devLevel === null && next === null) this.openLevelList(() => {});
+    if (import.meta.env.DEV) this.devShow(parseShowParam(window.location.search));
   }
 
-  /** Pauses the game (clock and belt included) and shows the level list on top. */
-  private openLevelList(): void {
+  /** Development only (?show=): opens a panel at once, to review it without playing the level. */
+  private devShow(show: ShowParam | null): void {
+    if (show === 'pause' || show === 'confirm') {
+      this.state = startClock(this.state);
+      this.openPause();
+      if (show === 'confirm') this.pauseMenu.showConfirm('restart');
+    } else if (show === 'levels') {
+      this.openLevelList(() => {});
+    } else if (show === 'won') {
+      const timeLeftMs = this.state.timeLeftMs === null ? null : this.state.timeLeftMs * 0.4;
+      const timeBonus = timeLeftMs === null ? 0 : Math.floor(timeLeftMs / 1000) * TIME_BONUS_PER_SECOND;
+      const score = (this.level.stars?.three ?? 3000) + 50;
+      this.overlay.show({
+        kind: 'won',
+        title: t('result.won.title'),
+        stars: starsFor(score, this.level.stars),
+        score,
+        timeBonus,
+        timeLeftMs,
+        bestLine: t('result.newBest'),
+        newBest: true,
+        primary: { label: t('result.next'), onPress: () => this.transitionTo(this.levelIndex + 1) },
+        levels: () => this.openLevelList(() => {}),
+        replay: () => this.transitionTo(this.levelIndex),
+      });
+    } else if (show === 'lost') {
+      this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), levels: () => this.openLevelList(() => {}) });
+    }
+  }
+
+  /**
+   * Pauses the game and shows the level list on top. `onBack` runs when the player goes back from it without
+   * choosing a level.
+   */
+  private openLevelList(onBack: () => void): void {
     if (this.scene.isPaused()) return;
-    if (this.belt.holding) this.belt.sendBack(false);
-    this.select(null);
+    this.holdBoard();
     const data: LevelSelectData = {
       currentIndex: this.levelIndex,
       onChoose: (index) => {
         this.scene.resume();
+        this.paused = false;
         this.transitionTo(index);
       },
-      onClose: () => this.scene.resume(),
-      onColorBlindModeChanged: () => this.applyColorBlindMode(),
+      onClose: () => {
+        this.scene.resume();
+        onBack();
+      },
     };
     this.scene.launch('LevelSelect', data);
     this.scene.pause();
   }
 
+  /** Drops whatever the player was holding or had selected. */
+  private holdBoard(): void {
+    if (this.belt.holding) this.belt.sendBack(false);
+    this.select(null);
+  }
+
+  /** Opens the pause menu: the clock, tracks and combo stop until it closes. */
+  private openPause(): void {
+    if (this.state.status !== 'playing' || this.overlay.visible || this.pauseMenu.visible || this.themeIntro.visible) return;
+    this.holdBoard();
+    this.paused = true;
+    this.pauseMenu.open({
+      levelNumber: playList[this.levelIndex]!.number,
+      special: isSpecialLevel(this.level),
+      soundOn: !this.sfx.muted,
+      colorBlind: this.store.colorBlindMode,
+      started: this.state.clockStarted,
+    });
+  }
+
+  private resume(): void {
+    this.pauseMenu.close();
+    this.paused = false;
+  }
+
+  private togglePause(): void {
+    if (this.pauseMenu.visible) this.resume();
+    else this.openPause();
+  }
+
   override update(_time: number, delta: number): void {
     this.hud.setWaiting(this.state.status === 'playing' && !this.state.clockStarted);
-    // The tutorial holds the clock (and everything timed) until it is completed.
-    if (this.state.status === 'playing' && !this.tutorialActive) {
+    // The tutorial and the pause menu hold the clock (and everything timed: tracks, the combo window).
+    if (this.state.status === 'playing' && !this.tutorialActive && !this.paused) {
       const result = tick(this.state, delta);
       this.state = result.state;
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
@@ -336,7 +426,7 @@ export class GameScene extends Phaser.Scene {
     // The whole slot, as tall as it is.
     const cell = slotRect(this.layout.shelves[target.shelf]!, target.slot, s);
     const inset = s * 0.02;
-    const color = Phaser.Display.Color.HexStringToColor(theme.comboColor).color;
+    const color = hexNumber(SKIN.status.combo);
     g.lineStyle(Math.max(3, s * 0.07), color, 1).strokeRoundedRect(cell.x + inset, cell.y + inset, cell.width - inset * 2, cell.height - inset * 2, s * 0.14);
   }
 
@@ -367,6 +457,9 @@ export class GameScene extends Phaser.Scene {
     this.dropMark.clear();
     this.lastWarningSecond = null;
     this.overlay.hide();
+    this.pauseMenu.close();
+    this.paused = false;
+    this.timeBonus = 0;
 
     this.levelIndex = index;
     // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor, ?timeScale= the time limit.
@@ -474,40 +567,41 @@ export class GameScene extends Phaser.Scene {
     const score = this.state.combo.score;
     this.selectedId = null;
     this.hud.setCombo(0, 0, 0);
+    this.pauseMenu.close();
     // Saved right away, when the level ends, not when the panel appears.
-    const record = status === 'won' ? this.store.recordWin(this.level.id, score) : null;
-    const levelsButton = { label: t('result.levels'), onPress: () => this.openLevelList() };
+    const stars = starsFor(score, this.level.stars);
+    const record = status === 'won' ? this.store.recordWin(this.level.id, score, stars) : null;
+    // Back from the list, the panel is still there to choose from.
+    const levels = () => this.openLevelList(() => {});
+    const retry = () => this.transitionTo(this.levelIndex);
     this.time.delayedCall(delay, () => {
       if (record) {
         this.sfx.play('win');
         const isLast = this.levelIndex === playList.length - 1;
         const bestLine = record.newBest
           ? t('result.newBest')
-          : record.best !== null && score !== null && record.best > score
-            ? t('result.best', { score: record.best })
+          : record.best !== null && record.best > score
+            ? t('result.best', { score: formatScore(record.best, getLocale()) })
             : null;
-        const lines = [
-          timeLeftMs === null ? null : t('result.won.timeLeft', { time: formatTime(timeLeftMs) }),
-          score === null ? null : t('result.won.score', { score }),
-          bestLine,
-        ];
         this.overlay.show({
+          kind: 'won',
           title: t(isLast ? 'result.allDone.title' : 'result.won.title'),
-          subtitle: lines.filter((line) => line !== null).join('\n'),
+          stars,
+          score,
+          timeBonus: this.timeBonus,
+          timeLeftMs,
+          bestLine,
+          newBest: record.newBest,
           primary: {
             label: t(isLast ? 'result.playAgain' : 'result.next'),
             onPress: () => this.transitionTo(isLast ? 0 : this.levelIndex + 1),
           },
-          secondary: levelsButton,
+          levels,
+          replay: retry,
         });
       } else {
         this.sfx.play('lose');
-        this.overlay.show({
-          title: t(LOSE_TITLES[loseReason ?? 'blocked']),
-          subtitle: t('result.lost.hint'),
-          primary: { label: t('result.retry'), onPress: () => this.transitionTo(this.levelIndex) },
-          secondary: levelsButton,
-        });
+        this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, levels });
       }
     });
   }
@@ -546,10 +640,11 @@ export class GameScene extends Phaser.Scene {
     const { width, height } = viewSize(this);
     this.base = layoutForLevel(this.level, this.state, width, height);
     this.refreshLive();
-    this.hud.layout(width, this.layout.hudRowHeight, this.layout.statusRow, this.layout.statusInline);
-    this.overlay.layout(width, height);
-    this.decor.draw(themeLook(this.level.theme), width, height, this.layout);
-    this.themeIntro.layout(width, height);
+    this.hud.layout(width, this.layout);
+    this.overlay.layout();
+    this.pauseMenu.relayout();
+    this.decor.draw(themeLook(this.level.theme), screenRect(this), this.layout);
+    this.themeIntro.layout();
     this.tutorial.layout(width, height, this.layout, this.baseScale());
     this.locks.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
@@ -676,7 +771,7 @@ export class GameScene extends Phaser.Scene {
     this.dragOccurred = false;
     this.sfx.unlock();
     this.pressOnIntro = this.themeIntro.visible;
-    if (this.overlay.visible || this.pressOnIntro) return;
+    if (this.overlay.visible || this.pressOnIntro || this.paused) return;
     this.tutorial.setTouching(true);
     if (this.belt.onPointerDown(pointer)) return;
     if (this.state.status !== 'playing' || this.shelfPress) return;
@@ -789,7 +884,7 @@ export class GameScene extends Phaser.Scene {
         return;
       }
     }
-    if (this.dragOccurred || this.overlay.visible || this.state.status !== 'playing') return;
+    if (this.dragOccurred || this.overlay.visible || this.paused || this.state.status !== 'playing') return;
     // A press that travelled (e.g. a drag attempt on a locked shelf) is not a tap where it ended.
     if (pointer.getDistance() > this.input.dragDistanceThreshold) return;
     const at = pointerAt(pointer);
@@ -878,6 +973,7 @@ export class GameScene extends Phaser.Scene {
       if (event.kind === 'moved' || event.kind === 'beltItemPlaced') moved = event;
       else if (event.kind === 'layerAdvanced') advancedShelves.add(event.shelf);
       else if (event.kind === 'tripleCleared') cleared.push(...event.itemIds);
+      else if (event.kind === 'timeBonus') this.timeBonus = event.points;
     }
 
     // Snap: the moved item drops into its slot with a slight overshoot.
@@ -944,9 +1040,9 @@ export class GameScene extends Phaser.Scene {
         case 'scoreChanged': {
           const { rect } = this.layout.shelves[event.shelf]!;
           const x = rect.x + rect.width / 2;
-          this.popup(x, rect.y + rect.height * 0.35, t('popup.points', { points: event.delta }), theme.textColor, popAt);
+          this.popup(x, rect.y + rect.height * 0.35, t('popup.points', { points: event.delta }), SKIN.text.primary, popAt);
           if (combo >= 2) {
-            this.popup(x, rect.y, t('popup.combo', { n: combo }), theme.comboColor, popAt + 60);
+            this.popup(x, rect.y, t('popup.combo', { n: combo }), SKIN.status.combo, popAt + 60);
             this.time.delayedCall(popAt, () => {
               this.sfx.play('combo');
               this.hud.pulseCombo();
@@ -963,7 +1059,7 @@ export class GameScene extends Phaser.Scene {
             // The shelf's items become draggable now.
             this.sync(0);
           });
-          this.popup(rect.x + rect.width / 2, rect.y + rect.height / 2, t('popup.unlocked'), theme.titleColor, popAt + 120);
+          this.popup(rect.x + rect.width / 2, rect.y + rect.height / 2, t('popup.unlocked'), SKIN.text.accent, popAt + 120);
           break;
         }
         case 'blockerMoved':
@@ -972,7 +1068,7 @@ export class GameScene extends Phaser.Scene {
         case 'blockerRemoved': {
           const slot = this.layout.shelves[event.at.shelf]!.slots[event.at.slot]!;
           this.blocker.remove(popAt);
-          this.popup(slot.x, slot.y - this.layout.slotSize * 0.6, t('popup.blockerRemoved'), theme.comboColor, popAt);
+          this.popup(slot.x, slot.y - this.layout.slotSize * 0.6, t('popup.blockerRemoved'), SKIN.status.combo, popAt);
           this.time.delayedCall(popAt, () => this.sfx.play('blockerGone'));
           break;
         }
@@ -994,11 +1090,9 @@ export class GameScene extends Phaser.Scene {
 
   /** Floating text that rises and fades. */
   private popup(x: number, y: number, text: string, color: string, delay: number): void {
-    const label = this.add
-      .text(x, y, text, { fontFamily: theme.fontFamily, fontStyle: 'bold', color, stroke: '#1b2a3a', strokeThickness: 4 })
-      .setOrigin(0.5)
-      .setResolution(RENDER_RATIO)
-      .setFontSize(Math.round(Math.max(16, this.layout.slotSize * 0.32)))
+    const label = kitText(this, 'number', text, color, Math.round(Math.max(18, this.layout.slotSize * 0.34)))
+      .setStroke(SKIN.surface.border, 5)
+      .setPosition(x, y)
       .setDepth(DEPTH_POPUP)
       .setAlpha(0);
     this.popups.add(label);

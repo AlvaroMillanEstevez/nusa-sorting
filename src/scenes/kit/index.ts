@@ -4,6 +4,7 @@ export { KitPill, type PillOptions, type PillState } from './Pill';
 export { KitModal, KitPanel, type PanelOptions } from './Panel';
 export { KitToggle } from './Toggle';
 export { KitProgressBar } from './ProgressBar';
+export { KitStars, STAR_STEP_MS } from './Stars';
 export { kitText } from './kitText';
 export { loadUiFonts } from './fonts';
 export { prepareUiIcon, uiIcon, uiIconKey } from './uiIconTextures';

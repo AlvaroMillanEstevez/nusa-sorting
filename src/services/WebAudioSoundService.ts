@@ -36,6 +36,10 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   blockerMove: [{ at: 0, duration: 0.12, freq: 180, freqEnd: 320, wave: 'square', gain: 0.06 }],
   beltPick: [{ at: 0, duration: 0.05, freq: 520, freqEnd: 1040, wave: 'square', gain: 0.07 }, note(0.04, 1320, 0.05, 'sine', 0.12)],
   blockerGone: [{ at: 0, duration: 0.3, freq: 300, freqEnd: 1200, wave: 'triangle', gain: 0.2 }, note(0.25, 1600, 0.2, 'sine', 0.1)],
+  // A bright chime per star, each a step higher (a major arpeggio), with a soft octave sparkle.
+  star1: [note(0, 784, 0.16, 'triangle', 0.24), note(0.02, 1568, 0.12, 'sine', 0.07)],
+  star2: [note(0, 988, 0.16, 'triangle', 0.24), note(0.02, 1976, 0.12, 'sine', 0.07)],
+  star3: [note(0, 1175, 0.24, 'triangle', 0.26), note(0.02, 2349, 0.18, 'sine', 0.08), note(0.12, 1568, 0.2, 'sine', 0.06)],
 };
 
 export class WebAudioSoundService implements SoundService {

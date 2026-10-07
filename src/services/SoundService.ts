@@ -12,7 +12,11 @@ export type SoundEffect =
   | 'unlock'
   | 'blockerMove'
   | 'blockerGone'
-  | 'beltPick';
+  | 'beltPick'
+  /** Each star filling in on the victory panel, rising: the first, second and third. */
+  | 'star1'
+  | 'star2'
+  | 'star3';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {

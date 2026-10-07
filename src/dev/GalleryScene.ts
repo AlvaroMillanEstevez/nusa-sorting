@@ -7,7 +7,7 @@ import { mapWood } from '../ui/art/wood';
 import { simulateSvg, simulateVision, type Vision } from '../ui/icons/color';
 import { renderItemSvg } from '../ui/icons/icons';
 import { ITEM_FILL } from '../ui/levelLayout';
-import { theme } from '../ui/theme';
+import { FONTS, SKIN } from '../ui/design/tokens';
 import { makeWoodArt } from '../scenes/art/woodArt';
 import type { ArtSet } from '../scenes/art/ArtSet';
 import { addSvgTexture } from '../scenes/svgTexture';
@@ -80,7 +80,7 @@ export class GalleryScene extends Phaser.Scene {
 
   create(): void {
     fitCamera(this);
-    this.cameras.main.setBackgroundColor(theme.background);
+    this.cameras.main.setBackgroundColor(SKIN.backdrop[1]);
     this.content = this.add.container(0, 0);
     this.header = this.add.container(0, 0).setDepth(10);
 
@@ -163,9 +163,9 @@ export class GalleryScene extends Phaser.Scene {
 
     let y = PAD;
     for (const section of this.sections()) {
-      this.content.add(this.label(PAD, y, section.title, 20, theme.titleColor));
+      this.content.add(this.label(PAD, y, section.title, 20, SKIN.text.accent));
       y += 34;
-      this.content.add(this.label(PAD, y, section.shelvesLabel, 14, theme.textColor));
+      this.content.add(this.label(PAD, y, section.shelvesLabel, 14, SKIN.text.primary));
       y = this.drawTogether(section.shelves, y + 24, width) + GAP * 2;
 
       // Cards: the kind's name, then one shelf per size with its three variants.
@@ -207,7 +207,7 @@ export class GalleryScene extends Phaser.Scene {
           this.art.drawLockVeil(veil, shelf.rect.width, shelf.rect.height, s);
           this.content.add(veil);
           this.content.add(
-            this.label(veil.x - s * 0.12, veil.y, t('shelf.locked', { n: 2 }), Math.round(s * 0.3), theme.textColor).setOrigin(0, 0.5),
+            this.label(veil.x - s * 0.12, veil.y, t('shelf.locked', { n: 2 }), Math.round(s * 0.3), SKIN.text.primary).setOrigin(0, 0.5),
           );
         } else if (type) {
           this.content.add(this.icon(type, TOGETHER_PX, at.x, at.y));
@@ -219,7 +219,7 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private drawCard(kind: ItemKind, x: number, top: number): number {
-    this.content.add(this.label(x, top, kind.name[getLocale()], 15, theme.textColor));
+    this.content.add(this.label(x, top, kind.name[getLocale()], 15, SKIN.text.primary));
     let y = top + 22;
     for (const px of SIZES) {
       const s = px / ITEM_FILL;
@@ -227,7 +227,7 @@ export class GalleryScene extends Phaser.Scene {
       const g = this.add.graphics();
       this.art.drawShelf(g, shelf, s);
       this.content.add(g);
-      this.content.add(this.label(x, shelf.slots[0]!.y - 8, t('gallery.px', { n: px }), 12, theme.textColor));
+      this.content.add(this.label(x, shelf.slots[0]!.y - 8, t('gallery.px', { n: px }), 12, SKIN.text.primary));
       VARIANTS.forEach((variant, i) => {
         const slot = shelf.slots[i]!;
         this.content.add(this.icon(itemTypeId(kind.id, variant), px, slot.x, slot.y));
@@ -243,7 +243,7 @@ export class GalleryScene extends Phaser.Scene {
 
   private label(x: number, y: number, text: string, size: number, color: string): Phaser.GameObjects.Text {
     return this.add
-      .text(x, y, text, { fontFamily: theme.fontFamily, fontStyle: 'bold', fontSize: `${size}px`, color })
+      .text(x, y, text, { fontFamily: FONTS.text, fontStyle: 'bold', fontSize: `${size}px`, color })
       .setResolution(RENDER_RATIO);
   }
 
@@ -251,9 +251,9 @@ export class GalleryScene extends Phaser.Scene {
   private drawHeader(loading: boolean): void {
     const { width } = viewSize(this);
     this.header.removeAll(true);
-    const background = this.add.rectangle(0, 0, width, 1, theme.panelColor).setOrigin(0);
+    const background = this.add.rectangle(0, 0, width, 1, 0x2e1b0d).setOrigin(0);
     this.header.add(background);
-    this.header.add(this.label(PAD, 12, loading ? t('gallery.loading') : t('gallery.title'), 20, theme.titleColor));
+    this.header.add(this.label(PAD, 12, loading ? t('gallery.loading') : t('gallery.title'), 20, SKIN.text.accent));
     let x = PAD;
     let y = 48;
     const marksLabel = t('settings.colorBlind', { state: t(this.marks ? 'settings.on' : 'settings.off') });
@@ -261,11 +261,11 @@ export class GalleryScene extends Phaser.Scene {
       const active = vision === this.vision || (vision === 'marks' && this.marks);
       const button = this.add
         .text(0, 0, vision === 'marks' ? marksLabel : t(`gallery.vision.${vision}` as MessageKey), {
-          fontFamily: theme.fontFamily,
+          fontFamily: FONTS.text,
           fontStyle: 'bold',
           fontSize: '14px',
-          color: theme.textColor,
-          backgroundColor: active ? theme.accentButtonColor : theme.buttonColor,
+          color: SKIN.text.primary,
+          backgroundColor: active ? SKIN.fills.primary.face : SKIN.surface.fill,
           padding: { x: 10, y: 7 },
         })
         .setResolution(RENDER_RATIO)

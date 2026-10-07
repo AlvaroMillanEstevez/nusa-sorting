@@ -1,26 +1,26 @@
-import * as Phaser from 'phaser';
+import type * as Phaser from 'phaser';
 import { ITEM_KINDS } from '../data/itemCatalog';
 import type { ThemeId } from '../data/themes';
 import { getLocale, t, textIn } from '../i18n';
+import { hexNumber, SKIN, SPACE } from '../ui/design/tokens';
 import type { ThemeLook } from '../ui/themeLook';
-import { theme as colours } from '../ui/theme';
 import { itemTextureKey } from './itemTextures';
-import { RENDER_RATIO } from './view';
+import { KitButton, KitModal, kitText } from './kit';
+import { screenRect, viewSize } from './view';
 
 /** Over the board and the HUD. */
 const DEPTH_INTRO = 320;
 const ICON_PX = 52;
 
 /**
- * The screen shown the first time a player enters a themed level: the theme's name (in the current language,
- * with the other one under it) and the objects it brings. Closes on a tap; the game's clock keeps waiting.
+ * The panel shown the first time a player enters a themed level: the theme's name (in the current language,
+ * with the other one under it), a band in its colours and the objects it brings. Closes with its button; the
+ * game's clock keeps waiting.
  */
 export class ThemeIntro {
-  private parts: Phaser.GameObjects.GameObject[] = [];
+  private modal: KitModal | null = null;
   private onClose: (() => void) | null = null;
   private shown: { theme: ThemeId; look: ThemeLook; marks: boolean } | null = null;
-  private width = 0;
-  private height = 0;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -32,22 +32,19 @@ export class ThemeIntro {
     this.shown = { theme, look, marks };
     this.onClose = onClose;
     this.build();
-    for (const part of this.parts) (part as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(0);
-    this.scene.tweens.add({ targets: this.parts, alpha: 1, duration: 220 });
+    this.modal?.popIn();
   }
 
-  layout(width: number, height: number): void {
-    this.width = width;
-    this.height = height;
+  layout(): void {
     if (this.shown) this.build();
   }
 
-  /** Drops the screen without calling back (e.g. another level starts). */
+  /** Drops the panel without calling back (e.g. another level starts). */
   clear(): void {
     this.shown = null;
     this.onClose = null;
-    for (const part of this.parts) part.destroy();
-    this.parts = [];
+    this.modal?.destroy();
+    this.modal = null;
   }
 
   private close(): void {
@@ -57,52 +54,55 @@ export class ThemeIntro {
   }
 
   private build(): void {
-    for (const part of this.parts) part.destroy();
-    this.parts = [];
+    this.modal?.destroy();
     const shown = this.shown;
     if (!shown) return;
-    const { width, height } = this;
-    const add = <T extends Phaser.GameObjects.GameObject>(part: T): T => {
-      (part as unknown as Phaser.GameObjects.Components.Depth).setDepth(DEPTH_INTRO);
-      this.parts.push(part);
-      return part;
-    };
-    const accent = Phaser.Display.Color.HexStringToColor(shown.look.accent).color;
-    // The dim catches every tap: one closes the screen, none reaches the board.
-    const dim = add(this.scene.add.rectangle(0, 0, width, height, colours.overlayDim, 0.82).setOrigin(0).setInteractive());
-    dim.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.close());
-
+    const screen = screenRect(this.scene);
+    const safe = viewSize(this.scene);
     const kinds = ITEM_KINDS.filter((k) => k.theme === shown.theme);
-    const columns = Math.min(kinds.length, Math.max(3, Math.floor((Math.min(width, 520) - 48) / (ICON_PX + 14))));
+    const panelW = Math.min(safe.width - SPACE.s * 2, 440);
+    const columns = Math.min(kinds.length, Math.max(3, Math.floor((panelW - SPACE.l * 2 + 12) / (ICON_PX + 12))));
     const rows = Math.ceil(kinds.length / columns);
-    const panelW = Math.min(width - 32, 520);
-    const panelH = 190 + rows * (ICON_PX + 14);
-    const cx = width / 2;
-    const top = Math.max(16, height / 2 - panelH / 2);
-    const panel = add(this.scene.add.graphics());
-    panel.fillStyle(colours.panelColor, 1).fillRoundedRect(cx - panelW / 2, top, panelW, panelH, 18);
-    panel.lineStyle(3, accent, 1).strokeRoundedRect(cx - panelW / 2, top, panelW, panelH, 18);
-
-    const text = (y: number, value: string, size: number, color: string) =>
-      add(
-        this.scene.add
-          .text(cx, y, value, { fontFamily: colours.fontFamily, fontStyle: 'bold', fontSize: `${size}px`, color, align: 'center' })
-          .setOrigin(0.5)
-          .setResolution(RENDER_RATIO),
-      );
     const key = `theme.${shown.theme}` as const;
     const other = getLocale() === 'en' ? 'id' : 'en';
-    text(top + 40, t(key), 30, shown.look.accent);
-    if (textIn(other, key) !== t(key)) text(top + 72, textIn(other, key), 18, colours.textColor);
-    text(top + 108, t('themeIntro.newItems'), 16, colours.textColor);
-
-    const gridW = columns * (ICON_PX + 14) - 14;
-    kinds.forEach((kind, i) => {
-      const x = cx - gridW / 2 + (i % columns) * (ICON_PX + 14) + ICON_PX / 2;
-      const y = top + 140 + Math.floor(i / columns) * (ICON_PX + 14) + ICON_PX / 2;
-      const key = itemTextureKey(kind.id, shown.marks);
-      if (this.scene.textures.exists(key)) add(this.scene.add.image(x, y, key).setDisplaySize(ICON_PX, ICON_PX));
+    const bilingual = textIn(other, key) !== t(key);
+    const panelH = Math.min(safe.height - SPACE.s * 2, 210 + (bilingual ? 24 : 0) + rows * (ICON_PX + 12));
+    const modal = new KitModal(this.scene, screen.width, screen.height, { skin: SKIN, width: panelW, height: panelH, title: t(key) });
+    modal.setPosition(screen.x, screen.y).setDepth(DEPTH_INTRO);
+    const panel = modal.panel;
+    let y = panel.contentTop;
+    if (bilingual) {
+      panel.add(kitText(this.scene, 'body', textIn(other, key), SKIN.text.secondary).setY(y + 4));
+      y += 26;
+    }
+    // A band in the theme's colours, with its motif colours as dots: the theme's identity, not its text.
+    const band = this.scene.add.graphics();
+    const bandW = panelW - SPACE.l * 2;
+    band.fillStyle(hexNumber(shown.look.accent), 1).fillRoundedRect(-bandW / 2, y + 6, bandW, 6, 3);
+    shown.look.motifColors.forEach((color, i, all) => {
+      band.fillStyle(hexNumber(color), 1).fillCircle(((i + 1) / (all.length + 1) - 0.5) * bandW, y + 9, 5);
     });
-    text(top + panelH - 26, t('themeIntro.continue'), 15, colours.textColor).setAlpha(0.85);
+    panel.add(band);
+    y += 24;
+    panel.add(kitText(this.scene, 'label', t('themeIntro.newItems').toUpperCase(), SKIN.text.secondary).setY(y + 6));
+    y += 22;
+    const gridW = columns * (ICON_PX + 12) - 12;
+    kinds.forEach((kind, i) => {
+      const x = -gridW / 2 + (i % columns) * (ICON_PX + 12) + ICON_PX / 2;
+      const iy = y + Math.floor(i / columns) * (ICON_PX + 12) + ICON_PX / 2;
+      const textureKey = itemTextureKey(kind.id, shown.marks);
+      if (this.scene.textures.exists(textureKey)) panel.add(this.scene.add.image(x, iy, textureKey).setDisplaySize(ICON_PX, ICON_PX));
+    });
+    panel.add(
+      new KitButton(this.scene, 0, panelH / 2 - SPACE.m - 28, {
+        skin: SKIN,
+        variant: 'primary',
+        label: t('themeIntro.start'),
+        icon: 'play',
+        width: Math.min(260, panelW - SPACE.l * 2),
+        onPress: () => this.close(),
+      }),
+    );
+    this.modal = modal;
   }
 }

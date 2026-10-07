@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { t } from '../i18n';
 import type { BoardLayout } from '../ui/boardLayout';
 import type { LiveBoard } from '../ui/levelLayout';
-import { theme } from '../ui/theme';
+import { FONTS, SKIN } from '../ui/design/tokens';
 import { RENDER_RATIO } from './view';
 import { art } from './art/ArtSet';
 
@@ -25,7 +25,7 @@ export class LockOverlays {
     for (const [shelf, count] of remaining) {
       this.veils.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
       const label = this.scene.add
-        .text(0, 0, '', { fontFamily: theme.fontFamily, fontStyle: 'bold', color: theme.textColor })
+        .text(0, 0, '', { fontFamily: FONTS.text, fontStyle: '700', color: SKIN.text.primary })
         .setOrigin(0, 0.5)
         .setResolution(resolution)
         .setDepth(DEPTH_LOCK + 1);

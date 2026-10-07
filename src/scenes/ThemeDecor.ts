@@ -2,6 +2,7 @@ import type * as Phaser from 'phaser';
 import type { BoardLayout, Rect } from '../ui/boardLayout';
 import type { ThemeLook } from '../ui/themeLook';
 import { BakedLayer } from './art/BakedLayer';
+import { SKIN } from '../ui/design/tokens';
 
 /** Under everything: the board, the tracks and the HUD are drawn over it. */
 const DEPTH_DECOR = -100;
@@ -19,14 +20,23 @@ export class ThemeDecor {
     this.layer = new BakedLayer(scene, DEPTH_DECOR);
   }
 
-  draw(look: ThemeLook | null, width: number, height: number, layout: BoardLayout): void {
-    this.layer.draw(look ? { x: 0, y: 0, width, height } : null, (g) => {
-      if (!look) return;
-      const [top, bottom] = look.sky.map(hex) as [number, number];
+  /**
+   * Draws the background over the whole screen (`screen`, in world coordinates: it starts above and left of the
+   * safe area). Without a theme it is the warm warung backdrop of the interface.
+   */
+  draw(look: ThemeLook | null, screen: Rect, layout: BoardLayout): void {
+    const { width, height } = screen;
+    // Drawn in screen coordinates: the layer sits at the screen's corner, and the board is moved to match.
+    this.layer.setPosition(screen.x, screen.y);
+    const local = (r: Rect): Rect => ({ ...r, x: r.x - screen.x, y: r.y - screen.y });
+    this.layer.draw({ x: 0, y: 0, width, height }, (g) => {
+      const [top, bottom] = (look ? look.sky : SKIN.backdrop).map(hex) as [number, number];
       g.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(0, 0, width, height);
-      const hudBottom = layout.hud.height;
+      if (!look) return;
+      const hudBottom = layout.hud.height - screen.y;
       // Strings hang across the screen but stop at the board, so none shows through the gaps between shelves.
-      const clear = outsideBoard(boardBounds(layout));
+      const board = boardBounds(layout);
+      const clear = outsideBoard(board && local(board));
       switch (look.motif) {
         case 'batik':
           return batik(g, look, width, height);

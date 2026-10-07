@@ -3,28 +3,29 @@ import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
-import { parseSlotAspect, wantsUikit } from './dev/uiParams';
+import { parseLang, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
 import { GameScene } from './scenes/GameScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { LocalSaveService } from './services/LocalSaveService';
 import { ProgressStore } from './services/ProgressStore';
 import { WebAudioSoundService } from './services/WebAudioSoundService';
 import { preventPageGestures } from './ui/preventPageGestures';
-import { theme } from './ui/theme';
+import { SKIN } from './ui/design/tokens';
 import { setSlotAspect } from './ui/boardLayout';
-import { RENDER_RATIO } from './scenes/view';
+import { forceSafeArea, RENDER_RATIO } from './scenes/view';
 
-setLocale(resolveLocale(navigator.languages));
+setLocale((import.meta.env.DEV ? parseLang(window.location.search) : null) ?? resolveLocale(navigator.languages));
 document.title = t('game.title');
 preventPageGestures();
 
 const store = new ProgressStore(new LocalSaveService());
 // Development only: ?resetSave starts from an empty save. Production builds drop this branch.
 if (import.meta.env.DEV && wantsSaveReset(window.location.search)) store.reset();
-// Development only: ?slotAspect=1.2 tries taller slots.
+// Development only: ?slotAspect=1.4 tries other slot shapes, ?safeArea=47,0,34,0 a phone's notch.
 if (import.meta.env.DEV) {
   const aspect = parseSlotAspect(window.location.search);
   if (aspect !== null) setSlotAspect(aspect);
+  forceSafeArea(parseSafeArea(window.location.search));
 }
 
 const sound = new WebAudioSoundService();
@@ -40,7 +41,7 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
   const { width, height } = pageSize();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
-    backgroundColor: theme.background,
+    backgroundColor: SKIN.backdrop[1],
     disableContextMenu: true,
     input: {
       // preventDefault on touch events so dragging never scrolls or zooms the page.

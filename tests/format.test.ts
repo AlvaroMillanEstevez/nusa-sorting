@@ -15,3 +15,12 @@ describe('formatTime', () => {
     expect(formatTime(-500)).toBe('0:00');
   });
 });
+
+describe('formatScore', () => {
+  it('groups thousands as each language writes them', async () => {
+    const { formatScore } = await import('../src/ui/format');
+    expect(formatScore(12450, 'en')).toBe('12,450');
+    expect(formatScore(12450, 'id')).toBe('12.450');
+    expect(formatScore(950, 'id')).toBe('950');
+  });
+});

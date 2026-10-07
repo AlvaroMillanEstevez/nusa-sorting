@@ -85,3 +85,12 @@ describe('type, spacing and touch', () => {
     expect(MIN_TOUCH).toBeGreaterThanOrEqual(44);
   });
 });
+
+describe('stars', () => {
+  it('stand out from the panel, earned or not (graphics need 3:1)', () => {
+    const panel = SKIN.surface.fill;
+    expect(contrastRatio(SKIN.star.filled, panel)).toBeGreaterThanOrEqual(3);
+    // An empty star is told by its light rim (and its hollow shape), not by its fill.
+    expect(contrastRatio(SKIN.star.rim, panel)).toBeGreaterThanOrEqual(3);
+  });
+});

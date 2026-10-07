@@ -1,12 +1,11 @@
 import * as Phaser from 'phaser';
-import { createGame, withArrangement, type GameState, type LevelDefinition } from '../core';
-import { t, type MessageKey } from '../i18n';
+import { createGame } from '../core';
+import { getLocale, t, type MessageKey } from '../i18n';
 import { art } from '../scenes/art/ArtSet';
-import { itemBackTextureKey, itemTextureKey, prepareItemTextures } from '../scenes/itemTextures';
+import { itemTextureKey, prepareItemTextures } from '../scenes/itemTextures';
 import {
   KitButton,
   KitIconButton,
-  KitModal,
   KitPanel,
   KitPill,
   KitProgressBar,
@@ -18,28 +17,25 @@ import {
 } from '../scenes/kit';
 import { playList } from '../scenes/playList';
 import { fitCamera, pointerAt, viewSize } from '../scenes/view';
-import { BACK_SCALE, SILHOUETTE_ALPHA, setSlotAspect, shelfLayoutAt, SLOT_ASPECT, type BoardLayout } from '../ui/boardLayout';
-import { DURATION, EASE, hexNumber, mapSkin, SKIN, SPACE, TYPE, type Skin, type TypeRole } from '../ui/design/tokens';
+import { setSlotAspect, shelfLayoutAt, SLOT_ASPECT } from '../ui/boardLayout';
+import { hexNumber, mapSkin, SKIN, SPACE, TYPE, type Skin, type TypeRole } from '../ui/design/tokens';
 import { UI_ICON_NAMES } from '../ui/design/uiIcons';
 import { simulateVision, type Vision } from '../ui/icons/color';
 import { itemFit, placeItem } from '../ui/itemFit';
 import { ITEM_FILL, itemSize, layoutForLevel } from '../ui/levelLayout';
 
 /**
- * Development only (`?uikit`): the interface kit in the two visual directions, side by side with the real board.
- * Every component in its states; mock-ups of the HUD and the victory panel at 390 × 844 and 844 × 390; the
- * interface icons and the v3 item icons next to the current ones; and taller slots. Nothing here changes the game.
+ * Development only (`?uikit`): the interface kit. Every component in its states, the interface icons, and the
+ * slot shapes. The game's own screens are the reference for the HUD and panels (`?show=` opens them).
  */
 
-type Page = 'components' | 'hud' | 'victory' | 'icons' | 'slots';
-const PAGES: readonly Page[] = ['components', 'hud', 'victory', 'icons', 'slots'];
+type Page = 'components' | 'icons' | 'slots';
+const PAGES: readonly Page[] = ['components', 'icons', 'slots'];
 const VISIONS: readonly Vision[] = ['normal', 'deuteranopia', 'protanopia', 'grayscale'];
 const FRAMES: readonly (readonly [number, number])[] = [
   [390, 844],
   [844, 390],
 ];
-/** The board under the HUD and victory mock-ups: level 7, eleven shelves, a typical mid-game board. */
-const MOCK_LEVEL = 6;
 /** Kinds on the tall-slot shelves: tall ones (glass, kite, balloon, lantern) next to low and floating ones. */
 const SLOT_SAMPLE = ['es-teh-manis', 'layangan', 'balon', 'lampion', 'sate', 'peci', 'kendang', 'rambutan', 'bakso'];
 const PAD = SPACE.s;
@@ -121,8 +117,6 @@ export class UikitScene extends Phaser.Scene {
     this.buildHeader(width, skin);
     const builders: Record<Page, (w: number, s: Skin) => number> = {
       components: (w, s) => this.buildComponents(w, s),
-      hud: (w, s) => this.buildFrames(w, s, false),
-      victory: (w, s) => this.buildFrames(w, s, true),
       icons: (w, s) => this.buildIcons(w, s),
       slots: (w, s) => this.buildSlots(w, s),
     };
@@ -314,154 +308,6 @@ export class UikitScene extends Phaser.Scene {
     return f.end();
   }
 
-  // ---------------------------------------------------------------- HUD and victory mock-ups
-
-  private buildFrames(width: number, skin: Skin, victory: boolean): number {
-    let y = SPACE.s;
-    const available = width - PAD * 2;
-    const [portrait, landscape] = FRAMES as [readonly [number, number], readonly [number, number]];
-    const kP = Math.min(1, available / portrait[0]);
-    const kL = Math.min(1, available / landscape[0]);
-    const sideBySide = portrait[0] * kP + landscape[0] * kL + SPACE.m <= available;
-    const replay = new KitButton(this, PAD + 80, y + 24, { skin, variant: 'secondary', label: t('uikit.replay'), icon: 'restart', width: 160, onPress: () => this.set({}) });
-    this.content.add(replay);
-    y += 48 + SPACE.s;
-    let x = PAD;
-    let rowBottom = y;
-    for (const [[w, h], k] of [
-      [portrait, kP],
-      [landscape, kL],
-    ] as const) {
-      if (!sideBySide && x > PAD) {
-        x = PAD;
-        y = rowBottom + SPACE.m;
-      }
-      this.content.add(kitText(this, 'caption', t('uikit.frame', { w, h }), skin.text.secondary).setOrigin(0, 0.5).setPosition(x, y + 8));
-      const frame = this.buildFrame(w, h, skin, victory).setPosition(x, y + 20).setScale(k);
-      this.content.add(frame);
-      rowBottom = Math.max(rowBottom, y + 20 + h * k);
-      x += w * k + SPACE.m;
-    }
-    return rowBottom;
-  }
-
-  /** A phone screen `w` × `h`: the real board of the mock level, with the HUD (and the victory panel) on top. */
-  private buildFrame(w: number, h: number, skin: Skin, victory: boolean): Phaser.GameObjects.Container {
-    const frame = this.add.container(0, 0);
-    const level = withArrangement(playList[MOCK_LEVEL]!.level, 0);
-    const state = createGame(level);
-    const layout = layoutForLevel(level, state, w, h);
-    const g = this.add.graphics();
-    const [top, bottom] = skin.backdrop;
-    g.fillGradientStyle(hexNumber(top), hexNumber(top), hexNumber(bottom), hexNumber(bottom), 1).fillRect(0, 0, w, h);
-    frame.add(g);
-    frame.add(this.board(layout, state, level));
-    this.hud(frame, layout, skin, w);
-    if (victory) this.victory(frame, w, h, skin);
-    const border = this.add.graphics().lineStyle(2, 0xffffff, 0.25).strokeRoundedRect(0, 0, w, h, 18);
-    frame.add(border);
-    return frame;
-  }
-
-  /** The board as the game draws it: shelves, front items, and silhouettes of the layer behind empty slots. */
-  private board(layout: BoardLayout, state: GameState, _level: LevelDefinition): Phaser.GameObjects.Container {
-    const c = this.add.container(0, 0);
-    const g = this.add.graphics();
-    c.add(g);
-    const s = layout.slotSize;
-    const scale = (s * ITEM_FILL) / 256;
-    layout.shelves.forEach((shelf, i) => {
-      art().drawShelf(g, shelf, s);
-      const layers = state.shelves[i]!.layers;
-      shelf.slots.forEach((slot, j) => {
-        const front = layers[0]![j];
-        const behind = layers[1]?.[j];
-        if (behind && !front) c.add(this.add.image(slot.x, slot.y, itemBackTextureKey(behind.type)).setScale(scale * BACK_SCALE).setAlpha(SILHOUETTE_ALPHA));
-        if (front) c.add(this.add.image(slot.x, slot.y, itemTextureKey(front.type, false)).setScale(scale));
-      });
-    });
-    return c;
-  }
-
-  /**
-   * The HUD in its area of the layout. Portrait: level, time and buttons on the first row, score and combo on
-   * the second. Landscape: one row.
-   */
-  private hud(frame: Phaser.GameObjects.Container, layout: BoardLayout, skin: Skin, w: number): void {
-    const row = layout.hudRowHeight;
-    const cy = row / 2;
-    const inline = layout.statusInline;
-    const pillH = inline ? 36 : 40;
-    const levels = new KitIconButton(this, PAD + 22, cy, { skin, icon: 'levels' });
-    const restart = new KitIconButton(this, w - PAD - 22, cy, { skin, icon: 'restart' });
-    const sound = new KitIconButton(this, w - PAD - 22 - 44 - SPACE.xs, cy, { skin, icon: 'sound' });
-    // The clock alone in the middle of the top row, between the list and the sound and restart buttons.
-    const time = new KitPill(this, w / 2, cy, { skin, icon: 'clock', value: '1:58', width: 104, height: pillH });
-    const level = new KitPill(this, 0, 0, { skin, label: t('uikit.label.level'), value: '7', height: pillH });
-    const score = new KitPill(this, 0, 0, { skin, icon: 'star', value: '1 250', width: 120, height: pillH });
-    const combo = new KitPill(this, 0, 0, { skin, icon: 'combo', value: '×3', tint: skin.status.combo, width: 92, height: pillH }).setProgress(0.62);
-    if (inline) {
-      level.setPosition(levels.x + 22 + SPACE.xs + level.pillWidth / 2, cy);
-      score.setPosition(level.x + level.pillWidth / 2 + SPACE.xs + 60, cy);
-      combo.setPosition(sound.x - 22 - SPACE.xs - 46, cy);
-    } else {
-      // Level and score on the left of the second row, the combo on its right.
-      const statusY = layout.statusRow!.y + layout.statusRow!.height / 2;
-      level.setPosition(PAD + level.pillWidth / 2, statusY);
-      score.setPosition(level.x + level.pillWidth / 2 + SPACE.xs + 60, statusY);
-      combo.setPosition(w - PAD - 46, statusY);
-    }
-    frame.add([levels, level, time, score, combo, sound, restart]);
-  }
-
-  private victory(frame: Phaser.GameObjects.Container, w: number, h: number, skin: Skin): void {
-    const landscape = w > h;
-    const panelW = Math.min(w - SPACE.l * 2, landscape ? 460 : 340);
-    const panelH = Math.min(h - SPACE.m * 2, landscape ? 330 : 420);
-    const modal = new KitModal(this, w, h, { skin, width: panelW, height: panelH, title: t('result.won.title') });
-    const panel = modal.panel;
-    const top = panel.contentTop;
-    // Three stars rise in one after another, then the score counts up.
-    const stars = [-1, 0, 1].map((i) => {
-      const star = uiIcon(this, 'starFilled', skin.text.accent, i === 0 ? 52 : 40).setPosition(i * 54, top + (i === 0 ? 26 : 34));
-      panel.add(star);
-      return star;
-    });
-    const scoreY = top + (landscape ? 82 : 96);
-    panel.add(kitText(this, 'label', t('uikit.label.score').toUpperCase(), skin.text.secondary).setY(scoreY - 24));
-    const score = kitText(this, 'hero', '0', skin.text.primary, landscape ? 34 : TYPE.hero.size).setY(scoreY + 8);
-    panel.add(score);
-    const infoY = scoreY + (landscape ? 52 : 62);
-    const time = new KitPill(this, -panelW / 4 + 4, infoY, { skin, icon: 'clock', value: '0:42', height: 36 });
-    const best = new KitPill(this, panelW / 4 - 4, infoY, { skin, icon: 'trophy', value: t('result.newBest'), tint: skin.text.accent, height: 36 });
-    panel.add([time, best]);
-    const buttonsY = panelH / 2 - SPACE.m - 28;
-    if (landscape) {
-      const bw = (panelW - SPACE.l * 2 - SPACE.s) / 2;
-      panel.add(new KitButton(this, -bw / 2 - SPACE.s / 2, buttonsY, { skin, variant: 'secondary', label: t('result.levels'), icon: 'levels', width: bw, height: 56 }));
-      panel.add(new KitButton(this, bw / 2 + SPACE.s / 2, buttonsY, { skin, variant: 'primary', label: t('result.next'), icon: 'next', width: bw }));
-    } else {
-      panel.add(new KitButton(this, 0, buttonsY - 64, { skin, variant: 'primary', label: t('result.next'), icon: 'next', width: panelW - SPACE.l * 2 }));
-      panel.add(new KitButton(this, 0, buttonsY + 4, { skin, variant: 'secondary', label: t('result.levels'), icon: 'levels', width: panelW - SPACE.l * 2 }));
-    }
-    frame.add(modal);
-    modal.popIn();
-    stars.forEach((star, i) => {
-      const size = star.displayWidth;
-      star.setScale(0);
-      this.tweens.add({ targets: star, displayWidth: size, displayHeight: size, duration: DURATION.slow, ease: EASE.pop, delay: 380 + i * 160 });
-    });
-    const counter = { v: 0 };
-    this.tweens.add({
-      targets: counter,
-      v: 1250,
-      duration: 900,
-      delay: 600,
-      ease: EASE.enter,
-      onUpdate: () => score.setText(Math.round(counter.v).toLocaleString('id-ID')),
-    });
-  }
-
   // ---------------------------------------------------------------- icons
 
   private buildIcons(width: number, skin: Skin): number {
@@ -485,7 +331,7 @@ export class UikitScene extends Phaser.Scene {
     intro.setWordWrapWidth(width - PAD * 2);
     f.add(width - PAD * 2, intro.height, (cx, cy) => this.content.add(intro.setPosition(cx - (width - PAD * 2) / 2, cy)));
     for (const aspect of [1, 1.2]) {
-      f.section(t('uikit.slots.aspect', { ratio: aspect.toLocaleString('id-ID') }));
+      f.section(t('uikit.slots.aspect', { ratio: aspect.toLocaleString(getLocale() === 'id' ? 'id-ID' : 'en-US') }));
       setSlotAspect(aspect);
       const s = 56 / ITEM_FILL;
       const sample = shelfLayoutAt(0, 0, s);
