@@ -1,3 +1,8 @@
+/** Development only: `?uikit` opens the interface kit and its two visual directions instead of the game. */
+export function wantsUikit(search: string): boolean {
+  return new URLSearchParams(search).has('uikit');
+}
+
 /**
  * Development only: `?slotAspect=1.2` makes slots that much taller than wide in any level (1 to 1.6), with items
  * resting on the base. Anything else: null (square slots).

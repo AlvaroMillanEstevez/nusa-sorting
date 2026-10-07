@@ -28,12 +28,18 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.
 - `?gallery` — abre la galería de iconos (tamaños reales, variantes, estanterías de madera y simulación de daltonismo y escala de grises) en vez del juego.
+- `?uikit` — abre el kit de interfaz con sus dos direcciones visuales (componentes, maquetas de HUD y victoria en 390×844 y 844×390, iconos y huecos altos). Página directa con `?uikit=components|hud|victory|icons|slots`, `&dir=b` para la dirección B y `&vision=deuteranopia|protanopia|grayscale`.
+- `?slotAspect=1.2` — huecos más altos que anchos (de 1 a 1,6) en cualquier nivel, con los objetos apoyados en la base.
+- `?art=v3` — dibuja sate, es teh manis y rambután con el estilo de iconos v3 de prueba.
 
 ## Estructura
 
 - `src/core` — lógica del juego, TypeScript puro
 - `src/scenes` — escenas de Phaser
-- `src/ui` — utilidades de presentación (layout, tema)
+- `src/ui` — utilidades de presentación (layout, tema); `src/ui/design` — tokens del sistema de diseño e iconos de interfaz
+- `src/scenes/kit` — kit de componentes de interfaz en Phaser (botones, píldoras, paneles, interruptor, barra de progreso)
+- `src/assets/fonts` — fuentes de interfaz incluidas en el build (OFL), generadas con `tools/fonts/build_fonts.py`
+- `docs/ui-style.md` — guía de estilo de interfaz
 - `src/services` — fronteras con el exterior (guardado, anuncios, sonido)
 - `src/data/levels` — los niveles del juego, generados con `tools/levelgen` y revisados
 - `src/i18n` — textos y catálogos (`en`, `id`)
@@ -47,6 +53,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - Sin backend, sin cuentas propias, sin APIs de IA en partida, sin dependencias nuevas sin justificarlas.
 - Guardado detrás de la interfaz `SaveService`; anuncios detrás de `AdService` (implementación vacía: `NoopAdService`); sonido detrás de `SoundService` (implementación `WebAudioSoundService`, con `NoopSoundService` para tests).
 - Textos visibles siempre a través de i18n (`en`, `id`).
+- Toda pantalla de interfaz usa los tokens de `src/ui/design/tokens.ts` y los componentes de `src/scenes/kit`, según `docs/ui-style.md`: nada de colores, tamaños, tiempos ni iconos sueltos.
 - Cambios pequeños, un commit por paso coherente con mensaje claro.
 - Al terminar cada tarea, informar de: qué cambió, qué tests se ejecutaron, qué NO se ha probado, y una lista de pruebas manuales para Koke.
 - Nunca afirmar que algo funciona en móvil sin que Koke lo haya probado.

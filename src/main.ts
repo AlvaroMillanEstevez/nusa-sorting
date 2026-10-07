@@ -3,7 +3,7 @@ import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
-import { parseSlotAspect, wantsArtV3 } from './dev/uiParams';
+import { parseSlotAspect, wantsArtV3, wantsUikit } from './dev/uiParams';
 import { GameScene } from './scenes/GameScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { LocalSaveService } from './services/LocalSaveService';
@@ -76,6 +76,8 @@ const gameScenes = () => [BootScene, new GameScene(sound, store), new LevelSelec
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
 if (import.meta.env.DEV && wantsGallery(window.location.search)) {
   void import('./dev/GalleryScene').then(({ GalleryScene }) => startGame([GalleryScene]));
+} else if (import.meta.env.DEV && wantsUikit(window.location.search)) {
+  void import('./dev/UikitScene').then(({ UikitScene }) => startGame([UikitScene]));
 } else {
   startGame(gameScenes());
 }
