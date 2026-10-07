@@ -11,7 +11,9 @@ import {
   isSlotBlocked,
   itemAt,
   moveItem,
+  scoreParts,
   starsFor,
+  starThresholds,
   tick,
   TIME_BONUS_PER_SECOND,
   triplesToUnlock,
@@ -257,11 +259,12 @@ export class GameScene extends Phaser.Scene {
     } else if (show === 'won') {
       const timeLeftMs = this.state.timeLeftMs === null ? null : this.state.timeLeftMs * 0.4;
       const timeBonus = timeLeftMs === null ? 0 : Math.floor(timeLeftMs / 1000) * TIME_BONUS_PER_SECOND;
-      const score = (this.level.stars?.three ?? 3000) + 50;
+      const score = starThresholds(this.level).three + 50;
+      this.timeBonus = timeBonus;
       this.overlay.show({
         kind: 'won',
         title: t('result.won.title'),
-        stars: starsFor(score, this.level.stars),
+        stars: starsFor(score, starThresholds(this.level)),
         score,
         timeBonus,
         timeLeftMs,
@@ -270,6 +273,7 @@ export class GameScene extends Phaser.Scene {
         primary: { label: t('result.next'), onPress: () => this.transitionTo(this.levelIndex + 1) },
         levels: () => this.openLevelList(() => {}),
         replay: () => this.transitionTo(this.levelIndex),
+        breakdown: this.scoreBreakdown(score),
       });
     } else if (show === 'lost') {
       this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), levels: () => this.openLevelList(() => {}) });
@@ -569,7 +573,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.setCombo(0, 0, 0);
     this.pauseMenu.close();
     // Saved right away, when the level ends, not when the panel appears.
-    const stars = starsFor(score, this.level.stars);
+    const stars = starsFor(score, starThresholds(this.level));
     const record = status === 'won' ? this.store.recordWin(this.level.id, score, stars) : null;
     // Back from the list, the panel is still there to choose from.
     const levels = () => this.openLevelList(() => {});
@@ -598,12 +602,27 @@ export class GameScene extends Phaser.Scene {
           },
           levels,
           replay: retry,
+          ...(import.meta.env.DEV ? { breakdown: this.scoreBreakdown(score) } : {}),
         });
       } else {
         this.sfx.play('lose');
         this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, levels });
       }
     });
+  }
+
+  /** Development only: the score split into base, combos and time bonus, and the level's star thresholds. */
+  private scoreBreakdown(score: number): string[] {
+    const locale = getLocale();
+    const { pointsPerTriple } = scoreParts(this.level);
+    const base = this.state.triplesCleared * pointsPerTriple;
+    const combos = score - this.timeBonus - base;
+    const { two, three } = starThresholds(this.level);
+    const f = (n: number) => formatScore(n, locale);
+    return [
+      t('dev.breakdown', { base: f(base), combos: `+${f(combos)}`, time: `+${f(this.timeBonus)}`, score: f(score) }),
+      t('dev.thresholds', { two: f(two), three: f(three) }),
+    ];
   }
 
   /** The level's whole time, in ms (0 for an untimed level). */

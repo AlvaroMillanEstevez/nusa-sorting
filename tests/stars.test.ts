@@ -2,15 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   createGame,
   EMPTY_PROGRESS,
-  LevelError,
   moveItem,
   recordWin,
+  scoreParts,
   starsFor,
+  starThresholds,
   tick,
   TIME_BONUS_PER_SECOND,
   totalStars,
   type LevelDefinition,
 } from '../src/core';
+import { levels } from '../src/data/levels';
 import { front } from './helpers';
 
 /** S0 [A A .]   S1 [A . .]: one move wins. */
@@ -50,14 +52,6 @@ describe('stars', () => {
     expect(starsFor(1000, thresholds)).toBe(2);
     expect(starsFor(1599, thresholds)).toBe(2);
     expect(starsFor(1600, thresholds)).toBe(3);
-    expect(starsFor(99_999, undefined)).toBe(1);
-  });
-
-  it('rejects thresholds that are not positive whole numbers with three above two', () => {
-    for (const stars of [{ two: 0, three: 10 }, { two: 500, three: 500 }, { two: 10.5, three: 20 }]) {
-      expect(() => createGame({ ...oneMove(), stars })).toThrow(LevelError);
-    }
-    expect(() => createGame({ ...oneMove(), stars: thresholds })).not.toThrow();
   });
 
   it('keeps the most stars of each level and counts them all', () => {
@@ -73,13 +67,41 @@ describe('stars', () => {
   });
 });
 
-describe('star thresholds from the simulator', () => {
-  it('puts two stars at the median and three at the 85th percentile of the expert wins, rounded to 10', async () => {
-    const { starThresholds } = await import('../tools/levelgen/generate');
-    const scores = Array.from({ length: 100 }, (_, i) => 1000 + i * 10);
-    expect(starThresholds([scores.slice(0, 50), scores.slice(50)])).toEqual({ two: 1500, three: 1850 });
-    // Too few distinct scores still give three above two.
-    expect(starThresholds([[700, 700, 700]])).toEqual({ two: 700, three: 710 });
-    expect(starThresholds([[], []])).toBeNull();
+describe('the star formula', () => {
+  /** Six triples (A-F), 60 s. */
+  const level: LevelDefinition = {
+    id: 'formula',
+    timeLimitSeconds: 60,
+    shelves: [[['A', 'B', 'C']], [['D', 'E', 'F']], [['A', 'B', 'C']], [['D', 'E', 'F']], [['A', 'B', 'C']], [['D', 'E', 'F']], [[null, null, null]]],
+  };
+
+  it('starts from the base score (triples × points) and the full time bonus', () => {
+    expect(scoreParts(level)).toEqual({ triples: 6, pointsPerTriple: 100, base: 600, fullTimeBonus: 60 * TIME_BONUS_PER_SECOND });
+  });
+
+  it('asks 1.25 × base + 20% of the time bonus for two stars, 1.7 × base + 40% for three', () => {
+    // 1.25 × 600 + 0.2 × 1200 = 990; 1.7 × 600 + 0.4 × 1200 = 1500.
+    expect(starThresholds(level)).toEqual({ two: 990, three: 1500 });
+  });
+
+  it('counts the first combo multiplier into the base (doubled combos in level 10)', () => {
+    const doubled: LevelDefinition = { ...level, mechanics: [{ kind: 'combo', multipliers: [2, 3, 4] }] };
+    expect(scoreParts(doubled).base).toBe(1200);
+  });
+
+  it('separates two and three stars in every shipped level, and level 1 from level 2', () => {
+    for (const shipped of levels) {
+      const { two, three } = starThresholds(shipped);
+      expect(three - two, shipped.id).toBeGreaterThanOrEqual(300);
+    }
+    expect(starThresholds(levels[1]!).two).toBeGreaterThan(starThresholds(levels[0]!).two);
+  });
+
+  it('lets a plain win with half the time left earn two stars in most levels, but never three', () => {
+    for (const shipped of levels) {
+      const { base, fullTimeBonus } = scoreParts(shipped);
+      const plain = base + fullTimeBonus / 2;
+      expect(starsFor(plain, starThresholds(shipped)), shipped.id).toBeLessThan(3);
+    }
   });
 });

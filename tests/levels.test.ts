@@ -54,9 +54,7 @@ describe.each(numbered.map(({ number, level }) => [number, level] as const))('le
 
   it('is exactly what its recipe generates (board and time), so regenerating never changes a shipped board', () => {
     expect(recipe.candidate).toBeDefined();
-    // The star thresholds come from all the arrangements; levelArrangements.test.ts checks them.
-    const { stars: _stars, ...board } = withArrangement(level, 0);
-    expect(generateLevel(recipe).level).toEqual(board);
+    expect(generateLevel(recipe).level).toEqual(withArrangement(level, 0));
   }, 120_000);
 
   it('meets every rule for generated levels', () => {

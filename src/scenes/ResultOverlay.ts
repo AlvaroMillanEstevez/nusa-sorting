@@ -31,6 +31,8 @@ export interface WinContent {
   readonly primary: ResultButton;
   readonly levels: () => void;
   readonly replay: () => void;
+  /** Development only: lines breaking the score down, and the level's thresholds. */
+  readonly breakdown?: readonly string[];
 }
 
 /** A lost level: why, and buttons to retry or leave. */
@@ -96,7 +98,8 @@ export class ResultOverlay {
     const wide = safe.height < 540;
     const won = content.kind === 'won';
     const panelW = Math.min(safe.width - SPACE.s * 2, wide ? 560 : 360);
-    const panelH = Math.min(safe.height - SPACE.s * 2, won ? (wide ? 330 : 430) : wide ? 280 : 330);
+    const extra = won ? (content.breakdown?.length ?? 0) * 18 : 0;
+    const panelH = Math.min(safe.height - SPACE.s * 2, (won ? (wide ? 330 : 430) : wide ? 280 : 330) + extra);
     const modal = new KitModal(this.scene, screen.width, screen.height, { skin: SKIN, width: panelW, height: panelH, title: content.title });
     modal.setPosition(screen.x, screen.y).setDepth(DEPTH_OVERLAY);
     this.modal = modal;
@@ -132,6 +135,13 @@ export class ResultOverlay {
       x += pill.pillWidth + SPACE.xs;
       panel.add(pill);
     }
+
+    // Development only: how the score is made, to report real figures.
+    (c.breakdown ?? []).forEach((line, i) => {
+      const text = kitText(this.scene, 'caption', line, SKIN.text.secondary).setY(infoY + 30 + i * 18);
+      if (text.width > inner) text.setScale(inner / text.width);
+      panel.add(text);
+    });
 
     const levels = this.once(c.levels, false);
     const replay = this.once(c.replay);

@@ -102,7 +102,7 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
 
 **Lista de niveles** (`LevelSelectScene.ts`): casillas de madera con el número y las estrellas conseguidas (rellenas o huecas, nunca solo color); las bloqueadas, hundidas y con candado; la actual, con marco claro; las especiales, con una insignia del color de su tema y una estrella. En la cabecera, el total de estrellas.
 
-**Estrellas**: ganar da siempre 1; 2 y 3 dependen de la puntuación, que incluye un bonus de 20 puntos por segundo que sobra. Los umbrales de cada nivel están en sus datos (`stars`) y los calcula el generador: 2 estrellas con la mediana de las victorias del jugador experto simulado y 3 con su percentil 85, sobre todas las distribuciones del nivel.
+**Estrellas**: ganar da siempre 1; 2 y 3 dependen de la puntuación, que incluye un bonus de 20 puntos por segundo que sobra. Los umbrales salen de una fórmula sobre el propio nivel (`STAR_FORMULA` en `src/core/stars.ts`): con B = tríos × puntos por trío (sin combo) y F = el bonus de tiempo completo (tiempo límite × 20), **2 estrellas = 1,25·B + 0,2·F** y **3 estrellas = 1,7·B + 0,4·F**. En desarrollo, el panel de victoria desglosa la puntuación (base, combos, tiempo) y muestra los umbrales.
 
 **Zonas seguras**: la página usa `viewport-fit=cover`; el lienzo ocupa toda la pantalla y la cámara coloca el origen del mundo en la esquina de la zona segura (`safeInsets` en `view.ts`). Layouts, HUD y paneles se calculan para la zona segura; fondos y atenuados cubren la pantalla entera.
 

@@ -19,6 +19,8 @@ export const id: Record<MessageKey, string> = {
   'result.levels': 'Pilih level',
   'result.newBest': 'Rekor baru!',
   'result.best': 'Terbaik: {score}',
+  'dev.breakdown': 'Dasar {base} · kombo {combos} · waktu {time} = {score}',
+  'dev.thresholds': '2★ dari {two} · 3★ dari {three}',
   'levels.title': 'Pilih level',
   'levels.back': 'Kembali',
   'hud.scoreLabel': 'Skor',
