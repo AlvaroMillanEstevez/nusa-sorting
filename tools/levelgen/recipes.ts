@@ -254,7 +254,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-012',
     purpose: 'The first roaming blocker: an empty slot that cannot be used and jumps after each triple; a combo of 4 removes it.',
     seed: 1212,
-    candidate: 9,
+    candidate: 13,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
@@ -364,7 +364,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-017',
     purpose: 'The roaming blocker together with a locked shelf.',
     seed: 1717,
-    candidate: 8,
+    candidate: 4,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
@@ -408,7 +408,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-019',
     purpose: 'A demanding mix: a track of stacks, a locked shelf and the roaming blocker.',
     seed: 1919,
-    candidate: 14,
+    candidate: 4,
     layout: [
       { kind: 'shelves', count: 4 },
       { kind: 'track', speed: 0.7, carriers: 5 },
@@ -498,7 +498,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-023',
     purpose: 'Advanced mix: a fast track of stacks and a track of shelves around a column of shelves, with the roaming blocker.',
     seed: 2323,
-    candidate: 162,
+    candidate: 19,
     layout: [
       { kind: 'track', speed: 0.9, carriers: 5 },
       { kind: 'shelves', count: 4 },
@@ -521,7 +521,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-024',
     purpose: 'The hardest level so far: a fast track of stacks, two locked shelves and the roaming blocker on a big board.',
     seed: 2424,
-    candidate: 53,
+    candidate: 22,
     layout: [
       { kind: 'shelves', count: 4 },
       { kind: 'track', speed: 0.9, carriers: 6 },

@@ -210,8 +210,8 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
 
   const events: GameEvent[] = [{ kind: 'moved', itemId: item.id, from, to }];
   // Destination first: that is where a triple can form.
-  shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, events);
-  shelves[from.shelf] = settleShelf(shelves[from.shelf]!, from.shelf, events);
+  shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, blockedSlotOf(state, to.shelf), events);
+  shelves[from.shelf] = settleShelf(shelves[from.shelf]!, from.shelf, blockedSlotOf(state, from.shelf), events);
   return { ok: true, ...finishMove({ ...state, shelves }, events) };
 }
 
@@ -288,7 +288,7 @@ export function dropHeld(state: GameState, to: Position): MoveResult {
   const shelves = state.shelves.slice();
   shelves[to.shelf] = setFrontSlot(shelves[to.shelf]!, to.slot, held.item);
   const events: GameEvent[] = [{ kind: 'beltItemPlaced', itemId: held.item.id, from: held.from, to }];
-  shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, events);
+  shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, blockedSlotOf(state, to.shelf), events);
   return { ok: true, ...finishMove({ ...state, shelves, held: null }, events) };
 }
 
@@ -307,8 +307,16 @@ function setFrontSlot(shelf: Shelf, slot: number, value: Item | null): Shelf {
   return { layers: [front, ...shelf.layers.slice(1)] };
 }
 
-/** Clears front triples and advances back layers until the shelf is stable. */
-function settleShelf(shelf: Shelf, index: number, events: GameEvent[]): Shelf {
+/** The front slot of a shelf under the roaming blocker, or null. */
+function blockedSlotOf(state: GameState, shelf: number): number | null {
+  return state.blocker?.at.shelf === shelf ? state.blocker.at.slot : null;
+}
+
+/**
+ * Clears front triples and advances back layers until the shelf is stable. The roaming blocker fills its slot:
+ * a front with the blocker (`blockedSlot`) is not empty, so the layer behind waits until the blocker leaves.
+ */
+function settleShelf(shelf: Shelf, index: number, blockedSlot: number | null, events: GameEvent[]): Shelf {
   let layers: readonly Layer[] = shelf.layers;
   for (;;) {
     const front = layers[0]!;
@@ -323,7 +331,7 @@ function settleShelf(shelf: Shelf, index: number, events: GameEvent[]): Shelf {
       layers = [front.map(() => null), ...layers.slice(1)];
       continue;
     }
-    if (layers.length > 1 && front.every((slot) => slot === null)) {
+    if (layers.length > 1 && blockedSlot === null && front.every((slot) => slot === null)) {
       layers = layers.slice(1);
       events.push({ kind: 'layerAdvanced', shelf: index, remainingLayers: layers.length });
       continue;
@@ -335,40 +343,58 @@ function settleShelf(shelf: Shelf, index: number, events: GameEvent[]): Shelf {
 /**
  * Applies the consequences of the triples cleared by a move, including chained ones from advancing layers:
  * triple count, combo and score, shelf unlocks, blocker removal and blocker jumps. Appends their events.
+ * When the blocker leaves a shelf (jumping or removed), that shelf settles: an empty front lets the layer behind
+ * come forward, which may clear more triples, handled in the same way.
  */
 function applyTriples(state: GameState, events: GameEvent[]): GameState {
-  const triples = events.filter((e) => e.kind === 'tripleCleared');
-  if (triples.length === 0) return state;
+  let next = state;
+  for (let seen = 0; ; ) {
+    const triples = events.slice(seen).filter((e) => e.kind === 'tripleCleared');
+    if (triples.length === 0) return next;
 
-  let { triplesCleared, combo, blocker } = state;
-  for (const triple of triples) {
-    triplesCleared++;
-    if (combo) {
-      combo = extendCombo(combo);
-      const delta = Math.round(combo.pointsPerTriple * multiplierFor(combo));
-      combo = { ...combo, score: combo.score + delta };
-      events.push({ kind: 'comboChanged', combo: combo.combo, windowMs: combo.windowMs });
-      events.push({ kind: 'scoreChanged', score: combo.score, delta, shelf: triple.shelf });
-      if (blocker && combo.combo >= blocker.removeAtCombo) {
-        events.push({ kind: 'blockerRemoved', at: blocker.at });
-        blocker = null;
+    let { triplesCleared, combo, blocker } = next;
+    const removedFrom = blocker?.at.shelf ?? null;
+    for (const triple of triples) {
+      triplesCleared++;
+      if (combo) {
+        combo = extendCombo(combo);
+        const delta = Math.round(combo.pointsPerTriple * multiplierFor(combo));
+        combo = { ...combo, score: combo.score + delta };
+        events.push({ kind: 'comboChanged', combo: combo.combo, windowMs: combo.windowMs });
+        events.push({ kind: 'scoreChanged', score: combo.score, delta, shelf: triple.shelf });
+        if (blocker && combo.combo >= blocker.removeAtCombo) {
+          events.push({ kind: 'blockerRemoved', at: blocker.at });
+          blocker = null;
+        }
       }
+      next.unlockAt.forEach((unlockAt, shelf) => {
+        if (unlockAt === triplesCleared) events.push({ kind: 'shelfUnlocked', shelf });
+      });
     }
-    state.unlockAt.forEach((unlockAt, shelf) => {
-      if (unlockAt === triplesCleared) events.push({ kind: 'shelfUnlocked', shelf });
-    });
-  }
+    // Events up to here are handled; settling below may append new triples for the next round.
+    seen = events.length;
 
-  let next: GameState = { ...state, triplesCleared, combo, blocker };
-  // The blocker jumps once per triple, after the board has settled (cleared slots and advanced layers).
-  for (let i = 0; i < triples.length && next.blocker; i++) {
-    const from = next.blocker.at;
-    const moved = jumpBlocker(next, next.blocker);
-    if (!moved) break;
-    next = { ...next, blocker: moved };
-    events.push({ kind: 'blockerMoved', from, to: moved.at });
+    next = { ...next, triplesCleared, combo, blocker };
+    if (!blocker && removedFrom !== null) next = settleAt(next, removedFrom, events);
+    // The blocker jumps once per triple, after the board has settled (cleared slots and advanced layers).
+    for (let i = 0; i < triples.length && next.blocker; i++) {
+      const from = next.blocker.at;
+      const moved = jumpBlocker(next, next.blocker);
+      if (!moved) break;
+      next = { ...next, blocker: moved };
+      events.push({ kind: 'blockerMoved', from, to: moved.at });
+      if (moved.at.shelf !== from.shelf) next = settleAt(next, from.shelf, events);
+    }
   }
-  return next;
+}
+
+/** Settles one shelf of a state (see settleShelf). */
+function settleAt(state: GameState, shelf: number, events: GameEvent[]): GameState {
+  const settled = settleShelf(state.shelves[shelf]!, shelf, blockedSlotOf(state, shelf), events);
+  if (settled.layers === state.shelves[shelf]!.layers) return state;
+  const shelves = state.shelves.slice();
+  shelves[shelf] = settled;
+  return { ...state, shelves };
 }
 
 function extendCombo(combo: ComboState): ComboState {

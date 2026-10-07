@@ -158,6 +158,25 @@ describe('mechanics stack on moving shelves', () => {
     expect(jumped.some((shelf) => shelf === 2 || shelf === 3)).toBe(true);
     expect(jumped.some((shelf) => shelf === 0)).toBe(true);
   });
+
+  it('keeps the layer behind a moving shelf while the blocker is on it, and advances it once it leaves', () => {
+    // The blocker starts on S3's free slot; both C go to S2, leaving S3's front with only the blocker.
+    const emptied = (seed: number) => {
+      let state = createGame(shelfTrack([{ kind: 'roamingBlocker', start: { shelf: 3, slot: 2 }, seed }]));
+      state = apply(state, front(3, 0), front(2, 1)).state;
+      return apply(state, front(3, 1), front(2, 2));
+    };
+    const held = emptied(1);
+    expect(boardKinds(held.events)).toEqual(['moved']);
+    expect(held.state.shelves[3]!.layers).toHaveLength(2);
+
+    // AAA on S0 makes the blocker jump; once it lands off S3, S3's back layer comes forward.
+    const triple = (seed: number) => apply(emptied(seed).state, front(1, 0), front(0, 2));
+    const away = Array.from({ length: 50 }, (_, s) => s).find((s) => triple(s).state.blocker!.at.shelf !== 3)!;
+    expect(triple(away).events).toContainEqual({ kind: 'layerAdvanced', shelf: 3, remainingLayers: 1 });
+    const stays = Array.from({ length: 50 }, (_, s) => s).find((s) => triple(s).state.blocker!.at.shelf === 3)!;
+    expect(triple(stays).state.shelves[3]!.layers).toHaveLength(2);
+  });
 });
 
 describe('simulated player and moving shelves', () => {

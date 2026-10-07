@@ -282,6 +282,98 @@ describe('roaming blocker', () => {
     expect(result.state).toMatchObject({ status: 'lost', loseReason: 'blocked' });
   });
 
+  describe('holds its slot, so the layer behind waits', () => {
+    /** S0 [A A .]   S1 [A B B]   S2 [B . .]   S3 [▣ C .] back [C C D]   S4 [D D .] */
+    const layered = (seed: number, removeAtCombo = 7): LevelDefinition => ({
+      id: 'blocker-layer',
+      mechanics: [COMBO, { kind: 'roamingBlocker', start: { shelf: 3, slot: 0 }, seed, removeAtCombo }],
+      shelves: [
+        [['A', 'A', null]],
+        [['A', 'B', 'B']],
+        [['B', null, null]],
+        [
+          [null, 'C', null],
+          ['C', 'C', 'D'],
+        ],
+        [['D', 'D', null]],
+      ],
+    });
+    /** S3's last item goes to S4: S3's front keeps only the blocker. */
+    const emptied = (seed: number, removeAtCombo = 7) =>
+      apply(createGame(layered(seed, removeAtCombo)), front(3, 1), front(4, 2)).state;
+    /** First seed whose jump after AAA lands on a shelf `where` accepts. */
+    const seedWhere = (where: (shelf: number) => boolean, removeAtCombo = 7) =>
+      Array.from({ length: 100 }, (_, s) => s).find((s) =>
+        where(apply(emptied(s, removeAtCombo), front(1, 0), front(0, 2)).state.blocker!.at.shelf),
+      )!;
+
+    it('does not advance a front with only the blocker left', () => {
+      const result = apply(createGame(layered(1)), front(3, 1), front(4, 2));
+      expect(kinds(result.events)).toEqual(['moved']);
+      expect(result.state.shelves[3]!.layers).toHaveLength(2);
+      expect(result.state.shelves[3]!.layers[0]).toEqual([null, null, null]);
+      expect(freeFrontSlots(result.state, 3)).toEqual([1, 2]);
+    });
+
+    it('stays behind while the blocker jumps to another slot of the same shelf', () => {
+      const seed = seedWhere((shelf) => shelf === 3);
+      const result = apply(emptied(seed), front(1, 0), front(0, 2));
+      expect(result.state.blocker!.at.shelf).toBe(3);
+      expect(kinds(result.events)).not.toContain('layerAdvanced');
+      expect(result.state.shelves[3]!.layers).toHaveLength(2);
+    });
+
+    it('advances once the blocker jumps to another shelf', () => {
+      const seed = seedWhere((shelf) => shelf !== 3);
+      const result = apply(emptied(seed), front(1, 0), front(0, 2));
+      const order = kinds(result.events);
+      expect(order.indexOf('blockerMoved')).toBeLessThan(order.indexOf('layerAdvanced'));
+      expect(result.events).toContainEqual({ kind: 'layerAdvanced', shelf: 3, remainingLayers: 1 });
+      expect(result.state.shelves[3]!.layers.map((layer) => layer.map((item) => item?.type ?? null))).toEqual([['C', 'C', 'D']]);
+    });
+
+    it('advances once the blocker is removed by a combo', () => {
+      // The first jump stays on S3, the second triple (BBB on S1) reaches the combo that removes it.
+      const seed = seedWhere((shelf) => shelf === 3, 2);
+      const first = apply(emptied(seed, 2), front(1, 0), front(0, 2));
+      const second = apply(first.state, front(2, 0), front(1, 0));
+      expect(second.state.blocker).toBeNull();
+      const order = kinds(second.events);
+      expect(order.indexOf('blockerRemoved')).toBeLessThan(order.indexOf('layerAdvanced'));
+      expect(second.events).toContainEqual({ kind: 'layerAdvanced', shelf: 3, remainingLayers: 1 });
+    });
+
+    it('counts a triple the advancing layer completes, and jumps again for it', () => {
+      /** S0 [▣ C .] back [D D D]   S1 [C C .]   S2 [A A .]   S3 [A . .] */
+      const level = (seed: number): LevelDefinition => ({
+        id: 'blocker-chain',
+        mechanics: [COMBO, { kind: 'roamingBlocker', start: { shelf: 0, slot: 0 }, seed }],
+        shelves: [
+          [
+            [null, 'C', null],
+            ['D', 'D', 'D'],
+          ],
+          [['C', 'C', null]],
+          [['A', 'A', null]],
+          [['A', null, null]],
+        ],
+      });
+      const play = (seed: number) => apply(createGame(level(seed)), front(0, 1), front(1, 2));
+      const seed = Array.from({ length: 100 }, (_, s) => s).find((s) => play(s).events.some((e) => e.kind === 'layerAdvanced'))!;
+      const result = play(seed);
+      expect(kinds(result.events).filter((k) => k === 'tripleCleared' || k === 'blockerMoved' || k === 'layerAdvanced')).toEqual([
+        'tripleCleared',
+        'blockerMoved',
+        'layerAdvanced',
+        'tripleCleared',
+        'blockerMoved',
+      ]);
+      expect(result.state.triplesCleared).toBe(2);
+      expect(result.state.combo.combo).toBe(2);
+      expect(result.state.shelves[0]!.layers).toHaveLength(1);
+    });
+  });
+
   it('rejects levels whose only empty slot is blocked', () => {
     const shelves: LevelDefinition['shelves'] = [
       [['A', 'B', 'C']],

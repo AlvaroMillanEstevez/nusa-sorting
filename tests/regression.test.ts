@@ -51,6 +51,9 @@ describe.each(fixture.map((entry, i) => [entry.level, i] as const))('regression:
  * levels 4-7 played by a greedy and a random player with 2.5 s or 1.2 s ticks. Besides events, statuses and
  * timers it pins triple counts, combo/score state and the blocker, so new mechanics cannot change these levels.
  * Levels 5 and 6 were re-recorded after a one-item change that removed their one-move traps; 4 and 7 are original.
+ * The roaming blocker fix (a front layer holding the blocker is not empty, so the layer behind waits) changed
+ * games 3 and 4 of level 6 and 2, 5 and 6 of level 7: they were replayed with the same moves and re-recorded,
+ * cut where a recorded move stopped being valid.
  */
 interface StepV2 extends Step {
   tickMs: number;

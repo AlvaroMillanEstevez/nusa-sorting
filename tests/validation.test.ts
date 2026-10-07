@@ -132,6 +132,27 @@ describe('how deep triples are buried', () => {
     expect(belt.get('B')).toEqual([0, 0, 1]);
   });
 
+  it('counts layers behind the roaming blocker one deeper, and leaves them out of reach at the start', () => {
+    // S0 [▣ A .] back [B B A]   S1 [A B .]: the B triple is behind the blocker, so none is in reach.
+    const blocked: LevelDefinition = {
+      id: 'behind-blocker',
+      shelves: [
+        [
+          [null, 'A', null],
+          ['B', 'B', 'A'],
+        ],
+        [['A', 'B', null]],
+      ],
+      mechanics: [{ kind: 'roamingBlocker', start: { shelf: 0, slot: 0 }, seed: 1 }],
+    };
+    const depths = itemDepths(createGame(blocked));
+    expect(depths.get('A')).toEqual([0, 0, 2]);
+    expect(depths.get('B')).toEqual([0, 2, 2]);
+    expect(startTriples(createGame(blocked))).toBe(0);
+    const { mechanics: _, ...free } = blocked;
+    expect(startTriples(createGame(free))).toBe(2);
+  });
+
   it('reports triples whose last item is more than maxDepth layers deeper than their first', () => {
     const state = createGame(level);
     expect(tripleDepthIssues(state, 2)).toEqual([]);

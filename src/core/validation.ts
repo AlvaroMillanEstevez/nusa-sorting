@@ -91,7 +91,8 @@ export function trapWithin(state: GameState, maxMoves: number): FirstMove[] | nu
 
 /**
  * How deep each item starts: its layer on a shelf (one more on a locked shelf, which must be opened first), or
- * its place in a track stack (0 = on top).
+ * its place in a track stack (0 = on top). Layers behind the roaming blocker's start also count one more: they
+ * cannot come forward until a triple elsewhere makes it jump.
  */
 export function itemDepths(state: GameState): Map<string, number[]> {
   const depths = new Map<string, number[]>();
@@ -102,7 +103,8 @@ export function itemDepths(state: GameState): Map<string, number[]> {
   };
   state.shelves.forEach((shelf, s) => {
     const extra = isShelfLocked(state, s) ? 1 : 0;
-    shelf.layers.forEach((layer, l) => layer.forEach((item) => item && add(item.type, l + extra)));
+    const blocked = state.blocker?.at.shelf === s ? 1 : 0;
+    shelf.layers.forEach((layer, l) => layer.forEach((item) => item && add(item.type, l + extra + (l > 0 ? blocked : 0))));
   });
   for (const track of state.tracks) {
     for (const carrier of track.carriers) {
@@ -138,14 +140,15 @@ export function tripleDepthIssues(state: GameState, maxDepth: number): DepthIssu
 
 /**
  * Triples that can be completed at the start with what is in view and the layer right behind it (on unlocked
- * shelves; the top two items of track stacks).
+ * shelves, except behind the roaming blocker, which holds that layer back; the top two items of track stacks).
  */
 export function startTriples(state: GameState): number {
   const counts = new Map<string, number>();
   const add = (type: string) => counts.set(type, (counts.get(type) ?? 0) + 1);
   state.shelves.forEach((shelf, s) => {
     if (isShelfLocked(state, s)) return;
-    for (const layer of shelf.layers.slice(0, 2)) for (const item of layer) if (item) add(item.type);
+    const inReach = state.blocker?.at.shelf === s ? 1 : 2;
+    for (const layer of shelf.layers.slice(0, inReach)) for (const item of layer) if (item) add(item.type);
   });
   for (const track of state.tracks) {
     for (const carrier of track.carriers) if (carrier.kind === 'stack') carrier.stack.slice(0, 2).forEach((item) => add(item.type));

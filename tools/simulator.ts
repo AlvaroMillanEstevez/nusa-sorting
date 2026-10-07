@@ -458,8 +458,11 @@ function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind:
         const at = parkingSlot(state, frontItems[slot]!.type, s, looksBehind);
         if (at) move = [front(s, slot), at];
       } else if (room.length > 0) {
-        // Bring the closest copy: from a shelf it would leave empty with hidden layers behind, if any.
-        const source = incoming.find((c) => c.shelf !== null && state.shelves[c.shelf]!.layers[0]!.filter(Boolean).length === 1) ?? incoming[0]!;
+        // Bring the closest copy: from a shelf it would leave empty with hidden layers behind, if any (not under
+        // the blocker, which holds its slot and keeps the layer behind).
+        const source =
+          incoming.find((c) => c.shelf !== null && !holdsBlocker(state, c.shelf) && state.shelves[c.shelf]!.layers[0]!.filter(Boolean).length === 1) ??
+          incoming[0]!;
         move = [source.from, front(s, room[0]!)];
       }
       if (move) plan = { cost, move };
@@ -472,10 +475,11 @@ function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind:
     if (clears || free > 1 || !looksBehind) return chosen;
   }
   // Dig: bring a hidden layer forward by emptying the front with the fewest items. A player that looks behind
-  // prefers a front it has room to empty (fewer items than free slots); it only risks another when stuck.
+  // prefers a front it has room to empty (fewer items than free slots); it only risks another when stuck. A front
+  // under the blocker never empties while it stays, so digging there is pointless.
   let dig: { left: number; move: Move } | null = null;
   state.shelves.forEach((shelf, s) => {
-    if (isShelfLocked(state, s) || shelf.layers.length < 2) return;
+    if (isShelfLocked(state, s) || shelf.layers.length < 2 || holdsBlocker(state, s)) return;
     const items = shelf.layers[0]!.flatMap((item, i) => (item && !recent.has(item.id) ? [i] : []));
     if (items.length === 0) return;
     const left = items.length + (looksBehind && items.length >= free ? 10 : 0);
@@ -485,6 +489,9 @@ function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind:
   });
   return dig === null ? null : (dig as { move: Move }).move;
 }
+
+/** True when the roaming blocker is on a shelf's front. */
+const holdsBlocker = (state: GameState, shelf: number) => state.blocker?.at.shelf === shelf;
 
 export interface SimulationStats {
   readonly winRate: number;
