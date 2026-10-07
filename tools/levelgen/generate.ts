@@ -125,7 +125,23 @@ type Place = { kind: 'shelf'; shelf: number; layer: number; slot: number } | { k
 export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefinition | null {
   const { shelfCount, columns, tracks } = plan(recipe);
   const layerCounts = Array<number>(shelfCount).fill(1);
-  for (const shelf of choose(random, shelfCount, recipe.backLayers.shelves)) layerCounts[shelf] = intIn(random, recipe.backLayers.layers);
+  const layered = choose(random, shelfCount, recipe.backLayers.shelves);
+  const { total } = recipe.backLayers;
+  if (total === undefined) {
+    for (const shelf of layered) layerCounts[shelf] = intIn(random, recipe.backLayers.layers);
+  } else {
+    // Each layered shelf gets the fewest layers, then the rest go one at a time to shelves with room for more.
+    const [fewest, most] = recipe.backLayers.layers;
+    for (const shelf of layered) layerCounts[shelf] = fewest;
+    let left = total - layered.length * (fewest - 1);
+    while (left > 0) {
+      const open = layered.filter((shelf) => layerCounts[shelf]! < most);
+      if (open.length === 0) return null;
+      layerCounts[open[Math.floor(random() * open.length)]!]!++;
+      left--;
+    }
+    if (left < 0) return null;
+  }
   const lockedShelves = recipe.locked?.length ? choose(random, shelfCount, recipe.locked.length) : [];
 
   const places: Place[] = [];
@@ -150,10 +166,24 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
   if (types.length !== recipe.types) throw new Error(`${recipe.id}: ${types.length} types planned for ${recipe.types}`);
   const spare = places.length - types.length * 3 - recipe.emptyFront;
   if (spare < 0) return null;
-  // Empty front slots go on unlocked shelves, so they are all free from the start.
-  const fronts = places.filter((p) => p.kind === 'shelf' && p.layer === 0 && !lockedShelves.includes(p.shelf));
-  if (fronts.length < recipe.emptyFront) return null;
-  const empty = new Set<Place>(shuffle(random, fronts).slice(0, recipe.emptyFront));
+  // Empty front slots go on unlocked shelves, so they are all free from the start, and first on shelves with
+  // the fewest hidden layers: a front with a layer behind it that is nearly empty would refill as soon as it
+  // is emptied, taking up the space it seemed to offer (and making two-move traps likely on a full board).
+  const fronts = shuffle(
+    random,
+    places.filter((p) => p.kind === 'shelf' && p.layer === 0 && !lockedShelves.includes(p.shelf)),
+  ).sort((a, b) => layerCounts[(a as { shelf: number }).shelf]! - layerCounts[(b as { shelf: number }).shelf]!);
+  // A shelf with layers behind keeps at least one item in front (an empty front would bring them forward).
+  const emptyPerShelf = new Map<number, number>();
+  const empty = new Set<Place>();
+  for (const place of fronts) {
+    if (empty.size === recipe.emptyFront) break;
+    const shelf = (place as { shelf: number }).shelf;
+    if (layerCounts[shelf]! > 1 && (emptyPerShelf.get(shelf) ?? 0) >= 2) continue;
+    emptyPerShelf.set(shelf, (emptyPerShelf.get(shelf) ?? 0) + 1);
+    empty.add(place);
+  }
+  if (empty.size < recipe.emptyFront) return null;
   const left = new Map<string, number>();
   for (const p of places) if (p.kind === 'shelf' && p.layer > 0) left.set(`${p.shelf}:${p.layer}`, (left.get(`${p.shelf}:${p.layer}`) ?? 0) + 1);
   let toEmpty = spare;
@@ -408,7 +438,7 @@ export const ARRANGEMENTS = 8;
  * Arrangements a newly searched board needs, the board itself included: a board most of whose reshuffles leave
  * the band is a lucky exception of its recipe, so the search moves on to the next candidate.
  */
-export const MIN_NEW_ARRANGEMENTS = 6;
+export const MIN_NEW_ARRANGEMENTS = 5;
 /** With quickReject: reshuffles after which a board with fewer than two good ones is given up. */
 const QUICK_REJECT_AFTER = 60;
 /** Reshuffles tried per level before settling for fewer arrangements. */

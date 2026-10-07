@@ -54,8 +54,12 @@ export interface LevelRecipe {
    * rotation would choose now. Otherwise the rotation picks them (types.ts).
    */
   readonly fixedTypes?: readonly string[];
-  /** Shelves with layers behind the front one, and how many layers in all each of them has. */
-  readonly backLayers: { readonly shelves: number; readonly layers: readonly [number, number] };
+  /**
+   * Shelves with layers behind the front one, and how many layers in all each of them has. With `total`, the
+   * level has exactly that many hidden layers, spread at random over those shelves within the range, so its
+   * capacity (and how full its back layers are) is exact.
+   */
+  readonly backLayers: { readonly shelves: number; readonly layers: readonly [number, number]; readonly total?: number };
   /** Empty front slots at the start, across the board. Back layers take any other empty slots needed. */
   readonly emptyFront: number;
   /** Locked shelves: triples needed to open each one. */

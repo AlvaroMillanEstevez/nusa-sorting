@@ -1,4 +1,7 @@
+import { expect } from 'vitest';
 import { stackOf, type GameEvent, type GameState, type LevelDefinition } from '../src/core';
+import type { LevelStats } from '../tools/levelgen/generate';
+import type { LevelRecipe } from '../tools/levelgen/recipe';
 
 /** All item ids currently in play (shelves, then tracks and the held item), in board order. */
 export function itemIds(state: GameState): number[] {
@@ -48,4 +51,19 @@ export function asRecorded(events: readonly GameEvent[], level: LevelDefinition)
   return boardEvents(events, level).map((e) =>
     e.kind === 'tripleCleared' ? { ...e, itemType: LEGACY_ITEM_TYPES[e.itemType] ?? e.itemType } : e,
   );
+}
+
+/**
+ * Checks a level's simulated results against its recipe's bands, as the generator does (see bandedStats): the
+ * casual player's wins, time-ups and space pressure, and the expert's wins.
+ */
+export function expectInBands(stats: LevelStats, recipe: LevelRecipe, label: string): void {
+  const within = (value: number, [min, max]: readonly [number, number], what: string) => {
+    expect(value, `${label}: ${what}`).toBeGreaterThanOrEqual(min - 1e-9);
+    expect(value, `${label}: ${what}`).toBeLessThanOrEqual(max + 1e-9);
+  };
+  within(stats.casual.winRate, recipe.winBand, 'casual wins');
+  within(stats.casual.timeUpRate, recipe.time.timeUp, 'casual time-ups');
+  if (recipe.pressure) within(stats.casual.pressure, recipe.pressure, 'space pressure');
+  if (recipe.expertBand) within(stats.expert.winRate, recipe.expertBand, 'expert wins');
 }

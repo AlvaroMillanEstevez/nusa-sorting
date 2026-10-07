@@ -243,32 +243,31 @@ export interface GameOutcome {
 }
 
 /**
- * How a simulated player plays. Both complete a triple when they can, otherwise prefer moves that pair an item
- * with a matching one, and never reorder or plan combos; they differ in the mistakes they make and in what they
- * look at.
+ * How a simulated player plays. Both gather the triples they can see (see plannedMove) and never reorder or
+ * plan combos; they differ in the mistakes they make and in what they look at.
  */
 export interface PlayerProfile {
   readonly name: string;
-  /** Share of moves where the player misses the best move and takes any other one. */
+  /** Share of moves where the player misses its planned move and takes any other one. */
   readonly missRate: number;
   /** When missing, the share of times the move taken may split a pair it already has. */
   readonly splitRate: number;
   /**
-   * Plans its moves (see plannedMove): works towards the triple that takes fewest moves to gather, moving other
-   * items out of the way, digs out hidden layers when no triple is in reach, and keeps the last free slot.
+   * Looks at the layers behind before acting: digs out a hidden layer where there is room to finish first, keeps
+   * the items it moves aside off shelves still hiding layers, and keeps the last free slot.
    */
-  readonly plansSpace: boolean;
+  readonly looksBehind: boolean;
 }
 
 /**
- * A casual player, the one the difficulty bands make sure can win without help: misses the best move a third
- * of the time, then sometimes splits a pair, places without looking at the layers behind and does not plan
- * which shelf to free.
+ * A casual player, the one the difficulty bands make sure can win without help: gathers the triples it can
+ * see and, when it sees none, empties some shelf to see what is behind; but misses three moves in ten (then
+ * sometimes splitting a pair), places without looking at the layers behind and does not check it has room.
  */
-export const CASUAL: PlayerProfile = { name: 'casual', missRate: 0.35, splitRate: 0.3, plansSpace: false };
+export const CASUAL: PlayerProfile = { name: 'casual', missRate: 0.3, splitRate: 0.3, looksBehind: false };
 
-/** A careful player, the one the bands make sure is still challenged: rarely misses, and plans its moves. */
-export const EXPERT: PlayerProfile = { name: 'expert', missRate: 0.08, splitRate: 0, plansSpace: true };
+/** A careful player, the one the bands make sure is still challenged: rarely misses, and looks behind. */
+export const EXPERT: PlayerProfile = { name: 'expert', missRate: 0.08, splitRate: 0, looksBehind: true };
 
 /** The planning player avoids moving an item out of the way again within this many moves. */
 const RECENT_MOVES = 6;
@@ -342,7 +341,7 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
     if (options.length === 0) break;
     const best = Math.max(...options.map((o) => o.score));
     const missed = random() < profile.missRate;
-    const planned = profile.plansSpace && !missed ? plannedMove(state, new Set(recentIds)) : null;
+    const planned = missed ? null : plannedMove(state, new Set(recentIds), profile.looksBehind);
     const plannedOption = planned && options.find((o) => sameMove(o.move, planned));
     let pool: typeof options;
     if (plannedOption) {
@@ -408,28 +407,29 @@ function reachableItems(state: GameState): Reachable[] {
  * Where the planner puts an item it moves out of the way: a free slot on another shelf than `avoid`, beside one
  * of its kind if it can, else on the shelf with the most free slots (keeping tight spots open).
  */
-function parkingSlot(state: GameState, type: string, avoid: number | null): Position | null {
+function parkingSlot(state: GameState, type: string, avoid: number | null, looksBehind: boolean): Position | null {
   let best: { at: Position; score: number } | null = null;
   state.shelves.forEach((shelf, s) => {
     if (s === avoid) return;
     const slots = freeFrontSlots(state, s);
     if (slots.length === 0) return;
     const pairs = shelf.layers[0]!.some((item) => item?.type === type);
-    const score = (pairs ? 10 : 0) + slots.length - (shelf.layers.length > 1 ? 0.5 : 0);
+    const score = (pairs ? 10 : 0) + slots.length - (looksBehind && shelf.layers.length > 1 ? 0.5 : 0);
     if (!best || score > best.score) best = { at: front(s, slots[0]!), score };
   });
   return best === null ? null : (best as { at: Position }).at;
 }
 
 /**
- * The planning player's move: of every triple it could gather on one shelf, the one needing the fewest moves
- * (items of other kinds to move off that shelf, plus its own kind to bring in), and the first step of it. With
- * no triple in reach, it digs: empties the front of the shelf with hidden layers that has fewest items left.
- * It never fills the last free slot unless that completes a triple, and avoids moving out of the way again an
- * item it has just moved (`recent`, item ids), which would only shuffle it back and forth. Null when it sees
- * nothing worth doing.
+ * A player's planned move: of every triple it could gather on one shelf, the one needing the fewest moves
+ * (items of other kinds to move off that shelf, plus its own kind to bring in), and the first step of it; with
+ * no triple in sight, it digs: empties the front of the shelf with hidden layers that has fewest items left. It
+ * avoids moving out of the way again an item it has just moved (`recent`, item ids), which would only shuffle
+ * it back and forth. A player that looks behind also digs first where it has room to finish, keeps the items
+ * it moves aside off shelves still hiding layers, and never fills the last free slot unless that completes a
+ * triple. Null when it sees nothing to do (the player then moves as it would on a miss).
  */
-function plannedMove(state: GameState, recent: ReadonlySet<number>): Move | null {
+function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind: boolean): Move | null {
   const reach = reachableItems(state);
   const free = freeSlots(state);
   const byType = new Map<string, Reachable[]>();
@@ -450,12 +450,12 @@ function plannedMove(state: GameState, recent: ReadonlySet<number>): Move | null
       // Moving the others off needs that many free slots elsewhere.
       if (others.length > free - room.length) continue;
       const shuffles = others.filter((i) => recent.has(frontItems[i]!.id)).length;
-      const cost = others.length + needed + 3 * shuffles + (shelf.layers.length > 1 ? -0.3 : 0);
+      const cost = others.length + needed + 3 * shuffles + (looksBehind && shelf.layers.length > 1 ? -0.3 : 0);
       if (plan && cost >= plan.cost) continue;
       let move: Move | null = null;
       if (others.length > 0) {
         const slot = others[0]!;
-        const at = parkingSlot(state, frontItems[slot]!.type, s);
+        const at = parkingSlot(state, frontItems[slot]!.type, s, looksBehind);
         if (at) move = [front(s, slot), at];
       } else if (room.length > 0) {
         // Bring the closest copy: from a shelf it would leave empty with hidden layers behind, if any.
@@ -469,16 +469,19 @@ function plannedMove(state: GameState, recent: ReadonlySet<number>): Move | null
     const chosen = (plan as { move: Move }).move;
     const completes = applyMove(state, chosen);
     const clears = completes.ok && completes.events.some((e) => e.kind === 'tripleCleared');
-    if (clears || free > 1) return chosen;
+    if (clears || free > 1 || !looksBehind) return chosen;
   }
-  // Dig: bring a hidden layer forward by emptying the front with the fewest items.
+  // Dig: bring a hidden layer forward by emptying the front with the fewest items. A player that looks behind
+  // prefers a front it has room to empty (fewer items than free slots); it only risks another when stuck.
   let dig: { left: number; move: Move } | null = null;
   state.shelves.forEach((shelf, s) => {
     if (isShelfLocked(state, s) || shelf.layers.length < 2) return;
     const items = shelf.layers[0]!.flatMap((item, i) => (item && !recent.has(item.id) ? [i] : []));
-    if (items.length === 0 || items.length >= free || (dig && items.length >= dig.left)) return;
-    const at = parkingSlot(state, shelf.layers[0]![items[0]!]!.type, s);
-    if (at) dig = { left: items.length, move: [front(s, items[0]!), at] };
+    if (items.length === 0) return;
+    const left = items.length + (looksBehind && items.length >= free ? 10 : 0);
+    if (dig && left >= dig.left) return;
+    const at = parkingSlot(state, shelf.layers[0]![items[0]!]!.type, s, looksBehind);
+    if (at) dig = { left, move: [front(s, items[0]!), at] };
   });
   return dig === null ? null : (dig as { move: Move }).move;
 }
