@@ -4,6 +4,7 @@ import type { UiIconName } from '../../ui/design/uiIcons';
 import { roundRect, strokeRoundRect } from './draw';
 import { kitText } from './kitText';
 import { uiIcon } from './uiIconTextures';
+import { reducedMotion } from './motion';
 
 /** How urgent a pill is. Each state changes its icon colour, border and motion, never colour alone. */
 export type PillState = 'normal' | 'low' | 'critical';
@@ -90,6 +91,7 @@ export class KitPill extends Phaser.GameObjects.Container {
     this.draw();
     this.scene.tweens.killTweensOf(this);
     this.setScale(1);
+    if (reducedMotion()) return this;
     if (state === 'critical') {
       this.scene.tweens.add({ targets: this, scale: 1.08, duration: 260, yoyo: true, repeat: -1, ease: EASE.loop });
     } else if (state === 'low') {

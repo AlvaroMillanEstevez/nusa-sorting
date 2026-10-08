@@ -10,7 +10,14 @@ import type { SaveData, SaveService, Settings } from './SaveService';
 export class ProgressStore {
   private data: SaveData;
 
-  constructor(private readonly saves: SaveService) {
+  /**
+   * `systemReducedMotion` tells whether the system asks for reduced motion (prefers-reduced-motion): the default
+   * until the player chooses.
+   */
+  constructor(
+    private readonly saves: SaveService,
+    private readonly systemReducedMotion: () => boolean = () => false,
+  ) {
     this.data = saves.load();
   }
 
@@ -86,6 +93,15 @@ export class ProgressStore {
     this.data = { ...this.data, progress: record.progress };
     this.saves.save(this.data);
     return record;
+  }
+
+  /** Reduce motion: the player's choice, or the system's preference while the player has not chosen. */
+  get reduceMotion(): boolean {
+    return this.data.settings.reduceMotion ?? this.systemReducedMotion();
+  }
+
+  setReduceMotion(on: boolean): void {
+    this.setSetting('reduceMotion', on);
   }
 
   get vibration(): boolean {

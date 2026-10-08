@@ -87,6 +87,10 @@ export const UI_ICONS = {
   home: (c) =>
     `<path d="M4.5 11L12 4.5l7.5 6.5V19a1 1 0 0 1-1 1h-4v-5h-5v5h-4a1 1 0 0 1-1-1z"${body(c)}/>` +
     `<path d="M4.5 11L12 4.5l7.5 6.5V19a1 1 0 0 1-1 1h-4v-5h-5v5h-4a1 1 0 0 1-1-1z"${stroke(c)}/>`,
+  /** Reduce motion: a dot with its speed lines struck through by calm. */
+  motion: (c) =>
+    `<circle cx="16" cy="12" r="4.5"${body(c)}/><circle cx="16" cy="12" r="4.5"${stroke(c)}/>` +
+    `<path d="M3.5 8.5h6M2.5 12h5M3.5 15.5h6"${stroke(c)}/>`,
   /** For the coming coins: a coin seen face on, with a rim. */
   coin: (c) => `<circle cx="12" cy="12" r="8.5"${body(c)}/><circle cx="12" cy="12" r="8.5"${stroke(c)}/><circle cx="12" cy="12" r="5"${stroke(c)}/>`,
   /** For the coming shop: a shopping bag. */

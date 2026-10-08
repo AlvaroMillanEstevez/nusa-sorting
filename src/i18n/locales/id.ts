@@ -39,6 +39,7 @@ export const id: Record<MessageKey, string> = {
   'settings.on': 'Aktif',
   'settings.off': 'Mati',
   'settings.vibration': 'Getar',
+  'settings.reduceMotion': 'Kurangi gerakan',
   'settings.title': 'Pengaturan',
   'pause.home': 'Beranda',
   'result.continue': 'Lanjut',

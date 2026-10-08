@@ -11,23 +11,25 @@ export interface SettingsState {
   readonly vibration: boolean;
   /** The device can vibrate (the row is left out where it cannot, e.g. iOS Safari). */
   readonly canVibrate: boolean;
+  readonly reduceMotion: boolean;
 }
 
 export interface SettingsHandlers {
   onSound(on: boolean): void;
   onColorBlind(on: boolean): void;
   onVibration(on: boolean): void;
+  onReduceMotion(on: boolean): void;
 }
 
 /** Height of one settings row. */
 export const SETTINGS_ROW = 52;
 
 /** How many rows `settingsRows` adds for a state. */
-export const settingsRowCount = (state: SettingsState): number => (state.canVibrate ? 3 : 2);
+export const settingsRowCount = (state: SettingsState): number => (state.canVibrate ? 4 : 3);
 
 /**
  * The settings as switch rows (icon and label on the left, a switch on the right), added to `parent` from `top`:
- * sound, colour-blind mode and, where the device can vibrate, vibration. Shared by the pause menu and the home
+ * sound, colour-blind mode, reduce motion and, where the device can vibrate, vibration. Shared by the pause menu and the home
  * screen's settings.
  */
 export function settingsRows(
@@ -50,5 +52,6 @@ export function settingsRows(
   };
   row(top, state.soundOn ? 'sound' : 'mute', 'pause.sound', state.soundOn, (on) => handlers.onSound(on));
   row(top + SETTINGS_ROW, 'eye', 'pause.colorBlind', state.colorBlind, (on) => handlers.onColorBlind(on));
-  if (state.canVibrate) row(top + SETTINGS_ROW * 2, 'bolt', 'settings.vibration', state.vibration, (on) => handlers.onVibration(on));
+  row(top + SETTINGS_ROW * 2, 'motion', 'settings.reduceMotion', state.reduceMotion, (on) => handlers.onReduceMotion(on));
+  if (state.canVibrate) row(top + SETTINGS_ROW * 3, 'bolt', 'settings.vibration', state.vibration, (on) => handlers.onVibration(on));
 }

@@ -5,7 +5,7 @@ import { WOOD } from '../../ui/art/wood';
 import { DURATION, EASE, hexNumber, SKIN } from '../../ui/design/tokens';
 import type { MapIsland, MapLayout, MapNode } from '../../ui/mapLayout';
 import { themeLook } from '../../ui/themeLook';
-import { KitStars, kitText, uiIcon } from '../kit';
+import { KitStars, kitText, reducedMotion, uiIcon } from '../kit';
 
 /** What the map shows for one level. */
 export interface MapLevelState {
@@ -271,7 +271,7 @@ export class MapView {
     ring.lineStyle(4, hexNumber(SKIN.status.combo), 1).strokeCircle(0, 0, r + 6);
     view.addAt(ring, 0);
     view.setScale(1.15);
-    this.scene.tweens.add({ targets: view, scale: 1.22, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
+    if (!reducedMotion()) this.scene.tweens.add({ targets: view, scale: 1.22, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
   }
 
   /** The player's pin, over a level's plaque. */
@@ -285,7 +285,7 @@ export class MapView {
     const pin = this.scene.add.container(0, 0, [g, star]);
     const at = this.nodeAt(level);
     pin.setPosition(at.x, at.y - r - 26);
-    this.scene.tweens.add({ targets: g, y: -4, duration: 700, yoyo: true, repeat: -1, ease: EASE.loop });
+    if (!reducedMotion()) this.scene.tweens.add({ targets: g, y: -4, duration: 700, yoyo: true, repeat: -1, ease: EASE.loop });
     this.marker = pin;
     this.container.add(pin);
     return pin;

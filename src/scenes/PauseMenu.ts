@@ -16,6 +16,7 @@ export interface PauseHandlers {
   onSound(on: boolean): void;
   onColorBlind(on: boolean): void;
   onVibration(on: boolean): void;
+  onReduceMotion(on: boolean): void;
 }
 
 export interface PauseInfo {
@@ -25,6 +26,7 @@ export interface PauseInfo {
   readonly colorBlind: boolean;
   readonly vibration: boolean;
   readonly canVibrate: boolean;
+  readonly reduceMotion: boolean;
   /** The level has started (a move or a touch): restarting or leaving asks first. */
   readonly started: boolean;
 }
@@ -158,6 +160,10 @@ export class PauseMenu {
       onVibration: (on) => {
         this.info = { ...this.info!, vibration: on };
         this.handlers.onVibration(on);
+      },
+      onReduceMotion: (on) => {
+        this.info = { ...this.info!, reduceMotion: on };
+        this.handlers.onReduceMotion(on);
       },
     });
   }

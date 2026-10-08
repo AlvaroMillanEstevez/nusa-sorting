@@ -6,6 +6,11 @@ export interface Settings {
   readonly colorBlindMode: boolean;
   /** Short vibrations on triples, big combos and defeats (where the device has them). */
   readonly vibration: boolean;
+  /**
+   * Reduce motion: no screen shakes and no looping or bouncing animations. Null until the player changes it, so
+   * the system's preference (prefers-reduced-motion) applies.
+   */
+  readonly reduceMotion: boolean | null;
 }
 
 /** Everything the game persists. `version` is the schema version, bumped on any incompatible change. */

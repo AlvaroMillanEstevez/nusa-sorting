@@ -6,7 +6,7 @@ import type { SoundService } from '../services/SoundService';
 import { MAP } from '../ui/art/map';
 import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE } from '../ui/design/tokens';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
-import { KitButton, KitIconButton, KitModal, KitPill, uiIconKey } from './kit';
+import { KitButton, KitIconButton, KitModal, KitPill, reducedMotion, setReducedMotion, uiIconKey } from './kit';
 import { ArrivalSequence, type Arrival, type ArrivalStage } from './map/arrival';
 import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
@@ -223,6 +223,7 @@ export class HomeScene extends Phaser.Scene {
       colorBlind: this.store.colorBlindMode,
       vibration: this.store.vibration,
       canVibrate: this.haptics.supported,
+      reduceMotion: this.store.reduceMotion,
     };
     const rows = settingsRowCount(state);
     const w = Math.min(safe.width - SPACE.s * 2, 360);
@@ -239,6 +240,10 @@ export class HomeScene extends Phaser.Scene {
       onVibration: (on) => {
         this.haptics.setEnabled(on);
         this.store.setVibration(on);
+      },
+      onReduceMotion: (on) => {
+        this.store.setReduceMotion(on);
+        setReducedMotion(on);
       },
     });
     modal.panel.add(
@@ -308,6 +313,7 @@ export class HomeScene extends Phaser.Scene {
   private callToPlay(): void {
     this.tweens.killTweensOf(this.play);
     this.play.setScale(1);
+    if (reducedMotion()) return;
     this.tweens.add({ targets: this.play, scale: 1.06, duration: 600, yoyo: true, repeat: -1, ease: EASE.loop });
   }
 }

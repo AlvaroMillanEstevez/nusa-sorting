@@ -7,7 +7,7 @@ import { parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUik
 import { playList } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
 import { HomeScene } from './scenes/HomeScene';
-import { setKitFeedback } from './scenes/kit';
+import { setKitFeedback, setReducedMotion } from './scenes/kit';
 import { WebHapticsService } from './services/HapticsService';
 import { LocalSaveService } from './services/LocalSaveService';
 import { ProgressStore } from './services/ProgressStore';
@@ -21,7 +21,9 @@ setLocale((import.meta.env.DEV ? parseLang(window.location.search) : null) ?? re
 document.title = t('game.title');
 preventPageGestures();
 
-const store = new ProgressStore(new LocalSaveService());
+// The system's 'reduce motion' preference is the default until the player chooses.
+const systemReducedMotion = () => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store = new ProgressStore(new LocalSaveService(), systemReducedMotion);
 // Development only: ?resetSave starts from an empty save. Production builds drop this branch.
 if (import.meta.env.DEV && wantsSaveReset(window.location.search)) store.reset();
 // Development only: ?slotAspect=1.4 tries other slot shapes, ?safeArea=47,0,34,0 a phone's notch.
@@ -82,6 +84,7 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
   window.visualViewport?.addEventListener('resize', resize);
 }
 
+setReducedMotion(store.reduceMotion);
 const haptics = new WebHapticsService();
 haptics.setEnabled(store.vibration);
 // Every kit button and panel answers with a sound.

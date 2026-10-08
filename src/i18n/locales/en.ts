@@ -37,6 +37,7 @@ export const en = {
   'settings.on': 'On',
   'settings.off': 'Off',
   'settings.vibration': 'Vibration',
+  'settings.reduceMotion': 'Reduce motion',
   'settings.title': 'Settings',
   'pause.home': 'Home',
   'result.continue': 'Continue',

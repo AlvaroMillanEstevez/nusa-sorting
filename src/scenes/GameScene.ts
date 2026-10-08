@@ -71,7 +71,7 @@ import type { Arrival } from './map/arrival';
 import { fadeIn, fadeToScene } from './transitions';
 import type { HapticsService } from '../services/HapticsService';
 import { PauseMenu } from './PauseMenu';
-import { kitText } from './kit';
+import { kitText, setReducedMotion } from './kit';
 import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
 
 const SELECTED_LIFT = 0.15;
@@ -246,6 +246,10 @@ export class GameScene extends Phaser.Scene {
         this.haptics.setEnabled(on);
         this.store.setVibration(on);
       },
+      onReduceMotion: (on: boolean) => {
+        this.store.setReduceMotion(on);
+        setReducedMotion(on);
+      },
     });
     this.overlay = new ResultOverlay(this, (effect) => this.sfx.play(effect));
     this.decor = new ThemeDecor(this);
@@ -372,6 +376,7 @@ export class GameScene extends Phaser.Scene {
       colorBlind: this.store.colorBlindMode,
       vibration: this.store.vibration,
       canVibrate: this.haptics.supported,
+      reduceMotion: this.store.reduceMotion,
       started: this.state.clockStarted,
     });
   }

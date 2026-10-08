@@ -2,7 +2,16 @@ import * as Phaser from 'phaser';
 import type { Rect } from '../ui/boardLayout';
 import { WOOD } from '../ui/art/wood';
 import { DURATION, EASE, hexNumber, SKIN } from '../ui/design/tokens';
-import { kitText } from './kit';
+import { kitText, reducedMotion } from './kit';
+
+/**
+ * Screen shakes: short and small (a bigger shake was fun but could make people feel unwell). Intensity is a share
+ * of the screen size.
+ */
+export const SHAKE = {
+  combo: { duration: 90, intensity: 0.0012, perStep: 0.0002 },
+  blocked: { duration: 200, intensity: 0.0025 },
+} as const;
 
 /** Over the items and the HUD's pills, under panels. */
 const DEPTH_FX = 130;
@@ -128,7 +137,7 @@ export class Effects {
       .setStroke(SKIN.surface.border, 6)
       .setPosition(x, y)
       .setDepth(DEPTH_FX + 3)
-      .setScale(0.4)
+      .setScale(reducedMotion() ? 1 + step * 0.06 : 0.4)
       .setAlpha(0);
     // Kept on screen whatever the shelf, at its biggest.
     const half = (label.width * (1 + step * 0.06)) / 2 + 8;
@@ -141,7 +150,8 @@ export class Effects {
       ],
       onComplete: () => label.destroy(),
     });
-    if (combo >= 5) this.scene.time.delayedCall(delay, () => this.scene.cameras.main.shake(140, 0.003 + step * 0.0008));
+    // A gentle nudge for big combos, never with reduce motion.
+    if (combo >= 5 && !reducedMotion()) this.scene.time.delayedCall(delay, () => this.scene.cameras.main.shake(SHAKE.combo.duration, SHAKE.combo.intensity + step * SHAKE.combo.perStep));
   }
 
   /** A shelf opening: a flash over it and sparks along its front. */
@@ -193,7 +203,7 @@ export class Effects {
     for (const r of shelves) g.strokeRoundedRect(r.x - 3, r.y - 3, r.width + 6, r.height + 6, 8);
     g.setAlpha(0);
     this.scene.tweens.add({ targets: g, alpha: 1, duration: 160, yoyo: true, repeat: 2, hold: 80, onComplete: () => g.destroy() });
-    this.scene.cameras.main.shake(Math.min(duration, 320), 0.006);
+    if (!reducedMotion()) this.scene.cameras.main.shake(Math.min(duration, SHAKE.blocked.duration), SHAKE.blocked.intensity);
   }
 
   /** Confetti thrown up from the bottom corners for a win. */
