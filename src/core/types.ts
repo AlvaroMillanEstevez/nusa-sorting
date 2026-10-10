@@ -123,6 +123,8 @@ export interface GameState {
    * passes, so the level can be studied before it starts. The timer, tracks and combo window all wait.
    */
   readonly clockStarted: boolean;
+  /** Game time during which the clock stays still (the freeze booster); 0 when it runs. */
+  readonly frozenMs: number;
 }
 
 export interface Position {
@@ -144,7 +146,11 @@ export type InvalidMoveReason =
   | 'carrierEmpty'
   | 'alreadyHolding'
   | 'nothingHeld'
-  | 'gameOver';
+  | 'gameOver'
+  /** Boosters: freezing an untimed clock, no visible item to target, no valid shuffle found. */
+  | 'untimed'
+  | 'noTarget'
+  | 'noShuffle';
 
 export type GameEvent =
   | { readonly kind: 'moved'; readonly itemId: number; readonly from: Position; readonly to: Position }
@@ -153,9 +159,14 @@ export type GameEvent =
       readonly shelf: number;
       readonly itemType: ItemType;
       readonly itemIds: readonly number[];
+      /** Taken away by the "remove a triple" booster: it counts as a triple but scores nothing. */
+      readonly byBooster?: true;
     }
   | { readonly kind: 'layerAdvanced'; readonly shelf: number; readonly remainingLayers: number }
   | { readonly kind: 'won' }
+  | { readonly kind: 'clockFrozen'; readonly ms: number }
+  | { readonly kind: 'shuffled' }
+  | { readonly kind: 'timeAdded'; readonly ms: number }
   /** Points for the time left when a timed level is won, already added to the score. */
   | { readonly kind: 'timeBonus'; readonly seconds: number; readonly points: number; readonly score: number }
   | { readonly kind: 'lost'; readonly reason: LoseReason }

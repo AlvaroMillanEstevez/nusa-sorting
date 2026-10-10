@@ -7,3 +7,4 @@ export * from './progress';
 export * from './arrangement';
 export * from './tutorial';
 export * from './stars';
+export * from './boosters';

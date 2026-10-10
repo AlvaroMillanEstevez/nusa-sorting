@@ -353,6 +353,7 @@ describe('blocked detection', () => {
       trackTimeMs: 0,
       held: null,
       clockStarted: true,
+      frozenMs: 0,
     };
     expect(isBlocked(reorderOnly)).toBe(true);
   });

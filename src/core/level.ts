@@ -141,6 +141,7 @@ export function createGame(level: LevelDefinition): GameState {
     trackTimeMs: 0,
     held: null,
     clockStarted: false,
+    frozenMs: 0,
     ...mechanics,
   };
   if (isBlocked(state)) throw new LevelError(`${level.id}: level starts blocked`);

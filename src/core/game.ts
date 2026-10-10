@@ -170,8 +170,10 @@ export function tick(state: GameState, elapsedMs: number): TickResult {
   }
 
   if (state.timeLeftMs !== null) {
-    const timeLeftMs = Math.max(0, state.timeLeftMs - elapsedMs);
-    next = { ...next, timeLeftMs };
+    // A frozen clock takes the time first; only what is left over runs the clock down.
+    const frozen = Math.min(state.frozenMs, elapsedMs);
+    const timeLeftMs = Math.max(0, state.timeLeftMs - (elapsedMs - frozen));
+    next = { ...next, timeLeftMs, frozenMs: state.frozenMs - frozen };
     if (timeLeftMs === 0) {
       next = { ...next, status: 'lost', loseReason: 'timeUp' };
       events.push({ kind: 'lost', reason: 'timeUp' });
@@ -225,7 +227,7 @@ function checkTargetSlot(state: GameState, to: Position): InvalidMoveReason | nu
 }
 
 /** Triples' consequences, then the win or blocked check, shared by every action that places an item. */
-function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
+export function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
   let next = applyTriples(state, events);
   if (isWon(next)) {
     next = addTimeBonus({ ...next, status: 'won' }, events);
@@ -320,7 +322,7 @@ function setFrontSlot(shelf: Shelf, slot: number, value: Item | null): Shelf {
 }
 
 /** The front slot of a shelf under the roaming blocker, or null. */
-function blockedSlotOf(state: GameState, shelf: number): number | null {
+export function blockedSlotOf(state: GameState, shelf: number): number | null {
   return state.blocker?.at.shelf === shelf ? state.blocker.at.slot : null;
 }
 
@@ -328,7 +330,7 @@ function blockedSlotOf(state: GameState, shelf: number): number | null {
  * Clears front triples and advances back layers until the shelf is stable. The roaming blocker fills its slot:
  * a front with the blocker (`blockedSlot`) is not empty, so the layer behind waits until the blocker leaves.
  */
-function settleShelf(shelf: Shelf, index: number, blockedSlot: number | null, events: GameEvent[]): Shelf {
+export function settleShelf(shelf: Shelf, index: number, blockedSlot: number | null, events: GameEvent[]): Shelf {
   let layers: readonly Layer[] = shelf.layers;
   for (;;) {
     const front = layers[0]!;
@@ -368,7 +370,8 @@ function applyTriples(state: GameState, events: GameEvent[]): GameState {
     const removedFrom = blocker?.at.shelf ?? null;
     for (const triple of triples) {
       triplesCleared++;
-      if (combo) {
+      // A triple a booster took away counts (for locks and the blocker) but scores nothing.
+      if (combo && !(triple.kind === 'tripleCleared' && triple.byBooster)) {
         combo = extendCombo(combo);
         const delta = Math.round(combo.pointsPerTriple * multiplierFor(combo));
         combo = { ...combo, score: combo.score + delta };
