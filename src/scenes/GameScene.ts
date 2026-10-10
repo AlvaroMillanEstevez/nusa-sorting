@@ -11,6 +11,15 @@ import {
   isSlotBlocked,
   itemAt,
   moveItem,
+  addTime,
+  boosterPrice,
+  boostersUnlockedAt,
+  continueAfterBlocked,
+  continuePrice,
+  freezeClock,
+  removeTriple,
+  shuffleBoard,
+  winCoins,
   scoreParts,
   starsFor,
   starThresholds,
@@ -49,7 +58,7 @@ import {
   type BoardLayout,
 } from '../ui/boardLayout';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
-import { hexNumber, SKIN } from '../ui/design/tokens';
+import { DURATION, hexNumber, SKIN } from '../ui/design/tokens';
 import { themeLook } from '../ui/themeLook';
 import { themeById, type ThemeId } from '../data/themes';
 import { placeItem, typeFit } from '../ui/itemFit';
@@ -67,6 +76,10 @@ import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
 import { TutorialHint } from './TutorialHint';
 import { Effects } from './Effects';
+import { BoosterBar } from './BoosterBar';
+import { showOffer } from './Offer';
+import { BOOSTER_IDS, ECONOMY, type BoosterId } from '../data/economy';
+import { boosterBarRect } from '../ui/levelLayout';
 import type { Arrival } from './map/arrival';
 import { fadeIn, fadeToScene } from './transitions';
 import type { HapticsService } from '../services/HapticsService';
@@ -147,6 +160,11 @@ export class GameScene extends Phaser.Scene {
   private themeIntro!: ThemeIntro;
   private tutorial!: TutorialHint;
   private effects!: Effects;
+  private boosterBar!: BoosterBar;
+  /** "Remove a triple" is armed: the next tap on an item removes its triple. */
+  private aiming = false;
+  /** Continues used in this attempt (each costs more, up to a maximum). */
+  private continuesUsed = 0;
   /** Development only: what the win panel's main button does (for ?show=autoplay). */
   private overlayNext: (() => void) | null = null;
   /**
@@ -256,6 +274,7 @@ export class GameScene extends Phaser.Scene {
     this.themeIntro = new ThemeIntro(this);
     this.tutorial = new TutorialHint(this);
     this.effects = new Effects(this);
+    this.boosterBar = new BoosterBar(this, (booster) => this.pressBooster(booster));
 
     // A small movement threshold keeps taps from being read as drags, especially with fingers.
     // Pointer distances are in canvas pixels, hence the render ratio.
@@ -271,6 +290,9 @@ export class GameScene extends Phaser.Scene {
 
     // The level asked for, or else the first one not completed yet (the last one once all are done).
     const ids = playList.map((entry) => entry.level.id);
+    // Development only: ?show=buy|continue skips the booster intros (giving their gifts quietly).
+    const devShowParam = import.meta.env.DEV ? parseShowParam(window.location.search) : null;
+    if ((devShowParam === 'buy' || devShowParam === 'continue') && !devShown) BOOSTER_IDS.forEach((id) => this.store.introduceBooster(id));
     this.loadLevel(this.startIndex ?? this.store.firstIncomplete(ids) ?? playList.length - 1);
     fadeIn(this);
     // On a computer, Escape (or P) opens and closes the pause menu.
@@ -322,6 +344,13 @@ export class GameScene extends Phaser.Scene {
   private devShow(show: ShowParam | null): void {
     if (show === 'autoplay') {
       void this.devAutoplay();
+    } else if (show === 'buy') {
+      this.offerBooster(this.unlockedBoosters()[0] ?? 'freeze');
+    } else if (show === 'continue') {
+      this.state = { ...this.state, status: 'lost', loseReason: this.state.timeLeftMs === null ? 'blocked' : 'timeUp' };
+      this.offerContinue(() =>
+        this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() }),
+      );
     } else if (show === 'pause' || show === 'confirm') {
       this.state = startClock(this.state);
       this.openPause();
@@ -340,6 +369,7 @@ export class GameScene extends Phaser.Scene {
         timeLeftMs,
         bestLine: t('result.newBest'),
         newBest: true,
+        coins: winCoins(true, starsFor(score, starThresholds(this.level)), 0),
         next: () => this.goHome(),
         replay: () => this.transitionTo(this.levelIndex),
         breakdown: this.scoreBreakdown(score),
@@ -368,6 +398,7 @@ export class GameScene extends Phaser.Scene {
   private openPause(): void {
     if (this.state.status !== 'playing' || this.overlay.visible || this.pauseMenu.visible || this.themeIntro.visible) return;
     this.holdBoard();
+    this.setAiming(false);
     this.paused = true;
     this.pauseMenu.open({
       levelNumber: playList[this.levelIndex]!.number,
@@ -398,6 +429,7 @@ export class GameScene extends Phaser.Scene {
       const result = tick(this.state, delta);
       this.state = result.state;
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
+      this.hud.setFrozen(this.state.frozenMs > 0);
       this.warnTicks();
       const combo = this.state.combo;
       this.hud.setCombo(combo.combo, combo.windowLeftMs, combo.windowMs);
@@ -562,13 +594,179 @@ export class GameScene extends Phaser.Scene {
     // The first time in a themed level: its name and the objects it brings. Seen once closed.
     this.themeIntro.clear();
     const themeId = this.level.theme;
-    if (look && themeId && themeById(themeId) && !this.store.themesSeen.includes(themeId)) {
-      this.themeIntro.show(themeId as ThemeId, look, this.store.colorBlindMode, () => this.store.markThemeSeen(themeId));
+    this.continuesUsed = 0;
+    this.setAiming(false);
+    const themed = look && themeId && themeById(themeId) && !this.store.themesSeen.includes(themeId);
+    if (themed) {
+      this.themeIntro.show(themeId as ThemeId, look, this.store.colorBlindMode, () => {
+        this.store.markThemeSeen(themeId);
+        this.introduceBoosters();
+      });
     }
     // The first time in level 1: how to make a triple, until the player makes one.
     this.tutorial.clear();
     this.tutorialActive = index === 0 && !this.store.isTutorialDone(FIRST_TRIPLE_TUTORIAL);
     this.showTutorial();
+    if (!themed) this.introduceBoosters();
+  }
+
+  // ---------------------------------------------------------------- boosters
+
+  /** The boosters unlocked at this level (by its number). */
+  private unlockedBoosters(): BoosterId[] {
+    return boostersUnlockedAt(playList[this.levelIndex]!.number);
+  }
+
+  private buildBoosterBar(): void {
+    const { width, height } = viewSize(this);
+    this.boosterBar.build(boosterBarRect(width, height, this.layout.hud.height), this.unlockedBoosters(), this.store.wallet.boosters);
+    this.boosterBar.setActive(this.aiming ? 'removeTriple' : this.state.frozenMs > 0 ? 'freeze' : null);
+  }
+
+  /** A booster's first appearance: a one-line intro and its gift units (one at a time, if several are new). */
+  private introduceBoosters(): void {
+    const fresh = this.unlockedBoosters().find((id) => !this.store.wallet.introduced.includes(id));
+    if (!fresh) return;
+    this.store.introduceBooster(fresh);
+    this.buildBoosterBar();
+    this.paused = true;
+    showOffer(this, {
+      title: t('booster.new'),
+      icon: fresh,
+      body: `${t(`booster.${fresh}.name`)}: ${this.boosterIntro(fresh)} ${t('booster.gift', { n: ECONOMY.boosters[fresh].gift })}`,
+      accept: null,
+      decline: {
+        label: t('offer.ok'),
+        onPress: () => {
+          this.paused = false;
+          this.introduceBoosters();
+        },
+      },
+    });
+  }
+
+  private boosterIntro(booster: BoosterId): string {
+    return booster === 'freeze' ? t('booster.freeze.intro', { s: ECONOMY.boosters.freeze.seconds }) : t(`booster.${booster}.intro`);
+  }
+
+  /** A booster button: use one, or offer to buy one when none is left. */
+  private pressBooster(booster: BoosterId): void {
+    if (this.state.status !== 'playing' || this.overlay.visible || this.paused || this.themeIntro.visible) return;
+    if (this.store.wallet.boosters[booster] === 0) {
+      this.offerBooster(booster);
+      return;
+    }
+    this.holdBoard();
+    if (booster === 'removeTriple') {
+      this.setAiming(!this.aiming);
+      return;
+    }
+    this.setAiming(false);
+    const result = booster === 'freeze' ? freezeClock(startClock(this.state), ECONOMY.boosters.freeze.seconds * 1000) : shuffleBoard(this.state, Math.random);
+    if (!result.ok) {
+      this.sfx.play('invalid');
+      return;
+    }
+    this.store.useBooster(booster);
+    this.state = result.state;
+    if (booster === 'shuffle') {
+      this.sfx.play('advance');
+      this.sync(DURATION.slow);
+    } else {
+      this.sfx.play('unlock');
+    }
+    this.buildBoosterBar();
+  }
+
+  /** Arms or disarms "remove a triple" (the next tap on an item removes its triple). */
+  private setAiming(aiming: boolean): void {
+    this.aiming = aiming;
+    this.boosterBar.setActive(aiming ? 'removeTriple' : null);
+    this.hud.setHint(aiming ? t('booster.tapItem') : null);
+  }
+
+  /** With "remove a triple" armed: removes the triple of the item tapped, if it is one that can be. */
+  private aimAt(x: number, y: number): void {
+    const hit = frontSlotAt(this.layout, x, y);
+    const result = hit ? removeTriple(this.state, { shelf: hit.shelf, layer: 0, slot: hit.slot }) : null;
+    if (!result?.ok) {
+      this.sfx.play('invalid');
+      return;
+    }
+    this.store.useBooster('removeTriple');
+    this.setAiming(false);
+    this.state = result.state;
+    this.buildBoosterBar();
+    this.play(result.events);
+  }
+
+  /** None left: offers to buy one with coins (or says there are not enough). */
+  private offerBooster(booster: BoosterId): void {
+    const coins = this.store.wallet.coins;
+    const price = boosterPrice(booster);
+    this.paused = true;
+    const resume = () => {
+      this.paused = false;
+    };
+    showOffer(this, {
+      title: t('booster.buy.title', { name: t(`booster.${booster}.name`) }),
+      icon: booster,
+      body: coins >= price ? this.boosterIntro(booster) : t('booster.notEnough'),
+      coins,
+      accept:
+        coins >= price
+          ? {
+              label: t('shop.buy'),
+              price,
+              onPress: () => {
+                this.store.buyBooster(booster);
+                this.buildBoosterBar();
+                resume();
+              },
+            }
+          : null,
+      decline: { label: coins >= price ? t('offer.noThanks') : t('offer.ok'), onPress: resume },
+    });
+  }
+
+  /**
+   * After a defeat, if the player can: continue (more time, or a triple removed to make room) for coins or with
+   * a "remove a triple" booster, each continue in the attempt costing more. Declining shows the defeat panel.
+   */
+  private offerContinue(showLost: () => void): void {
+    const kind = this.state.loseReason === 'timeUp' ? 'time' : 'space';
+    const price = continuePrice(kind, this.continuesUsed);
+    const haveBooster = kind === 'space' && this.store.wallet.boosters.removeTriple > 0 && this.continuesUsed < ECONOMY.continues.max;
+    const coins = this.store.wallet.coins;
+    if (!haveBooster && (price === null || coins < price)) {
+      showLost();
+      return;
+    }
+    const accept = () => {
+      this.continuesUsed++;
+      if (haveBooster) this.store.useBooster('removeTriple');
+      else this.store.spendCoins(price!);
+      const result = kind === 'time' ? addTime(this.state, ECONOMY.continues.time.seconds * 1000) : continueAfterBlocked(this.state);
+      if (!result.ok) {
+        showLost();
+        return;
+      }
+      this.state = result.state;
+      this.overlay.hide();
+      this.buildBoosterBar();
+      this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
+      if (kind === 'space') this.play(result.events);
+    };
+    showOffer(this, {
+      title: t(LOSE_TITLES[this.state.loseReason ?? 'blocked']),
+      icon: kind === 'time' ? 'clock' : 'removeTriple',
+      body: kind === 'time' ? t('continue.time.body', { s: ECONOMY.continues.time.seconds }) : t('continue.space.body'),
+      ...(haveBooster ? {} : { coins }),
+      accept: haveBooster
+        ? { label: t('offer.use', { n: this.store.wallet.boosters.removeTriple }), onPress: accept }
+        : { label: t('pause.resume'), price: price!, onPress: accept },
+      decline: { label: t('offer.giveUp'), onPress: showLost },
+    });
   }
 
   /** Shows the tutorial, pointing at a move that completes a triple on the board as it is now. */
@@ -635,6 +833,19 @@ export class GameScene extends Phaser.Scene {
     const totalBefore = this.store.totalStars;
     const starsBefore = this.store.bestStars(this.level.id) ?? 0;
     const record = status === 'won' ? this.store.recordWin(this.level.id, score, stars) : null;
+    // The win's rewards: coins, experience (and any level-up gifts), and the chests the new stars reach.
+    const rewards = record
+      ? this.store.rewardWin({
+          levelNumber: playList[this.levelIndex]!.number,
+          firstClear: record.firstClear,
+          stars,
+          bestStarsBefore: starsBefore,
+          score,
+          totalStarsBefore: totalBefore,
+          totalStarsAfter: this.store.totalStars,
+        })
+      : null;
+    this.setAiming(false);
     const retry = () => this.transitionTo(this.levelIndex);
     if (status === 'lost') this.haptics.pulse('lose');
     this.time.delayedCall(delay, () => {
@@ -653,6 +864,7 @@ export class GameScene extends Phaser.Scene {
           starsAfter: record.bestStars,
           totalBefore,
           next: this.store.firstIncomplete(ids) ?? this.levelIndex,
+          ...(rewards ? { rewards } : {}),
         };
         this.overlayNext = () => this.goHome(arrival);
         this.overlay.show({
@@ -664,13 +876,16 @@ export class GameScene extends Phaser.Scene {
           timeLeftMs,
           bestLine,
           newBest: record.newBest,
+          coins: rewards?.coins ?? 0,
           next: () => this.goHome(arrival),
           replay: retry,
           ...(import.meta.env.DEV ? { breakdown: this.scoreBreakdown(score) } : {}),
         });
       } else {
         this.sfx.play('lose');
-        this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, home: () => this.goHome() });
+        this.offerContinue(() =>
+          this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, home: () => this.goHome() }),
+        );
       }
     });
   }
@@ -729,6 +944,7 @@ export class GameScene extends Phaser.Scene {
     this.decor.draw(themeLook(this.level.theme), screenRect(this), this.layout);
     this.themeIntro.layout();
     this.tutorial.layout(width, height, this.layout, this.baseScale());
+    this.buildBoosterBar();
     this.locks.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
@@ -856,6 +1072,8 @@ export class GameScene extends Phaser.Scene {
     this.pressOnIntro = this.themeIntro.visible;
     if (this.overlay.visible || this.pressOnIntro || this.paused) return;
     this.tutorial.setTouching(true);
+    // Aiming "remove a triple": the tap is handled on release, nothing is picked up.
+    if (this.aiming) return;
     if (this.belt.onPointerDown(pointer)) return;
     if (this.state.status !== 'playing' || this.shelfPress) return;
     this.pointerPos = pointerAt(pointer);
@@ -976,6 +1194,10 @@ export class GameScene extends Phaser.Scene {
 
   /** Tap an item to select it (tap again to deselect); then tap an empty slot (any shelf) to move it there. */
   private handleTap(x: number, y: number): void {
+    if (this.aiming) {
+      this.aimAt(x, y);
+      return;
+    }
     // With a belt item lifted by a tap, this tap says where it goes (or sends it back).
     if (this.belt.onTapWhileHolding(x, y)) return;
     // The slot under the finger at the moment of the tap, moving shelves included.
@@ -1132,7 +1354,10 @@ export class GameScene extends Phaser.Scene {
           combo = event.combo;
           break;
         case 'tripleCleared': {
-          const { rect } = this.layout.shelves[event.shelf]!;
+          // A triple a booster took from a track has no shelf: its items just pop.
+          const shelf = this.layout.shelves[event.shelf];
+          if (!shelf) break;
+          const { rect } = shelf;
           const at = { x: rect.x + rect.width / 2, y: rect.y + rect.height * 0.45 };
           const chain = combo;
           this.time.delayedCall(popAt, () => this.effects.tripleBurst(at.x, at.y, rect.width, Math.max(1, chain + 1)));

@@ -1,4 +1,5 @@
 import type * as Phaser from 'phaser';
+import type { WinRewards } from '../../core/economy';
 
 /** What the game hands the map after a win. */
 export interface Arrival {
@@ -11,6 +12,8 @@ export interface Arrival {
   readonly totalBefore: number;
   /** The level the player goes on to: the first not completed (or the same one when all are done). */
   readonly next: number;
+  /** What the win paid: coins, experience, level-ups with their gifts, chests with their contents. */
+  readonly rewards?: WinRewards;
 }
 
 /** What the steps of the arrival sequence can act on. */

@@ -4,7 +4,7 @@ import { demoLevels as levels } from './fixtures/demo-levels';
 import { layoutForLevel } from '../src/ui/levelLayout';
 import fixture from './fixtures/regression-v3.json';
 import { asRecorded } from './helpers';
-import layoutsFixture from './fixtures/layouts-v4.json';
+import layoutsFixture from './fixtures/layouts-v5.json';
 
 /**
  * Golden recordings made before the belt became a set of tracks with stacks (tests/fixtures/regression-v3.json):
@@ -85,9 +85,9 @@ describe.each(fixture.map((entry) => [entry.level, entry] as const))('belt regre
 });
 
 /**
- * Layouts of every level (tests/fixtures/layouts-v4.json), recorded when slots became 1.2 times taller than
- * wide (October 2026): taller shelves, items standing on the base, vertical tracks with a slot's height between
- * carriers. Earlier snapshots were replaced then (v3 recorded the compact square shelves).
+ * Layouts of every level (tests/fixtures/layouts-v5.json), recorded when boards made room for the booster bar
+ * (October 2026): along the bottom in portrait, down the right side in landscape. Earlier snapshots were
+ * replaced then (v4 recorded slots 1.2 times taller than wide, v3 the compact square shelves).
  */
 describe('layouts are unchanged', () => {
   it.each(layoutsFixture.map((entry) => [entry.level, entry] as const))('%s', (id, entry) => {

@@ -23,6 +23,8 @@ export interface WinContent {
   /** "New best!" or "Best: 1 250", or nothing. */
   readonly bestLine: string | null;
   readonly newBest: boolean;
+  /** Coins the win earned (0 for none). */
+  readonly coins: number;
   /** Goes on: to the map, where the stars land and the next level waits. */
   readonly next: () => void;
   readonly replay: () => void;
@@ -122,6 +124,7 @@ export class ResultOverlay {
     const pills: KitPill[] = [];
     if (c.timeBonus > 0) pills.push(new KitPill(this.scene, 0, infoY, { skin: SKIN, icon: 'clock', label: t('result.timeBonus'), value: `+${formatScore(c.timeBonus, getLocale())}`, height: 36 }));
     else if (c.timeLeftMs !== null) pills.push(new KitPill(this.scene, 0, infoY, { skin: SKIN, icon: 'clock', value: formatTime(c.timeLeftMs), height: 36 }));
+    if (c.coins > 0) pills.push(new KitPill(this.scene, 0, infoY, { skin: SKIN, icon: 'coin', value: `+${formatScore(c.coins, getLocale())}`, tint: SKIN.text.accent, height: 36 }));
     if (c.bestLine) pills.push(new KitPill(this.scene, 0, infoY, { skin: SKIN, icon: 'trophy', value: c.bestLine, height: 36, ...(c.newBest ? { tint: SKIN.text.accent } : {}) }));
     const total = pills.reduce((sum, p) => sum + p.pillWidth, 0) + (pills.length - 1) * SPACE.xs;
     let x = -total / 2;

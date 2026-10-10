@@ -1,5 +1,5 @@
 import { carrierOffset, createGame, type GameState, type LevelDefinition } from '../core';
-import { computeBoardLayout, shelfLayoutCentred, trackPose, type BoardLayout, type ShelfLayout } from './boardLayout';
+import { computeBoardLayout, shelfLayoutCentred, trackPose, type BoardLayout, type Rect, type ShelfLayout } from './boardLayout';
 import { computeColumnLayout, type ColumnSpec } from './columnLayout';
 
 /** Item size relative to its slot (shelves and tracks alike): items stand close together. */
@@ -31,7 +31,28 @@ export const CHECKED_SCREENS: readonly CheckedScreen[] = [
  * The board for a level on a screen: its column layout if it declares one, otherwise the automatic grid with
  * the (single, horizontal) track as a strip below.
  */
+/**
+ * The booster bar's room: a strip along the bottom in portrait (where height is to spare) or down the right side
+ * in landscape (where width is). Boards are laid out in what is left.
+ */
+export const BOOSTER_BAR = 72;
+
+/** Where the booster bar goes on a screen, below the HUD. */
+export function boosterBarRect(width: number, height: number, hudHeight: number): Rect {
+  return width > height
+    ? { x: width - BOOSTER_BAR, y: hudHeight, width: BOOSTER_BAR, height: height - hudHeight }
+    : { x: 0, y: height - BOOSTER_BAR, width, height: BOOSTER_BAR };
+}
+
 export function layoutForLevel(level: LevelDefinition, state: GameState, width: number, height: number): BoardLayout {
+  // The board keeps clear of the booster bar; the HUD still spans the whole width.
+  const landscape = width > height;
+  const board = layoutInArea(level, state, landscape ? width - BOOSTER_BAR : width, landscape ? height : height - BOOSTER_BAR);
+  if (!landscape) return board;
+  return { ...board, hud: { ...board.hud, width }, statusRow: board.statusRow && { ...board.statusRow, width } };
+}
+
+function layoutInArea(level: LevelDefinition, state: GameState, width: number, height: number): BoardLayout {
   // Score and combo are shown in every level.
   const withStatusRow = true;
   if (!level.layout) {

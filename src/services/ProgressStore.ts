@@ -120,6 +120,11 @@ export class ProgressStore {
     return next !== null;
   }
 
+  /** Development only (?coins=N): sets the coins. */
+  setCoins(coins: number): void {
+    this.setWallet({ ...this.data.wallet, coins });
+  }
+
   /** Gives a booster's intro gift, once; true if this was its first time. */
   introduceBooster(booster: BoosterId): boolean {
     if (this.data.wallet.introduced.includes(booster)) return false;

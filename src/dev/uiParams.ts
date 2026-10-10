@@ -33,15 +33,23 @@ export function parseLang(search: string): 'en' | 'id' | null {
 }
 
 /** Panels `?show=` can open over a level, to review them without playing it. */
-export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost' | 'blocked' | 'autoplay';
+export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost' | 'blocked' | 'autoplay' | 'buy' | 'continue';
 
 /**
  * Development only: `?show=pause|confirm|won|lost` opens that panel when the level starts; `blocked` plays the
- * full-board warning and its defeat; `autoplay` plays the level by itself.
+ * full-board warning and its defeat; `autoplay` plays the level by itself; `buy` offers to buy the level's first
+ * booster and `continue` offers to continue after a defeat (both after giving the level's booster intros quietly).
  */
 export function parseShowParam(search: string): ShowParam | null {
   const value = new URLSearchParams(search).get('show');
-  return value === 'pause' || value === 'confirm' || value === 'won' || value === 'lost' || value === 'blocked' || value === 'autoplay' ? value : null;
+  const shows: readonly ShowParam[] = ['pause', 'confirm', 'won', 'lost', 'blocked', 'autoplay', 'buy', 'continue'];
+  return shows.find((show) => show === value) ?? null;
+}
+
+/** Development only: `?coins=N` sets the player's coins to N (to try the shop and the offers). */
+export function parseCoinsParam(search: string): number | null {
+  const raw = new URLSearchParams(search).get('coins');
+  return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
 }
 
 /** Development only: `?home` opens the home screen whatever the save says. */

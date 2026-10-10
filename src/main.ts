@@ -3,7 +3,7 @@ import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
-import { parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
+import { parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
 import { playList } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
 import { HomeScene } from './scenes/HomeScene';
@@ -35,6 +35,8 @@ if (import.meta.env.DEV) {
   if (progress !== null) {
     playList.slice(0, progress).forEach(({ level }, i) => store.recordWin(level.id, 1000, ([3, 2, 1] as const)[i % 3]));
   }
+  const coins = parseCoinsParam(window.location.search);
+  if (coins !== null) store.setCoins(coins);
 }
 
 const sound = new WebAudioSoundService();

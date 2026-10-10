@@ -8,7 +8,7 @@ const levels = [...gameLevels, ...demoLevels];
 import { computeBoardLayout, trackCarrierAt, trackPose, type Rect } from '../src/ui/boardLayout';
 import { computeColumnLayout, type ColumnSpec } from '../src/ui/columnLayout';
 import { slotAspect } from '../src/ui/boardLayout';
-import { CHECKED_SCREENS, itemSize, layoutForLevel, liveBoard, MIN_ITEM_PX, validateLevelLayout } from '../src/ui/levelLayout';
+import { BOOSTER_BAR, CHECKED_SCREENS, itemSize, layoutForLevel, liveBoard, MIN_ITEM_PX, validateLevelLayout } from '../src/ui/levelLayout';
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 const shelvesCol = (...shelves: number[]): ColumnSpec => ({ kind: 'shelves', shelves });
@@ -86,7 +86,8 @@ describe('layouts per level', () => {
   it('uses the automatic grid, unchanged, for levels without a column layout', () => {
     for (const level of levels.filter((l) => !l.layout)) {
       const state = createGame(level);
-      const auto = computeBoardLayout(390, 844, level.shelves.length, 3, state.combo !== null, state.tracks[0]?.carriers.length ?? 0);
+      // Portrait: the automatic grid in the room above the booster bar.
+      const auto = computeBoardLayout(390, 844 - BOOSTER_BAR, level.shelves.length, 3, state.combo !== null, state.tracks[0]?.carriers.length ?? 0);
       expect(layoutForLevel(level, state, 390, 844)).toEqual(auto);
     }
   });

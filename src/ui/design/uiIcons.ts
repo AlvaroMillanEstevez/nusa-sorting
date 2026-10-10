@@ -91,6 +91,21 @@ export const UI_ICONS = {
   motion: (c) =>
     `<circle cx="16" cy="12" r="4.5"${body(c)}/><circle cx="16" cy="12" r="4.5"${stroke(c)}/>` +
     `<path d="M3.5 8.5h6M2.5 12h5M3.5 15.5h6"${stroke(c)}/>`,
+  /** Freeze booster: a snowflake. */
+  freeze: (c) =>
+    `<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5M4 10.4l3.4.9-.9 3.4M20 13.6l-3.4-.9.9-3.4M5.3 14.4l3.4-.9.9 3.4M18.7 9.6l-3.4.9-.9-3.4"${stroke(c)}/>`,
+  /** Remove-a-triple booster: three items bursting from a tap. */
+  removeTriple: (c) =>
+    `<circle cx="12" cy="13" r="3.2"${body(c)}/><circle cx="12" cy="13" r="3.2"${stroke(c)}/>` +
+    `<path d="M12 3.5v3M5 6.5l2 2M19 6.5l-2 2M3.5 13h3M17.5 13h3M6.5 19.5l1.8-1.8M17.5 19.5l-1.8-1.8"${stroke(c)}/>`,
+  /** Shuffle booster: two crossing arrows. */
+  shuffle: (c) => `<path d="M4 7h3.5c4.5 0 4.5 10 9 10H20M4 17h3.5c1.8 0 2.8-1.6 3.5-3.4M13 10.4c.7-1.8 1.7-3.4 3.5-3.4H20M17.5 4.5L20 7l-2.5 2.5M17.5 14.5L20 17l-2.5 2.5"${stroke(c)}/>`,
+  /** A treasure chest: what stars collect. */
+  chest: (c) =>
+    `<path d="M4 10.5h16V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"${body(c)}/>` +
+    `<path d="M4 10.5h16V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 10.5V9a4.5 4.5 0 0 1 4.5-4.5h7A4.5 4.5 0 0 1 20 9v1.5M10.5 10.5v3h3v-3"${stroke(c)}/>`,
+  /** Add (buy more): a plus. */
+  plus: (c) => `<path d="M12 5.5v13M5.5 12h13"${stroke(c, 2.6)}/>`,
   /** For the coming coins: a coin seen face on, with a rim. */
   coin: (c) => `<circle cx="12" cy="12" r="8.5"${body(c)}/><circle cx="12" cy="12" r="8.5"${stroke(c)}/><circle cx="12" cy="12" r="5"${stroke(c)}/>`,
   /** For the coming shop: a shopping bag. */

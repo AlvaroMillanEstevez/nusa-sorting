@@ -4,7 +4,7 @@ import type { BoardLayout } from '../ui/boardLayout';
 import { DURATION, EASE, hexNumber, SKIN, SPACE } from '../ui/design/tokens';
 import { formatScore, formatTime } from '../ui/format';
 import { timeStage, type TimeStage } from '../ui/timeWarning';
-import { KitIconButton, KitPill, kitText } from './kit';
+import { KitIconButton, KitPill, kitText, uiIcon } from './kit';
 
 const DEPTH_HUD = 150;
 /** The biggest numbers the pills are sized for, so they never resize while playing. */
@@ -30,6 +30,12 @@ export class Hud {
   private hint!: Phaser.GameObjects.Text;
   private special!: KitPill;
   private readonly accentLine: Phaser.GameObjects.Graphics;
+  /** A snowflake beside the clock while the freeze booster holds it. */
+  private frozenBadge: Phaser.GameObjects.Image | null = null;
+  private frozen = false;
+  /** A wooden sign under the HUD with a short instruction (aiming "remove a triple"). */
+  private sign: Phaser.GameObjects.Container | null = null;
+  private signText: string | null = null;
   private accent: string | null = null;
   private layoutRef: BoardLayout | null = null;
   private width = 0;
@@ -106,6 +112,37 @@ export class Hud {
     this.fitHint();
     this.refresh();
     this.drawAccent();
+    this.frozenBadge?.destroy();
+    this.frozenBadge = uiIcon(this.scene, 'freeze', SKIN.text.primary, pillH * 0.7)
+      .setPosition(this.time.x - this.time.pillWidth / 2 - pillH * 0.45, cy)
+      .setDepth(DEPTH_HUD)
+      .setVisible(this.frozen);
+    this.setHint(this.signText);
+  }
+
+  /** Shows the clock as frozen (a snowflake beside it, the time dimmed) while the freeze booster holds it. */
+  setFrozen(frozen: boolean): void {
+    if (frozen === this.frozen) return;
+    this.frozen = frozen;
+    this.frozenBadge?.setVisible(frozen);
+    this.time.setAlpha(frozen ? 0.75 : this.waiting ? 0.7 : 1);
+  }
+
+  /** A short instruction on a sign under the HUD, or none. */
+  setHint(text: string | null): void {
+    this.signText = text;
+    this.sign?.destroy();
+    this.sign = null;
+    const layout = this.layoutRef;
+    if (!text || !layout) return;
+    const label = kitText(this.scene, 'label', text, SKIN.text.primary);
+    const w = Math.min(this.width - SPACE.l, label.width + SPACE.m * 2);
+    if (label.width > w - SPACE.s) label.setScale((w - SPACE.s) / label.width);
+    const g = this.scene.add.graphics();
+    g.fillStyle(hexNumber(SKIN.surface.border), 1).fillRoundedRect(-w / 2, -16 + 3, w, 32, 10);
+    g.fillStyle(hexNumber(SKIN.surface.fill), 1).fillRoundedRect(-w / 2, -16, w, 32, 10);
+    g.lineStyle(2, hexNumber(SKIN.status.combo), 1).strokeRoundedRect(-w / 2, -16, w, 32, 10);
+    this.sign = this.scene.add.container(this.width / 2, layout.hud.height + 24, [g, label]).setDepth(DEPTH_HUD + 1);
   }
 
   /** The hint shrinks (never below the caption size) if a translation would run into the clock or the level. */
