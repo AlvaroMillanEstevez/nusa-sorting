@@ -1,17 +1,18 @@
 import * as Phaser from 'phaser';
-import { boostersUnlockedAt, chestProgress, playerLevel } from '../core/economy';
+import { chestProgress, playerLevel } from '../core/economy';
 import type { Reward } from '../data/economy';
 import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { MAP } from '../ui/art/map';
-import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE } from '../ui/design/tokens';
+import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE, TILE } from '../ui/design/tokens';
 import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
 import { KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
 import { wantsChest, wantsShop } from '../dev/uiParams';
+import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
 import { MapView, type MapLevelState } from './map/MapView';
@@ -31,14 +32,41 @@ const DEPTH_BAR = 50;
 const DEPTH_MODAL = 300;
 /** The shop and chest buttons beside the play button. */
 const SIDE_BUTTON = 56;
-/** The row over the play button: the boosters the player has, and the progress to the next chest. */
+/** The row over the play button: the stars towards the next chest, over its button. */
 const FOOTER_ROW = 30;
+/** The glints around a chest ready to open: offsets as shares of the button's size, and radius in px. */
+const CHEST_GLINTS: readonly (readonly [number, number, number])[] = [
+  [-0.56, -0.48, 9],
+  [0.46, -0.52, 13],
+  [0.6, 0.26, 8],
+];
+
+/** A four-pointed golden glint. */
+function glint(scene: Phaser.Scene, r: number): Phaser.GameObjects.Graphics {
+  const k = r * 0.3;
+  const points = [
+    [0, -r],
+    [k, -k],
+    [r, 0],
+    [k, k],
+    [0, r],
+    [-k, k],
+    [-r, 0],
+    [-k, -k],
+  ].map(([x, y]) => new Phaser.Math.Vector2(x, y));
+  const g = scene.add.graphics();
+  g.fillStyle(hexNumber(SKIN.status.combo), 0.45).fillCircle(0, 0, r * 0.7);
+  g.fillStyle(hexNumber(TILE.glint), 1).fillPoints(points, true);
+  g.lineStyle(1.5, hexNumber(TILE.rim), 1).strokePoints(points, true);
+  return g;
+}
 
 /**
  * The home screen: the level map with a top bar (the player's level and its bar, coins, the total of stars and
  * settings, over the title) and a big "Play · Level N" button between the shop and the star chest, with the
- * boosters the player has and the progress to the next chest above it. Tapping a level on the map plays it
- * (completed ones can be replayed). The chest lights up once it has the stars for one, and opens when tapped.
+ * stars towards the next chest over it (the boosters owned are shown in the shop and in the game's bar). Tapping
+ * a level on the map plays it (completed ones can be replayed). Once the chest has the stars for one it glows
+ * and golden glints twinkle around it, and it opens when tapped.
  * After a win it plays the arrival sequence: the stars earned fly to the total and count up on the chest, coins
  * fly to theirs, the experience bar fills, new player levels show their gifts, and the player's pin walks to the
  * next level.
@@ -63,7 +91,7 @@ export class HomeScene extends Phaser.Scene {
   private card: KitPanel | null = null;
   private chestPill!: KitPill;
   private chestGlow!: Phaser.GameObjects.Graphics;
-  private chestMark!: Phaser.GameObjects.Container;
+  private chestGlints: Phaser.GameObjects.Graphics[] = [];
   private toastLabel: KitPill | null = null;
   private sequence: ArrivalSequence | null = null;
   private current = 0;
@@ -245,8 +273,8 @@ export class HomeScene extends Phaser.Scene {
   }
 
   /**
-   * The bottom: the big play button between the shop and the star chest, and above it the boosters the player
-   * has (tapping them opens the shop) and how many stars the next chest still needs.
+   * The bottom: the big play button between the shop and the star chest, and over the chest the stars collected
+   * towards it.
    */
   private buildFooter(width: number, height: number): void {
     const number = playList[this.current]!.number;
@@ -264,38 +292,17 @@ export class HomeScene extends Phaser.Scene {
     const side = playW / 2 + SPACE.s + SIDE_BUTTON / 2;
     new KitIconButton(this, width / 2 - side, y, { skin: SKIN, icon: 'shop', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openShop() }).setDepth(DEPTH_BAR);
     const chestX = width / 2 + side;
-    // The chest lights up (a glowing ring and a "!") once it can be opened.
+    // Once it can be opened the chest glows warmly and golden glints twinkle around it, like a gift waiting.
     this.chestGlow = this.add.graphics().setPosition(chestX, y).setDepth(DEPTH_BAR - 1).setVisible(false);
-    this.chestGlow.lineStyle(4, hexNumber(SKIN.status.combo), 1).strokeCircle(0, 0, SIDE_BUTTON / 2 + 6);
+    for (let i = 10; i >= 1; i--) this.chestGlow.fillStyle(hexNumber(TILE.glow), 0.08).fillCircle(0, 0, SIDE_BUTTON * (0.5 + i * 0.05));
     new KitIconButton(this, chestX, y, { skin: SKIN, icon: 'chest', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.pressChest() }).setDepth(DEPTH_BAR);
-    const mark = this.add.graphics();
-    mark.fillStyle(hexNumber(SKIN.fills.danger.face), 1).fillCircle(0, 0, 12).lineStyle(2, hexNumber(SKIN.surface.border), 1).strokeCircle(0, 0, 12);
-    this.chestMark = this.add
-      .container(chestX + SIDE_BUTTON * 0.36, y - SIDE_BUTTON * 0.36, [mark, kitText(this, 'label', '!', SKIN.fills.danger.text, 16)])
-      .setDepth(DEPTH_BAR + 1)
-      .setVisible(false);
+    this.chestGlints = CHEST_GLINTS.map(([dx, dy, r]) => glint(this, r).setPosition(chestX + dx * SIDE_BUTTON, y + dy * SIDE_BUTTON).setDepth(DEPTH_BAR + 1).setVisible(false));
 
     const rowY = y - 32 - SPACE.s - FOOTER_ROW / 2;
     // Stars towards the next chest, over its button (it can pass the target: 17/15).
     const chestW = 76;
     this.chestPill = new KitPill(this, chestX, rowY, { skin: SKIN, icon: 'starFilled', value: '', tint: SKIN.star.filled, height: FOOTER_ROW, width: chestW }).setDepth(DEPTH_BAR);
     this.showChestStars(this.store.wallet.chestStars);
-    // The boosters the player has, over the play button: centred on it when there is room, else left of the
-    // chest's progress.
-    const owned = boostersUnlockedAt(this.reachedLevel());
-    const left = width / 2 - side - SIDE_BUTTON / 2;
-    const right = chestX - chestW / 2 - SPACE.xs;
-    const chipW = Math.min(64, (right - left - SPACE.xs * (owned.length - 1)) / Math.max(1, owned.length));
-    const stripW = owned.length * chipW + (owned.length - 1) * SPACE.xs;
-    const stripX = Math.min(width / 2, right - stripW / 2);
-    owned.forEach((id, i) => {
-      const x = stripX + (i - (owned.length - 1) / 2) * (chipW + SPACE.xs);
-      new KitPill(this, x, rowY, { skin: SKIN, icon: id, value: String(this.store.wallet.boosters[id]), tint: SKIN.text.accent, height: FOOTER_ROW, width: chipW })
-        .setDepth(DEPTH_BAR)
-        .setSize(chipW, 44)
-        .setInteractive()
-        .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openShop());
-    });
   }
 
   private openShop(): void {
@@ -322,11 +329,15 @@ export class HomeScene extends Phaser.Scene {
     this.chestPill.setValue(`${stars}/${every}`).setProgress(Math.min(1, stars / every));
     const ready = stars >= every;
     if (ready === this.chestGlow.visible) return;
-    this.chestGlow.setVisible(ready).setAlpha(1);
-    this.chestMark.setVisible(ready);
-    this.tweens.killTweensOf(this.chestGlow);
-    // A slow glow, so it asks to be tapped; still with reduce motion.
-    if (ready && !reducedMotion()) this.tweens.add({ targets: this.chestGlow, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: EASE.loop });
+    this.chestGlow.setVisible(ready).setAlpha(1).setScale(1);
+    this.tweens.killTweensOf([this.chestGlow, ...this.chestGlints]);
+    this.chestGlints.forEach((g) => g.setVisible(ready).setAlpha(1).setScale(1));
+    // The glow breathes and the glints twinkle in turn, asking to be tapped; with reduce motion they stay still.
+    if (!ready || reducedMotion()) return;
+    this.tweens.add({ targets: this.chestGlow, scale: 1.12, alpha: 0.7, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
+    this.chestGlints.forEach((g, i) =>
+      this.tweens.add({ targets: g, scale: 0.35, alpha: 0.3, angle: 45, duration: 520, delay: i * 330, yoyo: true, repeat: -1, repeatDelay: 380, ease: EASE.loop }),
+    );
   }
 
   /** The chest: opens when it has the stars for it, else says more are needed. */
@@ -609,11 +620,13 @@ export class HomeScene extends Phaser.Scene {
 
   /** A reward as an icon (a coin, a booster) and "+N". */
   private rewardChip(reward: Reward): { container: Phaser.GameObjects.Container; width: number } {
-    const icon = uiIcon(this, reward.kind === 'coins' ? 'coin' : reward.booster, SKIN.text.accent, 32);
+    // A booster shows its colour icon, as everywhere else.
+    const size = reward.kind === 'coins' ? 32 : 44;
+    const icon = reward.kind === 'coins' ? uiIcon(this, 'coin', SKIN.text.accent, size) : this.add.image(0, 0, boosterTextureKey(reward.booster)).setDisplaySize(size, size);
     const label = kitText(this, 'number', `+${formatScore(reward.amount, getLocale())}`, SKIN.text.primary).setOrigin(0, 0.5);
-    const width = 32 + SPACE.xs + label.width;
-    icon.setX(-width / 2 + 16);
-    label.setX(-width / 2 + 32 + SPACE.xs);
+    const width = size + SPACE.xs + label.width;
+    icon.setX(-width / 2 + size / 2);
+    label.setX(-width / 2 + size + SPACE.xs);
     return { container: this.add.container(0, 0, [icon, label]), width };
   }
 
