@@ -2,6 +2,7 @@ import { nextArrangement } from '../core/arrangement';
 import { firstIncomplete, isUnlocked, recordWin, totalStars, type Progress, type WinRecord } from '../core/progress';
 import type { Stars } from '../core/stars';
 import { buyBooster, introduceBooster, rewardWin, spend, useBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
+import type { GameSnapshot } from '../core/snapshot';
 import type { BoosterId } from '../data/economy';
 import type { SaveData, SaveService, Settings } from './SaveService';
 
@@ -176,6 +177,26 @@ export class ProgressStore {
   private setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
     if (value === this.data.settings[key]) return;
     this.data = { ...this.data, settings: { ...this.data.settings, [key]: value } };
+    this.saves.save(this.data);
+  }
+
+  // ---------------------------------------------------------------- level in progress
+
+  /** The snapshot of the level being played, as stored (null if none); see restoreSnapshot. */
+  get snapshot(): unknown {
+    return this.data.snapshot;
+  }
+
+  /** Keeps the level being played, to pick it up after a reload. */
+  saveSnapshot(snapshot: GameSnapshot): void {
+    this.data = { ...this.data, snapshot };
+    this.saves.save(this.data);
+  }
+
+  /** Forgets the level in progress: it was won, lost, restarted or left. */
+  clearSnapshot(): void {
+    if (this.data.snapshot === null) return;
+    this.data = { ...this.data, snapshot: null };
     this.saves.save(this.data);
   }
 

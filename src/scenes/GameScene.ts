@@ -27,7 +27,8 @@ import {
   TIME_BONUS_PER_SECOND,
   triplesToUnlock,
   tutorialMove,
-  withArrangement,
+  takeSnapshot,
+  NO_BOOSTERS_USED,
   type GameEvent,
   type GameState,
   type Item,
@@ -37,8 +38,6 @@ import {
   stackOf,
   startClock,
 } from '../core';
-import { applyBeltOverrides } from '../dev/beltOverrides';
-import { applyTimeScale } from '../dev/timeScale';
 import { parseArrangementParam } from '../dev/levelParam';
 import { parseShowParam, type ShowParam } from '../dev/uiParams';
 import { formatScore } from '../ui/format';
@@ -71,6 +70,7 @@ import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import { MovingShelves } from './MovingShelves';
 import { playList } from './playList';
+import { playedLevel, type ResumedLevel } from './playedLevel';
 import { ResultOverlay } from './ResultOverlay';
 import { ThemeDecor } from './ThemeDecor';
 import { ThemeIntro } from './ThemeIntro';
@@ -119,6 +119,8 @@ const DEPTH_POPUP = 120;
 export interface GameData {
   /** The level to play (index in play order); by default the first one not completed. */
   readonly levelIndex?: number;
+  /** A level in progress picked up from the save: it opens as it was, with the pause menu open. */
+  readonly resume?: ResumedLevel;
 }
 
 /** Development only: ?show= opens its panel once, not again after the player moves on. */
@@ -207,6 +209,13 @@ export class GameScene extends Phaser.Scene {
 
   /** The level to start with (index in play order), from whoever started this scene. */
   private startIndex: number | null = null;
+  private resumeWith: ResumedLevel | null = null;
+  /** A level picked up from the save shows its due booster intros once the pause menu closes. */
+  private introsAfterPause = false;
+  /** The arrangement of the level being played (see withArrangement). */
+  private arrangement = 0;
+  /** Boosters used in this attempt (kept in the level's snapshot). */
+  private boostersUsed: Record<BoosterId, number> = { ...NO_BOOSTERS_USED };
 
   constructor(
     private readonly sfx: SoundService,
@@ -218,6 +227,7 @@ export class GameScene extends Phaser.Scene {
 
   init(data: GameData): void {
     this.startIndex = data?.levelIndex ?? null;
+    this.resumeWith = data?.resume ?? null;
   }
 
   create(): void {
@@ -289,11 +299,27 @@ export class GameScene extends Phaser.Scene {
     });
 
     // The level asked for, or else the first one not completed yet (the last one once all are done).
+    // When the page is hidden (the phone locked, another app or tab), the level pauses and is saved as it is:
+    // mobile browsers may drop a page in the background, and it then picks up from there.
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') this.leavePage();
+    };
+    const onPageHide = () => this.leavePage();
+    document.addEventListener('visibilitychange', onHidden);
+    window.addEventListener('pagehide', onPageHide);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      document.removeEventListener('visibilitychange', onHidden);
+      window.removeEventListener('pagehide', onPageHide);
+    });
+
     const ids = playList.map((entry) => entry.level.id);
     // Development only: ?show=buy|continue skips the booster intros (giving their gifts quietly).
     const devShowParam = import.meta.env.DEV ? parseShowParam(window.location.search) : null;
     if ((devShowParam === 'buy' || devShowParam === 'continue') && !devShown) BOOSTER_IDS.forEach((id) => this.store.introduceBooster(id));
-    this.loadLevel(this.startIndex ?? this.store.firstIncomplete(ids) ?? playList.length - 1);
+    const resume = this.resumeWith;
+    this.resumeWith = null;
+    if (resume) this.loadLevel(resume.levelIndex, resume);
+    else this.loadLevel(this.startIndex ?? this.store.firstIncomplete(ids) ?? playList.length - 1);
     fadeIn(this);
     // On a computer, Escape (or P) opens and closes the pause menu.
     const keyboard = this.input.keyboard;
@@ -336,6 +362,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Back to the home screen (with the sequence that follows a win, when there is one). */
   private goHome(arrival?: Arrival): void {
+    this.store.clearSnapshot();
     this.holdBoard();
     fadeToScene(this, 'Home', arrival ? { arrival } : {});
   }
@@ -415,6 +442,10 @@ export class GameScene extends Phaser.Scene {
   private resume(): void {
     this.pauseMenu.close();
     this.paused = false;
+    if (this.introsAfterPause) {
+      this.introsAfterPause = false;
+      this.introduceBoosters();
+    }
   }
 
   private togglePause(): void {
@@ -537,7 +568,11 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private loadLevel(index: number): void {
+  /**
+   * Loads a level from its start, or (`resume`) as it was when it was saved, with the pause menu open. A fresh
+   * start forgets any level in progress: restarting is never a way back to an earlier board.
+   */
+  private loadLevel(index: number, resume?: ResumedLevel): void {
     this.tweens.killAll();
     this.time.removeAllEvents();
     for (const sprite of this.sprites.values()) sprite.destroy();
@@ -556,16 +591,22 @@ export class GameScene extends Phaser.Scene {
     this.timeBonus = 0;
 
     this.levelIndex = index;
-    // Development only: ?beltSpeed= and ?beltSlots= retune the conveyor, ?timeScale= the time limit.
-    // Each attempt plays another arrangement of the level's items (?arrangement=K picks one in development).
-    const written = playList[index]!.level;
-    const count = arrangementCount(written);
-    const forced = import.meta.env.DEV ? parseArrangementParam(window.location.search, count) : null;
-    const level = withArrangement(written, forced ?? this.store.takeArrangement(written.id, count));
-    this.level = import.meta.env.DEV
-      ? applyTimeScale(applyBeltOverrides(level, window.location.search), window.location.search)
-      : level;
-    this.state = createGame(this.level);
+    if (resume) {
+      this.arrangement = resume.arrangement;
+      this.level = resume.level;
+      this.state = resume.state;
+    } else {
+      this.store.clearSnapshot();
+      // Each attempt plays another arrangement of the level's items (?arrangement=K picks one in development).
+      const written = playList[index]!.level;
+      const count = arrangementCount(written);
+      const forced = import.meta.env.DEV ? parseArrangementParam(window.location.search, count) : null;
+      this.arrangement = forced ?? this.store.takeArrangement(written.id, count);
+      this.level = playedLevel(index, this.arrangement);
+      this.state = createGame(this.level);
+    }
+    this.continuesUsed = resume?.continuesUsed ?? 0;
+    this.boostersUsed = { ...(resume?.boostersUsed ?? NO_BOOSTERS_USED) };
     for (const shelf of this.state.shelves) {
       for (const layer of shelf.layers) {
         for (const item of layer) if (item) this.createSprite(item);
@@ -594,7 +635,6 @@ export class GameScene extends Phaser.Scene {
     // The first time in a themed level: its name and the objects it brings. Seen once closed.
     this.themeIntro.clear();
     const themeId = this.level.theme;
-    this.continuesUsed = 0;
     this.setAiming(false);
     const themed = look && themeId && themeById(themeId) && !this.store.themesSeen.includes(themeId);
     if (themed) {
@@ -607,7 +647,26 @@ export class GameScene extends Phaser.Scene {
     this.tutorial.clear();
     this.tutorialActive = index === 0 && !this.store.isTutorialDone(FIRST_TRIPLE_TUTORIAL);
     this.showTutorial();
-    if (!themed) this.introduceBoosters();
+    // Picked up from the save: everything stays still until the player chooses to go on, and any booster intro
+    // still due waits until then.
+    this.introsAfterPause = Boolean(resume) && !themed;
+    if (resume) this.openPause();
+    else if (!themed) this.introduceBoosters();
+  }
+
+  // ---------------------------------------------------------------- the level in progress
+
+  /** Saves the level as it is now, to pick it up after a reload; only while it is being played. */
+  private saveSnapshot(): void {
+    if (this.state.status !== 'playing') return;
+    this.store.saveSnapshot(takeSnapshot(this.level, this.arrangement, this.state, { continuesUsed: this.continuesUsed, boostersUsed: this.boostersUsed }));
+  }
+
+  /** The page is being hidden or closed: pause and save the level as it is. */
+  private leavePage(): void {
+    if (this.state?.status !== 'playing') return;
+    this.openPause();
+    this.saveSnapshot();
   }
 
   // ---------------------------------------------------------------- boosters
@@ -668,7 +727,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.store.useBooster(booster);
+    this.boostersUsed[booster]++;
     this.state = result.state;
+    this.saveSnapshot();
     if (booster === 'shuffle') {
       this.sfx.play('advance');
       this.sync(DURATION.slow);
@@ -694,6 +755,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.store.useBooster('removeTriple');
+    this.boostersUsed.removeTriple++;
     this.setAiming(false);
     this.state = result.state;
     this.buildBoosterBar();
@@ -744,8 +806,12 @@ export class GameScene extends Phaser.Scene {
     }
     const accept = () => {
       this.continuesUsed++;
-      if (haveBooster) this.store.useBooster('removeTriple');
-      else this.store.spendCoins(price!);
+      if (haveBooster) {
+        this.store.useBooster('removeTriple');
+        this.boostersUsed.removeTriple++;
+      } else {
+        this.store.spendCoins(price!);
+      }
       const result = kind === 'time' ? addTime(this.state, ECONOMY.continues.time.seconds * 1000) : continueAfterBlocked(this.state);
       if (!result.ok) {
         showLost();
@@ -756,6 +822,7 @@ export class GameScene extends Phaser.Scene {
       this.buildBoosterBar();
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
       if (kind === 'space') this.play(result.events);
+      else this.saveSnapshot();
     };
     showOffer(this, {
       title: t(LOSE_TITLES[this.state.loseReason ?? 'blocked']),
@@ -823,6 +890,8 @@ export class GameScene extends Phaser.Scene {
 
   /** Shows the win or defeat panel once the final animations have had time to play. */
   private endLevel(delay: number): void {
+    // Won or lost: nothing to pick up any more (a continue saves the level again once it goes on).
+    this.store.clearSnapshot();
     const { status, loseReason, timeLeftMs } = this.state;
     const score = this.state.combo.score;
     this.selectedId = null;
@@ -1340,6 +1409,9 @@ export class GameScene extends Phaser.Scene {
         this.effects.blockedWarning(this.layout.shelves.map((shelf) => shelf.rect), BLOCKED_WARNING_MS, t('result.lost.blocked'));
       });
       this.endLevel(SNAP_MS + BLOCKED_WARNING_MS);
+    } else {
+      // After every move: a reload picks the level up from here.
+      this.saveSnapshot();
     }
   }
 

@@ -27,6 +27,11 @@ export interface SaveData {
   readonly tutorialsDone: readonly string[];
   /** Coins, experience, boosters owned, chests opened and boosters introduced (version 2). */
   readonly wallet: Wallet;
+  /**
+   * The level being played, to pick it up after a reload (see src/core/snapshot.ts), or null. Kept as stored: the
+   * game checks it against the level when it restores it, and drops it if it does not fit.
+   */
+  readonly snapshot: unknown;
 }
 
 /** Persistence boundary. The game never touches storage APIs directly. */

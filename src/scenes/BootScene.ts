@@ -14,6 +14,7 @@ import type { GameData } from './GameScene';
 import type { HomeData } from './HomeScene';
 import type { Arrival } from './map/arrival';
 import { playList } from './playList';
+import { resumeFromSnapshot } from './playedLevel';
 
 /** The interface icons the game shows, in the colours it shows them, prepared before it starts so none pops in. */
 const GAME_ICONS: readonly UiIconName[] = ['pause', 'close', 'play', 'restart', 'home', 'next', 'settings', 'sound', 'mute', 'eye', 'bolt', 'clock', 'trophy', 'lock'];
@@ -63,6 +64,17 @@ export class BootScene extends Phaser.Scene {
     const search = window.location.search;
     const numbers = playList.map((entry) => entry.number);
     const dev = import.meta.env.DEV ? { level: parseLevelParam(search, numbers), home: wantsHome(search) } : undefined;
+    // A level left half played (the page was reloaded or the browser dropped it) opens as it was. In development
+    // ?level= and ?home win over it, and keep it for later.
+    if (!dev || (dev.level === null && !dev.home)) {
+      const resume = resumeFromSnapshot(this.store.snapshot);
+      if (resume) {
+        this.scene.start('Game', { resume } satisfies GameData);
+        return;
+      }
+      // It no longer fits the game (the level or the format changed): dropped quietly.
+      this.store.clearSnapshot();
+    }
     const start = startScreen(this.store.progress.completed.length, dev);
     if (start.scene === 'Game') {
       this.scene.start('Game', { levelIndex: start.levelIndex } satisfies GameData);

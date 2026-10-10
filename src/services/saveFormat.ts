@@ -9,7 +9,7 @@ export const SAVE_VERSION = 2;
 const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null };
 
 export function emptySave(): SaveData {
-  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {}, tutorialsDone: [], wallet: EMPTY_WALLET };
+  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {}, tutorialsDone: [], wallet: EMPTY_WALLET, snapshot: null };
 }
 
 /**
@@ -65,6 +65,8 @@ export function parseSave(raw: string | null): SaveData {
     lastArrangements: parseArrangements(data.lastArrangements),
     tutorialsDone: parseIdList(data.tutorialsDone),
     wallet: parseWallet(data.wallet),
+    // Missing in older saves: no level in progress.
+    snapshot: isRecord(data.snapshot) ? data.snapshot : null,
   };
 }
 

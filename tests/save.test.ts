@@ -41,11 +41,18 @@ const sample: SaveData = {
   lastArrangements: { 'nusa-003': 2 },
   tutorialsDone: ['first-triple'],
   wallet: { coins: 340, xp: 5200, boosters: { freeze: 2, removeTriple: 0, shuffle: 1 }, chestsOpened: 1, introduced: ['freeze'] },
+  snapshot: { format: 1, levelId: 'nusa-003', arrangement: 2 },
 };
 
 describe('save format', () => {
   it('round-trips a save', () => {
     expect(parseSave(serializeSave(sample))).toEqual(sample);
+  });
+
+  it('keeps a level in progress as stored, and drops one that is not an object', () => {
+    expect(parseSave(JSON.stringify({ ...sample, snapshot: 'oops' })).snapshot).toBeNull();
+    const { snapshot: _none, ...older } = sample;
+    expect(parseSave(JSON.stringify(older)).snapshot).toBeNull();
   });
 
   it.each([
@@ -83,6 +90,7 @@ describe('save format', () => {
       lastArrangements: { 'nusa-001': 3 },
       tutorialsDone: [],
       wallet: { coins: 0, xp: 0, boosters: { freeze: 3, removeTriple: 0, shuffle: 0 }, chestsOpened: 2, introduced: ['freeze'] },
+      snapshot: null,
     });
   });
 
