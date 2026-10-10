@@ -78,3 +78,8 @@ export function parseProgressParam(search: string, count: number): number | null
   if (raw === null || !/^\d+$/.test(raw)) return null;
   return Math.min(count, Number(raw));
 }
+
+/** Development only: `?shop` opens the shop over the home screen (with `?home`). */
+export function wantsShop(search: string): boolean {
+  return new URLSearchParams(search).has('shop');
+}

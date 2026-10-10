@@ -57,22 +57,37 @@ export class KitPill extends Phaser.GameObjects.Container {
     }
     this.valueText = kitText(scene, 'number', options.value, color, Math.min(TYPE.number.size, this.ph * 0.56)).setOrigin(0, 0.5);
     parts.push(this.valueText);
-    const content = (this.icon ? iconPx + SPACE.xs : 0) + (this.caption ? this.caption.width + SPACE.xs : 0) + this.valueText.width;
-    this.pw = options.width ?? content + SPACE.s * 2;
-    let cx = -this.pw / 2 + SPACE.s;
-    if (options.width) cx = -content / 2;
+    this.iconPx = iconPx;
+    this.pw = options.width ?? this.contentWidth() + SPACE.s * 2;
+    this.place();
+    this.add(parts);
+    scene.add.existing(this);
+    this.draw();
+  }
+
+  private readonly iconPx: number;
+
+  private contentWidth(): number {
+    return (this.icon ? this.iconPx + SPACE.xs : 0) + (this.caption ? this.caption.width + SPACE.xs : 0) + this.valueText.width * this.valueText.scaleX;
+  }
+
+  /** Lays out the content: centred in a fixed width (the value shrinking if it would not fit), else from the left. */
+  private place(): void {
+    if (this.options.width) {
+      this.valueText.setScale(1);
+      const over = this.contentWidth() - (this.pw - SPACE.xs * 2);
+      if (over > 0) this.valueText.setScale(Math.max(0.6, 1 - over / this.valueText.width));
+    }
+    let cx = this.options.width ? -this.contentWidth() / 2 : -this.pw / 2 + SPACE.s;
     if (this.icon) {
-      this.icon.setX(cx + iconPx / 2);
-      cx += iconPx + SPACE.xs;
+      this.icon.setX(cx + this.iconPx / 2);
+      cx += this.iconPx + SPACE.xs;
     }
     if (this.caption) {
       this.caption.setX(cx);
       cx += this.caption.width + SPACE.xs;
     }
     this.valueText.setX(cx);
-    this.add(parts);
-    scene.add.existing(this);
-    this.draw();
   }
 
   get pillWidth(): number {
@@ -80,7 +95,12 @@ export class KitPill extends Phaser.GameObjects.Container {
   }
 
   setValue(value: string): this {
+    const before = this.valueText.text;
+    if (value === before) return this;
     this.valueText.setText(value);
+    // A fixed-width pill re-centres its content (and keeps it fitting) when the value gets longer or shorter, but
+    // not for a change of digits, so a ticking clock stays still.
+    if (this.options.width && value.length !== before.length) this.place();
     return this;
   }
 

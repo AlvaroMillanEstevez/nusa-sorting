@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { playerLevel, rewardWin } from '../core/economy';
+import { ECONOMY } from '../data/economy';
 import { SKIN } from '../ui/design/tokens';
 import type { UiIconName } from '../ui/design/uiIcons';
 import { prepareItemTextures } from './itemTextures';
@@ -10,6 +12,7 @@ import type { ProgressStore } from '../services/ProgressStore';
 import { startScreen } from '../ui/startScreen';
 import type { GameData } from './GameScene';
 import type { HomeData } from './HomeScene';
+import type { Arrival } from './map/arrival';
 import { playList } from './playList';
 
 /** The interface icons the game shows, in the colours it shows them, prepared before it starts so none pops in. */
@@ -39,6 +42,23 @@ export class BootScene extends Phaser.Scene {
     void Promise.all([prepareItemTextures(this), prepareTutorialTextures(this), loadUiFonts(), ...icons]).then(() => this.start());
   }
 
+  /** Development only (?arrival=N): a three-star win of level N, with rewards that show every step. */
+  private sampleArrival(level: number): Arrival {
+    const wallet = this.store.wallet;
+    const { into, needed } = playerLevel(wallet.xp);
+    const every = ECONOMY.chests.everyStars;
+    const rewards = rewardWin(wallet, {
+      levelNumber: playList[level]!.number,
+      firstClear: true,
+      stars: 3,
+      bestStarsBefore: 0,
+      score: needed - into + 200,
+      totalStarsBefore: (wallet.chestsOpened + 1) * every - 1,
+      totalStarsAfter: (wallet.chestsOpened + 1) * every + 2,
+    });
+    return { level, starsBefore: 0, starsAfter: 3, totalBefore: Math.max(0, this.store.totalStars - 3), next: Math.min(level + 1, playList.length - 1), rewards };
+  }
+
   private start(): void {
     const search = window.location.search;
     const numbers = playList.map((entry) => entry.number);
@@ -48,12 +68,10 @@ export class BootScene extends Phaser.Scene {
       this.scene.start('Game', { levelIndex: start.levelIndex } satisfies GameData);
       return;
     }
-    // Development only: ?arrival=N plays the sequence that follows winning level N with three stars.
+    // Development only: ?arrival=N plays the sequence that follows winning level N with three stars, with sample
+    // rewards (coins, a player level and a chest) that are shown but not saved.
     const arrived = import.meta.env.DEV ? parseArrivalParam(search, playList.length) : null;
-    const data: HomeData =
-      arrived === null
-        ? {}
-        : { arrival: { level: arrived, starsBefore: 0, starsAfter: 3, totalBefore: Math.max(0, this.store.totalStars - 3), next: Math.min(arrived + 1, playList.length - 1) } };
+    const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
     this.scene.start('Home', data);
   }
 }

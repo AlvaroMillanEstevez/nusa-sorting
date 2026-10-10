@@ -32,24 +32,25 @@ export function showOffer(scene: Phaser.Scene, options: OfferOptions): KitModal 
   const screen = screenRect(scene);
   const safe = viewSize(scene);
   const w = Math.min(safe.width - SPACE.s * 2, 380);
-  const fixed = 200 + (options.accept ? 64 : 0) + (options.body ? 28 : 0) + (options.coins !== undefined ? 46 : 0);
+  const inner = w - SPACE.l * 2;
+  // The text first, to know how tall it is once wrapped.
+  const body = options.body ? kitText(scene, 'body', options.body, SKIN.text.secondary).setWordWrapWidth(inner) : null;
+  const bodyH = body ? Math.max(28, body.height + 8) : 0;
+  const fixed = 200 + (options.accept ? 64 : 0) + bodyH + (options.coins !== undefined ? 46 : 0);
   // The icon only where it fits (not on a phone held sideways).
   const showIcon = options.icon !== undefined && fixed + 64 <= safe.height - SPACE.s * 2;
   const h = fixed + (showIcon ? 64 : 0);
   const modal = new KitModal(scene, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: options.title });
   modal.setPosition(screen.x, screen.y).setDepth(DEPTH_OFFER);
   const panel = modal.panel;
-  const inner = w - SPACE.l * 2;
   let y = panel.contentTop + 8;
   if (showIcon && options.icon) {
     panel.add(uiIcon(scene, options.icon, SKIN.text.accent, 52).setY(y + 26));
     y += 64;
   }
-  if (options.body) {
-    const body = kitText(scene, 'body', options.body, SKIN.text.secondary).setY(y + 10);
-    body.setWordWrapWidth(inner);
-    panel.add(body);
-    y += 28;
+  if (body) {
+    panel.add(body.setY(y + bodyH / 2 - 4));
+    y += bodyH;
   }
   if (options.coins !== undefined) {
     panel.add(new KitPill(scene, 0, y + 26, { skin: SKIN, icon: 'coin', value: formatScore(options.coins, getLocale()), tint: SKIN.text.accent, height: 36 }));

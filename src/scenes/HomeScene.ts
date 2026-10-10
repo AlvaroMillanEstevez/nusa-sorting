@@ -1,13 +1,19 @@
 import * as Phaser from 'phaser';
-import { t } from '../i18n';
+import { boostersUnlockedAt, nextChest, playerLevel } from '../core/economy';
+import { ECONOMY, type Reward } from '../data/economy';
+import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { MAP } from '../ui/art/map';
 import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE } from '../ui/design/tokens';
+import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
-import { KitButton, KitIconButton, KitModal, KitPill, reducedMotion, setReducedMotion, uiIconKey } from './kit';
-import { ArrivalSequence, type Arrival, type ArrivalStage } from './map/arrival';
+import { KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
+import { ArrivalSequence, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
+import { wantsShop } from '../dev/uiParams';
+import { showOffer } from './Offer';
+import { openShop } from './Shop';
 import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
 import { settingsRowCount, settingsRows, SETTINGS_ROW } from './SettingsRows';
@@ -23,15 +29,18 @@ export interface HomeData {
 const TAP_SLOP = 10;
 const DEPTH_BAR = 50;
 const DEPTH_MODAL = 300;
+/** The shop and chest buttons beside the play button. */
+const SIDE_BUTTON = 56;
+/** The row over the play button: the boosters the player has, and the progress to the next chest. */
+const FOOTER_ROW = 30;
 
 /**
- * The home screen: the level map with a top bar (the title, the total of stars and settings) and a big
- * "Play · Level N" button. Tapping a level on the map plays it (completed ones can be replayed). After a win it
- * plays the arrival sequence: the stars earned fly to the total and the player's pin walks to the next level.
- *
- * Room is kept for what comes next without showing empty buttons: the top bar's left holds the stars counter and
- * will take coins and the player's level beside it; its right holds settings and will take the inventory; the
- * sides of the play button will take the shop and chests (see BAR_SLOTS).
+ * The home screen: the level map with a top bar (the player's level and its bar, coins, the total of stars and
+ * settings, over the title) and a big "Play · Level N" button between the shop and the star chest, with the
+ * boosters the player has and the progress to the next chest above it. Tapping a level on the map plays it
+ * (completed ones can be replayed). After a win it plays the arrival sequence: the stars and coins earned fly to
+ * their counters, the experience bar fills, new player levels and chests show their gifts, and the player's pin
+ * walks to the next level.
  */
 export class HomeScene extends Phaser.Scene {
   private data_: HomeData = {};
@@ -43,8 +52,14 @@ export class HomeScene extends Phaser.Scene {
   private press: { y: number; scroll: number; moved: boolean } | null = null;
   private bar!: Phaser.GameObjects.Container;
   private starsPill!: KitPill;
+  private coinsPill!: KitPill;
+  private levelPill!: KitPill;
   private play!: KitButton;
-  private settings: KitModal | null = null;
+  /** The settings, the shop or the chest's info, while open. */
+  private modal: KitModal | null = null;
+  /** The experience the level pill shows (it fills up during the arrival). */
+  private shownXp = 0;
+  private card: KitPanel | null = null;
   private sequence: ArrivalSequence | null = null;
   private current = 0;
 
@@ -59,7 +74,7 @@ export class HomeScene extends Phaser.Scene {
   init(data: HomeData): void {
     this.data_ = data ?? {};
     this.press = null;
-    this.settings = null;
+    this.modal = null;
     this.sequence = null;
   }
 
@@ -67,7 +82,7 @@ export class HomeScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(MAP.seaBottom);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.sfx.unlock();
-      if (this.settings) return;
+      if (this.modal) return;
       if (this.sequence?.running) {
         this.skipArrival();
         return;
@@ -80,10 +95,11 @@ export class HomeScene extends Phaser.Scene {
       if (Math.abs(dy) > TAP_SLOP) this.press.moved = true;
       if (this.press.moved) this.setScroll(this.press.scroll - dy);
     });
-    this.input.on(Phaser.Input.Events.POINTER_UP, (pointer: Phaser.Input.Pointer) => {
+    this.input.on(Phaser.Input.Events.POINTER_UP, (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       const press = this.press;
       this.press = null;
-      if (!press || press.moved || this.settings) return;
+      // Not when the tap was on a button or counter over the map.
+      if (!press || press.moved || this.modal || over.length > 0) return;
       const at = pointerAt(pointer);
       const level = this.map.levelAt(at.x - this.map.container.x, at.y - this.map.container.y);
       if (level !== null) this.chooseLevel(level);
@@ -98,6 +114,8 @@ export class HomeScene extends Phaser.Scene {
     if (arrival) {
       this.data_ = {};
       void this.runArrival(arrival);
+    } else if (import.meta.env.DEV && wantsShop(window.location.search)) {
+      this.openShop();
     }
   }
 
@@ -140,14 +158,19 @@ export class HomeScene extends Phaser.Scene {
 
     // The map scrolls between the clouds at its top and its bottom edge, keeping clear of the bar and button.
     const barH = this.barHeight();
-    const footer = 64 + SPACE.l;
+    const footer = 64 + SPACE.l + FOOTER_ROW + SPACE.s;
     this.maxScroll = this.layout.height - (height - footer);
     this.minScroll = Math.min(this.maxScroll, revealedTop(this.layout, revealed) - barH);
     this.scroll = this.scrollToShow(this.data_.arrival?.level ?? this.current);
     this.setScroll(this.scroll);
 
     this.buildBar(width);
-    this.buildPlay(width, height);
+    this.buildFooter(width, height);
+  }
+
+  /** The number of the furthest level the player can play (boosters unlocked by then are in the shop). */
+  private reachedLevel(): number {
+    return playList[this.nextLevel()]!.number;
   }
 
   private barHeight(): number {
@@ -166,8 +189,8 @@ export class HomeScene extends Phaser.Scene {
   }
 
   /**
-   * The top bar: the title on a wooden sign, the stars counter on the left and settings on the right.
-   * BAR_SLOTS: the left will also hold coins and the player's level, the right the inventory.
+   * The top bar: the player's level (with its experience bar), coins and stars on the left, settings on the
+   * right, and the title on a wooden sign below. Tapping the coins opens the shop.
    */
   private buildBar(width: number): void {
     const screen = screenRect(this);
@@ -177,8 +200,16 @@ export class HomeScene extends Phaser.Scene {
     g.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.45, 0.45, 0, 0).fillRect(screen.x, screen.y, screen.width, -screen.y + this.barHeight());
     this.bar.add(g);
     const row = 32;
-    this.starsPill = new KitPill(this, 0, row, { skin: SKIN, icon: 'starFilled', value: String(this.store.totalStars), tint: SKIN.star.filled, height: 40, width: 104 });
-    this.starsPill.setX(SPACE.s + 52);
+    // The three counters share the room left of the settings button, narrower on a small phone.
+    const room = width - SPACE.s * 2 - 44 - SPACE.xs * 3;
+    const k = Math.min(1, room / (104 + 104 + 84));
+    const [lw, cw, sw] = [104, 104, 84].map((w) => Math.round(w * k)) as [number, number, number];
+    this.levelPill = new KitPill(this, SPACE.s + lw / 2, row, { skin: SKIN, icon: 'trophy', value: '', height: 40, width: lw });
+    this.coinsPill = new KitPill(this, SPACE.s + lw + SPACE.xs + cw / 2, row, { skin: SKIN, icon: 'coin', value: '', tint: SKIN.text.accent, height: 40, width: cw });
+    this.coinsPill.setSize(cw, 44).setInteractive().on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openShop());
+    this.starsPill = new KitPill(this, SPACE.s + lw + cw + SPACE.xs * 2 + sw / 2, row, { skin: SKIN, icon: 'starFilled', value: String(this.store.totalStars), tint: SKIN.star.filled, height: 40, width: sw });
+    this.showCoins(this.store.wallet.coins);
+    this.showXp(this.store.wallet.xp);
     const gear = new KitIconButton(this, width - SPACE.s - 22, row, { skin: SKIN, icon: 'settings', onPress: () => this.openSettings() });
     const title = this.add
       .text(width / 2, 78, t('game.title'), { fontFamily: FONTS.display, fontStyle: '600', fontSize: '34px', color: SKIN.text.primary })
@@ -186,21 +217,102 @@ export class HomeScene extends Phaser.Scene {
       .setStroke(SKIN.surface.border, 7)
       .setShadow(0, 4, '#000000', 0.35, true, true);
     if (title.width > width - SPACE.l * 2) title.setScale((width - SPACE.l * 2) / title.width);
-    this.bar.add([this.starsPill, gear, title]);
+    this.bar.add([this.levelPill, this.coinsPill, this.starsPill, gear, title]);
   }
 
-  /** The big button at the bottom: play the next level. */
-  private buildPlay(width: number, height: number): void {
+  private showCoins(coins: number): void {
+    this.coinsPill.setValue(formatScore(coins, getLocale()));
+  }
+
+  /** The player's level for an amount of experience, with the share of the way to the next as the pill's bar. */
+  private showXp(xp: number): void {
+    this.shownXp = xp;
+    const { level, into, needed } = playerLevel(xp);
+    this.levelPill.setValue(t('home.playerLevel', { n: level })).setProgress(into / needed);
+  }
+
+  private bump(target: Phaser.GameObjects.Container): void {
+    this.tweens.killTweensOf(target);
+    target.setScale(1);
+    this.tweens.add({ targets: target, scale: 1.2, duration: DURATION.press, yoyo: true, ease: EASE.enter });
+  }
+
+  /**
+   * The bottom: the big play button between the shop and the star chest, and above it the boosters the player
+   * has (tapping them opens the shop) and how many stars the next chest still needs.
+   */
+  private buildFooter(width: number, height: number): void {
     const number = playList[this.current]!.number;
-    this.play = new KitButton(this, width / 2, height - SPACE.m - 34, {
+    const y = height - SPACE.m - 34;
+    const playW = Math.min(280, width - (SPACE.s * 2 + SIDE_BUTTON) * 2);
+    this.play = new KitButton(this, width / 2, y, {
       skin: SKIN,
       variant: 'primary',
       label: t('home.play', { n: number }),
       icon: 'play',
-      width: Math.min(320, width - SPACE.l * 2),
+      width: playW,
       height: 64,
       onPress: () => this.chooseLevel(this.current),
     }).setDepth(DEPTH_BAR);
+    const side = playW / 2 + SPACE.s + SIDE_BUTTON / 2;
+    new KitIconButton(this, width / 2 - side, y, { skin: SKIN, icon: 'shop', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openShop() }).setDepth(DEPTH_BAR);
+    const chestX = width / 2 + side;
+    new KitIconButton(this, chestX, y, { skin: SKIN, icon: 'chest', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openChestInfo() }).setDepth(DEPTH_BAR);
+
+    const rowY = y - 32 - SPACE.s - FOOTER_ROW / 2;
+    // Progress to the next chest, over its button.
+    const chest = nextChest(this.store.totalStars);
+    const chestW = 76;
+    new KitPill(this, chestX, rowY, { skin: SKIN, icon: 'starFilled', value: `${chest.have}/${chest.every}`, tint: SKIN.star.filled, height: FOOTER_ROW, width: chestW })
+      .setProgress(chest.have / chest.every)
+      .setDepth(DEPTH_BAR);
+    // The boosters the player has, over the play button: centred on it when there is room, else left of the
+    // chest's progress.
+    const owned = boostersUnlockedAt(this.reachedLevel());
+    const left = width / 2 - side - SIDE_BUTTON / 2;
+    const right = chestX - chestW / 2 - SPACE.xs;
+    const chipW = Math.min(64, (right - left - SPACE.xs * (owned.length - 1)) / Math.max(1, owned.length));
+    const stripW = owned.length * chipW + (owned.length - 1) * SPACE.xs;
+    const stripX = Math.min(width / 2, right - stripW / 2);
+    owned.forEach((id, i) => {
+      const x = stripX + (i - (owned.length - 1) / 2) * (chipW + SPACE.xs);
+      new KitPill(this, x, rowY, { skin: SKIN, icon: id, value: String(this.store.wallet.boosters[id]), tint: SKIN.text.accent, height: FOOTER_ROW, width: chipW })
+        .setDepth(DEPTH_BAR)
+        .setSize(chipW, 44)
+        .setInteractive()
+        .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openShop());
+    });
+  }
+
+  private openShop(): void {
+    if (this.modal || this.sequence?.running) return;
+    this.modal = openShop(
+      this,
+      this.store,
+      this.sfx,
+      this.reachedLevel(),
+      () => this.showCoins(this.store.wallet.coins),
+      () => {
+        this.modal = null;
+        // The boosters' counts over the play button.
+        this.build();
+      },
+    );
+  }
+
+  /** What a star chest holds (fixed ranges, shown to the player) and the stars still needed for the next. */
+  private openChestInfo(): void {
+    if (this.modal || this.sequence?.running) return;
+    const { coins, booster } = ECONOMY.chests;
+    const chest = nextChest(this.store.totalStars);
+    const boosters = booster.min === booster.max ? String(booster.min) : `${booster.min}–${booster.max}`;
+    this.modal = showOffer(this, {
+      title: t('chest.title'),
+      icon: 'chest',
+      body: `${t('chest.info', { every: chest.every, min: coins.min, max: coins.max, b: boosters })}\n${t('chest.progress', { have: chest.have, every: chest.every })}`,
+      accept: null,
+      decline: { label: t('offer.ok'), onPress: () => (this.modal = null) },
+    });
   }
 
   private chooseLevel(level: number): void {
@@ -215,7 +327,7 @@ export class HomeScene extends Phaser.Scene {
   }
 
   private openSettings(): void {
-    if (this.settings) return;
+    if (this.modal) return;
     const screen = screenRect(this);
     const safe = viewSize(this);
     const state = {
@@ -252,18 +364,23 @@ export class HomeScene extends Phaser.Scene {
         icon: 'close',
         onPress: () => {
           modal.dismiss();
-          this.settings = null;
+          this.modal = null;
         },
       }),
     );
     modal.popIn();
-    this.settings = modal;
+    this.modal = modal;
   }
 
   // ---------------------------------------------------------------- arrival after a win
 
   private async runArrival(arrival: Arrival): Promise<void> {
     this.starsPill.setValue(String(arrival.totalBefore));
+    const rewards = arrival.rewards;
+    if (rewards) {
+      this.showCoins(coinsBefore(rewards));
+      this.showXp(rewards.wallet.xp - rewards.xp);
+    }
     const stage: ArrivalStage = {
       scene: this,
       arrival,
@@ -292,10 +409,104 @@ export class HomeScene extends Phaser.Scene {
         return this.map.moveMarker(from, to, () => this.sfx.play('mapStep'));
       },
       callToPlay: () => this.callToPlay(),
+      spawnCoin: (x, y) => this.add.image(x, y, uiIconKey('coin', SKIN.text.accent)).setDepth(DEPTH_MODAL + 10),
+      coinsCounter: () => ({ x: this.coinsPill.x - 30, y: this.coinsPill.y }),
+      showCoins: (coins, bump) => {
+        this.showCoins(coins);
+        if (bump) this.bump(this.coinsPill);
+      },
+      showXp: (xp, instant) => {
+        if (instant || reducedMotion()) {
+          this.showXp(xp);
+          return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+          const counter = { xp: this.shownXp };
+          const before = playerLevel(this.shownXp).level;
+          this.tweens.add({
+            targets: counter,
+            xp,
+            duration: DURATION.slow * 3,
+            ease: 'Sine.easeInOut',
+            onUpdate: () => this.showXp(Math.round(counter.xp)),
+            onComplete: () => {
+              this.showXp(xp);
+              if (playerLevel(xp).level > before) this.bump(this.levelPill);
+              resolve();
+            },
+          });
+        });
+      },
+      showCard: (card) => this.showCard(card),
+      closeCards: () => {
+        this.card?.destroy();
+        this.card = null;
+      },
       play: (effect) => this.sfx.play(effect),
     };
     this.sequence = new ArrivalSequence(stage);
     await this.sequence.run();
+  }
+
+  /**
+   * A reward card over the map for a moment: a new player level and its gift, or a star chest that shakes and
+   * opens to show what it held.
+   */
+  private showCard(card: RewardCard): Promise<void> {
+    const { width, height } = viewSize(this);
+    const w = Math.min(300, width - SPACE.l * 2);
+    const h = 220;
+    const panel = new KitPanel(this, width / 2, height * 0.45, {
+      skin: SKIN,
+      width: w,
+      height: h,
+      title: card.kind === 'levelUp' ? t('levelUp.title') : t('chest.opened'),
+    }).setDepth(DEPTH_MODAL + 5);
+    this.card = panel;
+    const top = panel.contentTop;
+    const subtitle = card.kind === 'levelUp' ? t('levelUp.reached', { n: card.level }) : t('chest.title');
+    panel.add(kitText(this, 'body', subtitle, SKIN.text.secondary).setY(top + 12));
+    const icon = uiIcon(this, card.kind === 'levelUp' ? 'starFilled' : 'chest', SKIN.text.accent, 48).setY(top + 58);
+    panel.add(icon);
+    // What it gives: an icon and "+N" for each reward, side by side.
+    const items = card.rewards.map((reward) => this.rewardChip(reward));
+    const gap = SPACE.m;
+    const total = items.reduce((sum, item) => sum + item.width, 0) + gap * (items.length - 1);
+    let x = -total / 2;
+    for (const item of items) {
+      item.container.setPosition(x + item.width / 2, top + 112).setAlpha(0);
+      x += item.width + gap;
+      panel.add(item.container);
+    }
+    const still = reducedMotion();
+    panel.setScale(still ? 1 : 0.86).setAlpha(0);
+    return new Promise((resolve) => {
+      this.tweens.chain({
+        targets: panel,
+        tweens: [
+          { alpha: 1, scale: 1, duration: DURATION.slow, ease: EASE.pop },
+          // A chest shakes before it opens.
+          ...(card.kind === 'chest' && !still ? [{ targets: icon, angle: { from: -8, to: 8 }, duration: 70, yoyo: true, repeat: 3 }] : []),
+          { targets: items.map((item) => item.container), alpha: 1, duration: DURATION.base, ease: EASE.pop, onStart: () => icon.setAngle(0) },
+          { alpha: 0, delay: 1300, duration: DURATION.base, ease: EASE.exit },
+        ],
+        onComplete: () => {
+          panel.destroy();
+          if (this.card === panel) this.card = null;
+          resolve();
+        },
+      });
+    });
+  }
+
+  /** A reward as an icon (a coin, a booster) and "+N". */
+  private rewardChip(reward: Reward): { container: Phaser.GameObjects.Container; width: number } {
+    const icon = uiIcon(this, reward.kind === 'coins' ? 'coin' : reward.booster, SKIN.text.accent, 32);
+    const label = kitText(this, 'number', `+${formatScore(reward.amount, getLocale())}`, SKIN.text.primary).setOrigin(0, 0.5);
+    const width = 32 + SPACE.xs + label.width;
+    icon.setX(-width / 2 + 16);
+    label.setX(-width / 2 + 32 + SPACE.xs);
+    return { container: this.add.container(0, 0, [icon, label]), width };
   }
 
   /** A tap during the sequence skips it: everything jumps to its end state. */

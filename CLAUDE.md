@@ -32,6 +32,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?uikit` — abre el kit de interfaz (componentes en todos sus estados, iconos y formas de hueco). Página directa con `?uikit=components|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
 - `?show=pause|confirm|won|lost|blocked|autoplay|buy|continue` — abre ese panel al empezar el nivel, para revisarlo sin jugar (`won` usa una puntuación de 3 estrellas; `blocked` muestra el aviso de tablero lleno y su derrota; `autoplay` juega el nivel solo con el jugador experto simulado y sigue hasta el mapa, para ver efectos y coreografía; `buy` ofrece comprar el primer potenciador del nivel y `continue` ofrece continuar tras perder, ambos dando antes en silencio las presentaciones de potenciadores).
 - `?coins=N` — pone las monedas del jugador a N (para probar la tienda y las ofertas).
+- `?shop` — abre la tienda sobre el mapa (con `?home`).
 - `?headless` — bucle del juego por temporizador y sin suavizado del paso de tiempo, para que un navegador headless con tiempo virtual haga avanzar las animaciones en capturas.
 - `?home` — abre la pantalla de inicio (el mapa) aunque sea la primera visita.
 - `?progress=N` — marca como completados los N primeros niveles (con 3, 2 y 1 estrellas alternas) antes de empezar, para ver el mapa más adelante.
