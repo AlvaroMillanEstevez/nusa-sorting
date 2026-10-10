@@ -4,6 +4,7 @@ import { ECONOMY } from '../data/economy';
 import { SKIN } from '../ui/design/tokens';
 import type { UiIconName } from '../ui/design/uiIcons';
 import { prepareItemTextures } from './itemTextures';
+import { prepareBoosterTextures } from './boosterTextures';
 import { loadUiFonts, prepareUiIcon } from './kit';
 import { prepareTutorialTextures } from './TutorialHint';
 import { parseLevelParam } from '../dev/levelParam';
@@ -40,7 +41,7 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     const icons = ICONS.map(([name, color]) => prepareUiIcon(this, name, color));
-    void Promise.all([prepareItemTextures(this), prepareTutorialTextures(this), loadUiFonts(), ...icons]).then(() => this.start());
+    void Promise.all([prepareItemTextures(this), prepareBoosterTextures(this), prepareTutorialTextures(this), loadUiFonts(), ...icons]).then(() => this.start());
   }
 
   /** Development only (?arrival=N): a three-star win of level N, with rewards that show every step. */

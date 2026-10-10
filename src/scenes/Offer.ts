@@ -11,8 +11,9 @@ const DEPTH_OFFER = 310;
 export interface OfferOptions {
   readonly title: string;
   readonly body?: string;
-  /** A big icon over the text (the booster, the clock...). */
+  /** A big icon over the text (the clock...), or `image`: a texture instead (a booster's colour icon). */
   readonly icon?: UiIconName;
+  readonly image?: string;
   /** The player's coins, shown under the title when the offer costs coins. */
   readonly coins?: number;
   readonly accept: {
@@ -38,14 +39,15 @@ export function showOffer(scene: Phaser.Scene, options: OfferOptions): KitModal 
   const bodyH = body ? Math.max(28, body.height + 8) : 0;
   const fixed = 200 + (options.accept ? 64 : 0) + bodyH + (options.coins !== undefined ? 46 : 0);
   // The icon only where it fits (not on a phone held sideways).
-  const showIcon = options.icon !== undefined && fixed + 64 <= safe.height - SPACE.s * 2;
+  const showIcon = (options.icon !== undefined || options.image !== undefined) && fixed + 64 <= safe.height - SPACE.s * 2;
   const h = fixed + (showIcon ? 64 : 0);
   const modal = new KitModal(scene, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: options.title });
   modal.setPosition(screen.x, screen.y).setDepth(DEPTH_OFFER);
   const panel = modal.panel;
   let y = panel.contentTop + 8;
-  if (showIcon && options.icon) {
-    panel.add(uiIcon(scene, options.icon, SKIN.text.accent, 52).setY(y + 26));
+  if (showIcon) {
+    if (options.image) panel.add(scene.add.image(0, y + 28, options.image).setDisplaySize(64, 64));
+    else if (options.icon) panel.add(uiIcon(scene, options.icon, SKIN.text.accent, 52).setY(y + 26));
     y += 64;
   }
   if (body) {

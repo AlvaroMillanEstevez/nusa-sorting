@@ -1,5 +1,7 @@
 import { parseItemType, type Variant } from '../../data/itemCatalog';
 import { darken, lighten } from './color';
+import type { BoosterId } from '../../data/economy';
+import { BOOSTER_TEMPLATES } from './boosterIcons';
 import { CULTURAL_TEMPLATES } from './culturalIcons';
 import { MORE_TEMPLATES } from './moreIcons';
 import { STARTER_TEMPLATES } from './starterIcons';
@@ -111,6 +113,14 @@ export function renderIcon(kindId: string, variant: Variant, marks = false): str
   const body = template.draw(paint).replace(/\s*\n\s*/g, '');
   // Drawn a little larger than the 100-unit grid so icons fill their slot; the badge stays in its corner.
   return svgDocument(defs, `<g transform="translate(50 52) scale(1.07) translate(-50 -52)">${body}</g>` + variantBadge(variant, marks));
+}
+
+/** SVG for a booster's icon (see boosterIcons.ts), drawn like the item icons. */
+export function renderBoosterSvg(booster: BoosterId): string {
+  const template = BOOSTER_TEMPLATES[booster];
+  const defs: string[] = [];
+  const body = template.draw(paintFor(template.palette, defs)).replace(/\s*\n\s*/g, '');
+  return svgDocument(defs, body);
 }
 
 /** SVG for any item type id (`marks`: see renderIcon). */

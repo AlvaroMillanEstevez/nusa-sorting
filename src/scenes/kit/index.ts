@@ -5,6 +5,7 @@ export { KitModal, KitPanel, type PanelOptions } from './Panel';
 export { KitToggle } from './Toggle';
 export { KitProgressBar } from './ProgressBar';
 export { KitStars, STAR_STEP_MS } from './Stars';
+export { KitBoosterButton, type BoosterButtonOptions, type BoosterTileState } from './BoosterButton';
 export { kitText } from './kitText';
 export { loadUiFonts } from './fonts';
 export { prepareUiIcon, uiIcon, uiIconKey } from './uiIconTextures';

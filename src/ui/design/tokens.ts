@@ -123,6 +123,30 @@ export const EASE = {
   loop: 'Sine.easeInOut',
 } as const;
 
+/**
+ * Booster tiles (KitBoosterButton): a carved wooden panel in a brass frame, standing on a dark lip, with the
+ * count in a dark badge ringed in brass, a green "+" badge to buy one, and a greyed, padlocked look while locked.
+ * The sparkles of a gift ready to open (the star chest) use the glint and glow colours.
+ */
+export const TILE = {
+  rim: '#e0b040',
+  rimLight: '#f6d98a',
+  rimShade: '#a3761f',
+  lip: '#6b4612',
+  panel: '#8a5530',
+  panelLight: '#b27b45',
+  panelShade: '#5e3b1d',
+  /** Warm light behind the icon. */
+  glow: '#ffd98a',
+  badge: '#2e1b0d',
+  /** Locked: the frame and panel greyed out, the icon darkened by this tint. */
+  lockedRim: '#8d8273',
+  lockedPanel: '#4f463d',
+  lockedIcon: '#6a6a6a',
+  /** A gift ready to open: golden glints and a warm glow. */
+  glint: '#fff1b8',
+} as const;
+
 /** How components react when pressed. */
 export const PRESS = {
   /** Scale while held. */

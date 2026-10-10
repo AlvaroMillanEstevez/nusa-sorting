@@ -6,11 +6,13 @@ import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { SKIN, SPACE } from '../ui/design/tokens';
 import { formatScore } from '../ui/format';
-import { KitButton, KitIconButton, KitModal, KitPill, kitText, uiIcon } from './kit';
+import { boosterTextureKey } from './boosterTextures';
+import { KitBoosterButton, KitButton, KitIconButton, KitModal, KitPill, kitText } from './kit';
 import { screenRect, viewSize } from './view';
 
 const DEPTH_SHOP = 300;
 const ROW = 72;
+const TILE_SIZE = 48;
 
 /**
  * The shop: boosters bought with coins, one at a time, and how many the player has of each. Boosters not
@@ -47,12 +49,19 @@ export function openShop(
     BOOSTER_IDS.forEach((id: BoosterId, i) => {
       const y = top + 48 + ROW / 2 + i * ROW;
       const unlocked = reachedLevel >= ECONOMY.boosters[id].unlockLevel;
-      const color = unlocked ? SKIN.text.accent : SKIN.text.secondary;
-      const icon = uiIcon(scene, unlocked ? id : 'lock', color, 32).setPosition(-inner / 2 + 18, y);
-      const name = kitText(scene, 'body', t(`booster.${id}.name`), SKIN.text.primary).setOrigin(0, 0.5).setPosition(-inner / 2 + 44, y - 10);
+      const have = wallet.boosters[id];
+      // The same tile as in the game's bar, showing only: count, "+" or padlock.
+      const icon = new KitBoosterButton(scene, -inner / 2 + TILE_SIZE / 2, y, {
+        texture: boosterTextureKey(id),
+        size: TILE_SIZE,
+        state: !unlocked ? 'locked' : have > 0 ? 'ready' : 'empty',
+        count: have,
+      });
+      const textX = -inner / 2 + TILE_SIZE + SPACE.s;
+      const name = kitText(scene, 'body', t(`booster.${id}.name`), SKIN.text.primary).setOrigin(0, 0.5).setPosition(textX, y - 10);
       const note = kitText(scene, 'caption', unlocked ? t('shop.have', { n: wallet.boosters[id] }) : t('shop.unlocksAt', { n: ECONOMY.boosters[id].unlockLevel }), SKIN.text.secondary)
         .setOrigin(0, 0.5)
-        .setPosition(-inner / 2 + 44, y + 12);
+        .setPosition(textX, y + 12);
       const price = boosterPrice(id);
       const buy = new KitButton(scene, inner / 2 - 60, y, {
         skin: SKIN,
@@ -72,7 +81,7 @@ export function openShop(
         },
       }).setDisabled(!unlocked || wallet.coins < price);
       // Long names shrink to fit beside the button.
-      const room = inner - 44 - 120 - SPACE.s;
+      const room = inner - TILE_SIZE - SPACE.s - 120 - SPACE.s;
       if (name.width > room) name.setScale(Math.max(0.75, room / name.width));
       const parts = [icon, name, note, buy];
       panel.add(parts);

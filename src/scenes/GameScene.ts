@@ -77,6 +77,7 @@ import { ThemeIntro } from './ThemeIntro';
 import { TutorialHint } from './TutorialHint';
 import { Effects } from './Effects';
 import { BoosterBar } from './BoosterBar';
+import { boosterTextureKey } from './boosterTextures';
 import { showOffer } from './Offer';
 import { BOOSTER_IDS, ECONOMY, type BoosterId } from '../data/economy';
 import { boosterBarRect } from '../ui/levelLayout';
@@ -167,6 +168,7 @@ export class GameScene extends Phaser.Scene {
   private boosterBar!: BoosterBar;
   /** "Remove a triple" is armed: the next tap on an item removes its triple. */
   private aiming = false;
+  private hintTimer: Phaser.Time.TimerEvent | null = null;
   /** Continues used in this attempt (each costs more, up to a maximum). */
   private continuesUsed = 0;
   /** Development only: what the win panel's main button does (for ?show=autoplay). */
@@ -693,7 +695,7 @@ export class GameScene extends Phaser.Scene {
     this.paused = true;
     showOffer(this, {
       title: t('booster.new'),
-      icon: fresh,
+      image: boosterTextureKey(fresh),
       body: `${t(`booster.${fresh}.name`)}: ${this.boosterIntro(fresh)} ${t('booster.gift', { n: ECONOMY.boosters[fresh].gift })}`,
       accept: null,
       decline: {
@@ -710,9 +712,14 @@ export class GameScene extends Phaser.Scene {
     return booster === 'freeze' ? t('booster.freeze.intro', { s: ECONOMY.boosters.freeze.seconds }) : t(`booster.${booster}.intro`);
   }
 
-  /** A booster button: use one, or offer to buy one when none is left. */
+  /** A booster button: use one, or offer to buy one when none is left; a locked one says when it unlocks. */
   private pressBooster(booster: BoosterId): void {
     if (this.state.status !== 'playing' || this.overlay.visible || this.paused || this.themeIntro.visible) return;
+    if (!this.unlockedBoosters().includes(booster)) {
+      this.sfx.play('invalid');
+      this.flashHint(t('shop.unlocksAt', { n: ECONOMY.boosters[booster].unlockLevel }));
+      return;
+    }
     if (this.store.wallet.boosters[booster] === 0) {
       this.offerBooster(booster);
       return;
@@ -739,6 +746,16 @@ export class GameScene extends Phaser.Scene {
       this.sfx.play('unlock');
     }
     this.buildBoosterBar();
+  }
+
+  /** A hint under the HUD for a moment (unless aiming, whose own hint stays). */
+  private flashHint(text: string): void {
+    if (this.aiming) return;
+    this.hud.setHint(text);
+    this.hintTimer?.remove();
+    this.hintTimer = this.time.delayedCall(1800, () => {
+      if (!this.aiming) this.hud.setHint(null);
+    });
   }
 
   /** Arms or disarms "remove a triple" (the next tap on an item removes its triple). */
@@ -774,7 +791,7 @@ export class GameScene extends Phaser.Scene {
     };
     showOffer(this, {
       title: t('booster.buy.title', { name: t(`booster.${booster}.name`) }),
-      icon: booster,
+      image: boosterTextureKey(booster),
       body: coins >= price ? this.boosterIntro(booster) : t('booster.notEnough'),
       coins,
       accept:
@@ -828,7 +845,7 @@ export class GameScene extends Phaser.Scene {
     };
     showOffer(this, {
       title: t(LOSE_TITLES[this.state.loseReason ?? 'blocked']),
-      icon: kind === 'time' ? 'clock' : 'removeTriple',
+      ...(kind === 'time' ? { icon: 'clock' as const } : { image: boosterTextureKey('removeTriple') }),
       body: kind === 'time' ? t('continue.time.body', { s: ECONOMY.continues.time.seconds }) : t('continue.space.body'),
       ...(haveBooster ? {} : { coins }),
       accept: haveBooster

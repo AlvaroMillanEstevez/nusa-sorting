@@ -5,7 +5,9 @@ import { getLocale, t, type MessageKey } from '../i18n';
 import { shelfHeightUnits, shelfLayoutAt } from '../ui/boardLayout';
 import { mapWood } from '../ui/art/wood';
 import { simulateSvg, simulateVision, type Vision } from '../ui/icons/color';
-import { renderItemSvg } from '../ui/icons/icons';
+import { renderBoosterSvg, renderItemSvg } from '../ui/icons/icons';
+import { BOOSTER_IDS, type BoosterId } from '../data/economy';
+import { KitBoosterButton } from '../scenes/kit';
 import { ITEM_FILL } from '../ui/levelLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
 import { makeWoodArt } from '../scenes/art/woodArt';
@@ -45,6 +47,9 @@ const LOOK_ALIKES: readonly (readonly string[])[] = [
 ];
 
 const SIZES = [36, 40, 52] as const;
+/** Sizes a booster's icon shows at: the shop's tile, the game's bar, an offer. */
+const BOOSTER_SIZES = [28, 40, 64] as const;
+const TILE = 56;
 const TOGETHER_PX = 40;
 const VISIONS: readonly Vision[] = ['normal', 'deuteranopia', 'protanopia', 'grayscale'];
 const PAD = 16;
@@ -132,6 +137,49 @@ export class GalleryScene extends Phaser.Scene {
     ];
   }
 
+  private boosterKey(id: BoosterId): string {
+    return `gallery:${this.vision}:booster:${id}`;
+  }
+
+  /**
+   * The boosters: each icon at the sizes it shows at, and its tile in every state (available, none left, locked,
+   * in use). Returns the bottom.
+   */
+  private drawBoosters(top: number, width: number): number {
+    this.content.add(this.label(PAD, top, t('gallery.boosters'), 20, SKIN.text.accent));
+    let y = top + 40;
+    const states = [
+      ['ready', 'gallery.tile.ready'],
+      ['empty', 'gallery.tile.empty'],
+      ['locked', 'gallery.tile.locked'],
+      ['inUse', 'gallery.tile.inUse'],
+    ] as const;
+    for (const id of BOOSTER_IDS) {
+      this.content.add(this.label(PAD, y, t(`booster.${id}.name`), 15, SKIN.text.primary));
+      y += 24;
+      let x = PAD;
+      const rowMid = y + 34;
+      for (const px of BOOSTER_SIZES) {
+        this.content.add(this.add.image(x + px / 2, rowMid, this.boosterKey(id)).setDisplaySize(px, px));
+        x += px + GAP;
+      }
+      x += GAP;
+      for (const [state, label] of states) {
+        if (x + TILE + PAD > width) {
+          x = PAD + BOOSTER_SIZES.reduce((sum, px) => sum + px + GAP, 0) + GAP;
+          y += TILE + 36;
+        }
+        const tile = new KitBoosterButton(this, x + TILE / 2, y + 34, { texture: this.boosterKey(id), size: TILE, state: state === 'inUse' ? 'ready' : state, count: 2 });
+        if (state === 'inUse') tile.setInUse(true);
+        this.content.add(tile);
+        this.content.add(this.label(x, y + 34 + TILE / 2 + 10, t(label), 12, SKIN.text.secondary));
+        x += TILE + GAP * 2;
+      }
+      y += TILE + 48;
+    }
+    return y;
+  }
+
   private textureKey(type: string, px: number): string {
     return `gallery:${this.vision}:${this.marks ? 'marked' : 'plain'}:${px}:${type}`;
   }
@@ -151,6 +199,8 @@ export class GalleryScene extends Phaser.Scene {
           // Rasterized at exactly the size they show at, in device pixels.
           for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px), svg, px * RENDER_RATIO));
         }
+    // Boosters' icons, once per vision, big enough for the largest tile.
+    for (const id of BOOSTER_IDS) jobs.push(addSvgTexture(this.textures, this.boosterKey(id), simulateSvg(renderBoosterSvg(id), vision), 128 * RENDER_RATIO));
     await Promise.all(jobs);
     if (run === this.drawing) this.redraw();
   }
@@ -161,7 +211,7 @@ export class GalleryScene extends Phaser.Scene {
     this.drawHeader(false);
     this.content.removeAll(true);
 
-    let y = PAD;
+    let y = this.drawBoosters(PAD, width) + GAP;
     for (const section of this.sections()) {
       this.content.add(this.label(PAD, y, section.title, 20, SKIN.text.accent));
       y += 34;
