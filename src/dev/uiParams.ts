@@ -33,16 +33,17 @@ export function parseLang(search: string): 'en' | 'id' | null {
 }
 
 /** Panels `?show=` can open over a level, to review them without playing it. */
-export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost' | 'blocked' | 'autoplay' | 'buy' | 'continue';
+export type ShowParam = 'pause' | 'confirm' | 'won' | 'lost' | 'blocked' | 'autoplay' | 'buy' | 'continue' | 'stuck';
 
 /**
  * Development only: `?show=pause|confirm|won|lost` opens that panel when the level starts; `blocked` plays the
  * full-board warning and its defeat; `autoplay` plays the level by itself; `buy` offers to buy the level's first
- * booster and `continue` offers to continue after a defeat (both after giving the level's booster intros quietly).
+ * booster, `continue` offers to continue after a defeat and `stuck` after getting stuck (each after giving the
+ * level's booster intros quietly).
  */
 export function parseShowParam(search: string): ShowParam | null {
   const value = new URLSearchParams(search).get('show');
-  const shows: readonly ShowParam[] = ['pause', 'confirm', 'won', 'lost', 'blocked', 'autoplay', 'buy', 'continue'];
+  const shows: readonly ShowParam[] = ['pause', 'confirm', 'won', 'lost', 'blocked', 'autoplay', 'buy', 'continue', 'stuck'];
   return shows.find((show) => show === value) ?? null;
 }
 

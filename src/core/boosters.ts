@@ -1,4 +1,4 @@
-import { blockedSlotOf, finishMove, isBlocked, isShelfLocked, settleShelf, stackOf } from './game';
+import { blockedSlotOf, canProgress, finishMove, isBlocked, isShelfLocked, settleShelf, stackOf } from './game';
 import type { CarrierRef, GameEvent, GameState, Item, Layer, MoveResult, Position, Shelf, TrackState } from './types';
 
 /**
@@ -128,12 +128,55 @@ export function bestTripleTarget(state: GameState): BoosterTarget | null {
   return null;
 }
 
-/** Continues after running out of space by removing one triple (see bestTripleTarget). */
+/** Every item in view a booster may target: fronts of unlocked shelves (one per kind), then track tops. */
+function visibleTargets(state: GameState): BoosterTarget[] {
+  const targets: BoosterTarget[] = [];
+  const kinds = new Set<string>();
+  state.shelves.forEach((shelf, s) => {
+    if (isShelfLocked(state, s)) return;
+    shelf.layers[0]!.forEach((item, slot) => {
+      if (!item || kinds.has(item.type)) return;
+      kinds.add(item.type);
+      targets.push({ shelf: s, layer: 0, slot });
+    });
+  });
+  state.tracks.forEach((track, t) =>
+    track.carriers.forEach((carrier, c) => {
+      const top = stackOf(carrier)[0];
+      if (top && !kinds.has(top.type)) {
+        kinds.add(top.type);
+        targets.push({ track: t, carrier: c });
+      }
+    }),
+  );
+  return targets;
+}
+
+/**
+ * Continues after running out of space, or after getting stuck, by removing one triple: the one bestTripleTarget
+ * picks, unless that leaves the board blocked or stuck again and another kind would not (then the first such).
+ */
 export function continueAfterBlocked(state: GameState): MoveResult {
-  if (state.status !== 'lost' || state.loseReason !== 'blocked') return fail('gameOver');
+  if (state.status !== 'lost' || (state.loseReason !== 'blocked' && state.loseReason !== 'stuck')) return fail('gameOver');
   const reopened: GameState = { ...state, status: 'playing', loseReason: null };
-  const target = bestTripleTarget(reopened);
-  return target ? removeTriple(reopened, target) : fail('noTarget');
+  const best = bestTripleTarget(reopened);
+  if (!best) return fail('noTarget');
+  const first = removeTriple(reopened, best);
+  if (first.ok && first.state.status !== 'lost') return first;
+  for (const target of visibleTargets(reopened)) {
+    const result = removeTriple(reopened, target);
+    if (result.ok && result.state.status !== 'lost') return result;
+  }
+  return first;
+}
+
+/**
+ * Continues after getting stuck by shuffling the board (see shuffleBoard): it always leaves some way to make
+ * progress. Fails if no such shuffle is found.
+ */
+export function continueByShuffling(state: GameState, random: () => number): MoveResult {
+  if (state.status !== 'lost' || state.loseReason !== 'stuck') return fail('gameOver');
+  return shuffleBoard({ ...state, status: 'playing', loseReason: null }, random);
 }
 
 /** Continues after running out of time with `ms` more on the clock. */
@@ -154,8 +197,8 @@ function isFullTriple(layer: Layer): boolean {
 /**
  * Shuffles the items on the board while keeping its structure: every occupied slot stays occupied (shelves,
  * layers and track stacks keep their shape), locked shelves keep their items, and the roaming blocker stays put.
- * The result never starts with a triple already formed (in any layer) and never leaves the player without a
- * move. Not while holding a track item. `random` returns numbers in [0, 1).
+ * The result never starts with a triple already formed (in any layer) and always leaves the player a way to
+ * make progress (see canProgress). Not while holding a track item. `random` returns numbers in [0, 1).
  */
 export function shuffleBoard(state: GameState, random: () => number, attempts = 80): MoveResult {
   if (state.status !== 'playing') return fail('gameOver');
@@ -203,7 +246,7 @@ export function shuffleBoard(state: GameState, random: () => number, attempts = 
         carriers: track.carriers.map((carrier, c) => (carrier.kind === 'stack' ? { kind: 'stack', stack: stacks[t]![c]! } : carrier)),
       })),
     };
-    if (isBlocked(next)) continue;
+    if (isBlocked(next) || !canProgress(next)) continue;
     return { ok: true, state: next, events: [{ kind: 'shuffled' }] };
   }
   return fail('noShuffle');

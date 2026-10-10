@@ -15,6 +15,7 @@ import {
   boosterPrice,
   boostersUnlockedAt,
   continueAfterBlocked,
+  continueByShuffling,
   continuePrice,
   freezeClock,
   removeTriple,
@@ -29,6 +30,7 @@ import {
   takeSnapshot,
   NO_BOOSTERS_USED,
   type GameEvent,
+  type MoveResult,
   type GameState,
   type Item,
   type LevelDefinition,
@@ -131,6 +133,7 @@ let devShown = false;
 const LOSE_TITLES: Record<LoseReason, MessageKey> = {
   timeUp: 'result.lost.timeUp',
   blocked: 'result.lost.blocked',
+  stuck: 'result.lost.stuck',
 };
 
 interface SpriteTarget {
@@ -318,7 +321,7 @@ export class GameScene extends Phaser.Scene {
     const ids = playList.map((entry) => entry.level.id);
     // Development only: ?show=buy|continue skips the booster intros (giving their gifts quietly).
     const devShowParam = import.meta.env.DEV ? parseShowParam(window.location.search) : null;
-    if ((devShowParam === 'buy' || devShowParam === 'continue') && !devShown) BOOSTER_IDS.forEach((id) => this.store.introduceBooster(id));
+    if ((devShowParam === 'buy' || devShowParam === 'continue' || devShowParam === 'stuck') && !devShown) BOOSTER_IDS.forEach((id) => this.store.introduceBooster(id));
     const resume = this.resumeWith;
     this.resumeWith = null;
     if (resume) this.loadLevel(resume.levelIndex, resume);
@@ -376,10 +379,11 @@ export class GameScene extends Phaser.Scene {
       void this.devAutoplay();
     } else if (show === 'buy') {
       this.offerBooster(this.unlockedBoosters()[0] ?? 'freeze');
-    } else if (show === 'continue') {
-      this.state = { ...this.state, status: 'lost', loseReason: this.state.timeLeftMs === null ? 'blocked' : 'timeUp' };
+    } else if (show === 'continue' || show === 'stuck') {
+      const loseReason = show === 'stuck' ? 'stuck' : this.state.timeLeftMs === null ? 'blocked' : 'timeUp';
+      this.state = { ...this.state, status: 'lost', loseReason };
       this.offerContinue(() =>
-        this.overlay.show({ kind: 'lost', title: t('result.lost.timeUp'), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() }),
+        this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason]), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() }),
       );
     } else if (show === 'pause' || show === 'confirm') {
       this.state = startClock(this.state);
@@ -809,46 +813,76 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * After a defeat, if the player can: continue (more time, or a triple removed to make room) for coins or with
-   * a "remove a triple" booster, each continue in the attempt costing more. Declining shows the defeat panel.
+   * After a defeat, if the player can: continue for coins, or with a booster when it fits, each continue in the
+   * attempt costing more (and at most ECONOMY.continues.max of them). Out of time: more time. Out of space: a
+   * triple removed. Stuck: a triple removed or the board shuffled (always to a board with a way on), whichever
+   * the player picks. Declining, or nothing affordable, shows the defeat panel.
    */
   private offerContinue(showLost: () => void): void {
-    const kind = this.state.loseReason === 'timeUp' ? 'time' : 'space';
-    const price = continuePrice(kind, this.continuesUsed);
-    const haveBooster = kind === 'space' && this.store.wallet.boosters.removeTriple > 0 && this.continuesUsed < ECONOMY.continues.max;
+    const reason = this.state.loseReason ?? 'blocked';
     const coins = this.store.wallet.coins;
-    if (!haveBooster && (price === null || coins < price)) {
+    const index = this.continuesUsed;
+    // Every way to go on is priced like continuing out of space (out of time has its own price).
+    const price = continuePrice(reason === 'timeUp' ? 'time' : 'space', index);
+    const lost = this.state;
+    const ways: { label: string; price?: number; booster: BoosterId | null; run: () => MoveResult }[] = [];
+    const add = (booster: BoosterId | null, label: string, run: () => MoveResult) => {
+      if (index >= ECONOMY.continues.max) return;
+      if (booster && this.store.wallet.boosters[booster] > 0) {
+        ways.push({ label: t('offer.useNamed', { name: label, n: this.store.wallet.boosters[booster] }), booster, run });
+      } else if (price !== null && coins >= price) {
+        ways.push({ label, price, booster: null, run });
+      }
+    };
+    if (reason === 'timeUp') {
+      add(null, t('pause.resume'), () => addTime(lost, ECONOMY.continues.time.seconds * 1000));
+    } else {
+      add('removeTriple', t('booster.removeTriple.name'), () => continueAfterBlocked(lost));
+      if (reason === 'stuck') {
+        // Worked out now, so it is only offered if a shuffle with a way on exists.
+        const shuffled = continueByShuffling(lost, Math.random);
+        if (shuffled.ok) add('shuffle', t('booster.shuffle.name'), () => shuffled);
+      }
+    }
+    if (ways.length === 0) {
       showLost();
       return;
     }
-    const accept = () => {
-      this.continuesUsed++;
-      if (haveBooster) {
-        this.store.useBooster('removeTriple');
-        this.boostersUsed.removeTriple++;
-      } else {
-        this.store.spendCoins(price!);
-      }
-      const result = kind === 'time' ? addTime(this.state, ECONOMY.continues.time.seconds * 1000) : continueAfterBlocked(this.state);
+    const go = (way: (typeof ways)[number]) => () => {
+      const result = way.run();
       if (!result.ok) {
         showLost();
         return;
+      }
+      this.continuesUsed++;
+      if (way.booster) {
+        this.store.useBooster(way.booster);
+        this.boostersUsed[way.booster]++;
+      } else {
+        this.store.spendCoins(way.price!);
       }
       this.state = result.state;
       this.overlay.hide();
       this.buildBoosterBar();
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
-      if (kind === 'space') this.play(result.events);
-      else this.saveSnapshot();
+      if (result.events.some((e) => e.kind === 'shuffled')) {
+        this.sfx.play('advance');
+        this.sync(DURATION.slow);
+        this.saveSnapshot();
+      } else if (reason === 'timeUp') {
+        this.saveSnapshot();
+      } else {
+        this.play(result.events);
+      }
     };
+    const [first, second] = ways;
     showOffer(this, {
-      title: t(LOSE_TITLES[this.state.loseReason ?? 'blocked']),
-      ...(kind === 'time' ? { icon: 'clock' as const } : { image: boosterTextureKey('removeTriple') }),
-      body: kind === 'time' ? t('continue.time.body', { s: ECONOMY.continues.time.seconds }) : t('continue.space.body'),
-      ...(haveBooster ? {} : { coins }),
-      accept: haveBooster
-        ? { label: t('offer.use', { n: this.store.wallet.boosters.removeTriple }), onPress: accept }
-        : { label: t('pause.resume'), price: price!, onPress: accept },
+      title: t(LOSE_TITLES[reason]),
+      ...(reason === 'timeUp' ? { icon: 'clock' as const } : reason === 'blocked' ? { image: boosterTextureKey('removeTriple') } : {}),
+      body: t(reason === 'timeUp' ? 'continue.time.body' : reason === 'blocked' ? 'continue.space.body' : 'continue.stuck.body', { s: ECONOMY.continues.time.seconds }),
+      ...(ways.some((way) => way.price !== undefined) ? { coins } : {}),
+      accept: { label: first!.label, ...(first!.price === undefined ? {} : { price: first!.price }), onPress: go(first!) },
+      ...(second ? { alternative: { label: second.label, ...(second.price === undefined ? {} : { price: second.price }), onPress: go(second) } } : {}),
       decline: { label: t('offer.giveUp'), onPress: showLost },
     });
   }
@@ -1411,10 +1445,12 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(CLEAR_DELAY_MS + CLEAR_MS, () => this.effects.celebrate(width, height));
       this.endLevel(RESULT_DELAY_MS);
     } else if (this.state.status === 'lost') {
-      // No space left: the full shelves flash red and the board shakes before the panel says so.
+      // No space left, or no move that can lead anywhere: the shelves flash red and the board shakes before the
+      // panel says so, with the reason.
+      const reason = t(LOSE_TITLES[this.state.loseReason ?? 'blocked']);
       this.time.delayedCall(SNAP_MS, () => {
         this.sfx.play('blocked');
-        this.effects.blockedWarning(this.layout.shelves.map((shelf) => shelf.rect), BLOCKED_WARNING_MS, t('result.lost.blocked'));
+        this.effects.blockedWarning(this.layout.shelves.map((shelf) => shelf.rect), BLOCKED_WARNING_MS, reason);
       });
       this.endLevel(SNAP_MS + BLOCKED_WARNING_MS);
     } else {

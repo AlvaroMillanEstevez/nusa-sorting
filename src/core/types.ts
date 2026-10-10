@@ -20,7 +20,11 @@ export interface Shelf {
 
 export type GameStatus = 'playing' | 'won' | 'lost';
 
-export type LoseReason = 'timeUp' | 'blocked';
+/**
+ * Why a level was lost: the clock ran out, the board has no usable space left, or it is stuck (space is left but
+ * no sequence of moves can ever clear a triple or bring a layer forward; see canProgress).
+ */
+export type LoseReason = 'timeUp' | 'blocked' | 'stuck';
 
 /** A front-layer slot. */
 export interface SlotRef {

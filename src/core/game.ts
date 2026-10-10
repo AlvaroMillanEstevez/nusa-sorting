@@ -143,6 +143,95 @@ export function isBlocked(state: GameState): boolean {
 }
 
 /**
+ * Whether any sequence of moves from this state can still make progress: clear a triple or bring a back layer
+ * forward (everything else, from unlocking shelves to moving the roaming blocker, comes from triples). It decides
+ * exactly, without searching, because once a usable slot is free the player can arrange the front items in any
+ * way at all (any item can go to the free slot, so free slots wander and every arrangement can be reached):
+ *
+ * - A layer can come forward iff some unlocked shelf with layers behind and no blocker on it could have its front
+ *   emptied: its items need that many free slots elsewhere, which comes to 3 free slots in all.
+ * - A triple of a kind can be cleared iff 3 of it can be gathered on an unlocked shelf without the blocker (where
+ *   the blocker stands a triple never fits): enough of it in the fronts and on track stacks, taking an item from
+ *   a stack costing a free slot for good for every item above it and for itself. The cheapest way to reach the
+ *   copies needed must fit in the free slots; when it takes the very last one, the last item taken is a copy that
+ *   completes the triple directly.
+ *
+ * Tracks loop, so every carrier comes round sooner or later (where they are now does not matter); time and
+ * combos do not matter either. An item held from a track counts as still on top of its carrier (it can always go
+ * back). Not meaningful once the level is over, or with no usable slot free (see isBlocked).
+ */
+export function canProgress(state: GameState): boolean {
+  let free = 0;
+  let canEmpty = false;
+  let canHoldTriple = false;
+  const inFronts = new Map<string, number>();
+  state.shelves.forEach((shelf, s) => {
+    if (isShelfLocked(state, s)) return;
+    const blocked = blockedSlotOf(state, s);
+    shelf.layers[0]!.forEach((item, i) => {
+      if (i === blocked) return;
+      if (item) inFronts.set(item.type, (inFronts.get(item.type) ?? 0) + 1);
+      else free++;
+    });
+    if (blocked === null) {
+      canHoldTriple = true;
+      if (shelf.layers.length > 1) canEmpty = true;
+    }
+  });
+  if (free === 0) return false;
+  if (canEmpty && free >= 3) return true;
+  if (!canHoldTriple) return false;
+
+  // Track stacks, top first (a held item back on top of its own carrier).
+  const stacks = state.tracks.flatMap((track, t) =>
+    track.carriers.map((carrier, c) => {
+      const stack = stackOf(carrier);
+      return state.held && state.held.from.track === t && state.held.from.carrier === c ? [state.held.item, ...stack] : stack;
+    }),
+  );
+  const kinds = new Set(inFronts.keys());
+  for (const stack of stacks) for (const item of stack) kinds.add(item.type);
+  for (const kind of kinds) {
+    const need = 3 - (inFronts.get(kind) ?? 0);
+    if (need <= 0 || cheapestCopies(stacks, kind, need) <= free) return true;
+  }
+  return false;
+}
+
+/**
+ * Fewest items to take from track stacks to get `need` copies of a kind (each copy costs its depth plus one, as
+ * everything above it comes off first), or Infinity if the stacks hold too few. A small knapsack: need ≤ 3.
+ */
+function cheapestCopies(stacks: readonly (readonly Item[])[], kind: string, need: number): number {
+  let best = Array.from({ length: need + 1 }, (_, k) => (k === 0 ? 0 : Infinity));
+  for (const stack of stacks) {
+    const depths: number[] = [];
+    stack.forEach((item, depth) => {
+      if (item.type === kind && depths.length < need) depths.push(depth);
+    });
+    if (depths.length === 0) continue;
+    const next = best.slice();
+    for (let have = 0; have <= need; have++) {
+      if (best[have] === Infinity) continue;
+      depths.forEach((depth, i) => {
+        const total = Math.min(need, have + i + 1);
+        next[total] = Math.min(next[total]!, best[have]! + depth + 1);
+      });
+    }
+    best = next;
+  }
+  return best[need]!;
+}
+
+/**
+ * True when the level can no longer be won though usable space is left: no move sequence can ever clear a triple
+ * or bring a layer forward (see canProgress). The player would only move items around until the clock ran out.
+ */
+export function isStuck(state: GameState): boolean {
+  return state.status === 'playing' && !isWon(state) && !isBlocked(state) && !canProgress(state);
+}
+
+/**
  * Starts game time: called on the player's first interaction with the board (touching or dragging an item).
  * Every move or pick starts it too. Does nothing once started.
  */
@@ -235,6 +324,9 @@ export function finishMove(state: GameState, events: GameEvent[]): { state: Game
   } else if (isBlocked(next)) {
     next = { ...next, status: 'lost', loseReason: 'blocked' };
     events.push({ kind: 'lost', reason: 'blocked' });
+  } else if (!canProgress(next)) {
+    next = { ...next, status: 'lost', loseReason: 'stuck' };
+    events.push({ kind: 'lost', reason: 'stuck' });
   }
   return { state: next, events };
 }

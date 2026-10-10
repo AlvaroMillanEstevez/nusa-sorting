@@ -42,11 +42,11 @@ export function firstMoves(state: GameState): FirstMove[] {
   return moves;
 }
 
-/** First moves that lose the level on the spot because the board runs out of usable space. */
+/** First moves that lose the level on the spot: the board runs out of usable space, or gets stuck. */
 export function oneMoveTraps(state: GameState): FirstMove[] {
   return firstMoves(state).filter((move) => {
     const result = playMove(state, move);
-    return result.ok && result.state.loseReason === 'blocked';
+    return result.ok && (result.state.loseReason === 'blocked' || result.state.loseReason === 'stuck');
   });
 }
 
@@ -71,7 +71,7 @@ export function validateLevel(level: LevelDefinition): GameState {
 }
 
 /**
- * A sequence of at most `maxMoves` moves (between shelves, or from a track) that ends in a blocked defeat, or
+ * A sequence of at most `maxMoves` moves (between shelves, or from a track) that ends in a blocked or stuck defeat, or
  * null if there is none. Shipped levels must have none within two moves: running out of space should come
  * from poor choices later on (which shelf to free, what to reorder), not from the first touches.
  * Reordering within a shelf is skipped: it never changes how much space there is.
@@ -82,7 +82,7 @@ export function trapWithin(state: GameState, maxMoves: number): FirstMove[] | nu
     if (!isCarrierSource(move.from) && move.from.shelf === move.to.shelf) continue;
     const result = playMove(state, move);
     if (!result.ok) continue;
-    if (result.state.loseReason === 'blocked') return [move];
+    if (result.state.loseReason === 'blocked' || result.state.loseReason === 'stuck') return [move];
     const rest = trapWithin(result.state, maxMoves - 1);
     if (rest) return [move, ...rest];
   }

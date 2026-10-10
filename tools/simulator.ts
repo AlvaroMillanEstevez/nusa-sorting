@@ -277,8 +277,9 @@ const RECENT_MOVES = 6;
 export const maxMovesFor = (items: number) => Math.max(400, items * 8);
 
 /**
- * Moves without clearing a triple after which a game counts as stuck: free slots are left, but too few to
- * bring the missing items forward. A real player would shuffle until the clock runs out; it is a loss to space.
+ * Moves without clearing a triple after which a game counts as lost: the board is not stuck by the rules (they
+ * end a stuck board at once, see canProgress), but the player keeps missing the way on. A real player would
+ * shuffle until the clock runs out; it is a loss to space.
  */
 export const STUCK_MOVES = 60;
 
@@ -496,9 +497,12 @@ const holdsBlocker = (state: GameState, shelf: number) => state.blocker?.at.shel
 
 export interface SimulationStats {
   readonly winRate: number;
-  /** Share of games lost because the board ran out of usable space. */
+  /** Share of games lost because the board ran out of usable space, or got stuck (see canProgress). */
   readonly blockedRate: number;
-  /** Share of games that got stuck (see STUCK_MOVES): also lost to space, as the clock would end them. */
+  /**
+   * Share of games where the player wandered (see STUCK_MOVES) though a way on existed: also lost to space, as the
+   * clock would end them.
+   */
   readonly stuckRate: number;
   readonly timeUpRate: number;
   readonly avgMaxCombo: number;
@@ -522,7 +526,8 @@ export function simulate(start: GameState, runs = 200, seed = 1, profile: Player
   const mean = (value: (o: GameOutcome) => number) => outcomes.reduce((sum, o) => sum + value(o), 0) / runs;
   return {
     winRate: share((o) => o.won),
-    blockedRate: share((o) => o.loseReason === 'blocked'),
+    // A stuck board (no move can lead anywhere) is lost to space like a full one.
+    blockedRate: share((o) => o.loseReason === 'blocked' || o.loseReason === 'stuck'),
     stuckRate: share((o) => o.stuck),
     timeUpRate: share((o) => o.loseReason === 'timeUp'),
     avgMaxCombo: mean((o) => o.maxCombo),

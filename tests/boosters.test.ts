@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addTime,
   arrangementCount,
+  canProgress,
   continueAfterBlocked,
   createGame,
   freezeClock,
@@ -169,7 +170,7 @@ describe('continues', () => {
 });
 
 describe('shuffle', () => {
-  it('keeps the structure and the items, never starts with a triple and never blocks, on every shipped arrangement', () => {
+  it('keeps the structure and the items, never starts with a triple, never blocks and never leaves the board stuck, on every shipped arrangement', () => {
     for (const shipped of levels) {
       for (let k = 0; k < Math.min(3, arrangementCount(shipped)); k++) {
         const state = createGame(withArrangement(shipped, k));
@@ -192,6 +193,7 @@ describe('shuffle', () => {
         );
         expect(next.blocker, label).toEqual(state.blocker);
         expect(isBlocked(next), label).toBe(false);
+        expect(canProgress(next), label).toBe(true);
         expectValid(next, label);
       }
     }
