@@ -13,13 +13,18 @@ export interface Wallet {
   /** Experience: every level's score adds to it. */
   readonly xp: number;
   readonly boosters: Readonly<Record<BoosterId, number>>;
-  /** Star chests already opened (the next one comes at (opened + 1) × everyStars stars). */
+  /** Star chests already opened (it numbers the next one, which fixes its contents). */
   readonly chestsOpened: number;
+  /**
+   * Stars collected towards chests: every new star adds one, and opening a chest takes `everyStars` away. It
+   * can pass the target (17/15, 35/15) while the player has not opened the chest yet.
+   */
+  readonly chestStars: number;
   /** Boosters whose one-line intro (and gift) the player has had. */
   readonly introduced: readonly BoosterId[];
 }
 
-export const EMPTY_WALLET: Wallet = { coins: 0, xp: 0, boosters: { freeze: 0, removeTriple: 0, shuffle: 0 }, chestsOpened: 0, introduced: [] };
+export const EMPTY_WALLET: Wallet = { coins: 0, xp: 0, boosters: { freeze: 0, removeTriple: 0, shuffle: 0 }, chestsOpened: 0, chestStars: 0, introduced: [] };
 
 const round = (value: number, step: number) => Math.round(value / step) * step;
 
@@ -63,18 +68,24 @@ export function levelUpGift(level: number): Reward {
 
 // ---------------------------------------------------------------- star chests
 
-/** Chests (numbered from 1) earned by going from `before` to `after` stars collected. */
-export function chestsEarned(before: number, after: number): number[] {
+/** The stars collected towards chests, how many a chest takes, and whether one can be opened now. */
+export function chestProgress(wallet: Wallet): { have: number; every: number; ready: boolean } {
   const every = ECONOMY.chests.everyStars;
-  const chests: number[] = [];
-  for (let n = Math.floor(before / every) + 1; n * every <= after; n++) chests.push(n);
-  return chests;
+  return { have: wallet.chestStars, every, ready: wallet.chestStars >= every };
 }
 
-/** Stars still needed for the next chest, and how many a chest takes. */
-export function nextChest(totalStars: number): { have: number; every: number } {
+/**
+ * Opens a star chest, if the player has collected the stars for one: takes `everyStars` from them and adds the
+ * chest's contents (see chestContents, with the boosters unlocked by `reachedLevel`). Null if not enough stars.
+ */
+export function openChest(wallet: Wallet, reachedLevel: number): { wallet: Wallet; number: number; rewards: Reward[] } | null {
   const every = ECONOMY.chests.everyStars;
-  return { have: totalStars % every, every };
+  if (wallet.chestStars < every) return null;
+  const number = wallet.chestsOpened + 1;
+  const rewards = chestContents(number, boostersUnlockedAt(reachedLevel));
+  let next: Wallet = { ...wallet, chestStars: wallet.chestStars - every, chestsOpened: number };
+  for (const reward of rewards) next = addReward(next, reward);
+  return { wallet: next, number, rewards };
 }
 
 /**
@@ -148,14 +159,18 @@ export function introduceBooster(wallet: Wallet, booster: BoosterId): Wallet {
   return { ...addReward(wallet, boosterGift(booster)), introduced: [...wallet.introduced, booster] };
 }
 
-/** Everything a win brings: coins, experience, any level-ups with their gifts, any chests with their contents. */
+/**
+ * Everything a win brings: coins, experience, any level-ups with their gifts, and the new stars towards the next
+ * chest (chests are opened by the player, on the home screen).
+ */
 export interface WinRewards {
   readonly wallet: Wallet;
   readonly coins: number;
   readonly xp: number;
   readonly levelBefore: number;
   readonly levelUps: readonly { readonly level: number; readonly gift: Reward }[];
-  readonly chests: readonly { readonly number: number; readonly rewards: readonly Reward[] }[];
+  /** New stars this win added towards chests (the wallet's chestStars already counts them). */
+  readonly chestStars: number;
 }
 
 export interface WinFacts {
@@ -168,7 +183,7 @@ export interface WinFacts {
   readonly totalStarsAfter: number;
 }
 
-/** Applies a win to the wallet: coins, experience and level-up gifts, and the chests the new stars reach. */
+/** Applies a win to the wallet: coins, experience and level-up gifts, and its new stars towards chests. */
 export function rewardWin(wallet: Wallet, win: WinFacts): WinRewards {
   const coins = winCoins(win.firstClear, win.stars, win.bestStarsBefore);
   const xp = xpForScore(win.score);
@@ -181,11 +196,7 @@ export function rewardWin(wallet: Wallet, win: WinFacts): WinRewards {
     levelUps.push({ level, gift });
     next = addReward(next, gift);
   }
-  const unlocked = boostersUnlockedAt(win.levelNumber);
-  const chests = chestsEarned(win.totalStarsBefore, win.totalStarsAfter)
-    .filter((number) => number > next.chestsOpened)
-    .map((number) => ({ number, rewards: chestContents(number, unlocked) }));
-  for (const chest of chests) for (const reward of chest.rewards) next = addReward(next, reward);
-  if (chests.length > 0) next = { ...next, chestsOpened: chests.at(-1)!.number };
-  return { wallet: next, coins, xp, levelBefore, levelUps, chests };
+  const chestStars = Math.max(0, win.totalStarsAfter - win.totalStarsBefore);
+  next = { ...next, chestStars: next.chestStars + chestStars };
+  return { wallet: next, coins, xp, levelBefore, levelUps, chestStars };
 }

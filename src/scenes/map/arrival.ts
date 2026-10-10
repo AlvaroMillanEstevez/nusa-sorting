@@ -13,7 +13,7 @@ export interface Arrival {
   readonly totalBefore: number;
   /** The level the player goes on to: the first not completed (or the same one when all are done). */
   readonly next: number;
-  /** What the win paid: coins, experience, level-ups with their gifts, chests with their contents. */
+  /** What the win paid: coins, experience, level-ups with their gifts, and stars towards the next chest. */
   readonly rewards?: WinRewards;
 }
 
@@ -41,31 +41,34 @@ export interface ArrivalStage {
   showCoins(coins: number, bump: boolean): void;
   /** Sets the player's level and its bar for an amount of experience (animated unless `instant`). */
   showXp(xp: number, instant: boolean): Promise<void>;
-  /** Shows a reward card (a level-up, a chest) for a moment; resolves once it has gone. */
+  /** Sets the stars shown towards the next chest (with a little bump); the chest lights up once it can open. */
+  showChestStars(stars: number, bump: boolean): void;
+  /** Shows a reward card (a new player level) for a moment; resolves once it has gone. */
   showCard(card: RewardCard): Promise<void>;
   /** Takes away any reward card at once (the player skipped). */
   closeCards(): void;
   play(effect: 'starCollect' | 'mapStep' | 'unlock' | 'star3'): void;
 }
 
-/** A moment of reward after a win: the player reaching a new level, or a star chest opening. */
-export type RewardCard =
-  | { readonly kind: 'levelUp'; readonly level: number; readonly rewards: readonly Reward[] }
-  | { readonly kind: 'chest'; readonly number: number; readonly rewards: readonly Reward[] };
+/** A moment of reward after a win: the player reaching a new level, with its gift. */
+export interface RewardCard {
+  readonly kind: 'levelUp';
+  readonly level: number;
+  readonly rewards: readonly Reward[];
+}
 
 const coinsIn = (rewards: readonly Reward[]) => rewards.reduce((sum, reward) => sum + (reward.kind === 'coins' ? reward.amount : 0), 0);
 
 /** The coins the player had before a win: the wallet after it, less the win's coins and the coins in its gifts. */
 export function coinsBefore(rewards: WinRewards): number {
-  const gifts = [...rewards.levelUps.map((up) => up.gift), ...rewards.chests.flatMap((chest) => chest.rewards)];
+  const gifts = rewards.levelUps.map((up) => up.gift);
   return rewards.wallet.coins - rewards.coins - coinsIn(gifts);
 }
 
-/** The reward cards a win brings, in order: level-ups first, then chests. */
+/** The reward cards a win brings: one per new player level. */
 export function rewardCards(rewards: WinRewards): RewardCard[] {
   return [
     ...rewards.levelUps.map((up): RewardCard => ({ kind: 'levelUp', level: up.level, rewards: [up.gift] })),
-    ...rewards.chests.map((chest): RewardCard => ({ kind: 'chest', number: chest.number, rewards: chest.rewards })),
   ];
 }
 
@@ -162,8 +165,8 @@ export const coinsFly: ArrivalStep = {
 };
 
 /**
- * The experience bar fills with the win's points; each new player level shows its card and gift, and then the
- * star chests the win reached open one by one. The coins counter takes in the coins they hold.
+ * The experience bar fills with the win's points, and each new player level shows its card and gift (the coins
+ * counter takes in the coins it gives).
  */
 export const rewardsShow: ArrivalStep = {
   name: 'rewardsShow',
@@ -175,7 +178,7 @@ export const rewardsShow: ArrivalStep = {
     if (rewards.xp > 0) await stage.showXp(rewards.wallet.xp, false);
     else void stage.showXp(xpBefore, true);
     for (const card of rewardCards(rewards)) {
-      stage.play(card.kind === 'levelUp' ? 'star3' : 'unlock');
+      stage.play('star3');
       await stage.showCard(card);
       coins += coinsIn(card.rewards);
       stage.showCoins(coins, coinsIn(card.rewards) > 0);
@@ -187,6 +190,46 @@ export const rewardsShow: ArrivalStep = {
     stage.closeCards();
     stage.showCoins(rewards.wallet.coins, false);
     void stage.showXp(rewards.wallet.xp, true);
+  },
+};
+
+/** The stars towards chests before a win: the wallet's count after it, less the win's new stars. */
+export const chestStarsBefore = (rewards: WinRewards): number => rewards.wallet.chestStars - rewards.chestStars;
+
+/**
+ * The win's new stars count up on the chest's progress, one by one; if they reach the target the chest lights up
+ * and waits for the player to open it (it never opens by itself).
+ */
+export const chestFill: ArrivalStep = {
+  name: 'chestFill',
+  play(stage) {
+    const rewards = stage.arrival.rewards;
+    if (!rewards || rewards.chestStars === 0) return Promise.resolve();
+    const from = chestStarsBefore(rewards);
+    const counter = { n: from };
+    let shown = from;
+    return new Promise((resolve) => {
+      stage.scene.tweens.add({
+        targets: counter,
+        n: rewards.wallet.chestStars,
+        duration: 160 * rewards.chestStars,
+        ease: 'Linear',
+        onUpdate: () => {
+          const n = Math.floor(counter.n);
+          if (n === shown) return;
+          shown = n;
+          stage.showChestStars(n, true);
+        },
+        onComplete: () => {
+          stage.showChestStars(rewards.wallet.chestStars, true);
+          resolve();
+        },
+      });
+    });
+  },
+  finish(stage) {
+    const rewards = stage.arrival.rewards;
+    if (rewards) stage.showChestStars(rewards.wallet.chestStars, false);
   },
 };
 
@@ -216,7 +259,7 @@ export const callToPlay: ArrivalStep = {
 };
 
 /** The steps after a win, in order. */
-export const ARRIVAL_STEPS: readonly ArrivalStep[] = [starsFly, coinsFly, rewardsShow, markerWalk, callToPlay];
+export const ARRIVAL_STEPS: readonly ArrivalStep[] = [starsFly, chestFill, coinsFly, rewardsShow, markerWalk, callToPlay];
 
 /** Runs steps one after another; skip() jumps every step left to its end state. */
 export class ArrivalSequence {

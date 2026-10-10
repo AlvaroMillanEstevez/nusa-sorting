@@ -33,7 +33,9 @@ if (import.meta.env.DEV) {
   forceSafeArea(parseSafeArea(window.location.search));
   const progress = parseProgressParam(window.location.search, playList.length);
   if (progress !== null) {
+    const before = store.totalStars;
     playList.slice(0, progress).forEach(({ level }, i) => store.recordWin(level.id, 1000, ([3, 2, 1] as const)[i % 3]));
+    store.addChestStars(store.totalStars - before);
   }
   const coins = parseCoinsParam(window.location.search);
   if (coins !== null) store.setCoins(coins);

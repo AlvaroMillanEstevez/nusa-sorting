@@ -83,3 +83,8 @@ export function parseProgressParam(search: string, count: number): number | null
 export function wantsShop(search: string): boolean {
   return new URLSearchParams(search).has('shop');
 }
+
+/** Development only: `?chest` taps the star chest on the home screen once it opens (with `?home`). */
+export function wantsChest(search: string): boolean {
+  return new URLSearchParams(search).has('chest');
+}

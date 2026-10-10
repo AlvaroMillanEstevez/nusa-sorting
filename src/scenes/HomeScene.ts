@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
-import { boostersUnlockedAt, nextChest, playerLevel } from '../core/economy';
-import { ECONOMY, type Reward } from '../data/economy';
+import { boostersUnlockedAt, chestProgress, playerLevel } from '../core/economy';
+import type { Reward } from '../data/economy';
 import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
 import type { ProgressStore } from '../services/ProgressStore';
@@ -10,9 +10,9 @@ import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE } from '../ui/design/toke
 import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
 import { KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
-import { ArrivalSequence, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
-import { wantsShop } from '../dev/uiParams';
-import { showOffer } from './Offer';
+import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
+import { wantsChest, wantsShop } from '../dev/uiParams';
+import { Effects } from './Effects';
 import { openShop } from './Shop';
 import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
@@ -38,9 +38,10 @@ const FOOTER_ROW = 30;
  * The home screen: the level map with a top bar (the player's level and its bar, coins, the total of stars and
  * settings, over the title) and a big "Play · Level N" button between the shop and the star chest, with the
  * boosters the player has and the progress to the next chest above it. Tapping a level on the map plays it
- * (completed ones can be replayed). After a win it plays the arrival sequence: the stars and coins earned fly to
- * their counters, the experience bar fills, new player levels and chests show their gifts, and the player's pin
- * walks to the next level.
+ * (completed ones can be replayed). The chest lights up once it has the stars for one, and opens when tapped.
+ * After a win it plays the arrival sequence: the stars earned fly to the total and count up on the chest, coins
+ * fly to theirs, the experience bar fills, new player levels show their gifts, and the player's pin walks to the
+ * next level.
  */
 export class HomeScene extends Phaser.Scene {
   private data_: HomeData = {};
@@ -60,6 +61,10 @@ export class HomeScene extends Phaser.Scene {
   /** The experience the level pill shows (it fills up during the arrival). */
   private shownXp = 0;
   private card: KitPanel | null = null;
+  private chestPill!: KitPill;
+  private chestGlow!: Phaser.GameObjects.Graphics;
+  private chestMark!: Phaser.GameObjects.Container;
+  private toastLabel: KitPill | null = null;
   private sequence: ArrivalSequence | null = null;
   private current = 0;
 
@@ -116,6 +121,8 @@ export class HomeScene extends Phaser.Scene {
       void this.runArrival(arrival);
     } else if (import.meta.env.DEV && wantsShop(window.location.search)) {
       this.openShop();
+    } else if (import.meta.env.DEV && wantsChest(window.location.search)) {
+      this.pressChest();
     }
   }
 
@@ -257,15 +264,22 @@ export class HomeScene extends Phaser.Scene {
     const side = playW / 2 + SPACE.s + SIDE_BUTTON / 2;
     new KitIconButton(this, width / 2 - side, y, { skin: SKIN, icon: 'shop', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openShop() }).setDepth(DEPTH_BAR);
     const chestX = width / 2 + side;
-    new KitIconButton(this, chestX, y, { skin: SKIN, icon: 'chest', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openChestInfo() }).setDepth(DEPTH_BAR);
+    // The chest lights up (a glowing ring and a "!") once it can be opened.
+    this.chestGlow = this.add.graphics().setPosition(chestX, y).setDepth(DEPTH_BAR - 1).setVisible(false);
+    this.chestGlow.lineStyle(4, hexNumber(SKIN.status.combo), 1).strokeCircle(0, 0, SIDE_BUTTON / 2 + 6);
+    new KitIconButton(this, chestX, y, { skin: SKIN, icon: 'chest', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.pressChest() }).setDepth(DEPTH_BAR);
+    const mark = this.add.graphics();
+    mark.fillStyle(hexNumber(SKIN.fills.danger.face), 1).fillCircle(0, 0, 12).lineStyle(2, hexNumber(SKIN.surface.border), 1).strokeCircle(0, 0, 12);
+    this.chestMark = this.add
+      .container(chestX + SIDE_BUTTON * 0.36, y - SIDE_BUTTON * 0.36, [mark, kitText(this, 'label', '!', SKIN.fills.danger.text, 16)])
+      .setDepth(DEPTH_BAR + 1)
+      .setVisible(false);
 
     const rowY = y - 32 - SPACE.s - FOOTER_ROW / 2;
-    // Progress to the next chest, over its button.
-    const chest = nextChest(this.store.totalStars);
+    // Stars towards the next chest, over its button (it can pass the target: 17/15).
     const chestW = 76;
-    new KitPill(this, chestX, rowY, { skin: SKIN, icon: 'starFilled', value: `${chest.have}/${chest.every}`, tint: SKIN.star.filled, height: FOOTER_ROW, width: chestW })
-      .setProgress(chest.have / chest.every)
-      .setDepth(DEPTH_BAR);
+    this.chestPill = new KitPill(this, chestX, rowY, { skin: SKIN, icon: 'starFilled', value: '', tint: SKIN.star.filled, height: FOOTER_ROW, width: chestW }).setDepth(DEPTH_BAR);
+    this.showChestStars(this.store.wallet.chestStars);
     // The boosters the player has, over the play button: centred on it when there is room, else left of the
     // chest's progress.
     const owned = boostersUnlockedAt(this.reachedLevel());
@@ -300,18 +314,109 @@ export class HomeScene extends Phaser.Scene {
     );
   }
 
-  /** What a star chest holds (fixed ranges, shown to the player) and the stars still needed for the next. */
-  private openChestInfo(): void {
+  // ---------------------------------------------------------------- star chests
+
+  /** The stars towards the next chest, and whether it is lit up to be opened. */
+  private showChestStars(stars: number): void {
+    const { every } = chestProgress(this.store.wallet);
+    this.chestPill.setValue(`${stars}/${every}`).setProgress(Math.min(1, stars / every));
+    const ready = stars >= every;
+    if (ready === this.chestGlow.visible) return;
+    this.chestGlow.setVisible(ready).setAlpha(1);
+    this.chestMark.setVisible(ready);
+    this.tweens.killTweensOf(this.chestGlow);
+    // A slow glow, so it asks to be tapped; still with reduce motion.
+    if (ready && !reducedMotion()) this.tweens.add({ targets: this.chestGlow, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: EASE.loop });
+  }
+
+  /** The chest: opens when it has the stars for it, else says more are needed. */
+  private pressChest(): void {
     if (this.modal || this.sequence?.running) return;
-    const { coins, booster } = ECONOMY.chests;
-    const chest = nextChest(this.store.totalStars);
-    const boosters = booster.min === booster.max ? String(booster.min) : `${booster.min}–${booster.max}`;
-    this.modal = showOffer(this, {
-      title: t('chest.title'),
-      icon: 'chest',
-      body: `${t('chest.info', { every: chest.every, min: coins.min, max: coins.max, b: boosters })}\n${t('chest.progress', { have: chest.have, every: chest.every })}`,
-      accept: null,
-      decline: { label: t('offer.ok'), onPress: () => (this.modal = null) },
+    if (!chestProgress(this.store.wallet).ready) {
+      this.sfx.play('invalid');
+      this.toast(t('chest.needMore'), this.chestPill);
+      return;
+    }
+    const opened = this.store.openChest(this.reachedLevel());
+    if (opened) this.showChestReward(opened.rewards);
+  }
+
+  /** A short notice over a counter, gone after a moment. */
+  private toast(text: string, near: Phaser.GameObjects.Container): void {
+    this.toastLabel?.destroy();
+    const { width } = viewSize(this);
+    const label = new KitPill(this, 0, near.y - FOOTER_ROW - SPACE.xs, { skin: SKIN, value: text, height: 36 }).setDepth(DEPTH_MODAL - 1);
+    const half = label.pillWidth / 2 + SPACE.s;
+    label.setX(Math.max(half, Math.min(width - half, near.x)));
+    this.toastLabel = label;
+    label.setAlpha(0);
+    this.tweens.chain({
+      targets: label,
+      tweens: [
+        { alpha: 1, duration: DURATION.base, ease: EASE.enter },
+        { alpha: 0, delay: 1400, duration: DURATION.base, ease: EASE.exit },
+      ],
+      onComplete: () => {
+        label.destroy();
+        if (this.toastLabel === label) this.toastLabel = null;
+      },
+    });
+  }
+
+  /**
+   * What the chest held: it shakes and pops open, sparks fly, and its rewards come in one by one, each with its
+   * exact amount. Closing it refreshes the home screen (the chest stays lit if there are stars for another).
+   */
+  private showChestReward(rewards: readonly Reward[]): void {
+    const screen = screenRect(this);
+    const safe = viewSize(this);
+    const w = Math.min(safe.width - SPACE.s * 2, 340);
+    const h = 320;
+    const modal = new KitModal(this, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: t('chest.opened') });
+    modal.setPosition(screen.x, screen.y).setDepth(DEPTH_MODAL);
+    this.modal = modal;
+    const panel = modal.panel;
+    const top = panel.contentTop;
+    const icon = uiIcon(this, 'chest', SKIN.text.accent, 64).setY(top + 44);
+    panel.add(icon);
+    const items = rewards.map((reward) => this.rewardChip(reward));
+    const gap = SPACE.l;
+    const total = items.reduce((sum, item) => sum + item.width, 0) + gap * (items.length - 1);
+    let x = -total / 2;
+    for (const item of items) {
+      item.container.setPosition(x + item.width / 2, top + 128).setAlpha(0).setScale(0.6);
+      x += item.width + gap;
+      panel.add(item.container);
+    }
+    panel.add(
+      new KitButton(this, 0, h / 2 - SPACE.m - 28, {
+        skin: SKIN,
+        variant: 'primary',
+        label: t('offer.ok'),
+        width: w - SPACE.l * 2,
+        height: 56,
+        onPress: () => {
+          modal.dismiss();
+          this.modal = null;
+          this.build();
+        },
+      }),
+    );
+    modal.popIn();
+    this.sfx.play('unlock');
+    const still = reducedMotion();
+    const burst = () => {
+      this.sfx.play('star3');
+      if (!still) new Effects(this, DEPTH_MODAL + 20).celebrate(screen.width + 2 * screen.x, safe.height);
+    };
+    this.tweens.chain({
+      targets: icon,
+      tweens: [
+        // A chest shakes before it opens (not with reduce motion).
+        ...(still ? [] : [{ angle: { from: -10, to: 10 }, duration: 70, yoyo: true, repeat: 3, delay: DURATION.slow }]),
+        { scale: 1.15, duration: DURATION.base, ease: EASE.pop, yoyo: true, onStart: () => icon.setAngle(0), onComplete: burst },
+        ...items.map((item, i) => ({ targets: item.container, alpha: 1, scale: 1, duration: DURATION.base, ease: EASE.pop, delay: i === 0 ? 0 : 120 })),
+      ],
     });
   }
 
@@ -380,6 +485,7 @@ export class HomeScene extends Phaser.Scene {
     if (rewards) {
       this.showCoins(coinsBefore(rewards));
       this.showXp(rewards.wallet.xp - rewards.xp);
+      this.showChestStars(chestStarsBefore(rewards));
     }
     const stage: ArrivalStage = {
       scene: this,
@@ -437,6 +543,10 @@ export class HomeScene extends Phaser.Scene {
           });
         });
       },
+      showChestStars: (stars, bump) => {
+        this.showChestStars(stars);
+        if (bump) this.bump(this.chestPill);
+      },
       showCard: (card) => this.showCard(card),
       closeCards: () => {
         this.card?.destroy();
@@ -460,13 +570,13 @@ export class HomeScene extends Phaser.Scene {
       skin: SKIN,
       width: w,
       height: h,
-      title: card.kind === 'levelUp' ? t('levelUp.title') : t('chest.opened'),
+      title: t('levelUp.title'),
     }).setDepth(DEPTH_MODAL + 5);
     this.card = panel;
     const top = panel.contentTop;
-    const subtitle = card.kind === 'levelUp' ? t('levelUp.reached', { n: card.level }) : t('chest.title');
+    const subtitle = t('levelUp.reached', { n: card.level });
     panel.add(kitText(this, 'body', subtitle, SKIN.text.secondary).setY(top + 12));
-    const icon = uiIcon(this, card.kind === 'levelUp' ? 'starFilled' : 'chest', SKIN.text.accent, 48).setY(top + 58);
+    const icon = uiIcon(this, 'starFilled', SKIN.text.accent, 48).setY(top + 58);
     panel.add(icon);
     // What it gives: an icon and "+N" for each reward, side by side.
     const items = card.rewards.map((reward) => this.rewardChip(reward));
@@ -485,8 +595,6 @@ export class HomeScene extends Phaser.Scene {
         targets: panel,
         tweens: [
           { alpha: 1, scale: 1, duration: DURATION.slow, ease: EASE.pop },
-          // A chest shakes before it opens.
-          ...(card.kind === 'chest' && !still ? [{ targets: icon, angle: { from: -8, to: 8 }, duration: 70, yoyo: true, repeat: 3 }] : []),
           { targets: items.map((item) => item.container), alpha: 1, duration: DURATION.base, ease: EASE.pop, onStart: () => icon.setAngle(0) },
           { alpha: 0, delay: 1300, duration: DURATION.base, ease: EASE.exit },
         ],

@@ -4,11 +4,12 @@ import {
   boostersUnlockedAt,
   buyBooster,
   chestContents,
-  chestsEarned,
+  chestProgress,
   continuePrice,
   EMPTY_WALLET,
   introduceBooster,
   levelUpGift,
+  openChest,
   playerLevel,
   rewardWin,
   spend,
@@ -44,10 +45,26 @@ describe('player level', () => {
 describe('star chests', () => {
   const every = ECONOMY.chests.everyStars;
 
-  it('comes each time the stars collected pass a multiple of everyStars', () => {
-    expect(chestsEarned(0, every - 1)).toEqual([]);
-    expect(chestsEarned(every - 1, every)).toEqual([1]);
-    expect(chestsEarned(every - 2, 2 * every + 1)).toEqual([1, 2]);
+  it('can be opened once the stars collected reach everyStars, and the count can pass it', () => {
+    expect(chestProgress({ ...EMPTY_WALLET, chestStars: every - 1 })).toEqual({ have: every - 1, every, ready: false });
+    expect(openChest({ ...EMPTY_WALLET, chestStars: every - 1 }, 10)).toBeNull();
+    expect(chestProgress({ ...EMPTY_WALLET, chestStars: every + 2 })).toEqual({ have: every + 2, every, ready: true });
+  });
+
+  it('takes everyStars away when opened, gives its contents, and opens again while there are stars for one', () => {
+    let wallet = { ...EMPTY_WALLET, coins: 10, chestStars: 2 * every + 5 };
+    const first = openChest(wallet, 10)!;
+    expect(first.number).toBe(1);
+    expect(first.rewards).toEqual(chestContents(1, boostersUnlockedAt(10)));
+    expect(first.wallet.chestStars).toBe(every + 5);
+    expect(first.wallet.chestsOpened).toBe(1);
+    const coins = first.rewards.reduce((sum, r) => sum + (r.kind === 'coins' ? r.amount : 0), 0);
+    expect(first.wallet.coins).toBe(10 + coins);
+    wallet = first.wallet;
+    const second = openChest(wallet, 10)!;
+    expect(second.number).toBe(2);
+    expect(second.wallet.chestStars).toBe(5);
+    expect(openChest(second.wallet, 10)).toBeNull();
   });
 
   it('holds coins and a booster within the visible ranges, the same every time, only from unlocked boosters', () => {
@@ -98,18 +115,19 @@ describe('boosters and continues', () => {
 });
 
 describe('a win', () => {
-  it('pays coins and experience, with the gifts of every level reached and the chests the stars reach', () => {
-    const wallet = { ...EMPTY_WALLET, xp: xpToNext(1) - 10 };
+  it('pays coins and experience, with the gifts of every level reached, and adds its new stars towards chests', () => {
+    const wallet = { ...EMPTY_WALLET, xp: xpToNext(1) - 10, chestStars: 12 };
     const every = ECONOMY.chests.everyStars;
     const rewards = rewardWin(wallet, { levelNumber: 5, firstClear: true, stars: 3, bestStarsBefore: 0, score: 100, totalStarsBefore: every - 2, totalStarsAfter: every + 1 });
     expect(rewards.coins).toBe(winCoins(true, 3, 0));
     expect(rewards.levelUps).toEqual([{ level: 2, gift: levelUpGift(2) }]);
-    expect(rewards.chests.map((c) => c.number)).toEqual([1]);
-    expect(rewards.wallet.chestsOpened).toBe(1);
-    const chestCoins = rewards.chests[0]!.rewards.reduce((sum, r) => sum + (r.kind === 'coins' ? r.amount : 0), 0);
+    // No chest opens by itself: the stars wait for the player to open one.
+    expect(rewards.chestStars).toBe(3);
+    expect(rewards.wallet.chestStars).toBe(15);
+    expect(rewards.wallet.chestsOpened).toBe(0);
     const giftCoins = levelUpGift(2).kind === 'coins' ? levelUpGift(2).amount : 0;
-    expect(rewards.wallet.coins).toBe(rewards.coins + chestCoins + giftCoins);
-    // A chest already opened is not given again.
-    expect(rewardWin(rewards.wallet, { levelNumber: 5, firstClear: false, stars: 3, bestStarsBefore: 3, score: 100, totalStarsBefore: every - 2, totalStarsAfter: every + 1 }).chests).toEqual([]);
+    expect(rewards.wallet.coins).toBe(rewards.coins + giftCoins);
+    // A replay without new stars adds none.
+    expect(rewardWin(rewards.wallet, { levelNumber: 5, firstClear: false, stars: 3, bestStarsBefore: 3, score: 100, totalStarsBefore: every + 1, totalStarsAfter: every + 1 }).chestStars).toBe(0);
   });
 });

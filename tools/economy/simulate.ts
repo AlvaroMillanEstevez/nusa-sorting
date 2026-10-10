@@ -4,6 +4,7 @@ import {
   continuePrice,
   EMPTY_WALLET,
   introduceBooster,
+  openChest,
   playerLevel,
   rewardWin,
   starThresholds,
@@ -69,8 +70,15 @@ function run(spender: boolean): Row[] {
     totalStars += after - before;
     best[index] = after;
     wallet = rewards.wallet;
-    freeBoosters += rewards.levelUps.reduce((n, l) => n + boosterUnits([l.gift]), 0) + rewards.chests.reduce((n, c) => n + boosterUnits(c.rewards), 0);
-    return rewards.coins + rewards.levelUps.reduce((n, l) => n + coinsOf([l.gift]), 0) + rewards.chests.reduce((n, c) => n + coinsOf(c.rewards), 0);
+    freeBoosters += rewards.levelUps.reduce((n, l) => n + boosterUnits([l.gift]), 0);
+    let coins = rewards.coins + rewards.levelUps.reduce((n, l) => n + coinsOf([l.gift]), 0);
+    // Chests are opened by hand: this player opens each one as soon as it can.
+    for (let chest = openChest(wallet, index + 1); chest; chest = openChest(wallet, index + 1)) {
+      wallet = chest.wallet;
+      freeBoosters += boosterUnits(chest.rewards);
+      coins += coinsOf(chest.rewards);
+    }
+    return coins;
   };
 
   for (let i = 0; i < levels.length; i++) {

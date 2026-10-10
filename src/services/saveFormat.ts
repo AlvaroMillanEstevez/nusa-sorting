@@ -4,7 +4,7 @@ import { EMPTY_PROGRESS, totalStars, type Progress } from '../core/progress';
 import type { Stars } from '../core/stars';
 import type { SaveData, Settings } from './SaveService';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null };
 
@@ -21,7 +21,15 @@ const migrations: Record<number, (old: Record<string, unknown>) => Record<string
   // each level's first win with its best stars, experience from its best score, and the chests its stars
   // reached counted as opened (no boosters: their intros give them when the player gets to them).
   1: (old) => ({ ...old, wallet: retroWallet(parseProgress(old.progress)) }),
+  // Version 3 made chests open by hand: the stars not yet turned into a chest (version 2 opened one every
+  // `everyStars` stars by itself) start the count towards the next, so no star and no pending chest is lost.
+  2: (old) => ({ ...old, wallet: isRecord(old.wallet) ? { ...old.wallet, chestStars: pendingChestStars(parseProgress(old.progress), count(old.wallet.chestsOpened)) } : old.wallet }),
 };
+
+/** Stars a version-2 save had collected beyond the chests it opened. */
+export function pendingChestStars(progress: Progress, chestsOpened: number): number {
+  return Math.max(0, totalStars(progress) - chestsOpened * ECONOMY.chests.everyStars);
+}
 
 /** The wallet a version-1 save's progress would have earned. */
 export function retroWallet(progress: Progress): Wallet {
@@ -81,6 +89,7 @@ function parseWallet(value: unknown): Wallet {
     xp: count(value.xp),
     boosters: Object.fromEntries(BOOSTER_IDS.map((id) => [id, count(boosters[id])])) as Record<BoosterId, number>,
     chestsOpened: count(value.chestsOpened),
+    chestStars: count(value.chestStars),
     introduced: parseIdList(value.introduced).filter((id): id is BoosterId => (BOOSTER_IDS as readonly string[]).includes(id)),
   };
 }

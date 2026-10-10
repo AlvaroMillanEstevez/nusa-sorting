@@ -71,10 +71,13 @@ export const ECONOMY = {
     ] satisfies readonly Reward[],
   },
 
-  /** Chests: one each time the stars collected reach a multiple of `everyStars`. Only earned by playing. */
+  /**
+   * Chests: every new star counts towards the next, and the player opens one by hand once the count reaches
+   * `everyStars` (opening takes that many away; the count can pass it). Only earned by playing.
+   */
   chests: {
     everyStars: 15,
-    /** Coins in a chest: a fixed range, shown to the player. */
+    /** Coins in a chest: a fixed range. */
     coins: { min: 40, max: 80 },
     /** Units of one booster (among those unlocked; coins instead before any is), also a fixed range. */
     booster: { min: 1, max: 1 },

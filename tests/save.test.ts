@@ -3,6 +3,7 @@ import { winCoins } from '../src/core';
 import { browserStorage, LocalSaveService, SAVE_KEY, type StorageLike } from '../src/services/LocalSaveService';
 import { ProgressStore } from '../src/services/ProgressStore';
 import { MemorySaveService, type SaveData } from '../src/services/SaveService';
+import { ECONOMY } from '../src/data/economy';
 import { emptySave, parseSave, SAVE_VERSION, serializeSave } from '../src/services/saveFormat';
 
 class FakeStorage implements StorageLike {
@@ -40,7 +41,7 @@ const sample: SaveData = {
   themesSeen: ['budaya-jawa'],
   lastArrangements: { 'nusa-003': 2 },
   tutorialsDone: ['first-triple'],
-  wallet: { coins: 340, xp: 5200, boosters: { freeze: 2, removeTriple: 0, shuffle: 1 }, chestsOpened: 1, introduced: ['freeze'] },
+  wallet: { coins: 340, xp: 5200, boosters: { freeze: 2, removeTriple: 0, shuffle: 1 }, chestsOpened: 1, chestStars: 4, introduced: ['freeze'] },
   snapshot: { format: 1, levelId: 'nusa-003', arrangement: 2 },
 };
 
@@ -89,7 +90,7 @@ describe('save format', () => {
       themesSeen: ['budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3 },
       tutorialsDone: [],
-      wallet: { coins: 0, xp: 0, boosters: { freeze: 3, removeTriple: 0, shuffle: 0 }, chestsOpened: 2, introduced: ['freeze'] },
+      wallet: { coins: 0, xp: 0, boosters: { freeze: 3, removeTriple: 0, shuffle: 0 }, chestsOpened: 2, chestStars: 0, introduced: ['freeze'] },
       snapshot: null,
     });
   });
@@ -212,7 +213,7 @@ describe('ProgressStore', () => {
     expect(new ProgressStore(new LocalSaveService(new FakeStorage()), () => false).reduceMotion).toBe(false);
   });
 
-  it('migrates a version 1 save to version 2 keeping its progress, and gives it what that progress earned', () => {
+  it('migrates a version 1 save keeping its progress, and gives it what that progress earned', () => {
     const v1 = JSON.stringify({
       version: 1,
       progress: { completed: ['a', 'b'], bestScores: { a: 2000, b: 3000 }, bestStars: { a: 3, b: 2 } },
@@ -222,12 +223,31 @@ describe('ProgressStore', () => {
       tutorialsDone: ['first-triple'],
     });
     const save = parseSave(v1);
-    expect(save.version).toBe(2);
+    expect(save.version).toBe(SAVE_VERSION);
     expect(save.progress.completed).toEqual(['a', 'b']);
     expect(save.settings.muted).toBe(true);
     expect(save.themesSeen).toEqual(['budaya-jawa']);
-    // First-win coins with the best stars, experience from the best scores, no chest for 5 stars.
-    expect(save.wallet).toEqual({ coins: winCoins(true, 3, 0) + winCoins(true, 2, 0), xp: 5000, boosters: { freeze: 0, removeTriple: 0, shuffle: 0 }, chestsOpened: 0, introduced: [] });
+    // First-win coins with the best stars, experience from the best scores, no chest yet: 5 stars towards one.
+    expect(save.wallet).toEqual({ coins: winCoins(true, 3, 0) + winCoins(true, 2, 0), xp: 5000, boosters: { freeze: 0, removeTriple: 0, shuffle: 0 }, chestsOpened: 0, chestStars: 5, introduced: [] });
+  });
+
+  it('migrates a version 2 save to hand-opened chests without losing stars or a pending chest', () => {
+    const every = ECONOMY.chests.everyStars;
+    // 3 levels × 3 stars + 9 × 2 stars = 27 stars; version 2 had opened 1 chest by itself.
+    const completed = Array.from({ length: 12 }, (_, i) => `l${i}`);
+    const bestStars = Object.fromEntries(completed.map((id, i) => [id, i < 3 ? 3 : 2]));
+    const v2 = JSON.stringify({
+      version: 2,
+      progress: { completed, bestScores: {}, bestStars },
+      settings: { muted: false },
+      wallet: { coins: 120, xp: 900, boosters: { freeze: 1, removeTriple: 0, shuffle: 0 }, chestsOpened: 1, introduced: ['freeze'] },
+    });
+    const save = parseSave(v2);
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.progress.completed).toEqual(completed);
+    expect(save.wallet).toEqual({ coins: 120, xp: 900, boosters: { freeze: 1, removeTriple: 0, shuffle: 0 }, chestsOpened: 1, chestStars: 27 - every, introduced: ['freeze'] });
+    // A version 2 save that somehow opened more chests than its stars allow keeps 0, never less.
+    expect(parseSave(JSON.stringify({ ...JSON.parse(v2), wallet: { chestsOpened: 5 } })).wallet.chestStars).toBe(0);
   });
 
   it('remembers completed tutorials, saving only the first time, and reads older saves as none done', () => {

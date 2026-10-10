@@ -45,9 +45,10 @@ export class BootScene extends Phaser.Scene {
 
   /** Development only (?arrival=N): a three-star win of level N, with rewards that show every step. */
   private sampleArrival(level: number): Arrival {
-    const wallet = this.store.wallet;
-    const { into, needed } = playerLevel(wallet.xp);
     const every = ECONOMY.chests.everyStars;
+    // Two stars short of a chest, so the win's three light it up.
+    const wallet = { ...this.store.wallet, chestStars: Math.max(this.store.wallet.chestStars, every - 2) };
+    const { into, needed } = playerLevel(wallet.xp);
     const rewards = rewardWin(wallet, {
       levelNumber: playList[level]!.number,
       firstClear: true,
@@ -81,7 +82,7 @@ export class BootScene extends Phaser.Scene {
       return;
     }
     // Development only: ?arrival=N plays the sequence that follows winning level N with three stars, with sample
-    // rewards (coins, a player level and a chest) that are shown but not saved.
+    // rewards (coins, a player level, and stars that light up the chest) that are shown but not saved.
     const arrived = import.meta.env.DEV ? parseArrivalParam(search, playList.length) : null;
     const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
     this.scene.start('Home', data);

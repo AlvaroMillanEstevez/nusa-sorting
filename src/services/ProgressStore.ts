@@ -1,9 +1,9 @@
 import { nextArrangement } from '../core/arrangement';
 import { firstIncomplete, isUnlocked, recordWin, totalStars, type Progress, type WinRecord } from '../core/progress';
 import type { Stars } from '../core/stars';
-import { buyBooster, introduceBooster, rewardWin, spend, useBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
+import { buyBooster, introduceBooster, openChest, rewardWin, spend, useBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
 import type { GameSnapshot } from '../core/snapshot';
-import type { BoosterId } from '../data/economy';
+import type { BoosterId, Reward } from '../data/economy';
 import type { SaveData, SaveService, Settings } from './SaveService';
 
 /**
@@ -100,6 +100,17 @@ export class ProgressStore {
     return rewards;
   }
 
+  /**
+   * Opens a star chest if the player has the stars for one (see openChest), and saves; null if not. `reachedLevel`
+   * is the furthest level the player can play: the chest's booster is one unlocked by then.
+   */
+  openChest(reachedLevel: number): { number: number; rewards: Reward[] } | null {
+    const opened = openChest(this.data.wallet, reachedLevel);
+    if (!opened) return null;
+    this.setWallet(opened.wallet);
+    return { number: opened.number, rewards: opened.rewards };
+  }
+
   /** Buys one booster with coins; false if the player cannot afford it. */
   buyBooster(booster: BoosterId): boolean {
     const next = buyBooster(this.data.wallet, booster);
@@ -124,6 +135,11 @@ export class ProgressStore {
   /** Development only (?coins=N): sets the coins. */
   setCoins(coins: number): void {
     this.setWallet({ ...this.data.wallet, coins });
+  }
+
+  /** Development only (?progress=N): adds stars towards chests, as winning them would. */
+  addChestStars(stars: number): void {
+    this.setWallet({ ...this.data.wallet, chestStars: this.data.wallet.chestStars + stars });
   }
 
   /** Gives a booster's intro gift, once; true if this was its first time. */

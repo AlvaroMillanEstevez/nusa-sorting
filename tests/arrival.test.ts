@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_WALLET, rewardWin } from '../src/core/economy';
 import { ECONOMY } from '../src/data/economy';
-import { ArrivalSequence, coinsBefore, rewardCards, rewardsShow, type Arrival, type ArrivalStage, type ArrivalStep, type RewardCard } from '../src/scenes/map/arrival';
+import { ArrivalSequence, chestFill, chestStarsBefore, coinsBefore, rewardCards, rewardsShow, type Arrival, type ArrivalStage, type ArrivalStep, type RewardCard } from '../src/scenes/map/arrival';
 
 /** A step that records what happened to it and resolves when told to. */
 function step(name: string, log: string[]): ArrivalStep & { release: () => void } {
@@ -50,9 +50,9 @@ describe('arrival sequence', () => {
   });
 });
 
-/** A win with a level-up and a chest, from a wallet with some coins. */
+/** A win with a level-up whose stars reach a chest, from a wallet with some coins and stars towards one. */
 function bigWin() {
-  const wallet = { ...EMPTY_WALLET, coins: 70 };
+  const wallet = { ...EMPTY_WALLET, coins: 70, chestStars: ECONOMY.chests.everyStars - 1 };
   const every = ECONOMY.chests.everyStars;
   return rewardWin(wallet, {
     levelNumber: 12,
@@ -69,15 +69,39 @@ describe('arrival rewards', () => {
   it('works out the coins before the win from the wallet after it', () => {
     const rewards = bigWin();
     expect(rewards.levelUps.length).toBeGreaterThan(0);
-    expect(rewards.chests).toHaveLength(1);
     expect(coinsBefore(rewards)).toBe(70);
   });
 
-  it('shows level-ups first, then chests, each with its rewards', () => {
+  it('shows a card for each new player level, with its gift, and never opens a chest by itself', () => {
     const rewards = bigWin();
     const cards = rewardCards(rewards);
-    expect(cards.map((card) => card.kind)).toEqual([...rewards.levelUps.map(() => 'levelUp'), 'chest']);
-    expect(cards.at(-1)!.rewards).toEqual(rewards.chests[0]!.rewards);
+    expect(cards).toEqual(rewards.levelUps.map((up) => ({ kind: 'levelUp', level: up.level, rewards: [up.gift] })));
+    expect(rewards.wallet.chestsOpened).toBe(0);
+  });
+
+  it('counts the new stars up on the chest, from before the win to after it, played or skipped', async () => {
+    const rewards = bigWin();
+    const every = ECONOMY.chests.everyStars;
+    expect(chestStarsBefore(rewards)).toBe(every - 1);
+    const shown: number[] = [];
+    const tweens: { onUpdate: () => void; onComplete: () => void; targets: { n: number }; n: number }[] = [];
+    const fake = {
+      arrival: { level: 11, starsBefore: 0, starsAfter: 3, totalBefore: 14, next: 12, rewards },
+      scene: { tweens: { add: (tween: (typeof tweens)[number]) => tweens.push(tween) } },
+      showChestStars: (stars: number) => shown.push(stars),
+    } as unknown as ArrivalStage;
+    const done = chestFill.play(fake);
+    // Run the count to its end.
+    const tween = tweens[0]!;
+    for (let n = every - 1; n <= tween.n; n++) {
+      tween.targets.n = n;
+      tween.onUpdate();
+    }
+    tween.onComplete();
+    await done;
+    expect(shown).toEqual([every, every + 1, every + 2, every + 2]);
+    chestFill.finish(fake);
+    expect(shown.at(-1)).toBe(rewards.wallet.chestStars);
   });
 
   it('ends on the wallet after the win whether it plays through or is skipped', async () => {

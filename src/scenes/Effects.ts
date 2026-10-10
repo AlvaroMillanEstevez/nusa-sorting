@@ -45,7 +45,11 @@ export class Effects {
   private readonly chips: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly confetti: Phaser.GameObjects.Particles.ParticleEmitter;
 
-  constructor(private readonly scene: Phaser.Scene) {
+  /** `depth`: where the effects draw (over the board and HUD by default; a scene's panels may want them higher). */
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly depth = DEPTH_FX,
+  ) {
     prepareTextures(scene);
     this.sparks = scene.add
       .particles(0, 0, 'fx:spark', {
@@ -57,7 +61,7 @@ export class Effects {
         tint: WARM,
         blendMode: Phaser.BlendModes.ADD,
       })
-      .setDepth(DEPTH_FX);
+      .setDepth(this.depth);
     this.chips = scene.add
       .particles(0, 0, 'fx:chip', {
         emitting: false,
@@ -70,7 +74,7 @@ export class Effects {
         alpha: { start: 1, end: 0 },
         tint: [WOOD.crate, WOOD.crateLight, WOOD.crateDark].map(hexNumber),
       })
-      .setDepth(DEPTH_FX);
+      .setDepth(this.depth);
     this.confetti = scene.add
       .particles(0, 0, 'fx:confetti', {
         emitting: false,
@@ -83,7 +87,7 @@ export class Effects {
         alpha: { start: 1, end: 0.2 },
         tint: [SKIN.fills.primary.face, SKIN.fills.danger.face, SKIN.fills.positive.face, SKIN.text.primary, '#5ab4ff'].map(hexNumber),
       })
-      .setDepth(DEPTH_FX + 5);
+      .setDepth(this.depth + 5);
   }
 
   /** A burst of sparks where a triple cleared; the combo makes it bigger. */
@@ -92,7 +96,7 @@ export class Effects {
     this.sparks.setParticleScale(0.6 + boost * 0.15, 0);
     this.sparks.explode(10 + boost * 6, x, y);
     // A ring that opens out from the shelf.
-    const ring = this.scene.add.graphics().setPosition(x, y).setDepth(DEPTH_FX);
+    const ring = this.scene.add.graphics().setPosition(x, y).setDepth(this.depth);
     ring.lineStyle(3 + boost, hexNumber(SKIN.status.combo), 0.9).strokeCircle(0, 0, size * 0.3);
     this.scene.tweens.add({ targets: ring, scale: 2.2 + boost * 0.3, alpha: 0, duration: 380, ease: EASE.enter, onComplete: () => ring.destroy() });
   }
@@ -102,7 +106,7 @@ export class Effects {
    * (for the counter to count up).
    */
   flyPoints(text: string, from: { x: number; y: number }, to: { x: number; y: number }, delay: number, onArrive: () => void): void {
-    const label = kitText(this.scene, 'number', text, SKIN.text.primary, 22).setStroke(SKIN.surface.border, 5).setPosition(from.x, from.y).setDepth(DEPTH_FX + 2).setAlpha(0);
+    const label = kitText(this.scene, 'number', text, SKIN.text.primary, 22).setStroke(SKIN.surface.border, 5).setPosition(from.x, from.y).setDepth(this.depth + 2).setAlpha(0);
     const progress = { k: 0 };
     this.scene.tweens.chain({
       targets: label,
@@ -136,7 +140,7 @@ export class Effects {
     const label = kitText(this.scene, 'title', `Combo ×${combo}!`, combo >= 5 ? SKIN.fills.danger.light : SKIN.status.combo, size)
       .setStroke(SKIN.surface.border, 6)
       .setPosition(x, y)
-      .setDepth(DEPTH_FX + 3)
+      .setDepth(this.depth + 3)
       .setScale(reducedMotion() ? 1 + step * 0.06 : 0.4)
       .setAlpha(0);
     // Kept on screen whatever the shelf, at its biggest.
@@ -157,7 +161,7 @@ export class Effects {
   /** A shelf opening: a flash over it and sparks along its front. */
   unlockBurst(rect: Rect, delay: number): void {
     this.scene.time.delayedCall(delay, () => {
-      const flash = this.scene.add.graphics().setDepth(DEPTH_FX);
+      const flash = this.scene.add.graphics().setDepth(this.depth);
       flash.fillStyle(hexNumber(SKIN.text.primary), 0.7).fillRoundedRect(rect.x, rect.y, rect.width, rect.height, 8);
       this.scene.tweens.add({ targets: flash, alpha: 0, duration: 420, ease: EASE.enter, onComplete: () => flash.destroy() });
       for (let i = 0; i < 3; i++) this.sparks.explode(8, rect.x + (rect.width * (i + 0.5)) / 3, rect.y + rect.height * 0.6);
@@ -177,7 +181,7 @@ export class Effects {
    * shelves are full before the panel says so. Lasts `duration` ms.
    */
   blockedWarning(shelves: readonly Rect[], duration: number, message: string): void {
-    const g = this.scene.add.graphics().setDepth(DEPTH_FX);
+    const g = this.scene.add.graphics().setDepth(this.depth);
     // The reason, big over the middle of the board.
     const x0 = Math.min(...shelves.map((r) => r.x));
     const x1 = Math.max(...shelves.map((r) => r.x + r.width));
@@ -186,7 +190,7 @@ export class Effects {
     const label = kitText(this.scene, 'title', message, SKIN.text.primary, 30)
       .setStroke(SKIN.fills.danger.lip, 8)
       .setPosition((x0 + x1) / 2, (y0 + y1) / 2)
-      .setDepth(DEPTH_FX + 3)
+      .setDepth(this.depth + 3)
       .setScale(0.5)
       .setAlpha(0);
     if (label.width > x1 - x0) label.setScale(((x1 - x0) / label.width) * 0.5);
