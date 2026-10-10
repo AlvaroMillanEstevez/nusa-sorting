@@ -15,8 +15,6 @@ export const en = {
   'result.levels': 'Levels',
   'result.newBest': 'New best!',
   'result.best': 'Best: {score}',
-  'dev.breakdown': 'Base {base} · combos {combos} · time {time} = {score}',
-  'dev.thresholds': '2★ from {two} · 3★ from {three}',
   'levels.back': 'Back',
   'hud.scoreLabel': 'Score',
   'hud.levelLabel': 'Level',

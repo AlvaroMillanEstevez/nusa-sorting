@@ -20,7 +20,6 @@ import {
   removeTriple,
   shuffleBoard,
   winCoins,
-  scoreParts,
   starsFor,
   starThresholds,
   tick,
@@ -403,7 +402,6 @@ export class GameScene extends Phaser.Scene {
         coins: winCoins(true, starsFor(score, starThresholds(this.level)), 0),
         next: () => this.goHome(),
         replay: () => this.transitionTo(this.levelIndex),
-        breakdown: this.scoreBreakdown(score),
       });
     } else if (show === 'blocked') {
       // After a moment, so the board is seen first.
@@ -967,7 +965,6 @@ export class GameScene extends Phaser.Scene {
           coins: rewards?.coins ?? 0,
           next: () => this.goHome(arrival),
           replay: retry,
-          ...(import.meta.env.DEV ? { breakdown: this.scoreBreakdown(score) } : {}),
         });
       } else {
         this.sfx.play('lose');
@@ -976,20 +973,6 @@ export class GameScene extends Phaser.Scene {
         );
       }
     });
-  }
-
-  /** Development only: the score split into base, combos and time bonus, and the level's star thresholds. */
-  private scoreBreakdown(score: number): string[] {
-    const locale = getLocale();
-    const { pointsPerTriple } = scoreParts(this.level);
-    const base = this.state.triplesCleared * pointsPerTriple;
-    const combos = score - this.timeBonus - base;
-    const { two, three } = starThresholds(this.level);
-    const f = (n: number) => formatScore(n, locale);
-    return [
-      t('dev.breakdown', { base: f(base), combos: `+${f(combos)}`, time: `+${f(this.timeBonus)}`, score: f(score) }),
-      t('dev.thresholds', { two: f(two), three: f(three) }),
-    ];
   }
 
   /** The level's whole time, in ms (0 for an untimed level). */
