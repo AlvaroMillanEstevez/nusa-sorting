@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "levelgen": "node tools/levelgen/run.mjs"
+    "levelgen": "node tools/levelgen/run.mjs",
+    "economy": "node tools/economy/run.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"

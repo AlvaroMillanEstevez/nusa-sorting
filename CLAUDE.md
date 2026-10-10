@@ -12,6 +12,7 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `npm test` — tests con Vitest
 - `npm run typecheck` — `tsc --noEmit`
 - `npm run levelgen -- all` — regenera los niveles desde sus recetas (`tools/levelgen/recipes.ts`); `npm run levelgen -- N` regenera solo el nivel N y `npm run levelgen -- N --seed S` lo prueba con otra semilla. Escribe en `src/data/levels`; revisar el diff antes de hacer commit.
+- `npm run economy` — simula la economía en los 24 niveles (monedas, nivel de jugador, cofres y potenciadores al alcance) con los valores de `src/data/economy.ts`.
 - `npm run levelgen -- report` — informe de los niveles actuales sin regenerarlos: huecos libres al empezar, huecos libres medios, presión de espacio y resultados del jugador simulado.
 
 ## Probar en el móvil
@@ -63,6 +64,14 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - Cambios pequeños, un commit por paso coherente con mensaje claro.
 - Al terminar cada tarea, informar de: qué cambió, qué tests se ejecutaron, qué NO se ha probado, y una lista de pruebas manuales para Koke.
 - Nunca afirmar que algo funciona en móvil sin que Koke lo haya probado.
+
+## Principios de economía
+
+- Una sola moneda (monedas). Nada de economías complejas.
+- Todo nivel se puede superar sin potenciadores: ayudan, nunca son obligatorios.
+- Todos los valores ajustables (precios, recompensas, curvas) viven en `src/data/economy.ts`; la lógica, en `src/core/economy.ts`.
+- Sin anuncios todavía: ningún botón de anuncio (CrazyGames rechaza botones de anuncio sin efecto en Basic Launch). `AdService` queda preparado para añadir después anuncios con recompensa como alternativa a las monedas.
+- Nada se compra con dinero real. Los cofres solo se ganan jugando; nunca se venden.
 
 ## Principio de dificultad
 

@@ -1,3 +1,4 @@
+import type { Wallet } from '../core/economy';
 import type { Progress } from '../core/progress';
 
 export interface Settings {
@@ -24,6 +25,8 @@ export interface SaveData {
   readonly lastArrangements: Readonly<Record<string, number>>;
   /** Tutorials the player has completed (such as FIRST_TRIPLE_TUTORIAL); they never show again. */
   readonly tutorialsDone: readonly string[];
+  /** Coins, experience, boosters owned, chests opened and boosters introduced (version 2). */
+  readonly wallet: Wallet;
 }
 
 /** Persistence boundary. The game never touches storage APIs directly. */

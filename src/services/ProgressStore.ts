@@ -1,6 +1,8 @@
 import { nextArrangement } from '../core/arrangement';
 import { firstIncomplete, isUnlocked, recordWin, totalStars, type Progress, type WinRecord } from '../core/progress';
 import type { Stars } from '../core/stars';
+import { buyBooster, introduceBooster, rewardWin, spend, useBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
+import type { BoosterId } from '../data/economy';
 import type { SaveData, SaveService, Settings } from './SaveService';
 
 /**
@@ -77,6 +79,52 @@ export class ProgressStore {
 
   bestScore(levelId: string): number | null {
     return this.data.progress.bestScores[levelId] ?? null;
+  }
+
+  // ---------------------------------------------------------------- wallet
+
+  get wallet(): Wallet {
+    return this.data.wallet;
+  }
+
+  private setWallet(wallet: Wallet): void {
+    this.data = { ...this.data, wallet };
+    this.saves.save(this.data);
+  }
+
+  /** Applies a win's rewards (coins, experience, level-up gifts, chests) and saves them. */
+  rewardWin(win: WinFacts): WinRewards {
+    const rewards = rewardWin(this.data.wallet, win);
+    this.setWallet(rewards.wallet);
+    return rewards;
+  }
+
+  /** Buys one booster with coins; false if the player cannot afford it. */
+  buyBooster(booster: BoosterId): boolean {
+    const next = buyBooster(this.data.wallet, booster);
+    if (next) this.setWallet(next);
+    return next !== null;
+  }
+
+  /** Uses one booster; false if the player has none. */
+  useBooster(booster: BoosterId): boolean {
+    const next = useBooster(this.data.wallet, booster);
+    if (next) this.setWallet(next);
+    return next !== null;
+  }
+
+  /** Pays coins (a continue); false if the player has too few. */
+  spendCoins(coins: number): boolean {
+    const next = spend(this.data.wallet, coins);
+    if (next) this.setWallet(next);
+    return next !== null;
+  }
+
+  /** Gives a booster's intro gift, once; true if this was its first time. */
+  introduceBooster(booster: BoosterId): boolean {
+    if (this.data.wallet.introduced.includes(booster)) return false;
+    this.setWallet(introduceBooster(this.data.wallet, booster));
+    return true;
   }
 
   /** Most stars earned in a level, or null if it has none yet. */

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { winCoins } from '../src/core';
 import { browserStorage, LocalSaveService, SAVE_KEY, type StorageLike } from '../src/services/LocalSaveService';
 import { ProgressStore } from '../src/services/ProgressStore';
 import { MemorySaveService, type SaveData } from '../src/services/SaveService';
@@ -39,6 +40,7 @@ const sample: SaveData = {
   themesSeen: ['budaya-jawa'],
   lastArrangements: { 'nusa-003': 2 },
   tutorialsDone: ['first-triple'],
+  wallet: { coins: 340, xp: 5200, boosters: { freeze: 2, removeTriple: 0, shuffle: 1 }, chestsOpened: 1, introduced: ['freeze'] },
 };
 
 describe('save format', () => {
@@ -71,6 +73,7 @@ describe('save format', () => {
       themesSeen: ['budaya-jawa', 7, '', 'budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3, 'nusa-002': -1, 'nusa-004': 1.5, 'nusa-005': '2', '': 1 },
       tutorialsDone: 'first-triple',
+      wallet: { coins: -5, xp: 120.5, boosters: { freeze: 3, shuffle: 'two', magic: 4 }, chestsOpened: 2, introduced: ['freeze', 'magic', 7] },
     });
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
@@ -79,6 +82,7 @@ describe('save format', () => {
       themesSeen: ['budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3 },
       tutorialsDone: [],
+      wallet: { coins: 0, xp: 0, boosters: { freeze: 3, removeTriple: 0, shuffle: 0 }, chestsOpened: 2, introduced: ['freeze'] },
     });
   });
 
@@ -198,6 +202,24 @@ describe('ProgressStore', () => {
     systemWants.setReduceMotion(false);
     expect(new ProgressStore(new LocalSaveService(storage), () => true).reduceMotion).toBe(false);
     expect(new ProgressStore(new LocalSaveService(new FakeStorage()), () => false).reduceMotion).toBe(false);
+  });
+
+  it('migrates a version 1 save to version 2 keeping its progress, and gives it what that progress earned', () => {
+    const v1 = JSON.stringify({
+      version: 1,
+      progress: { completed: ['a', 'b'], bestScores: { a: 2000, b: 3000 }, bestStars: { a: 3, b: 2 } },
+      settings: { muted: true, colorBlindMode: false },
+      themesSeen: ['budaya-jawa'],
+      lastArrangements: { a: 1 },
+      tutorialsDone: ['first-triple'],
+    });
+    const save = parseSave(v1);
+    expect(save.version).toBe(2);
+    expect(save.progress.completed).toEqual(['a', 'b']);
+    expect(save.settings.muted).toBe(true);
+    expect(save.themesSeen).toEqual(['budaya-jawa']);
+    // First-win coins with the best stars, experience from the best scores, no chest for 5 stars.
+    expect(save.wallet).toEqual({ coins: winCoins(true, 3, 0) + winCoins(true, 2, 0), xp: 5000, boosters: { freeze: 0, removeTriple: 0, shuffle: 0 }, chestsOpened: 0, introduced: [] });
   });
 
   it('remembers completed tutorials, saving only the first time, and reads older saves as none done', () => {

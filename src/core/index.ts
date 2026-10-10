@@ -8,3 +8,4 @@ export * from './arrangement';
 export * from './tutorial';
 export * from './stars';
 export * from './boosters';
+export * from './economy';
