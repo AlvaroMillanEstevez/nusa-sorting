@@ -120,6 +120,7 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
 - Combo: «Combo ×N!» más grande y más cálido con cada paso; desde ×5, una sacudida suave de la pantalla y vibración desde ×4.
 - Estantería desbloqueada: destello y chispas a lo largo de ella, además de la persiana que se levanta.
 - Hueco errante eliminado: la caja estalla en astillas.
+- Eliminar un trío (potenciador o continuar sin espacio): los tres objetos vuelan juntos, en primer plano, desde donde estén (incluidos los ocultos en capas traseras o en pilas de cintas) y se colocan uno al lado del otro junto al tocado; después estallan con el efecto de trío. Lo que queda detrás avanza cuando estallan.
 - Tablero lleno: todas las estanterías se enmarcan en rojo, la pantalla se sacude, suena un golpe sordo y el motivo aparece grande sobre el tablero durante 1,1 s antes del panel.
 - Victoria: confeti desde las esquinas, panel con rebote, estrellas una a una con su campanada, la puntuación contando y los botones al final.
 - Transiciones: fundido por el color de fondo entre inicio, mapa y nivel (`transitions.ts`).

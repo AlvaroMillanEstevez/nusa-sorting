@@ -97,6 +97,8 @@ const SNAP_MS = 130;
 const RETURN_MS = 160;
 const CLEAR_DELAY_MS = 90;
 const CLEAR_MS = 200;
+/** "Remove a triple": its three items fly together from wherever they are before they pop. */
+const GATHER_MS = 480;
 const ADVANCE_DELAY_MS = CLEAR_DELAY_MS + 120;
 const ADVANCE_MS = 200;
 const SELECT_MS = 90;
@@ -1343,10 +1345,16 @@ export class GameScene extends Phaser.Scene {
     let moved: { itemId: number; to: Position } | undefined;
     const advancedShelves = new Set<number>();
     const cleared: number[] = [];
+    // A triple taken by the booster first gathers (see gatherTriple); everything after it waits for that.
+    const gathered = new Map<GameEvent, { x: number; y: number }>();
+    for (const event of events) {
+      if (event.kind === 'tripleCleared' && event.byBooster) gathered.set(event, this.gatherTriple(event.itemIds));
+    }
+    const lead = gathered.size > 0 ? GATHER_MS : 0;
     for (const event of events) {
       if (event.kind === 'moved' || event.kind === 'beltItemPlaced') moved = event;
       else if (event.kind === 'layerAdvanced') advancedShelves.add(event.shelf);
-      else if (event.kind === 'tripleCleared') cleared.push(...event.itemIds);
+      else if (event.kind === 'tripleCleared' && !gathered.has(event)) cleared.push(...event.itemIds);
       else if (event.kind === 'timeBonus') this.timeBonus = event.points;
     }
 
@@ -1384,18 +1392,18 @@ export class GameScene extends Phaser.Scene {
         targets: sprite,
         scale: sprite.scale * 1.35,
         alpha: 0,
-        delay: CLEAR_DELAY_MS,
+        delay: CLEAR_DELAY_MS + lead,
         duration: CLEAR_MS,
         ease: 'Quad.easeIn',
         onComplete: () => sprite.destroy(),
       });
     }
-    if (cleared.length > 0) this.time.delayedCall(CLEAR_DELAY_MS, () => this.sfx.play('clear'));
-    if (advancedShelves.size > 0) this.time.delayedCall(ADVANCE_DELAY_MS, () => this.sfx.play('advance'));
+    if (cleared.length > 0 || lead > 0) this.time.delayedCall(CLEAR_DELAY_MS + lead, () => this.sfx.play('clear'));
+    if (advancedShelves.size > 0) this.time.delayedCall(ADVANCE_DELAY_MS + lead, () => this.sfx.play('advance'));
 
     // Advance: items behind slide forward after the pop; everything else settles immediately.
-    this.sync(ADVANCE_MS, (pos) => (advancedShelves.has(pos.shelf) ? ADVANCE_DELAY_MS : 0), moved?.itemId);
-    this.playMechanics(events);
+    this.sync(ADVANCE_MS, (pos) => (advancedShelves.has(pos.shelf) ? ADVANCE_DELAY_MS + lead : 0), moved?.itemId);
+    this.playMechanics(events, lead, gathered);
     this.advanceTutorial(events);
 
     if (this.state.status === 'won') {
@@ -1415,9 +1423,46 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * "Remove a triple": its three items, wherever they are (in view, in a back layer, deep in a track's stack), fly
+   * together side by side at the one the player tapped, in full view, and then pop. So it is clear the whole
+   * triple went. Returns where they gathered.
+   */
+  private gatherTriple(ids: readonly number[]): { x: number; y: number } {
+    const sprites = ids.map((id) => this.sprites.get(id)).filter((sprite): sprite is Phaser.GameObjects.Image => sprite !== undefined);
+    // The item tapped comes first; the others join it.
+    const anchor = sprites[0];
+    if (!anchor) return { x: 0, y: 0 };
+    const { width } = viewSize(this);
+    const scale = anchor.scale;
+    const step = Math.min(this.layout.slotSize, anchor.displayWidth * 1.05);
+    const x = Math.max(step * 1.5, Math.min(width - step * 1.5, anchor.x));
+    const y = anchor.y;
+    sprites.forEach((sprite, i) => {
+      const id = ids[i]!;
+      this.sprites.delete(id);
+      this.flights.delete(id);
+      this.tweens.killTweensOf(sprite);
+      sprite.disableInteractive();
+      // Hidden ones (back layers, deep in a stack) come into full view as they fly.
+      sprite.setVisible(true).setDepth(DEPTH_DRAG + 1);
+      this.setLook(sprite, true);
+      const offset = i === 0 ? 0 : i === 1 ? -step : step;
+      this.tweens.chain({
+        targets: sprite,
+        tweens: [
+          { x: x + offset, y, scale, alpha: 1, duration: GATHER_MS, ease: 'Cubic.easeInOut' },
+          { scale: scale * 1.35, alpha: 0, delay: CLEAR_DELAY_MS, duration: CLEAR_MS, ease: 'Quad.easeIn' },
+        ],
+        onComplete: () => sprite.destroy(),
+      });
+    });
+    return { x, y };
+  }
+
   /** Score and combo popups, shelf unlocks and blocker hops, timed to land with the triple pop. */
-  private playMechanics(events: readonly GameEvent[]): void {
-    const popAt = CLEAR_DELAY_MS;
+  private playMechanics(events: readonly GameEvent[], lead = 0, gathered: ReadonlyMap<GameEvent, { x: number; y: number }> = new Map()): void {
+    const popAt = CLEAR_DELAY_MS + lead;
     let combo = 0;
     let blockerTo: { shelf: number; slot: number } | null = null;
     for (const event of events) {
@@ -1426,7 +1471,13 @@ export class GameScene extends Phaser.Scene {
           combo = event.combo;
           break;
         case 'tripleCleared': {
-          // A triple a booster took from a track has no shelf: its items just pop.
+          // A triple the booster took bursts where its items gathered.
+          const point = gathered.get(event);
+          if (point) {
+            this.time.delayedCall(popAt, () => this.effects.tripleBurst(point.x, point.y, this.layout.slotSize * 2, 1));
+            this.haptics.pulse('triple');
+            break;
+          }
           const shelf = this.layout.shelves[event.shelf];
           if (!shelf) break;
           const { rect } = shelf;
