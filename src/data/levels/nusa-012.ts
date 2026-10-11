@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 12`, or try another seed with `npm run levelgen -- 12 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 60%, out of space 41%,
- * out of time 0%, space pressure 58%. Expert: wins 76%.
+ * Simulated players, 200 games each. Casual: wins 60%, out of space 40%,
+ * out of time 1%, space pressure 42%. Expert: wins 75%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 44% to 65%, the expert 16% to 88%; pressure 42% to 59%.
+ * Across them the casual player wins 45% to 70%, the expert 18% to 86%; pressure 10% to 42%.
  * Stars (formula in src/core/stars.ts): two from 2520 points, three from 3760.
  */
 export const nusa012: LevelDefinition = {
@@ -65,23 +65,6 @@ export const nusa012: LevelDefinition = {
     {
       shelves: [
         [[null, null, null]],
-        [['wayang-kulit', 'cabai', 'ketupat'], ['terompet', 'blangkon', 'blangkon']],
-        [['terompet', 'mie-goreng', 'durian'], ['blangkon', 'wayang-kulit', 'panjat-pinang']],
-        [[null, 'sate', 'peci'], ['mie-goreng', 'wayang-kulit', 'peci']],
-        [['ketupat', 'nasi-goreng', 'kendang'], ['batik', 'sate', 'panjat-pinang']],
-        [['batik', null, 'sate'], ['batik', 'mie-goreng', 'manggis']],
-        [
-          ['gado-gado', 'rendang', 'kendang'],
-          ['terompet', 'rendang', 'kendang'],
-          ['durian', 'nasi-goreng', 'cabai'],
-        ],
-        [['manggis', 'gado-gado', 'panjat-pinang'], ['ketupat', 'durian', 'manggis']],
-        [['peci', null, 'nasi-goreng'], ['cabai', 'gado-gado', 'rendang']],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
         [['durian', 'peci', 'terompet'], ['blangkon', 'sate', 'durian']],
         [['gado-gado', 'ketupat', 'batik'], ['blangkon', 'panjat-pinang', 'wayang-kulit']],
         [[null, 'manggis', 'kendang'], ['kendang', 'sate', 'rendang']],
@@ -94,6 +77,23 @@ export const nusa012: LevelDefinition = {
         ],
         [['rendang', 'cabai', 'manggis'], ['ketupat', 'peci', 'nasi-goreng']],
         [['mie-goreng', null, 'batik'], ['nasi-goreng', 'blangkon', 'panjat-pinang']],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [['blangkon', 'kendang', 'peci'], ['cabai', 'nasi-goreng', 'nasi-goreng']],
+        [['panjat-pinang', 'peci', 'rendang'], ['terompet', 'nasi-goreng', 'peci']],
+        [[null, 'wayang-kulit', 'batik'], ['wayang-kulit', 'kendang', 'manggis']],
+        [['mie-goreng', 'sate', 'blangkon'], ['durian', 'sate', 'cabai']],
+        [['mie-goreng', null, 'manggis'], ['manggis', 'durian', 'panjat-pinang']],
+        [
+          ['gado-gado', 'blangkon', 'terompet'],
+          ['ketupat', 'gado-gado', 'rendang'],
+          ['ketupat', 'wayang-kulit', 'panjat-pinang'],
+        ],
+        [['batik', 'ketupat', 'rendang'], ['terompet', 'durian', 'kendang']],
+        [['gado-gado', null, 'batik'], ['mie-goreng', 'sate', 'cabai']],
       ],
     },
     {

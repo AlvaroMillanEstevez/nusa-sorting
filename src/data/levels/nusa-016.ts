@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 16`, or try another seed with `npm run levelgen -- 16 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 68%, out of space 33%,
- * out of time 0%, space pressure 34%. Expert: wins 28%.
+ * Simulated players, 200 games each. Casual: wins 71%, out of space 28%,
+ * out of time 2%, space pressure 9%. Expert: wins 24%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 59% to 83%, the expert 22% to 92%; pressure 5% to 51%.
+ * Across them the casual player wins 57% to 83%, the expert 22% to 89%; pressure 4% to 38%.
  * Stars (formula in src/core/stars.ts): two from 2480 points, three from 3680.
  */
 export const nusa016: LevelDefinition = {

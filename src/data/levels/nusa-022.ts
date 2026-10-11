@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 22`, or try another seed with `npm run levelgen -- 22 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 45%, out of space 53%,
- * out of time 2%, space pressure 37%. Expert: wins 84%.
+ * Simulated players, 200 games each. Casual: wins 48%, out of space 50%,
+ * out of time 2%, space pressure 31%. Expert: wins 81%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 26% to 46%, the expert 14% to 84%; pressure 32% to 48%.
+ * Across them the casual player wins 26% to 48%, the expert 14% to 81%; pressure 18% to 40%.
  * Stars (formula in src/core/stars.ts): two from 2680 points, three from 4080.
  */
 export const nusa022: LevelDefinition = {
@@ -235,6 +235,38 @@ export const nusa022: LevelDefinition = {
     {
       shelves: [
         [
+          [null, null, 'nasi-goreng'],
+          ['wayang-kulit', 'batik', 'ikan-bakar'],
+          ['bakso', 'kelapa', 'wayang-kulit'],
+        ],
+        [
+          ['kelapa', null, 'kembang-api'],
+          ['pisang-goreng', 'nasi-goreng', 'ikan-bakar'],
+          ['blangkon', 'jaring', 'kendang'],
+        ],
+        [[null, null, null]],
+        [
+          [null, 'kembang-api', null],
+          ['topeng', 'ikan-bakar', 'kembang-api'],
+          ['layangan', 'martabak-manis', 'dadar-gulung'],
+        ],
+        [
+          ['dadar-gulung', 'dadar-gulung', 'jaring'],
+          ['bakso', 'kelapa', 'martabak-manis'],
+          ['layangan', 'layangan', 'pisang-goreng'],
+        ],
+        [
+          [null, null, 'blangkon'],
+          ['tempe', 'martabak-manis', 'batik'],
+          ['pisang-goreng', 'nasi-goreng', 'blangkon'],
+        ],
+        [['topeng', 'wayang-kulit', 'kendang'], ['tempe', 'batik', 'bakso']],
+      ],
+      stacks: [null, [['kendang'], ['topeng'], ['tempe'], [], ['jaring']]],
+    },
+    {
+      shelves: [
+        [
           [null, null, 'pisang-goreng'],
           ['kendang', 'nasi-goreng', 'ikan-bakar'],
           ['blangkon', 'tempe', 'layangan'],
@@ -263,38 +295,6 @@ export const nusa022: LevelDefinition = {
         [['bakso', 'blangkon', 'jaring'], ['bakso', 'kendang', 'tempe']],
       ],
       stacks: [null, [['kembang-api'], ['pisang-goreng'], ['layangan'], [], ['martabak-manis']]],
-    },
-    {
-      shelves: [
-        [
-          [null, null, 'bakso'],
-          ['kendang', 'tempe', 'kendang'],
-          ['martabak-manis', 'jaring', 'topeng'],
-        ],
-        [
-          ['kelapa', null, 'martabak-manis'],
-          ['topeng', 'batik', 'wayang-kulit'],
-          ['nasi-goreng', 'topeng', 'wayang-kulit'],
-        ],
-        [[null, null, null]],
-        [
-          [null, 'layangan', null],
-          ['kendang', 'martabak-manis', 'blangkon'],
-          ['layangan', 'kembang-api', 'kembang-api'],
-        ],
-        [
-          ['pisang-goreng', 'jaring', 'ikan-bakar'],
-          ['kelapa', 'tempe', 'bakso'],
-          ['layangan', 'pisang-goreng', 'blangkon'],
-        ],
-        [
-          [null, null, 'nasi-goreng'],
-          ['kembang-api', 'wayang-kulit', 'ikan-bakar'],
-          ['blangkon', 'batik', 'kelapa'],
-        ],
-        [['bakso', 'batik', 'dadar-gulung'], ['dadar-gulung', 'nasi-goreng', 'pisang-goreng']],
-      ],
-      stacks: [null, [['dadar-gulung'], ['ikan-bakar'], ['tempe'], [], ['jaring']]],
     },
   ],
 };

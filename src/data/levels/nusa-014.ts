@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 14`, or try another seed with `npm run levelgen -- 14 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 50%, out of space 50%,
- * out of time 1%, space pressure 21%. Expert: wins 9%.
+ * Simulated players, 200 games each. Casual: wins 54%, out of space 46%,
+ * out of time 1%, space pressure 16%. Expert: wins 9%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 25% to 55%, the expert 3% to 85%; pressure 21% to 51%.
+ * Across them the casual player wins 26% to 55%, the expert 9% to 82%; pressure 14% to 44%.
  * Stars (formula in src/core/stars.ts): two from 1640 points, three from 2390.
  */
 export const nusa014: LevelDefinition = {
@@ -71,17 +71,6 @@ export const nusa014: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, 'jamu', null], ['sate', 'panjat-pinang', 'panjat-pinang']],
-        [[null, null, null]],
-        [['tahu-goreng', 'peci', 'sate'], ['nasi-goreng', 'tahu-goreng', 'terompet']],
-        [[null, 'salak', null], ['salak', 'jamu', 'terompet']],
-        [['salak', null, 'kipas'], ['jamu', 'peci', 'ketupat'], ['tahu-goreng', 'klepon', 'peci']],
-        [['sate', 'ketupat', 'panjat-pinang'], ['klepon', 'klepon', 'ketupat']],
-      ],
-      stacks: [[['nasi-goreng'], ['terompet'], ['kipas'], ['kipas'], ['nasi-goreng']]],
-    },
-    {
-      shelves: [
         [[null, 'tahu-goreng', null], ['terompet', 'tahu-goreng', 'peci']],
         [[null, null, null]],
         [['nasi-goreng', 'peci', 'panjat-pinang'], ['klepon', 'peci', 'salak']],
@@ -112,21 +101,6 @@ export const nusa014: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, 'terompet', null], ['tahu-goreng', 'sate', 'klepon']],
-        [[null, null, null]],
-        [['peci', 'jamu', 'tahu-goreng'], ['panjat-pinang', 'kipas', 'klepon']],
-        [[null, 'jamu', null], ['salak', 'ketupat', 'jamu']],
-        [
-          ['nasi-goreng', null, 'salak'],
-          ['ketupat', 'panjat-pinang', 'panjat-pinang'],
-          ['terompet', 'nasi-goreng', 'tahu-goreng'],
-        ],
-        [['peci', 'nasi-goreng', 'terompet'], ['kipas', 'klepon', 'sate']],
-      ],
-      stacks: [[['salak'], ['peci'], ['sate'], ['kipas'], ['ketupat']]],
-    },
-    {
-      shelves: [
         [[null, 'klepon', null], ['sate', 'tahu-goreng', 'panjat-pinang']],
         [[null, null, null]],
         [['nasi-goreng', 'ketupat', 'ketupat'], ['tahu-goreng', 'panjat-pinang', 'jamu']],
@@ -139,6 +113,36 @@ export const nusa014: LevelDefinition = {
         [['jamu', 'ketupat', 'jamu'], ['salak', 'panjat-pinang', 'nasi-goreng']],
       ],
       stacks: [[['peci'], ['peci'], ['nasi-goreng'], ['sate'], ['kipas']]],
+    },
+    {
+      shelves: [
+        [[null, 'salak', null], ['jamu', 'sate', 'terompet']],
+        [[null, null, null]],
+        [['nasi-goreng', 'peci', 'klepon'], ['kipas', 'panjat-pinang', 'kipas']],
+        [[null, 'ketupat', null], ['salak', 'klepon', 'nasi-goreng']],
+        [
+          ['salak', null, 'sate'],
+          ['terompet', 'panjat-pinang', 'kipas'],
+          ['ketupat', 'peci', 'sate'],
+        ],
+        [['nasi-goreng', 'peci', 'panjat-pinang'], ['tahu-goreng', 'jamu', 'tahu-goreng']],
+      ],
+      stacks: [[['tahu-goreng'], ['ketupat'], ['terompet'], ['jamu'], ['klepon']]],
+    },
+    {
+      shelves: [
+        [[null, 'sate', null], ['klepon', 'sate', 'jamu']],
+        [[null, null, null]],
+        [['nasi-goreng', 'peci', 'kipas'], ['tahu-goreng', 'tahu-goreng', 'terompet']],
+        [[null, 'ketupat', null], ['ketupat', 'panjat-pinang', 'kipas']],
+        [
+          ['panjat-pinang', null, 'jamu'],
+          ['salak', 'nasi-goreng', 'ketupat'],
+          ['klepon', 'peci', 'salak'],
+        ],
+        [['klepon', 'kipas', 'terompet'], ['terompet', 'tahu-goreng', 'panjat-pinang']],
+      ],
+      stacks: [[['salak'], ['sate'], ['jamu'], ['nasi-goreng'], ['peci']]],
     },
     {
       shelves: [

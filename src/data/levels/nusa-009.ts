@@ -7,17 +7,17 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 9`, or try another seed with `npm run levelgen -- 9 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 58%, out of space 42%,
- * out of time 0%, space pressure 23%. Expert: wins 30%.
+ * Simulated players, 200 games each. Casual: wins 56%, out of space 45%,
+ * out of time 0%, space pressure 23%. Expert: wins 23%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 36% to 65%, the expert 26% to 91%; pressure 15% to 46%.
- * Stars (formula in src/core/stars.ts): two from 1860 points, three from 2760.
+ * Across them the casual player wins 37% to 64%, the expert 14% to 91%; pressure 10% to 29%.
+ * Stars (formula in src/core/stars.ts): two from 1820 points, three from 2680.
  */
 export const nusa009: LevelDefinition = {
   id: 'nusa-009',
-  timeLimitSeconds: 90,
+  timeLimitSeconds: 80,
   shelves: [
     [
       ['gado-gado', 'mie-goreng', 'rendang'],
@@ -83,29 +83,6 @@ export const nusa009: LevelDefinition = {
     {
       shelves: [
         [
-          ['durian', 'nasi-goreng', 'gong'],
-          ['mie-goreng', 'sate', 'nasi-goreng'],
-          ['cabai', 'manggis', 'ketupat'],
-        ],
-        [[null, null, null]],
-        [[null, null, 'ketupat'], ['gado-gado', 'rendang', 'nasi-goreng']],
-        [['cabai', null, null], ['gong', 'kendang', 'caping']],
-        [[null, 'rendang', 'gado-gado'], ['sate', 'caping', 'kendang']],
-        [['kendang', 'mie-goreng', 'mie-goreng'], ['rendang', 'cabai', 'sate']],
-      ],
-      stacks: [
-        [
-          ['manggis', 'gado-gado'],
-          ['durian', 'manggis'],
-          ['gong', 'caping'],
-          ['durian', 'ketupat'],
-          [],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [
           ['gong', 'ketupat', 'gong'],
           ['cabai', 'rendang', 'kendang'],
           ['ketupat', 'durian', 'caping'],
@@ -129,6 +106,29 @@ export const nusa009: LevelDefinition = {
     {
       shelves: [
         [
+          ['durian', 'gong', 'sate'],
+          ['gado-gado', 'sate', 'nasi-goreng'],
+          ['ketupat', 'kendang', 'gong'],
+        ],
+        [[null, null, null]],
+        [[null, null, 'ketupat'], ['rendang', 'cabai', 'rendang']],
+        [['caping', null, null], ['durian', 'cabai', 'nasi-goreng']],
+        [[null, 'caping', 'gado-gado'], ['manggis', 'sate', 'kendang']],
+        [['gong', 'manggis', 'kendang'], ['mie-goreng', 'rendang', 'mie-goreng']],
+      ],
+      stacks: [
+        [
+          ['manggis', 'gado-gado'],
+          ['cabai', 'durian'],
+          ['mie-goreng', 'ketupat'],
+          ['caping', 'nasi-goreng'],
+          [],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
           ['nasi-goreng', 'gado-gado', 'ketupat'],
           ['cabai', 'manggis', 'gado-gado'],
           ['gado-gado', 'caping', 'mie-goreng'],
@@ -145,6 +145,29 @@ export const nusa009: LevelDefinition = {
           ['mie-goreng', 'rendang'],
           ['sate', 'nasi-goreng'],
           ['ketupat', 'kendang'],
+          [],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['gong', 'ketupat', 'caping'],
+          ['nasi-goreng', 'gong', 'kendang'],
+          ['manggis', 'nasi-goreng', 'kendang'],
+        ],
+        [[null, null, null]],
+        [[null, null, 'mie-goreng'], ['cabai', 'kendang', 'ketupat']],
+        [['sate', null, null], ['caping', 'cabai', 'cabai']],
+        [[null, 'rendang', 'rendang'], ['sate', 'mie-goreng', 'sate']],
+        [['nasi-goreng', 'gong', 'rendang'], ['durian', 'gado-gado', 'manggis']],
+      ],
+      stacks: [
+        [
+          ['manggis', 'durian'],
+          ['ketupat', 'gado-gado'],
+          ['gado-gado', 'durian'],
+          ['caping', 'mie-goreng'],
           [],
         ],
       ],
@@ -194,21 +217,6 @@ export const nusa009: LevelDefinition = {
           [],
         ],
       ],
-    },
-    {
-      shelves: [
-        [
-          ['kendang', 'ketupat', 'manggis'],
-          ['manggis', 'ketupat', 'gong'],
-          ['gado-gado', 'gong', 'gado-gado'],
-        ],
-        [[null, null, null]],
-        [[null, null, 'nasi-goreng'], ['gado-gado', 'nasi-goreng', 'cabai']],
-        [['kendang', null, null], ['mie-goreng', 'sate', 'cabai']],
-        [[null, 'caping', 'rendang'], ['sate', 'durian', 'ketupat']],
-        [['mie-goreng', 'durian', 'durian'], ['rendang', 'nasi-goreng', 'mie-goreng']],
-      ],
-      stacks: [[['gong', 'rendang'], ['manggis', 'kendang'], ['cabai', 'caping'], ['caping', 'sate'], []]],
     },
   ],
 };

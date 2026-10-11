@@ -7,17 +7,17 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 24`, or try another seed with `npm run levelgen -- 24 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 22%, out of space 78%,
- * out of time 1%, space pressure 42%. Expert: wins 59%.
+ * Simulated players, 200 games each. Casual: wins 20%, out of space 80%,
+ * out of time 1%, space pressure 18%. Expert: wins 57%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 22% to 39%, the expert 12% to 71%; pressure 29% to 42%.
- * Stars (formula in src/core/stars.ts): two from 2340 points, three from 3470.
+ * Across them the casual player wins 20% to 35%, the expert 12% to 65%; pressure 15% to 28%.
+ * Stars (formula in src/core/stars.ts): two from 2300 points, three from 3390.
  */
 export const nusa024: LevelDefinition = {
   id: 'nusa-024',
-  timeLimitSeconds: 115,
+  timeLimitSeconds: 105,
   shelves: [
     [[null, 'salak', null], ['salak', null, 'ayam-goreng']],
     [[null, null, 'klepon'], ['klepon', 'jaring', 'peci']],
@@ -84,24 +84,20 @@ export const nusa024: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, 'jaring', null], ['gado-gado', null, 'klepon']],
-        [[null, null, 'kelereng'], ['panjat-pinang', 'gado-gado', 'layangan']],
-        [[null, 'ayam-goreng', null], [null, 'salak', 'jaring']],
-        [['klepon', 'kelereng', 'terompet'], ['salak', 'cabai', 'kelapa']],
+        [[null, 'sate', null], ['klepon', null, 'panjat-pinang']],
+        [[null, null, 'terompet'], ['ayam-goreng', 'klepon', 'rendang']],
+        [[null, 'peci', null], [null, 'sate', 'panjat-pinang']],
+        [['layangan', 'panjat-pinang', 'rendang'], ['gado-gado', 'kelereng', 'kelereng']],
         [
-          ['panjat-pinang', 'panjat-pinang', 'klepon'],
-          ['rendang', 'sate', 'kipas'],
-          ['gado-gado', 'cabai', 'kelapa'],
+          ['sate', 'cabai', 'peci'],
+          ['kipas', 'kipas', 'terompet'],
+          ['gado-gado', 'ayam-goreng', 'layangan'],
         ],
-        [[null, 'peci', null], ['peci', 'jaring', 'terompet']],
-        [['layangan', 'kipas', 'sate']],
-        [
-          [null, 'kelereng', 'peci'],
-          ['terompet', 'sate', 'ayam-goreng'],
-          ['layangan', 'kelapa', 'cabai'],
-        ],
+        [[null, 'jaring', null], ['salak', 'layangan', 'salak']],
+        [['terompet', 'gado-gado', 'jaring']],
+        [[null, 'jaring', 'kelereng'], ['rendang', 'klepon', 'kelapa'], ['kipas', 'salak', 'peci']],
       ],
-      stacks: [[['rendang'], ['salak'], ['kipas'], ['rendang'], [], ['ayam-goreng']]],
+      stacks: [[['cabai'], ['kelapa'], ['ayam-goreng'], ['kelapa'], [], ['cabai']]],
     },
     {
       shelves: [

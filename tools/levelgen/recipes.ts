@@ -83,7 +83,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-004',
     purpose: 'Locked shelves get demanding: two of them, one needing four triples.',
     seed: 404,
-    candidate: 178,
+    candidate: 809,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 2 },
@@ -125,7 +125,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-006',
     purpose: 'An easier board after the special level, featuring the Javanese objects it brought.',
     seed: 606,
-    candidate: 278,
+    candidate: 395,
     layout: [
       { kind: 'shelves', count: 3 },
       { kind: 'shelves', count: 3 },
@@ -147,7 +147,7 @@ export const RECIPES: readonly LevelRecipe[] = [
     id: 'nusa-007',
     purpose: 'More shelves and deeper layers.',
     seed: 707,
-    candidate: 633,
+    candidate: 1427,
     layout: [
       { kind: 'shelves', count: 4 },
       { kind: 'shelves', count: 3 },
@@ -402,14 +402,16 @@ export const RECIPES: readonly LevelRecipe[] = [
     winBand: [0.4, 0.75],
     expertBand: [0, 0.98],
     pressure: [0.03, 0.8],
-    time: { slack: 1.3, timeUp: [0, 0.15], typical: true },
+    // Timed from its own board, not with reshuffles (typical): since stuck boards end at once, its reshuffles
+    // play easier and no typical time put board and reshuffles together in the band (Koke, October 2026).
+    time: { slack: 1.3, timeUp: [0, 0.15] },
   },
   {
     number: 19,
     id: 'nusa-019',
     purpose: 'A demanding mix: a track of stacks, a locked shelf and the roaming blocker.',
     seed: 1919,
-    candidate: 4,
+    candidate: 14,
     layout: [
       { kind: 'shelves', count: 4 },
       { kind: 'track', speed: 0.7, carriers: 5 },

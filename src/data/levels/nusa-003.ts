@@ -12,7 +12,7 @@ import type { LevelDefinition } from '../../core';
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 70% to 94%, the expert 94% to 100%; pressure 5% to 22%.
+ * Across them the casual player wins 70% to 94%, the expert 93% to 100%; pressure 5% to 22%.
  * Stars (formula in src/core/stars.ts): two from 1740 points, three from 2520.
  */
 export const nusa003: LevelDefinition = {
@@ -49,6 +49,19 @@ export const nusa003: LevelDefinition = {
         [['klepon', 'sate', 'nasi-goreng']],
         [[null, 'es-cendol', 'sate']],
         [['ketupat', 'nasi-goreng', 'klepon'], ['cabai', 'pisang-goreng', 'es-cendol']],
+      ],
+    },
+    {
+      shelves: [
+        [['klepon', 'salak', 'es-kelapa-muda'], ['sate', 'es-kelapa-muda', 'jamu']],
+        [['cabai', 'sate', 'nasi-goreng'], ['cabai', 'salak', 'nasi-goreng']],
+        [[null, null, null]],
+        [[null, 'bakso', 'jamu']],
+        [['jamu', 'nasi-goreng', 'es-cendol'], [null, 'ketupat', 'bakso']],
+        [['ketupat', 'klepon', 'sate'], ['tahu-goreng', 'ketupat', 'pisang-goreng']],
+        [['es-cendol', 'klepon', 'tahu-goreng']],
+        [[null, 'cabai', 'tahu-goreng']],
+        [['salak', 'pisang-goreng', 'es-cendol'], ['bakso', 'pisang-goreng', 'es-kelapa-muda']],
       ],
     },
     {
@@ -117,19 +130,6 @@ export const nusa003: LevelDefinition = {
         [['jamu', 'pisang-goreng', 'salak']],
         [[null, 'sate', 'es-kelapa-muda']],
         [['salak', 'pisang-goreng', 'tahu-goreng'], ['klepon', 'es-cendol', 'salak']],
-      ],
-    },
-    {
-      shelves: [
-        [['bakso', 'pisang-goreng', 'klepon'], ['salak', 'cabai', 'es-kelapa-muda']],
-        [['bakso', 'es-kelapa-muda', 'pisang-goreng'], ['jamu', 'tahu-goreng', 'bakso']],
-        [[null, null, null]],
-        [[null, 'jamu', 'nasi-goreng']],
-        [['tahu-goreng', 'klepon', 'sate'], [null, 'ketupat', 'es-cendol']],
-        [['nasi-goreng', 'cabai', 'sate'], ['es-cendol', 'pisang-goreng', 'sate']],
-        [['klepon', 'salak', 'ketupat']],
-        [[null, 'jamu', 'tahu-goreng']],
-        [['ketupat', 'nasi-goreng', 'salak'], ['es-kelapa-muda', 'es-cendol', 'cabai']],
       ],
     },
   ],

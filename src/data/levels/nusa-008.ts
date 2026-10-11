@@ -8,11 +8,11 @@ import type { LevelDefinition } from '../../core';
  * Change the recipe rather than this file.
  *
  * Simulated players, 200 games each. Casual: wins 80%, out of space 19%,
- * out of time 2%, space pressure 17%. Expert: wins 97%.
+ * out of time 1%, space pressure 16%. Expert: wins 97%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 62% to 85%, the expert 90% to 98%; pressure 7% to 26%.
+ * Across them the casual player wins 51% to 83%, the expert 19% to 97%; pressure 13% to 24%.
  * Stars (formula in src/core/stars.ts): two from 2150 points, three from 3180.
  */
 export const nusa008: LevelDefinition = {
@@ -91,26 +91,6 @@ export const nusa008: LevelDefinition = {
     {
       shelves: [
         [
-          ['es-teh-manis', 'bakso', 'es-kelapa-muda'],
-          ['rambutan', 'es-teh-manis', 'kerupuk-udang'],
-          ['es-cendol', 'jamu', 'tahu-goreng'],
-        ],
-        [[null, null, null]],
-        [['es-kelapa-muda', null, null], ['onde-onde', 'blangkon', 'salak']],
-        [
-          ['tahu-goreng', 'kerupuk-udang', 'onde-onde'],
-          ['kerupuk-udang', 'klepon', 'jamu'],
-          ['batik', 'rambutan', 'batik'],
-        ],
-        [['bakso', 'salak', 'rambutan'], ['es-cendol', 'wayang-kulit', 'blangkon']],
-        [['klepon', 'batik', null], ['onde-onde', 'es-cendol', 'wayang-kulit']],
-        [[null, 'salak', null], ['bakso', 'blangkon', 'es-kelapa-muda']],
-      ],
-      stacks: [[[], [], ['wayang-kulit'], ['tahu-goreng'], ['es-teh-manis'], ['klepon'], ['jamu']]],
-    },
-    {
-      shelves: [
-        [
           ['bakso', 'bakso', 'tahu-goreng'],
           ['rambutan', 'batik', 'kerupuk-udang'],
           ['es-teh-manis', 'rambutan', 'es-cendol'],
@@ -127,6 +107,26 @@ export const nusa008: LevelDefinition = {
         [[null, 'jamu', null], ['es-kelapa-muda', 'blangkon', 'rambutan']],
       ],
       stacks: [[[], [], ['blangkon'], ['onde-onde'], ['batik'], ['kerupuk-udang'], ['klepon']]],
+    },
+    {
+      shelves: [
+        [
+          ['salak', 'onde-onde', 'kerupuk-udang'],
+          ['es-kelapa-muda', 'tahu-goreng', 'batik'],
+          ['batik', 'blangkon', 'klepon'],
+        ],
+        [[null, null, null]],
+        [['es-kelapa-muda', null, null], ['kerupuk-udang', 'bakso', 'es-teh-manis']],
+        [
+          ['wayang-kulit', 'blangkon', 'kerupuk-udang'],
+          ['klepon', 'bakso', 'tahu-goreng'],
+          ['onde-onde', 'salak', 'es-cendol'],
+        ],
+        [['wayang-kulit', 'salak', 'jamu'], ['es-teh-manis', 'bakso', 'jamu']],
+        [['onde-onde', 'tahu-goreng', null], ['rambutan', 'jamu', 'batik']],
+        [[null, 'es-teh-manis', null], ['es-cendol', 'rambutan', 'rambutan']],
+      ],
+      stacks: [[[], [], ['es-cendol'], ['wayang-kulit'], ['blangkon'], ['es-kelapa-muda'], ['klepon']]],
     },
     {
       shelves: [
@@ -151,22 +151,22 @@ export const nusa008: LevelDefinition = {
     {
       shelves: [
         [
-          ['onde-onde', 'rambutan', 'es-teh-manis'],
-          ['es-cendol', 'jamu', 'wayang-kulit'],
-          ['es-teh-manis', 'es-kelapa-muda', 'blangkon'],
+          ['rambutan', 'es-cendol', 'salak'],
+          ['es-teh-manis', 'wayang-kulit', 'kerupuk-udang'],
+          ['blangkon', 'es-cendol', 'klepon'],
         ],
         [[null, null, null]],
-        [['bakso', null, null], ['salak', 'blangkon', 'onde-onde']],
+        [['salak', null, null], ['onde-onde', 'batik', 'es-kelapa-muda']],
         [
-          ['klepon', 'klepon', 'tahu-goreng'],
-          ['es-kelapa-muda', 'bakso', 'jamu'],
-          ['tahu-goreng', 'onde-onde', 'salak'],
+          ['jamu', 'es-kelapa-muda', 'bakso'],
+          ['es-kelapa-muda', 'rambutan', 'tahu-goreng'],
+          ['wayang-kulit', 'rambutan', 'bakso'],
         ],
-        [['rambutan', 'klepon', 'jamu'], ['es-kelapa-muda', 'kerupuk-udang', 'batik']],
-        [['es-teh-manis', 'es-cendol', null], ['wayang-kulit', 'wayang-kulit', 'blangkon']],
-        [[null, 'kerupuk-udang', null], ['salak', 'es-cendol', 'bakso']],
+        [['bakso', 'onde-onde', 'klepon'], ['es-cendol', 'tahu-goreng', 'kerupuk-udang']],
+        [['es-teh-manis', 'klepon', null], ['blangkon', 'batik', 'jamu']],
+        [[null, 'batik', null], ['onde-onde', 'kerupuk-udang', 'wayang-kulit']],
       ],
-      stacks: [[[], [], ['tahu-goreng'], ['rambutan'], ['batik'], ['batik'], ['kerupuk-udang']]],
+      stacks: [[[], [], ['tahu-goreng'], ['salak'], ['blangkon'], ['es-teh-manis'], ['jamu']]],
     },
     {
       shelves: [

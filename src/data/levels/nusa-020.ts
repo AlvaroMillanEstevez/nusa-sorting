@@ -7,18 +7,18 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 20`, or try another seed with `npm run levelgen -- 20 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 56%, out of space 44%,
- * out of time 0%, space pressure 46%. Expert: wins 89%.
+ * Simulated players, 200 games each. Casual: wins 67%, out of space 34%,
+ * out of time 0%, space pressure 27%. Expert: wins 84%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 42% to 67%, the expert 26% to 92%; pressure 29% to 62%.
- * Stars (formula in src/core/stars.ts): two from 3530 points, three from 5370.
+ * Across them the casual player wins 42% to 70%, the expert 29% to 92%; pressure 11% to 37%.
+ * Stars (formula in src/core/stars.ts): two from 3570 points, three from 5450.
  */
 export const nusa020: LevelDefinition = {
   id: 'nusa-020',
   theme: 'laut-nusantara',
-  timeLimitSeconds: 225,
+  timeLimitSeconds: 235,
   shelves: [
     [['gong', 'caping', 'kerang'], ['jaring', 'gong', 'kerang'], ['layangan', 'jaring', 'jamu']],
     [['bintang-laut', 'caping', 'bendera'], ['onde-onde', 'layangan', 'kerupuk-udang']],
@@ -66,6 +66,37 @@ export const nusa020: LevelDefinition = {
     {
       shelves: [
         [
+          ['jamu', 'rambutan', 'bendera'],
+          ['manggis', 'kelapa', 'karung'],
+          ['tahu-goreng', 'jaring', 'durian'],
+        ],
+        [['onde-onde', 'es-teh-manis', 'kerang'], ['jamu', 'rambutan', 'karung']],
+        [[null, 'layangan', 'pinisi'], ['mie-goreng', 'es-teh-manis', 'layangan']],
+        [['karung', 'kelereng', 'durian'], ['jaring', 'tahu-goreng', 'onde-onde']],
+        [[null, null, null]],
+        [
+          ['kelereng', 'durian', 'kerang'],
+          ['layangan', 'bendera', 'caping'],
+          ['kerupuk-udang', 'jamu', 'bintang-laut'],
+        ],
+        [[null, 'caping', 'jaring'], ['kelapa', 'gong', 'kerupuk-udang']],
+        [
+          ['manggis', 'kelereng', 'gong'],
+          ['bintang-laut', 'mie-goreng', 'pinisi'],
+          ['mie-goreng', 'bintang-laut', 'onde-onde'],
+        ],
+        [['rambutan', 'manggis', 'pinisi'], ['kerang', 'bendera', 'es-cendol']],
+        [
+          ['caping', 'es-cendol', 'es-teh-manis'],
+          ['kerupuk-udang', 'tahu-goreng', 'es-cendol'],
+          ['gong', null, 'kelapa'],
+        ],
+      ],
+      stacks: [null],
+    },
+    {
+      shelves: [
+        [
           ['kerang', 'layangan', 'mie-goreng'],
           ['kerang', 'durian', 'durian'],
           ['bintang-laut', 'onde-onde', 'es-teh-manis'],
@@ -97,92 +128,30 @@ export const nusa020: LevelDefinition = {
     {
       shelves: [
         [
-          ['kerang', 'onde-onde', 'kerang'],
-          ['karung', 'onde-onde', 'manggis'],
-          ['jaring', 'es-cendol', 'caping'],
+          ['es-teh-manis', 'es-cendol', 'onde-onde'],
+          ['caping', 'tahu-goreng', 'kelapa'],
+          ['kerang', 'pinisi', 'bendera'],
         ],
-        [['layangan', 'pinisi', 'kelereng'], ['es-teh-manis', 'manggis', 'jamu']],
-        [[null, 'jaring', 'caping'], ['tahu-goreng', 'bendera', 'gong']],
-        [['bintang-laut', 'mie-goreng', 'rambutan'], ['jaring', 'bendera', 'kerupuk-udang']],
+        [['layangan', 'kerang', 'bendera'], ['jamu', 'bendera', 'kelereng']],
+        [[null, 'pinisi', 'caping'], ['mie-goreng', 'bintang-laut', 'rambutan']],
+        [['jamu', 'onde-onde', 'layangan'], ['es-cendol', 'durian', 'caping']],
         [[null, null, null]],
         [
-          ['durian', 'bintang-laut', 'es-teh-manis'],
-          ['es-cendol', 'manggis', 'kelereng'],
-          ['kerupuk-udang', 'pinisi', 'kelereng'],
+          ['manggis', 'layangan', 'kerupuk-udang'],
+          ['rambutan', 'karung', 'karung'],
+          ['kelereng', 'durian', 'mie-goreng'],
         ],
-        [[null, 'durian', 'layangan'], ['kerang', 'pinisi', 'onde-onde']],
+        [[null, 'bintang-laut', 'es-cendol'], ['durian', 'kerupuk-udang', 'es-teh-manis']],
         [
-          ['es-cendol', 'durian', 'caping'],
-          ['jamu', 'jamu', 'mie-goreng'],
-          ['bendera', 'rambutan', 'tahu-goreng'],
+          ['pinisi', 'manggis', 'jamu'],
+          ['gong', 'gong', 'es-teh-manis'],
+          ['kelapa', 'onde-onde', 'karung'],
         ],
-        [['kelapa', 'es-teh-manis', 'mie-goreng'], ['kerupuk-udang', 'gong', 'tahu-goreng']],
+        [['tahu-goreng', 'kerang', 'gong'], ['manggis', 'kelapa', 'jaring']],
         [
-          ['kelapa', 'karung', 'bintang-laut'],
-          ['rambutan', 'kelapa', 'gong'],
-          ['layangan', null, 'karung'],
-        ],
-      ],
-      stacks: [null],
-    },
-    {
-      shelves: [
-        [
-          ['pinisi', 'karung', 'onde-onde'],
-          ['karung', 'jamu', 'kelereng'],
-          ['rambutan', 'gong', 'onde-onde'],
-        ],
-        [['layangan', 'kelereng', 'karung'], ['onde-onde', 'mie-goreng', 'manggis']],
-        [[null, 'caping', 'es-cendol'], ['kelapa', 'mie-goreng', 'es-cendol']],
-        [['layangan', 'kerang', 'gong'], ['kerang', 'tahu-goreng', 'rambutan']],
-        [[null, null, null]],
-        [
-          ['manggis', 'bendera', 'kelapa'],
-          ['tahu-goreng', 'bendera', 'kerupuk-udang'],
-          ['es-teh-manis', 'bintang-laut', 'jamu'],
-        ],
-        [[null, 'jaring', 'tahu-goreng'], ['caping', 'es-teh-manis', 'kelapa']],
-        [
-          ['durian', 'gong', 'manggis'],
-          ['kerupuk-udang', 'bintang-laut', 'layangan'],
-          ['mie-goreng', 'durian', 'pinisi'],
-        ],
-        [['rambutan', 'pinisi', 'es-cendol'], ['jaring', 'jaring', 'jamu']],
-        [
-          ['bintang-laut', 'kerang', 'kelereng'],
-          ['kerupuk-udang', 'es-teh-manis', 'bendera'],
-          ['durian', null, 'caping'],
-        ],
-      ],
-      stacks: [null],
-    },
-    {
-      shelves: [
-        [
-          ['mie-goreng', 'mie-goreng', 'kelapa'],
-          ['durian', 'durian', 'es-teh-manis'],
-          ['manggis', 'es-teh-manis', 'mie-goreng'],
-        ],
-        [['kerang', 'bendera', 'durian'], ['jaring', 'es-cendol', 'onde-onde']],
-        [[null, 'caping', 'pinisi'], ['bendera', 'kelereng', 'karung']],
-        [['layangan', 'rambutan', 'kerang'], ['kelereng', 'pinisi', 'es-cendol']],
-        [[null, null, null]],
-        [
-          ['layangan', 'rambutan', 'onde-onde'],
-          ['tahu-goreng', 'manggis', 'tahu-goreng'],
-          ['gong', 'onde-onde', 'rambutan'],
-        ],
-        [[null, 'bintang-laut', 'karung'], ['pinisi', 'layangan', 'es-cendol']],
-        [
-          ['kerupuk-udang', 'gong', 'jamu'],
-          ['kerupuk-udang', 'jamu', 'caping'],
-          ['gong', 'manggis', 'kelapa'],
-        ],
-        [['kelereng', 'jaring', 'caping'], ['tahu-goreng', 'kerang', 'bintang-laut']],
-        [
-          ['karung', 'kelapa', 'bendera'],
-          ['kerupuk-udang', 'bintang-laut', 'jamu'],
-          ['jaring', null, 'es-teh-manis'],
+          ['tahu-goreng', 'jaring', 'rambutan'],
+          ['bintang-laut', 'kelereng', 'mie-goreng'],
+          ['kerupuk-udang', null, 'jaring'],
         ],
       ],
       stacks: [null],
@@ -276,6 +245,37 @@ export const nusa020: LevelDefinition = {
           ['jaring', 'pinisi', 'kerupuk-udang'],
           ['onde-onde', 'kerang', 'layangan'],
           ['durian', null, 'onde-onde'],
+        ],
+      ],
+      stacks: [null],
+    },
+    {
+      shelves: [
+        [
+          ['kerang', 'kelapa', 'layangan'],
+          ['es-cendol', 'rambutan', 'rambutan'],
+          ['karung', 'karung', 'mie-goreng'],
+        ],
+        [['gong', 'jamu', 'layangan'], ['gong', 'onde-onde', 'caping']],
+        [[null, 'jamu', 'manggis'], ['layangan', 'bintang-laut', 'durian']],
+        [['gong', 'pinisi', 'durian'], ['caping', 'caping', 'kerupuk-udang']],
+        [[null, null, null]],
+        [
+          ['pinisi', 'rambutan', 'es-cendol'],
+          ['kelereng', 'bendera', 'durian'],
+          ['es-cendol', 'tahu-goreng', 'onde-onde'],
+        ],
+        [[null, 'jaring', 'manggis'], ['kelereng', 'manggis', 'kerupuk-udang']],
+        [
+          ['jaring', 'karung', 'es-teh-manis'],
+          ['bintang-laut', 'bintang-laut', 'pinisi'],
+          ['kelapa', 'kelapa', 'jaring'],
+        ],
+        [['es-teh-manis', 'tahu-goreng', 'mie-goreng'], ['mie-goreng', 'tahu-goreng', 'bendera']],
+        [
+          ['kerupuk-udang', 'kerang', 'bendera'],
+          ['es-teh-manis', 'kelereng', 'kerang'],
+          ['onde-onde', null, 'jamu'],
         ],
       ],
       stacks: [null],

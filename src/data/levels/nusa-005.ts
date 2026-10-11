@@ -7,18 +7,18 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 5`, or try another seed with `npm run levelgen -- 5 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 76%, out of space 25%,
- * out of time 0%, space pressure 2%. Expert: wins 29%.
+ * Simulated players, 200 games each. Casual: wins 78%, out of space 22%,
+ * out of time 1%, space pressure 1%. Expert: wins 29%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 76% to 94%, the expert 29% to 99%; pressure 2% to 18%.
- * Stars (formula in src/core/stars.ts): two from 2150 points, three from 3180.
+ * Across them the casual player wins 78% to 94%, the expert 29% to 99%; pressure 1% to 14%.
+ * Stars (formula in src/core/stars.ts): two from 2130 points, three from 3140.
  */
 export const nusa005: LevelDefinition = {
   id: 'nusa-005',
   theme: 'budaya-jawa',
-  timeLimitSeconds: 100,
+  timeLimitSeconds: 95,
   shelves: [
     [['caping', 'martabak-manis', 'ketupat'], ['pisang-goreng', 'sate', 'kipas']],
     [[null, null, null]],
@@ -66,6 +66,32 @@ export const nusa005: LevelDefinition = {
     },
     {
       shelves: [
+        [['kipas', 'blangkon', 'ketupat'], ['kipas', 'nasi-goreng', 'wayang-kulit']],
+        [[null, null, null]],
+        [['ketupat', 'sate', 'martabak-manis'], ['pisang-goreng', 'bakso', 'kendang']],
+        [['gong', 'blangkon', 'bakso'], ['wayang-kulit', 'batik', 'sate']],
+        [['wayang-kulit', 'tempe', 'blangkon'], ['batik', 'tempe', 'kendang']],
+        [['batik', 'caping', null], ['kipas', null, 'gong']],
+        [['kendang', 'bakso', null], ['martabak-manis', null, 'caping']],
+        [['caping', null, 'martabak-manis'], ['ketupat', 'sate', 'nasi-goreng']],
+        [['pisang-goreng', null, 'pisang-goreng'], ['nasi-goreng', 'tempe', 'gong']],
+      ],
+    },
+    {
+      shelves: [
+        [['pisang-goreng', 'batik', 'pisang-goreng'], ['ketupat', 'bakso', 'martabak-manis']],
+        [[null, null, null]],
+        [['kipas', 'wayang-kulit', 'sate'], ['tempe', 'kipas', 'gong']],
+        [['tempe', 'wayang-kulit', 'caping'], ['bakso', 'martabak-manis', 'batik']],
+        [['caping', 'tempe', 'gong'], ['kendang', 'blangkon', 'ketupat']],
+        [['kipas', 'wayang-kulit', null], ['ketupat', null, 'batik']],
+        [['blangkon', 'gong', null], ['blangkon', null, 'sate']],
+        [['kendang', null, 'nasi-goreng'], ['bakso', 'sate', 'nasi-goreng']],
+        [['nasi-goreng', null, 'martabak-manis'], ['kendang', 'pisang-goreng', 'caping']],
+      ],
+    },
+    {
+      shelves: [
         [['kendang', 'bakso', 'martabak-manis'], ['ketupat', 'tempe', 'wayang-kulit']],
         [[null, null, null]],
         [['batik', 'nasi-goreng', 'gong'], ['martabak-manis', 'kipas', 'blangkon']],
@@ -101,32 +127,6 @@ export const nusa005: LevelDefinition = {
         [['tempe', 'blangkon', null], ['gong', null, 'bakso']],
         [['kipas', null, 'kendang'], ['batik', 'nasi-goreng', 'sate']],
         [['wayang-kulit', null, 'caping'], ['pisang-goreng', 'kendang', 'bakso']],
-      ],
-    },
-    {
-      shelves: [
-        [['blangkon', 'kipas', 'bakso'], ['kipas', 'blangkon', 'nasi-goreng']],
-        [[null, null, null]],
-        [['batik', 'batik', 'wayang-kulit'], ['gong', 'sate', 'pisang-goreng']],
-        [['kendang', 'bakso', 'martabak-manis'], ['gong', 'wayang-kulit', 'gong']],
-        [['sate', 'tempe', 'nasi-goreng'], ['bakso', 'sate', 'wayang-kulit']],
-        [['pisang-goreng', 'caping', null], ['ketupat', null, 'caping']],
-        [['ketupat', 'kipas', null], ['ketupat', null, 'tempe']],
-        [['blangkon', null, 'kendang'], ['batik', 'martabak-manis', 'tempe']],
-        [['pisang-goreng', null, 'nasi-goreng'], ['martabak-manis', 'caping', 'kendang']],
-      ],
-    },
-    {
-      shelves: [
-        [['tempe', 'wayang-kulit', 'pisang-goreng'], ['pisang-goreng', 'kendang', 'pisang-goreng']],
-        [[null, null, null]],
-        [['kipas', 'ketupat', 'bakso'], ['gong', 'kendang', 'caping']],
-        [['sate', 'wayang-kulit', 'caping'], ['nasi-goreng', 'batik', 'gong']],
-        [['tempe', 'kipas', 'martabak-manis'], ['tempe', 'kipas', 'ketupat']],
-        [['blangkon', 'nasi-goreng', null], ['batik', null, 'ketupat']],
-        [['kendang', 'nasi-goreng', null], ['martabak-manis', null, 'sate']],
-        [['bakso', null, 'blangkon'], ['sate', 'wayang-kulit', 'gong']],
-        [['caping', null, 'martabak-manis'], ['blangkon', 'batik', 'bakso']],
       ],
     },
   ],
