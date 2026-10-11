@@ -1,10 +1,12 @@
 import type * as Phaser from 'phaser';
 import { ITEM_KINDS } from '../data/itemCatalog';
-import type { ThemeId } from '../data/themes';
+import { THEMES, type ThemeId } from '../data/themes';
 import { getLocale, t, textIn } from '../i18n';
 import { hexNumber, SKIN, SPACE } from '../ui/design/tokens';
 import type { ThemeLook } from '../ui/themeLook';
-import { itemTextureKey } from './itemTextures';
+import { renderItemSvg } from '../ui/icons/icons';
+import { ITEM_TEXTURE_SIZE, itemTextureKey } from './itemTextures';
+import { addSvgTexture } from './svgTexture';
 import { KitButton, KitModal, kitText } from './kit';
 import { screenRect, viewSize } from './view';
 
@@ -59,7 +61,10 @@ export class ThemeIntro {
     if (!shown) return;
     const screen = screenRect(this.scene);
     const safe = viewSize(this.scene);
-    const kinds = ITEM_KINDS.filter((k) => k.theme === shown.theme);
+    // The festival brings nothing new: it shows one object of every island before it instead.
+    const own = ITEM_KINDS.filter((k) => k.theme === shown.theme);
+    const festival = own.length === 0;
+    const kinds = festival ? THEMES.flatMap((theme) => ITEM_KINDS.filter((k) => k.theme === theme.id).slice(0, 1)) : own;
     const panelW = Math.min(safe.width - SPACE.s * 2, 440);
     const columns = Math.min(kinds.length, Math.max(3, Math.floor((panelW - SPACE.l * 2 + 12) / (ICON_PX + 12))));
     const rows = Math.ceil(kinds.length / columns);
@@ -84,14 +89,22 @@ export class ThemeIntro {
     });
     panel.add(band);
     y += 24;
-    panel.add(kitText(this.scene, 'label', t('themeIntro.newItems').toUpperCase(), SKIN.text.secondary).setY(y + 6));
+    panel.add(kitText(this.scene, 'label', t(festival ? 'themeIntro.allIslands' : 'themeIntro.newItems').toUpperCase(), SKIN.text.secondary).setY(y + 6));
     y += 22;
     const gridW = columns * (ICON_PX + 12) - 12;
     kinds.forEach((kind, i) => {
       const x = -gridW / 2 + (i % columns) * (ICON_PX + 12) + ICON_PX / 2;
       const iy = y + Math.floor(i / columns) * (ICON_PX + 12) + ICON_PX / 2;
       const textureKey = itemTextureKey(kind.id, shown.marks);
-      if (this.scene.textures.exists(textureKey)) panel.add(this.scene.add.image(x, iy, textureKey).setDisplaySize(ICON_PX, ICON_PX));
+      const icon = this.scene.add.image(x, iy, this.scene.textures.exists(textureKey) ? textureKey : '__DEFAULT').setDisplaySize(ICON_PX, ICON_PX);
+      panel.add(icon);
+      // Objects no level has used yet were not prepared at start: drawn now, and shown when ready.
+      if (!this.scene.textures.exists(textureKey)) {
+        icon.setVisible(false);
+        void addSvgTexture(this.scene.textures, textureKey, renderItemSvg(kind.id, shown.marks), ITEM_TEXTURE_SIZE).then(() => {
+          if (icon.scene) icon.setTexture(textureKey).setDisplaySize(ICON_PX, ICON_PX).setVisible(true);
+        });
+      }
     });
     panel.add(
       new KitButton(this.scene, 0, panelH / 2 - SPACE.m - 28, {

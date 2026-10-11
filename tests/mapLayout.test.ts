@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { THEMES } from '../src/data/themes';
 import { levels } from '../src/data/levels';
 import { computeMapLayout, groupIslands, LOCKED_AHEAD, MAX_MAP_WIDTH, revealedLevels, revealedTop } from '../src/ui/mapLayout';
 
@@ -51,5 +52,17 @@ describe('level map', () => {
     expect(revealedLevels(24, null)).toBe(24);
     // The scroll stops above the last island with a revealed level, not at the top of the whole map.
     expect(revealedTop(layout, 3)).toBeGreaterThan(revealedTop(layout, 24));
+  });
+});
+
+describe('the islands of the themes still to come', () => {
+  it('gives every theme up to level 50 an island of its own on the one path, in order', () => {
+    const levels = Array.from({ length: 50 }, (_, i) => ({ theme: THEMES.find((theme) => theme.level === i + 1)?.id }));
+    const layout = computeMapLayout(levels, 390);
+    const themed = layout.islands.filter((island) => island.theme !== null);
+    expect(themed.map((island) => island.theme)).toEqual(THEMES.map((theme) => theme.id));
+    for (const island of themed) expect(island.levels).toEqual([THEMES.find((theme) => theme.id === island.theme)!.level - 1]);
+    // Each island above the one before it (the map is climbed upwards).
+    layout.islands.slice(1).forEach((island, i) => expect(island.cy).toBeLessThan(layout.islands[i]!.cy));
   });
 });

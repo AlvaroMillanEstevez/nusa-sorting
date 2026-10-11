@@ -11,7 +11,7 @@ import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
 import { KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
-import { wantsChest, wantsShop } from '../dev/uiParams';
+import { plannedLevels, wantsChest, wantsMapPreview, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
@@ -172,21 +172,27 @@ export class HomeScene extends Phaser.Scene {
     const ids = this.ids();
     const first = this.store.firstIncomplete(ids);
     this.current = this.nextLevel();
-    const revealed = revealedLevels(playList.length, first);
-    const levels: MapLevelState[] = playList.map((entry, i) => ({
-      number: entry.number,
-      theme: entry.level.theme,
-      unlocked: this.store.isUnlocked(ids, i),
-      stars: this.store.bestStars(entry.level.id) ?? 0,
-      revealed: i < revealed,
-    }));
+    // Development only: ?mapPreview adds the planned levels up to the last theme's, every one in view, to see
+    // the islands still to come.
+    const planned = import.meta.env.DEV && wantsMapPreview(window.location.search) ? plannedLevels(playList.length) : [];
+    const revealed = planned.length > 0 ? playList.length + planned.length : revealedLevels(playList.length, first);
+    const levels: MapLevelState[] = [
+      ...playList.map((entry, i) => ({
+        number: entry.number,
+        theme: entry.level.theme,
+        unlocked: this.store.isUnlocked(ids, i),
+        stars: this.store.bestStars(entry.level.id) ?? 0,
+        revealed: i < revealed,
+      })),
+      ...planned.map((level) => ({ number: level.number, theme: level.theme, unlocked: false, stars: 0, revealed: true })),
+    ];
 
     // The sea behind everything, fixed to the screen.
     const sea = this.add.graphics();
     const [top, bottom] = [hexNumber(MAP.seaTop), hexNumber(MAP.seaBottom)];
     sea.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(screen.x, screen.y, screen.width, screen.height);
 
-    this.layout = computeMapLayout(playList.map((entry) => entry.level), width);
+    this.layout = computeMapLayout([...playList.map((entry) => entry.level), ...planned], width);
     this.map = new MapView(this, this.layout, levels, (width - this.layout.width) / 2);
     this.map.highlight(this.current);
     this.map.placeMarker(this.data_.arrival?.level ?? this.current);
@@ -432,7 +438,8 @@ export class HomeScene extends Phaser.Scene {
   }
 
   private chooseLevel(level: number): void {
-    if (this.sequence?.running) return;
+    // A planned level of the map preview, not made yet.
+    if (this.sequence?.running || level >= playList.length) return;
     if (!this.store.isUnlocked(this.ids(), level)) {
       this.sfx.play('invalid');
       this.map.shake(level);

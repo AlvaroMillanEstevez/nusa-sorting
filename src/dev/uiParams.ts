@@ -1,3 +1,5 @@
+import { THEMES, themeById } from '../data/themes';
+
 /** Development only: `?uikit` opens the interface kit and its two visual directions instead of the game. */
 export function wantsUikit(search: string): boolean {
   return new URLSearchParams(search).has('uikit');
@@ -94,4 +96,27 @@ export function wantsChest(search: string): boolean {
 export function parseBoostersParam(search: string): number | null {
   const raw = new URLSearchParams(search).get('boosters');
   return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+}
+
+/** Development only: `?theme=<id>` dresses the level opened in that theme (background, trim, intro). */
+export function parseThemeParam(search: string): string | null {
+  const id = new URLSearchParams(search).get('theme');
+  return id && themeById(id) ? id : null;
+}
+
+/** Development only: `?mapPreview` shows the map with the levels planned after the last one made (with `?home`). */
+export function wantsMapPreview(search: string): boolean {
+  return new URLSearchParams(search).has('mapPreview');
+}
+
+/**
+ * The levels planned after the `made` ones, up to the last theme's level, as the map needs them: their number and
+ * the theme of the themed ones (for the map preview).
+ */
+export function plannedLevels(made: number): { number: number; theme: string | undefined }[] {
+  const last = Math.max(...THEMES.map((theme) => theme.level));
+  return Array.from({ length: Math.max(0, last - made) }, (_, i) => {
+    const number = made + i + 1;
+    return { number, theme: THEMES.find((theme) => theme.level === number)?.id };
+  });
 }

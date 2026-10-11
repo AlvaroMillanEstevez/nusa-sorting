@@ -41,7 +41,7 @@ import {
   startClock,
 } from '../core';
 import { parseArrangementParam } from '../dev/levelParam';
-import { parseBoostersParam, parseShowParam, type ShowParam } from '../dev/uiParams';
+import { parseBoostersParam, parseShowParam, parseThemeParam, type ShowParam } from '../dev/uiParams';
 import { formatScore } from '../ui/format';
 import { getLocale, t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
@@ -640,19 +640,21 @@ export class GameScene extends Phaser.Scene {
     });
     this.locks.reset(locked);
     // A themed level trims the shelves and the HUD in its colours (the background is drawn in relayout).
-    const look = themeLook(this.level.theme);
+    const look = themeLook(this.levelTheme());
     useShelfTrim(look?.trim ?? null);
     this.hud.setAccent(look?.accent ?? null);
     this.relayout();
     this.sync(0);
     // The first time in a themed level: its name and the objects it brings. Seen once closed.
     this.themeIntro.clear();
-    const themeId = this.level.theme;
+    const themeId = this.levelTheme();
     this.setAiming(false);
-    const themed = look && themeId && themeById(themeId) && !this.store.themesSeen.includes(themeId);
+    // Development only: a theme tried on with ?theme= always shows its intro, and is not remembered as seen.
+    const tryingOn = import.meta.env.DEV && parseThemeParam(window.location.search) !== null;
+    const themed = look && themeId && themeById(themeId) && (tryingOn || !this.store.themesSeen.includes(themeId));
     if (themed) {
       this.themeIntro.show(themeId as ThemeId, look, this.store.colorBlindMode, () => {
-        this.store.markThemeSeen(themeId);
+        if (!tryingOn) this.store.markThemeSeen(themeId);
         this.introduceBoosters();
       });
     }
@@ -683,6 +685,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------- boosters
+
+  /** The level's theme; in development, ?theme= tries another theme's look and intro on any level. */
+  private levelTheme(): string | undefined {
+    return (import.meta.env.DEV ? parseThemeParam(window.location.search) : null) ?? this.level.theme;
+  }
 
   /** The boosters unlocked at this level (by its number). */
   private unlockedBoosters(): BoosterId[] {
@@ -1066,7 +1073,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.layout(width, this.layout);
     this.overlay.layout();
     this.pauseMenu.relayout();
-    this.decor.draw(themeLook(this.level.theme), screenRect(this), this.layout);
+    this.decor.draw(themeLook(this.levelTheme()), screenRect(this), this.layout);
     this.themeIntro.layout();
     this.tutorial.layout(width, height, this.layout, this.baseScale());
     this.buildBoosterBar();
