@@ -84,7 +84,7 @@ export const ITEM_KINDS: readonly ItemKind[] = [
   { id: 'kok', name: { en: 'Shuttlecock', id: 'Kok bulu tangkis' }, category: 'cultural', colorFamily: 'white', theme: 'olahraga' },
   { id: 'raket', name: { en: 'Badminton racket', id: 'Raket bulu tangkis' }, category: 'cultural', colorFamily: 'red', theme: 'olahraga' },
   { id: 'sepak-takraw', name: { en: 'Sepak takraw ball', id: 'Bola sepak takraw' }, category: 'cultural', colorFamily: 'yellow', theme: 'olahraga' },
-  { id: 'bola', name: { en: 'Football', id: 'Bola sepak' }, category: 'cultural', colorFamily: 'white', theme: 'olahraga' },
+  { id: 'sepatu', name: { en: 'Sports shoe', id: 'Sepatu olahraga' }, category: 'cultural', colorFamily: 'red', theme: 'olahraga' },
   { id: 'piala', name: { en: 'Trophy', id: 'Piala' }, category: 'cultural', colorFamily: 'yellow', theme: 'olahraga' },
   { id: 'peluit', name: { en: 'Whistle', id: 'Peluit' }, category: 'cultural', colorFamily: 'red', theme: 'olahraga' },
   // Permainan tradisional (level 30).
@@ -148,9 +148,8 @@ export const CONFUSABLE_GROUPS: readonly (readonly string[])[] = [
   ['kelapa', 'es-kelapa-muda'],
   // Both diamonds; the closest pair in greyscale after the gallery check.
   ['layangan', 'ketupat'],
-  // Levels 25-45, after the gallery check: two balls patterned with pentagons; two woven containers heaped
-  // high; stems radiating with round heads; brown sticks lying aslant; a pointed roof and a conical hat.
-  ['sepak-takraw', 'bola'],
+  // Levels 25-45, after the gallery check: two woven containers heaped high; stems radiating with round heads;
+  // brown sticks lying aslant; a pointed roof and a conical hat.
   ['karung-rempah', 'bakul'],
   ['cengkeh', 'kembang-api'],
   ['kayu-manis', 'sate'],

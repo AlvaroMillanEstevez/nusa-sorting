@@ -55,7 +55,7 @@ describe('cultural objects', () => {
     expect(perTheme('17-agustus')).toEqual(['bendera', 'karung', 'kelereng', 'panjat-pinang', 'peci', 'terompet']);
     expect(perTheme('pasar-malam')).toEqual(['lampion', 'arum-manis', 'balon', 'topeng', 'kembang-api', 'bianglala']);
     expect(perTheme('laut-nusantara')).toEqual(['pinisi', 'kerang', 'bintang-laut', 'jaring', 'layangan', 'kelapa']);
-    expect(perTheme('olahraga')).toEqual(['kok', 'raket', 'sepak-takraw', 'bola', 'piala', 'peluit']);
+    expect(perTheme('olahraga')).toEqual(['kok', 'raket', 'sepak-takraw', 'sepatu', 'piala', 'peluit']);
     expect(perTheme('permainan-tradisional')).toEqual(['gasing', 'congklak', 'egrang', 'yoyo', 'bekel', 'lompat-tali']);
     expect(perTheme('rempah-maluku')).toEqual(['cengkeh', 'pala', 'kayu-manis', 'lada', 'cobek', 'karung-rempah']);
     expect(perTheme('sawah')).toEqual(['padi', 'cangkul', 'orang-orangan', 'kerbau', 'bakul', 'gubuk']);

@@ -79,32 +79,19 @@ export const ISLAND_TEMPLATES: Readonly<Record<string, IconTemplate>> = {
         ${p.spec(36, 32, 5, 3, -35)}`;
     },
   },
-  // A football: white with black pentagon patches.
-  bola: {
-    palette: { panel: '#f4f4f0', patch: '#2e3038' },
-    variants: { alt1: { panel: '#5a86d6' }, alt2: { panel: '#e6bc3c' } },
-    draw: (p) => {
-      const center = `<polygon points="${polygon(50, 52, 11, 5)}" fill="${p.flat('patch')}"/>`;
-      const ring = [-90, -18, 54, 126, 198]
-        .map((a) => {
-          const [x, y] = polar(50, 52, 31, a);
-          return `<polygon points="${polygon(x, y, 9, 5, a + 90)}" fill="${p.flat('patch')}"/>`;
-        })
-        .join('');
-      const seams = [-90, -18, 54, 126, 198]
-        .map((a) => {
-          const [x1, y1] = polar(50, 52, 11, a);
-          const [x2, y2] = polar(50, 52, 23, a);
-          return `M${x1} ${y1} L${x2} ${y2}`;
-        })
-        .join(' ');
-      return `
-        <defs><clipPath id="ball"><circle cx="50" cy="52" r="35"/></clipPath></defs>
-        <circle cx="50" cy="52" r="36" fill="${p.ball('panel')}"/>
-        <g clip-path="url(#ball)">${center}${ring}<path d="${seams}" stroke="${p.line('panel')}" stroke-width="1.8"/></g>
-        <circle cx="50" cy="52" r="36" fill="none"${p.edge('panel')}/>
-        ${p.spec(34, 32, 5, 3, -35)}`;
-    },
+  // A sports shoe from the side: a coloured upper with a white stripe and laces, on a thick white sole with a dark tread.
+  sepatu: {
+    palette: { upper: '#c8382a', sole: '#f4f2ea', tread: '#3a3a44', lace: '#f4f2ea' },
+    variants: { alt1: { upper: '#86aef0' }, alt2: { upper: '#f2de7a' } },
+    draw: (p) => `
+      <path d="M6 74 L94 74 Q96 86 88 88 L12 88 Q4 86 6 74 Z" fill="${p.fill('tread')}"${p.edge('tread')}/>
+      <path d="M6 66 L94 66 Q97 72 94 78 L8 78 Q4 72 6 66 Z" fill="${p.fill('sole')}"${p.edge('sole')}/>
+      <path d="M8 66 Q8 50 16 40 L22 22 Q32 18 40 24 Q50 40 66 46 Q88 50 92 66 Z" fill="${p.fill('upper')}"${p.edge('upper')}/>
+      <path d="M22 22 Q30 16 38 22 L34 34 Q28 30 24 32 Z" fill="${p.shade('upper')}"${p.edge('upper', 1.8)}/>
+      <path d="M30 56 Q52 46 76 58" fill="none" stroke="${p.flat('sole')}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M40 30 L50 26 M44 36 L55 31 M49 41 L60 36 M55 45 L65 41" stroke="${p.flat('lace')}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M74 52 Q86 56 90 64" fill="none" stroke="${p.light('upper')}" stroke-width="2" stroke-linecap="round"/>
+      ${p.spec(18, 48, 2.4, 6, 20)}`,
   },
   // A trophy cup with two handles, on a stem and a dark stepped base with a plate.
   piala: {

@@ -46,8 +46,9 @@ const LOOK_ALIKES: readonly (readonly string[])[] = [
   ['arum-manis', 'kerupuk-udang', 'klepon'],
   // Levels 25-45 against the whole catalogue: round things.
   ['sepak-takraw', 'congklak', 'onde-onde'],
-  ['sepak-takraw', 'bola', 'kelapa'],
-  ['bola', 'kelereng', 'bekel'],
+  ['sepak-takraw', 'kelapa', 'kelereng'],
+  ['sepatu', 'raket', 'karung'],
+  ['sepatu', 'pinisi', 'ikan-bakar'],
   ['yoyo', 'gasing', 'rambutan'],
   ['bekel', 'manggis', 'balon'],
   ['peluit', 'terompet', 'bekel'],

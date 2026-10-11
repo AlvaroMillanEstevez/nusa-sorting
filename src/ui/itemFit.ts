@@ -37,7 +37,7 @@ export const ITEM_BOUNDS: Readonly<Record<string, readonly [number, number, numb
   'kok': [18.5, 7.5, 81.5, 92],
   'raket': [24, 4.5, 94.5, 100],
   'sepak-takraw': [10, 12, 90, 92],
-  'bola': [10, 12, 90, 92],
+  'sepatu': [1, 15.5, 100, 92],
   'piala': [10, 10, 89.5, 94],
   'peluit': [5, 2, 98.5, 91],
   'gasing': [10, 1.5, 90, 98],
