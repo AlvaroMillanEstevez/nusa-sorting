@@ -1,5 +1,6 @@
 import { BOOSTER_IDS, boosterGift, ECONOMY, type BoosterId, type Reward } from '../data/economy';
 import { nextRandom } from './random';
+import { PLAYER_TITLES, type PlayerTitleId } from '../data/titles';
 
 /**
  * The economy and the player's progression, as pure functions over the values in src/data/economy.ts: coins
@@ -58,6 +59,13 @@ export function playerLevel(xp: number): { level: number; into: number; needed: 
     level++;
   }
   return { level, into: rest, needed: xpToNext(level) };
+}
+
+/** The title of a player level: the last one whose `from` it has reached (see src/data/titles.ts). */
+export function playerTitle(level: number): PlayerTitleId {
+  let title: PlayerTitleId = PLAYER_TITLES[0].id;
+  for (const entry of PLAYER_TITLES) if (level >= entry.from) title = entry.id;
+  return title;
 }
 
 /** The gift for reaching player level `level` (2 and up). */

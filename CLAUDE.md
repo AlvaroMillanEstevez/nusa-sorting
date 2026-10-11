@@ -40,7 +40,6 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?chest` — toca el cofre de estrellas al abrir el mapa (con `?home`): lo abre si hay estrellas para uno, o muestra el aviso si faltan.
 - `?headless` — bucle del juego por temporizador y sin suavizado del paso de tiempo, para que un navegador headless con tiempo virtual haga avanzar las animaciones en capturas.
 - `?home` — abre la pantalla de inicio (el mapa) aunque sea la primera visita.
-- `?mapPreview` — con `?home`, alarga el mapa con los niveles previstos hasta el último tema (hoy, el 50), todos a la vista, para ver las islas que vienen; sus niveles no se pueden abrir.
 - `?progress=N` — marca como completados los N primeros niveles (con 3, 2 y 1 estrellas alternas) antes de empezar, para ver el mapa más adelante; sus estrellas nuevas suman al contador del cofre, como al ganarlas.
 - `?arrival=N` — abre el mapa como si se acabara de ganar el nivel N con 3 estrellas, para ver la secuencia de llegada (combínalo con `?progress=N`).
 - `?slotAspect=X` — otra proporción de hueco (de 1 a 1,6) en cualquier nivel; el juego usa 1,2.

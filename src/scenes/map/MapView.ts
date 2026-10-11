@@ -107,6 +107,27 @@ export class MapView {
     for (const island of islands) if (island.theme) this.drawSign(island);
     for (const node of this.layout.nodes) if (this.levels[node.level]!.revealed) this.drawNode(node);
     this.drawClouds(top);
+    // Once the last island is in view, a sign in the clouds says more are on the way.
+    if (this.levels.at(-1)?.revealed) this.drawComingSoon(top);
+  }
+
+  /** The end of the map for now: a wooden sign over the clouds above the last island, "More islands coming soon". */
+  private drawComingSoon(top: number): void {
+    const u = this.layout.unit;
+    const label = kitText(this.scene, 'label', t('map.comingSoon'), SKIN.text.primary);
+    const w = Math.min(label.width + 40, this.layout.width - u);
+    if (label.width > w - 24) label.setScale((w - 24) / label.width);
+    const cx = this.layout.width / 2;
+    const y = top - u * 1.5;
+    const g = this.scene.add.graphics();
+    // Two posts into the clouds, a plank across them, and a dotted course leading on beyond it.
+    g.fillStyle(hexNumber(WOOD.frameDark), 1).fillRect(cx - w / 2 + 10, y, 6, u * 0.8).fillRect(cx + w / 2 - 16, y, 6, u * 0.8);
+    g.fillStyle(hexNumber(SKIN.surface.border), 1).fillRoundedRect(cx - w / 2, y - 18 + 3, w, 34, 7);
+    g.fillStyle(hexNumber(SKIN.surface.fill), 1).fillRoundedRect(cx - w / 2, y - 18, w, 34, 7);
+    g.fillStyle(hexNumber(SKIN.surface.highlight), 0.6).fillRect(cx - w / 2 + 8, y - 15, w - 16, 3);
+    g.fillStyle(hexNumber(MAP.rope), 0.9);
+    for (let k = 1; k <= 4; k++) g.fillCircle(cx, y - 18 - k * u * 0.38, 2.4);
+    this.container.add([g, label.setPosition(cx, y - 1)]);
   }
 
   private drawIsland(g: Phaser.GameObjects.Graphics, island: MapIsland): void {

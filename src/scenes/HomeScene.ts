@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { chestProgress, playerLevel } from '../core/economy';
+import { chestProgress, playerLevel, playerTitle } from '../core/economy';
 import type { Reward } from '../data/economy';
 import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
@@ -11,7 +11,7 @@ import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
 import { KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
-import { plannedLevels, wantsChest, wantsMapPreview, wantsShop } from '../dev/uiParams';
+import { wantsChest, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
@@ -81,6 +81,8 @@ export class HomeScene extends Phaser.Scene {
   private press: { y: number; scroll: number; moved: boolean } | null = null;
   private bar!: Phaser.GameObjects.Container;
   private starsPill!: KitPill;
+  private titleCaption!: Phaser.GameObjects.Text;
+  private titleWidth = 0;
   private coinsPill!: KitPill;
   private levelPill!: KitPill;
   private play!: KitButton;
@@ -172,27 +174,21 @@ export class HomeScene extends Phaser.Scene {
     const ids = this.ids();
     const first = this.store.firstIncomplete(ids);
     this.current = this.nextLevel();
-    // Development only: ?mapPreview adds the planned levels up to the last theme's, every one in view, to see
-    // the islands still to come.
-    const planned = import.meta.env.DEV && wantsMapPreview(window.location.search) ? plannedLevels(playList.length) : [];
-    const revealed = planned.length > 0 ? playList.length + planned.length : revealedLevels(playList.length, first);
-    const levels: MapLevelState[] = [
-      ...playList.map((entry, i) => ({
-        number: entry.number,
-        theme: entry.level.theme,
-        unlocked: this.store.isUnlocked(ids, i),
-        stars: this.store.bestStars(entry.level.id) ?? 0,
-        revealed: i < revealed,
-      })),
-      ...planned.map((level) => ({ number: level.number, theme: level.theme, unlocked: false, stars: 0, revealed: true })),
-    ];
+    const revealed = revealedLevels(playList.length, first);
+    const levels: MapLevelState[] = playList.map((entry, i) => ({
+      number: entry.number,
+      theme: entry.level.theme,
+      unlocked: this.store.isUnlocked(ids, i),
+      stars: this.store.bestStars(entry.level.id) ?? 0,
+      revealed: i < revealed,
+    }));
 
     // The sea behind everything, fixed to the screen.
     const sea = this.add.graphics();
     const [top, bottom] = [hexNumber(MAP.seaTop), hexNumber(MAP.seaBottom)];
     sea.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(screen.x, screen.y, screen.width, screen.height);
 
-    this.layout = computeMapLayout([...playList.map((entry) => entry.level), ...planned], width);
+    this.layout = computeMapLayout(playList.map((entry) => entry.level), width);
     this.map = new MapView(this, this.layout, levels, (width - this.layout.width) / 2);
     this.map.highlight(this.current);
     this.map.placeMarker(this.data_.arrival?.level ?? this.current);
@@ -249,16 +245,19 @@ export class HomeScene extends Phaser.Scene {
     this.coinsPill = new KitPill(this, SPACE.s + lw + SPACE.xs + cw / 2, row, { skin: SKIN, icon: 'coin', value: '', tint: SKIN.text.accent, height: 40, width: cw });
     this.coinsPill.setSize(cw, 44).setInteractive().on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openShop());
     this.starsPill = new KitPill(this, SPACE.s + lw + cw + SPACE.xs * 2 + sw / 2, row, { skin: SKIN, icon: 'starFilled', value: String(this.store.totalStars), tint: SKIN.star.filled, height: 40, width: sw });
+    // The player's title, under their level.
+    this.titleCaption = kitText(this, 'caption', '', SKIN.text.primary).setStroke(SKIN.surface.border, 4).setPosition(SPACE.s + lw / 2, row + 28);
+    this.titleWidth = lw + SPACE.xs * 2;
     this.showCoins(this.store.wallet.coins);
     this.showXp(this.store.wallet.xp);
     const gear = new KitIconButton(this, width - SPACE.s - 22, row, { skin: SKIN, icon: 'settings', onPress: () => this.openSettings() });
     const title = this.add
-      .text(width / 2, 78, t('game.title'), { fontFamily: FONTS.display, fontStyle: '600', fontSize: '34px', color: SKIN.text.primary })
+      .text(width / 2, 86, t('game.title'), { fontFamily: FONTS.display, fontStyle: '600', fontSize: '34px', color: SKIN.text.primary })
       .setOrigin(0.5)
       .setStroke(SKIN.surface.border, 7)
       .setShadow(0, 4, '#000000', 0.35, true, true);
     if (title.width > width - SPACE.l * 2) title.setScale((width - SPACE.l * 2) / title.width);
-    this.bar.add([this.levelPill, this.coinsPill, this.starsPill, gear, title]);
+    this.bar.add([this.levelPill, this.titleCaption, this.coinsPill, this.starsPill, gear, title]);
   }
 
   private showCoins(coins: number): void {
@@ -270,6 +269,11 @@ export class HomeScene extends Phaser.Scene {
     this.shownXp = xp;
     const { level, into, needed } = playerLevel(xp);
     this.levelPill.setValue(t('home.playerLevel', { n: level })).setProgress(into / needed);
+    const title = t(`playerTitle.${playerTitle(level)}`);
+    if (this.titleCaption.text !== title) {
+      this.titleCaption.setText(title).setScale(1);
+      if (this.titleCaption.width > this.titleWidth) this.titleCaption.setScale(this.titleWidth / this.titleCaption.width);
+    }
   }
 
   private bump(target: Phaser.GameObjects.Container): void {
@@ -460,8 +464,7 @@ export class HomeScene extends Phaser.Scene {
   }
 
   private chooseLevel(level: number): void {
-    // A planned level of the map preview, not made yet.
-    if (this.sequence?.running || level >= playList.length) return;
+    if (this.sequence?.running) return;
     if (!this.store.isUnlocked(this.ids(), level)) {
       this.sfx.play('invalid');
       this.map.shake(level);
@@ -605,7 +608,10 @@ export class HomeScene extends Phaser.Scene {
   private showCard(card: RewardCard): Promise<void> {
     const { width, height } = viewSize(this);
     const w = Math.min(300, width - SPACE.l * 2);
-    const h = 220;
+    // A new title comes with this level: said under it.
+    const newTitle = playerTitle(card.level) !== playerTitle(card.level - 1);
+    const extra = newTitle ? 26 : 0;
+    const h = 220 + extra;
     const panel = new KitPanel(this, width / 2, height * 0.45, {
       skin: SKIN,
       width: w,
@@ -616,7 +622,12 @@ export class HomeScene extends Phaser.Scene {
     const top = panel.contentTop;
     const subtitle = t('levelUp.reached', { n: card.level });
     panel.add(kitText(this, 'body', subtitle, SKIN.text.secondary).setY(top + 12));
-    const icon = uiIcon(this, 'starFilled', SKIN.text.accent, 48).setY(top + 58);
+    if (newTitle) {
+      const line = kitText(this, 'body', t('levelUp.newTitle', { title: t(`playerTitle.${playerTitle(card.level)}`) }), SKIN.text.accent).setY(top + 36);
+      if (line.width > w - SPACE.l * 2) line.setScale((w - SPACE.l * 2) / line.width);
+      panel.add(line);
+    }
+    const icon = uiIcon(this, 'starFilled', SKIN.text.accent, 48).setY(top + 58 + extra);
     panel.add(icon);
     // What it gives: an icon and "+N" for each reward, side by side.
     const items = card.rewards.map((reward) => this.rewardChip(reward));
@@ -624,25 +635,34 @@ export class HomeScene extends Phaser.Scene {
     const total = items.reduce((sum, item) => sum + item.width, 0) + gap * (items.length - 1);
     let x = -total / 2;
     for (const item of items) {
-      item.container.setPosition(x + item.width / 2, top + 112).setAlpha(0);
+      item.container.setPosition(x + item.width / 2, top + 112 + extra).setAlpha(0);
       x += item.width + gap;
       panel.add(item.container);
     }
     const still = reducedMotion();
     panel.setScale(still ? 1 : 0.86).setAlpha(0);
+    // Separate steps rather than one chain of tweens: the gift is always shown, whatever happens to the pop.
     return new Promise((resolve) => {
-      this.tweens.chain({
-        targets: panel,
-        tweens: [
-          { alpha: 1, scale: 1, duration: DURATION.slow, ease: EASE.pop },
-          { targets: items.map((item) => item.container), alpha: 1, duration: DURATION.base, ease: EASE.pop, onStart: () => icon.setAngle(0) },
-          { alpha: 0, delay: 1300, duration: DURATION.base, ease: EASE.exit },
-        ],
-        onComplete: () => {
-          panel.destroy();
-          if (this.card === panel) this.card = null;
-          resolve();
-        },
+      this.tweens.add({ targets: panel, alpha: 1, scale: 1, duration: DURATION.slow, ease: EASE.pop });
+      // A skip (closeCards) may have taken the card away meanwhile.
+      this.time.delayedCall(DURATION.slow, () => {
+        if (!panel.scene) return;
+        for (const item of items) item.container.setAlpha(still ? 1 : 0);
+        if (!still) this.tweens.add({ targets: items.map((item) => item.container), alpha: 1, duration: DURATION.base, ease: EASE.enter });
+      });
+      this.time.delayedCall(DURATION.slow + 1500, () => {
+        if (!panel.scene) return resolve();
+        this.tweens.add({
+          targets: panel,
+          alpha: 0,
+          duration: DURATION.base,
+          ease: EASE.exit,
+          onComplete: () => {
+            panel.destroy();
+            if (this.card === panel) this.card = null;
+            resolve();
+          },
+        });
       });
     });
   }

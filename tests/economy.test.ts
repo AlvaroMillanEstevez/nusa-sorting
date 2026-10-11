@@ -12,6 +12,7 @@ import {
   levelUpGift,
   openChest,
   playerLevel,
+  playerTitle,
   rewardWin,
   spend,
   useBooster,
@@ -20,6 +21,7 @@ import {
   xpToNext,
 } from '../src/core';
 import { ECONOMY } from '../src/data/economy';
+import { PLAYER_TITLES } from '../src/data/titles';
 
 describe('coins for wins', () => {
   it('pays more for a first win than a replay, with stars on top (only new ones on a replay)', () => {
@@ -148,5 +150,17 @@ describe('a win', () => {
     expect(rewards.wallet.coins).toBe(rewards.coins + giftCoins);
     // A replay without new stars adds none.
     expect(rewardWin(rewards.wallet, { levelNumber: 5, firstClear: false, stars: 3, bestStarsBefore: 3, score: 100, totalStarsBefore: every + 1, totalStarsAfter: every + 1 }).chestStars).toBe(0);
+  });
+});
+
+describe("the player's titles", () => {
+  it('climb with the player level, from a street vendor to a merchant of the archipelago', () => {
+    expect(playerTitle(1)).toBe('kaki-lima');
+    expect(playerTitle(2)).toBe('keliling');
+    expect(playerTitle(7)).toBe('pemilik-warung');
+    expect(playerTitle(8)).toBe('juragan-warung');
+    expect(playerTitle(40)).toBe('saudagar-nusantara');
+    // In order, each from a higher level than the one before.
+    PLAYER_TITLES.slice(1).forEach((title, i) => expect(title.from).toBeGreaterThan(PLAYER_TITLES[i]!.from));
   });
 });
