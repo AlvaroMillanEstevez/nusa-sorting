@@ -254,8 +254,8 @@ describe('stuck boards', () => {
     const shuffled = continueByShuffling(lost, rng(3));
     expect(shuffled.ok && shuffled.state.status).toBe('playing');
     expect(shuffled.ok && canProgress(shuffled.state)).toBe(true);
-    // Only a stuck board continues by shuffling.
-    expect(continueByShuffling({ ...lost, loseReason: 'blocked' }, rng(3)).ok).toBe(false);
+    // Not after running out of time.
+    expect(continueByShuffling({ ...lost, loseReason: 'timeUp' }, rng(3)).ok).toBe(false);
   });
 
   it('happens in real play: the casual player reaches stuck boards in level 12, which the rules now end at once', () => {

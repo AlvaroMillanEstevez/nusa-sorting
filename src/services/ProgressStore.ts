@@ -1,7 +1,7 @@
 import { nextArrangement } from '../core/arrangement';
 import { firstIncomplete, isUnlocked, recordWin, totalStars, type Progress, type WinRecord } from '../core/progress';
 import type { Stars } from '../core/stars';
-import { buyBooster, introduceBooster, openChest, rewardWin, spend, useBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
+import { buyBooster, introduceBooster, openChest, rewardWin, useBooster, useOrBuyBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
 import type { GameSnapshot } from '../core/snapshot';
 import type { BoosterId, Reward } from '../data/economy';
 import type { SaveData, SaveService, Settings } from './SaveService';
@@ -118,6 +118,16 @@ export class ProgressStore {
     return next !== null;
   }
 
+  /**
+   * Uses one booster to continue: one the player has, else one bought at its shop price; false (and nothing
+   * changes) if neither is possible.
+   */
+  useOrBuyBooster(booster: BoosterId): boolean {
+    const next = useOrBuyBooster(this.data.wallet, booster);
+    if (next) this.setWallet(next);
+    return next !== null;
+  }
+
   /** Uses one booster; false if the player has none. */
   useBooster(booster: BoosterId): boolean {
     const next = useBooster(this.data.wallet, booster);
@@ -125,11 +135,9 @@ export class ProgressStore {
     return next !== null;
   }
 
-  /** Pays coins (a continue); false if the player has too few. */
-  spendCoins(coins: number): boolean {
-    const next = spend(this.data.wallet, coins);
-    if (next) this.setWallet(next);
-    return next !== null;
+  /** Development only (?boosters=N): sets how many of every booster the player has. */
+  setBoosterCounts(count: number): void {
+    this.setWallet({ ...this.data.wallet, boosters: { freeze: count, removeTriple: count, shuffle: count } });
   }
 
   /** Development only (?coins=N): sets the coins. */

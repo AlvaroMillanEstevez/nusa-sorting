@@ -16,7 +16,7 @@ import {
   boostersUnlockedAt,
   continueAfterBlocked,
   continueByShuffling,
-  continuePrice,
+  continueBoosters,
   freezeClock,
   removeTriple,
   shuffleBoard,
@@ -40,7 +40,7 @@ import {
   startClock,
 } from '../core';
 import { parseArrangementParam } from '../dev/levelParam';
-import { parseShowParam, type ShowParam } from '../dev/uiParams';
+import { parseBoostersParam, parseShowParam, type ShowParam } from '../dev/uiParams';
 import { formatScore } from '../ui/format';
 import { getLocale, t, type MessageKey } from '../i18n';
 import type { ProgressStore } from '../services/ProgressStore';
@@ -79,6 +79,7 @@ import { TutorialHint } from './TutorialHint';
 import { Effects } from './Effects';
 import { BoosterBar } from './BoosterBar';
 import { boosterTextureKey } from './boosterTextures';
+import { showContinue } from './ContinuePanel';
 import { showOffer } from './Offer';
 import { BOOSTER_IDS, ECONOMY, type BoosterId } from '../data/economy';
 import { boosterBarRect } from '../ui/levelLayout';
@@ -322,6 +323,11 @@ export class GameScene extends Phaser.Scene {
     // Development only: ?show=buy|continue skips the booster intros (giving their gifts quietly).
     const devShowParam = import.meta.env.DEV ? parseShowParam(window.location.search) : null;
     if ((devShowParam === 'buy' || devShowParam === 'continue' || devShowParam === 'stuck') && !devShown) BOOSTER_IDS.forEach((id) => this.store.introduceBooster(id));
+    const devBoosters = import.meta.env.DEV ? parseBoostersParam(window.location.search) : null;
+    if (devBoosters !== null && !devShown) {
+      BOOSTER_IDS.forEach((id) => this.store.introduceBooster(id));
+      this.store.setBoosterCounts(devBoosters);
+    }
     const resume = this.resumeWith;
     this.resumeWith = null;
     if (resume) this.loadLevel(resume.levelIndex, resume);
@@ -813,77 +819,60 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * After a defeat, if the player can: continue for coins, or with a booster when it fits, each continue in the
-   * attempt costing more (and at most ECONOMY.continues.max of them). Out of time: more time. Out of space: a
-   * triple removed. Stuck: a triple removed or the board shuffled (always to a board with a way on), whichever
-   * the player picks. Declining, or nothing affordable, shows the defeat panel.
+   * After a defeat, if the attempt still has continues left: the boosters that fit it (see continueBoosters),
+   * each used from the player's own or bought at its shop price there and then. Out of time, "freeze time" adds
+   * time to the clock; out of space or stuck, "remove a triple" takes one away and "shuffle" mixes the board (only
+   * offered when a shuffle with a way on exists). Giving up, or no booster unlocked yet, shows the defeat panel.
    */
   private offerContinue(showLost: () => void): void {
     const reason = this.state.loseReason ?? 'blocked';
-    const coins = this.store.wallet.coins;
-    const index = this.continuesUsed;
-    // Every way to go on is priced like continuing out of space (out of time has its own price).
-    const price = continuePrice(reason === 'timeUp' ? 'time' : 'space', index);
     const lost = this.state;
-    const ways: { label: string; price?: number; booster: BoosterId | null; run: () => MoveResult }[] = [];
-    const add = (booster: BoosterId | null, label: string, run: () => MoveResult) => {
-      if (index >= ECONOMY.continues.max) return;
-      if (booster && this.store.wallet.boosters[booster] > 0) {
-        ways.push({ label: t('offer.useNamed', { name: label, n: this.store.wallet.boosters[booster] }), booster, run });
-      } else if (price !== null && coins >= price) {
-        ways.push({ label, price, booster: null, run });
-      }
+    const runs: Record<BoosterId, (() => MoveResult) | null> = {
+      freeze: () => addTime(lost, ECONOMY.continues.freezeAddsSeconds * 1000),
+      removeTriple: () => continueAfterBlocked(lost),
+      shuffle: null,
     };
-    if (reason === 'timeUp') {
-      add(null, t('pause.resume'), () => addTime(lost, ECONOMY.continues.time.seconds * 1000));
-    } else {
-      add('removeTriple', t('booster.removeTriple.name'), () => continueAfterBlocked(lost));
-      if (reason === 'stuck') {
-        // Worked out now, so it is only offered if a shuffle with a way on exists.
-        const shuffled = continueByShuffling(lost, Math.random);
-        if (shuffled.ok) add('shuffle', t('booster.shuffle.name'), () => shuffled);
-      }
+    const ids = continueBoosters(reason, playList[this.levelIndex]!.number, this.continuesUsed);
+    if (ids.includes('shuffle')) {
+      // Worked out now: offered only if a shuffle with a way on exists.
+      const shuffled = continueByShuffling(lost, Math.random);
+      if (shuffled.ok) runs.shuffle = () => shuffled;
     }
-    if (ways.length === 0) {
+    const usable = ids.filter((id) => runs[id] !== null);
+    if (usable.length === 0) {
       showLost();
       return;
     }
-    const go = (way: (typeof ways)[number]) => () => {
-      const result = way.run();
-      if (!result.ok) {
+    const use = (booster: BoosterId) => {
+      const result = runs[booster]!();
+      if (!result.ok || !this.store.useOrBuyBooster(booster)) {
         showLost();
         return;
       }
       this.continuesUsed++;
-      if (way.booster) {
-        this.store.useBooster(way.booster);
-        this.boostersUsed[way.booster]++;
-      } else {
-        this.store.spendCoins(way.price!);
-      }
+      this.boostersUsed[booster]++;
       this.state = result.state;
       this.overlay.hide();
       this.buildBoosterBar();
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
-      if (result.events.some((e) => e.kind === 'shuffled')) {
+      if (booster === 'shuffle') {
         this.sfx.play('advance');
         this.sync(DURATION.slow);
         this.saveSnapshot();
-      } else if (reason === 'timeUp') {
+      } else if (booster === 'freeze') {
+        this.sfx.play('unlock');
         this.saveSnapshot();
       } else {
         this.play(result.events);
       }
     };
-    const [first, second] = ways;
-    showOffer(this, {
+    const wallet = this.store.wallet;
+    showContinue(this, {
       title: t(LOSE_TITLES[reason]),
-      ...(reason === 'timeUp' ? { icon: 'clock' as const } : reason === 'blocked' ? { image: boosterTextureKey('removeTriple') } : {}),
-      body: t(reason === 'timeUp' ? 'continue.time.body' : reason === 'blocked' ? 'continue.space.body' : 'continue.stuck.body', { s: ECONOMY.continues.time.seconds }),
-      ...(ways.some((way) => way.price !== undefined) ? { coins } : {}),
-      accept: { label: first!.label, ...(first!.price === undefined ? {} : { price: first!.price }), onPress: go(first!) },
-      ...(second ? { alternative: { label: second.label, ...(second.price === undefined ? {} : { price: second.price }), onPress: go(second) } } : {}),
-      decline: { label: t('offer.giveUp'), onPress: showLost },
+      body: reason === 'timeUp' ? t('continue.time.body', { s: ECONOMY.continues.freezeAddsSeconds }) : t(reason === 'blocked' ? 'continue.space.body' : 'continue.stuck.body'),
+      coins: wallet.coins,
+      choices: usable.map((booster) => ({ booster, have: wallet.boosters[booster], price: boosterPrice(booster), onUse: () => use(booster) })),
+      onGiveUp: showLost,
     });
   }
 

@@ -1,13 +1,14 @@
 import {
   boosterPrice,
   boostersUnlockedAt,
-  continuePrice,
+  continueBoosters,
   EMPTY_WALLET,
   introduceBooster,
   openChest,
   playerLevel,
   rewardWin,
   starThresholds,
+  useOrBuyBooster,
   type Wallet,
 } from '../../src/core';
 import { BOOSTER_IDS, ECONOMY, type BoosterId, type Reward } from '../../src/data/economy';
@@ -16,8 +17,10 @@ import { levels } from '../../src/data/levels';
 /**
  * A balance check of the economy over the 24 levels (outside the game build). The player wins every level with
  * two stars on average, replays its weakest level every fourth level (earning one more star), and loses one
- * level in three once, continuing once (out of time and out of space in turn). Two runs: one keeps every coin (what could be afforded),
- * one buys the cheapest booster whenever it has its price plus a reserve (what a spender would hold).
+ * level in three once, continuing once (out of time and out of space in turn) with a booster that fits: one of its
+ * own, else the cheapest one bought at its shop price, if it can afford it (and once one is unlocked). Two runs:
+ * one keeps every other coin (what could be afforded), one buys the cheapest booster whenever it has its price
+ * plus a reserve (what a spender would hold).
  */
 
 /** Stars of each first win, in turn: averages 2. */
@@ -53,6 +56,7 @@ function run(spender: boolean): Row[] {
   let freeBoosters = 0;
   let bought = 0;
   let continues = 0;
+  let continueCoins = 0;
   const rows: Row[] = [];
   const win = (index: number, stars: number) => {
     const level = levels[index]!;
@@ -89,12 +93,17 @@ function run(spender: boolean): Row[] {
         freeBoosters += ECONOMY.boosters[id].gift;
       }
     }
-    // One level in three is lost once and continued once (out of time and out of space in turn), if affordable.
+    // One level in three is lost once and continued once (out of time and out of space in turn), with a booster.
     if (i % 3 === 2) {
-      const price = continuePrice(i % 2 === 0 ? 'time' : 'space', 0)!;
-      if (wallet.coins >= price) {
-        wallet = { ...wallet, coins: wallet.coins - price };
-        continues += price;
+      const fitting = continueBoosters(i % 2 === 0 ? 'timeUp' : 'blocked', i + 1, 0);
+      const own = fitting.find((id) => wallet.boosters[id] > 0);
+      const cheapest = fitting.slice().sort((a, b) => boosterPrice(a) - boosterPrice(b))[0];
+      const booster = own ?? cheapest;
+      const paid = booster && useOrBuyBooster(wallet, booster);
+      if (booster && paid) {
+        if (!own) continueCoins += boosterPrice(booster);
+        continues++;
+        wallet = paid;
       }
     }
     let earned = win(i, FIRST_STARS[i % FIRST_STARS.length]!);
@@ -123,15 +132,15 @@ function run(spender: boolean): Row[] {
       held: totalBoosters(wallet),
     });
   }
-  spentOnContinues = continues;
+  continueTotals = { continues, coins: continueCoins };
   return rows;
 }
 
-let spentOnContinues = 0;
+let continueTotals = { continues: 0, coins: 0 };
 
 export function main(): string {
   const saver = run(false);
-  const continueCoins = spentOnContinues;
+  const continued = continueTotals;
   const spender = run(true);
   const avgPrice = BOOSTER_IDS.reduce((n, id) => n + boosterPrice(id), 0) / BOOSTER_IDS.length;
   const lines = ['level | stars | coins earned | balance (saver) | player level | chests | free boosters | bought (spender) | held (spender)'];
@@ -143,7 +152,7 @@ export function main(): string {
   const affordable = Math.floor(last.balance / avgPrice);
   const total = last.freeBoosters + affordable;
   lines.push('');
-  lines.push(`Continues cost ${continueCoins} coins over the 24 levels.`);
+  lines.push(`The saver continued ${continued.continues} times with a booster, buying the booster for ${continued.coins} coins when it had none.`);
   lines.push(`By level 24 the saver has ${last.balance} coins (${affordable} boosters at the average price of ${Math.round(avgPrice)}) and got ${last.freeBoosters} boosters free.`);
   lines.push(`Boosters within reach: ${total} over 24 levels, one every ${(24 / total).toFixed(1)} levels (from level 4, when the first unlocks: one every ${(21 / total).toFixed(1)}).`);
   lines.push(`The spender bought ${spender.at(-1)!.bought} and holds ${spender.at(-1)!.held} at the end (unused, as it never needs them in this model).`);

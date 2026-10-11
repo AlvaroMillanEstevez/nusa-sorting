@@ -171,11 +171,12 @@ export function continueAfterBlocked(state: GameState): MoveResult {
 }
 
 /**
- * Continues after getting stuck by shuffling the board (see shuffleBoard): it always leaves some way to make
- * progress. Fails if no such shuffle is found.
+ * Continues after running out of space or getting stuck by shuffling the board (see shuffleBoard): it always
+ * leaves some way to make progress. Fails if no such shuffle exists (a full board stays full: shuffling keeps its
+ * empty slots where they are).
  */
 export function continueByShuffling(state: GameState, random: () => number): MoveResult {
-  if (state.status !== 'lost' || state.loseReason !== 'stuck') return fail('gameOver');
+  if (state.status !== 'lost' || (state.loseReason !== 'stuck' && state.loseReason !== 'blocked')) return fail('gameOver');
   return shuffleBoard({ ...state, status: 'playing', loseReason: null }, random);
 }
 

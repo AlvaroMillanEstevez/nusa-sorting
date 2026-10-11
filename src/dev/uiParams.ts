@@ -89,3 +89,9 @@ export function wantsShop(search: string): boolean {
 export function wantsChest(search: string): boolean {
   return new URLSearchParams(search).has('chest');
 }
+
+/** Development only: `?boosters=N` sets how many of every booster the player has (after any intro gifts). */
+export function parseBoostersParam(search: string): number | null {
+  const raw = new URLSearchParams(search).get('boosters');
+  return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+}

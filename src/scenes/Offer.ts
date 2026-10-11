@@ -17,8 +17,6 @@ export interface OfferOptions {
   /** The player's coins, shown under the title when the offer costs coins. */
   readonly coins?: number;
   readonly accept: OfferChoice | null;
-  /** A second way to accept (continuing when stuck: remove a triple, or shuffle), under the first. */
-  readonly alternative?: OfferChoice;
   readonly decline: { readonly label: string; readonly onPress: () => void };
 }
 
@@ -30,9 +28,9 @@ export interface OfferChoice {
 }
 
 /**
- * An offer: buy a booster, continue after a defeat. Accepting (one or two ways) and declining are one over the other
- * and the same size, so saying no is always as easy as saying yes. With no accept button (not enough coins), only
- * the decline one.
+ * An offer: buy a booster, or a booster's one-line intro. Accepting and declining are one over the other and the
+ * same size, so saying no is always as easy as saying yes. With no accept button (not enough coins), only the
+ * decline one. (Continuing after a defeat has its own panel: see ContinuePanel.)
  */
 export function showOffer(scene: Phaser.Scene, options: OfferOptions): KitModal {
   const screen = screenRect(scene);
@@ -42,7 +40,7 @@ export function showOffer(scene: Phaser.Scene, options: OfferOptions): KitModal 
   // The text first, to know how tall it is once wrapped.
   const body = options.body ? kitText(scene, 'body', options.body, SKIN.text.secondary).setWordWrapWidth(inner) : null;
   const bodyH = body ? Math.max(28, body.height + 8) : 0;
-  const choices = [options.accept, options.alternative].filter((choice): choice is OfferChoice => Boolean(choice));
+  const choices = options.accept ? [options.accept] : [];
   const fixed = 200 + choices.length * 64 + bodyH + (options.coins !== undefined ? 46 : 0);
   // The icon only where it fits (not on a phone held sideways).
   const showIcon = (options.icon !== undefined || options.image !== undefined) && fixed + 64 <= safe.height - SPACE.s * 2;

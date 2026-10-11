@@ -38,16 +38,15 @@ export const ECONOMY = {
     shuffle: { price: 250, unlockLevel: 9, gift: 1 },
   },
 
-  /** Continuing after a defeat, within the same attempt. */
+  /**
+   * Continuing after a defeat, within the same attempt, with a booster that fits the defeat: one the player has,
+   * or one bought there and then at its shop price (continues have no prices of their own).
+   */
   continues: {
     /** At most this many continues per attempt. */
     max: 3,
-    /** Each continue in an attempt costs the price times this, rounded to 5. */
-    growth: 1.5,
-    /** Out of time: seconds added, and the first price. */
-    time: { seconds: 15, price: 60 },
-    /** Out of space: one triple removed (free with a "remove a triple" booster), and the first price in coins. */
-    space: { price: 90 },
+    /** Out of time, "freeze time" adds this many seconds to the clock (rather than stopping it). */
+    freezeAddsSeconds: 15,
   },
 
   /** The player's level: every level's score adds experience. */

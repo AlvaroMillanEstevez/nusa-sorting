@@ -5,7 +5,7 @@ import {
   buyBooster,
   chestContents,
   chestProgress,
-  continuePrice,
+  continueBoosters,
   EMPTY_WALLET,
   introduceBooster,
   levelUpGift,
@@ -14,6 +14,7 @@ import {
   rewardWin,
   spend,
   useBooster,
+  useOrBuyBooster,
   winCoins,
   xpToNext,
 } from '../src/core';
@@ -88,12 +89,21 @@ describe('boosters and continues', () => {
     expect(boostersUnlockedAt(24)).toEqual(['freeze', 'removeTriple', 'shuffle']);
   });
 
-  it('cost more with each continue in an attempt, up to a maximum', () => {
-    const prices = [0, 1, 2].map((i) => continuePrice('time', i)!);
-    expect(prices[0]).toBe(ECONOMY.continues.time.price);
-    expect(prices[1]).toBeGreaterThan(prices[0]!);
-    expect(prices[2]).toBeGreaterThan(prices[1]!);
-    expect(continuePrice('space', ECONOMY.continues.max)).toBeNull();
+  it('continue with the boosters that fit the defeat, unlocked ones only, up to a maximum per attempt', () => {
+    expect(continueBoosters('timeUp', 24, 0)).toEqual(['freeze']);
+    expect(continueBoosters('blocked', 24, 0)).toEqual(['removeTriple', 'shuffle']);
+    expect(continueBoosters('stuck', 8, 2)).toEqual(['removeTriple']);
+    expect(continueBoosters('timeUp', 3, 0)).toEqual([]);
+    expect(continueBoosters('stuck', 24, ECONOMY.continues.max)).toEqual([]);
+  });
+
+  it('continue with a booster the player has, or one bought at its shop price, never at another price', () => {
+    const owned = { ...EMPTY_WALLET, coins: 50, boosters: { ...EMPTY_WALLET.boosters, shuffle: 2 } };
+    expect(useOrBuyBooster(owned, 'shuffle')).toEqual({ ...owned, boosters: { ...owned.boosters, shuffle: 1 } });
+    const price = ECONOMY.boosters.removeTriple.price;
+    const rich = { ...EMPTY_WALLET, coins: price + 7 };
+    expect(useOrBuyBooster(rich, 'removeTriple')).toEqual({ ...rich, coins: 7 });
+    expect(useOrBuyBooster({ ...EMPTY_WALLET, coins: price - 1 }, 'removeTriple')).toBeNull();
   });
 
   it('are bought, used and paid for only with what the player has', () => {

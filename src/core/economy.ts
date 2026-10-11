@@ -4,7 +4,7 @@ import { nextRandom } from './random';
 /**
  * The economy and the player's progression, as pure functions over the values in src/data/economy.ts: coins
  * for wins, the player's level from experience, gifts for levelling up, star chests, booster prices and
- * continues. One currency (coins); nothing is bought with real money.
+ * continues (with boosters). One currency (coins); nothing is bought with real money.
  */
 
 /** What the player owns and has been through, saved with the progress. */
@@ -120,13 +120,29 @@ export function boostersUnlockedAt(levelNumber: number): BoosterId[] {
 
 export const boosterPrice = (booster: BoosterId): number => ECONOMY.boosters[booster].price;
 
-export type ContinueKind = 'time' | 'space';
+/** Why a level was lost, as far as continuing goes. */
+export type ContinueReason = 'timeUp' | 'blocked' | 'stuck';
 
-/** The price of the continue number `index` (0 for the first) in an attempt, or null past the maximum. */
-export function continuePrice(kind: ContinueKind, index: number): number | null {
-  const { max, growth, time, space } = ECONOMY.continues;
-  if (index >= max) return null;
-  return round((kind === 'time' ? time.price : space.price) * growth ** index, 5);
+/**
+ * The boosters that can continue a level lost for `reason`, among those unlocked at level `levelNumber`: "freeze
+ * time" when the clock ran out (it adds time), "remove a triple" and "shuffle" when the board is full or stuck.
+ * None once the attempt has had ECONOMY.continues.max continues.
+ */
+export function continueBoosters(reason: ContinueReason, levelNumber: number, continuesUsed: number): BoosterId[] {
+  if (continuesUsed >= ECONOMY.continues.max) return [];
+  const fitting: readonly BoosterId[] = reason === 'timeUp' ? ['freeze'] : ['removeTriple', 'shuffle'];
+  const unlocked = boostersUnlockedAt(levelNumber);
+  return fitting.filter((id) => unlocked.includes(id));
+}
+
+/**
+ * Pays for using a booster now: one of the player's own if there is any, else one bought at its shop price and
+ * used at once. Null if the player has none and too few coins.
+ */
+export function useOrBuyBooster(wallet: Wallet, booster: BoosterId): Wallet | null {
+  if (wallet.boosters[booster] > 0) return useBooster(wallet, booster);
+  const bought = buyBooster(wallet, booster);
+  return bought && useBooster(bought, booster);
 }
 
 // ---------------------------------------------------------------- the wallet
