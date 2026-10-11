@@ -120,3 +120,9 @@ export function plannedLevels(made: number): { number: number; theme: string | u
     return { number, theme: THEMES.find((theme) => theme.level === number)?.id };
   });
 }
+
+/** Development only: `?chestStars=N` sets the stars collected towards chests to N (35: two chests ready). */
+export function parseChestStarsParam(search: string): number | null {
+  const raw = new URLSearchParams(search).get('chestStars');
+  return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+}

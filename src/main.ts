@@ -3,7 +3,7 @@ import { resolveLocale, setLocale, t } from './i18n';
 import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
-import { parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
+import { parseChestStarsParam, parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
 import { addDemoLevels, playList } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
 import { HomeScene } from './scenes/HomeScene';
@@ -39,6 +39,8 @@ if (import.meta.env.DEV) {
   }
   const coins = parseCoinsParam(window.location.search);
   if (coins !== null) store.setCoins(coins);
+  const chestStars = parseChestStarsParam(window.location.search);
+  if (chestStars !== null) store.addChestStars(chestStars - store.wallet.chestStars);
 }
 
 // Development only: ?demo=N adds the demo levels of the test fixtures (as levels 101 and up) and opens demo N.

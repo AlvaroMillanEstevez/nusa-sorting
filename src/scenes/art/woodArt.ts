@@ -1,5 +1,5 @@
 import type * as Phaser from 'phaser';
-import type { ShelfLayout, TrackLayout } from '../../ui/boardLayout';
+import { slotAspect, type ShelfLayout, type TrackLayout } from '../../ui/boardLayout';
 import { WOOD, type WoodPalette } from '../../ui/art/wood';
 import type { ArtSet } from './ArtSet';
 
@@ -9,6 +9,12 @@ import type { ArtSet } from './ArtSet';
  */
 
 const hex = (color: string) => Number.parseInt(color.slice(1), 16);
+
+/** Height of a fixed stack's cubby: a shelf slot's height (slotSize × slotAspect), never more than the pitch less a gap. */
+export function fixedCubbyHeight(layout: TrackLayout): number {
+  const along = layout.orientation === 'vertical' ? layout.pitch - layout.slotSize * 0.08 : Infinity;
+  return Math.min(layout.slotSize * slotAspect() * 0.96, along);
+}
 
 /** A stable pseudo-random number in [0, 1) for a point, so each shelf gets its own wood grain. */
 function noise(x: number, y: number): number {
@@ -293,21 +299,23 @@ export function makeWoodArt(p: WoodPalette = WOOD): ArtSet {
     drawFixedStacks(g, layout) {
       const { pitch, cross, slotSize, slots, loopStart, orientation } = layout;
       const edge = Math.max(1, slotSize * 0.03);
-      const box = slotSize * 0.98;
+      const w = slotSize * 0.98;
+      // As tall as a shelf's slot (tall items grow into it), less a little gap between cubbies in a column.
+      const h = fixedCubbyHeight(layout);
       const frame = slotSize * 0.07;
       for (let c = 0; c < slots; c++) {
         const along = loopStart + (c + 0.5) * pitch;
         const [cx, cy] = orientation === 'horizontal' ? [along, cross] : [cross, along];
-        const x = cx - box / 2;
-        const y = cy - box / 2;
+        const x = cx - w / 2;
+        const y = cy - h / 2;
         // A wooden cubby: a frame around a dark back, like a little shelf for one stack.
-        g.fillStyle(hex(p.frame), 1).fillRoundedRect(x, y, box, box, slotSize * 0.06);
-        g.fillStyle(hex(p.wall), 1).fillRect(x + frame, y + frame, box - frame * 2, box - frame * 2.6);
-        g.fillStyle(hex(p.wallSlat), 1).fillRect(x + frame, y + frame, box - frame * 2, (box - frame * 2.6) * 0.2);
-        g.fillStyle(hex(p.plank), 1).fillRect(x, y + box - frame * 1.6, box, frame * 1.6);
-        g.fillStyle(hex(p.plankLight), 0.9).fillRect(x, y + box - frame * 1.6, box, frame * 0.4);
-        g.fillStyle(hex(p.frameLight), 0.8).fillRect(x + frame * 0.4, y + frame * 0.25, box - frame * 0.8, frame * 0.35);
-        g.lineStyle(edge, hex(p.line), 1).strokeRoundedRect(x, y, box, box, slotSize * 0.06);
+        g.fillStyle(hex(p.frame), 1).fillRoundedRect(x, y, w, h, slotSize * 0.06);
+        g.fillStyle(hex(p.wall), 1).fillRect(x + frame, y + frame, w - frame * 2, h - frame * 2.6);
+        g.fillStyle(hex(p.wallSlat), 1).fillRect(x + frame, y + frame, w - frame * 2, (h - frame * 2.6) * 0.2);
+        g.fillStyle(hex(p.plank), 1).fillRect(x, y + h - frame * 1.6, w, frame * 1.6);
+        g.fillStyle(hex(p.plankLight), 0.9).fillRect(x, y + h - frame * 1.6, w, frame * 0.4);
+        g.fillStyle(hex(p.frameLight), 0.8).fillRect(x + frame * 0.4, y + frame * 0.25, w - frame * 0.8, frame * 0.35);
+        g.lineStyle(edge, hex(p.line), 1).strokeRoundedRect(x, y, w, h, slotSize * 0.06);
       }
     },
 

@@ -36,6 +36,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?coins=N` — pone las monedas del jugador a N (para probar la tienda y las ofertas).
 - `?boosters=N` — pone a N las unidades de cada potenciador al abrir un nivel (tras dar en silencio sus presentaciones), para probar la barra y el modal de continuar con y sin unidades.
 - `?shop` — abre la tienda sobre el mapa (con `?home`).
+- `?chestStars=N` — pone a N las estrellas acumuladas hacia el cofre (con `?home`; por ejemplo `?home&chestStars=35` para abrir dos cofres seguidos y ver qué da cada uno).
 - `?chest` — toca el cofre de estrellas al abrir el mapa (con `?home`): lo abre si hay estrellas para uno, o muestra el aviso si faltan.
 - `?headless` — bucle del juego por temporizador y sin suavizado del paso de tiempo, para que un navegador headless con tiempo virtual haga avanzar las animaciones en capturas.
 - `?home` — abre la pantalla de inicio (el mapa) aunque sea la primera visita.

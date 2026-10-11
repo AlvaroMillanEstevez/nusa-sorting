@@ -2,8 +2,9 @@ import * as Phaser from 'phaser';
 import { carrierOffset, carriesShelves, type GameState, stackOf } from '../core';
 import { boundsAround, trackPose, type BeltPose, type TrackLayout } from '../ui/boardLayout';
 import { art } from './art/ArtSet';
+import { fixedCubbyHeight } from './art/woodArt';
 import { kitText } from './kit';
-import { SKIN } from '../ui/design/tokens';
+import { hexNumber, SKIN, TILE } from '../ui/design/tokens';
 import { BakedLayer } from './art/BakedLayer';
 
 const DEPTH_RAIL = 3;
@@ -15,18 +16,19 @@ const DEPTH_ROLLER = 13;
 /** Most dots shown for the items hidden deeper in a stack. */
 export const MAX_PIPS = 3;
 /**
- * A fixed stack shows how many items it has left as a number, rather than dots, from this many (the top one and
- * four or more behind it): dots stay quick to read up to three, a number is clearer beyond.
+ * A fixed stack shows how many items it has left on a tag outside the item, from this many: with only the top one
+ * left there is nothing to count.
  */
-export const COUNT_FROM = MAX_PIPS + 2;
+export const COUNT_FROM = 2;
 const PIPS_TEXTURE = (n: number) => `stack-pips-${n}`;
 
 /**
  * The conveyor tracks: a static rail per track, one plate per carrier moving with it (so motion shows even
  * where carriers are empty), rollers at both ends covering where carriers fade out and back in, and on each
  * carrier a few dots telling how many items are hidden below the top one.
- * Fixed stacks (tracks of speed 0) are wooden cubbies instead, with no plates or rollers: dots for up to three
- * items hidden, the number of items left from COUNT_FROM, and a boarded-up cubby once a stack has run out.
+ * Fixed stacks (tracks of speed 0) are wooden cubbies instead, with no plates or rollers: a tag on the cubby's
+ * bottom board (under the item, so it reads as the size of the pile, not a number of that item) with a little pile
+ * and the items left, from COUNT_FROM, and a boarded-up cubby once a stack has run out.
  * Items are positioned by the controller with the same trackPose.
  */
 export class BeltView {
@@ -38,7 +40,7 @@ export class BeltView {
   private shelfTracks: readonly boolean[] = [];
   private fixedTracks: readonly boolean[] = [];
   /** Per fixed stack: its count of items left, and its boarded-up look once empty. */
-  private counts: (Phaser.GameObjects.Text | null)[][] = [];
+  private counts: ({ tag: Phaser.GameObjects.Container; label: Phaser.GameObjects.Text; chip: Phaser.GameObjects.Graphics } | null)[][] = [];
   private emptied: (Phaser.GameObjects.Graphics | null)[][] = [];
   private readonly pose: BeltPose = { x: 0, y: 0, alpha: 0 };
   private readonly plate: { key: string; size: number };
@@ -62,7 +64,7 @@ export class BeltView {
   reset(state: GameState): void {
     for (const plate of this.plates.flat()) plate.destroy();
     for (const pip of this.pips.flat()) pip.destroy();
-    for (const count of this.counts.flat()) count?.destroy();
+    for (const count of this.counts.flat()) count?.tag.destroy();
     for (const mark of this.emptied.flat()) mark?.destroy();
     this.fixedTracks = state.tracks.map((track) => track.speed === 0);
     // Shelf tracks have no plates: the shelves themselves ride them (see MovingShelves); fixed stacks sit in cubbies.
@@ -70,11 +72,13 @@ export class BeltView {
       carriesShelves(track) || track.speed === 0 ? [] : track.carriers.map(() => this.scene.add.image(0, 0, this.plate.key).setDepth(DEPTH_PLATE)),
     );
     this.counts = state.tracks.map((track) =>
-      track.carriers.map(() =>
-        track.speed === 0
-          ? kitText(this.scene, 'number', '', SKIN.text.primary).setStroke(SKIN.surface.border, 4).setDepth(DEPTH_PIPS).setVisible(false)
-          : null,
-      ),
+      track.carriers.map(() => {
+        if (track.speed !== 0) return null;
+        const chip = this.scene.add.graphics();
+        const label = kitText(this.scene, 'number', '', SKIN.text.primary).setOrigin(0, 0.5);
+        const tag = this.scene.add.container(0, 0, [chip, label]).setDepth(DEPTH_PIPS).setVisible(false);
+        return { tag, label, chip };
+      }),
     );
     this.emptied = state.tracks.map((track) => track.carriers.map(() => (track.speed === 0 ? this.scene.add.graphics().setDepth(DEPTH_PLATE).setVisible(false) : null)));
     this.pips = state.tracks.map((track) =>
@@ -106,7 +110,7 @@ export class BeltView {
       const plateScale = (layout.slotSize * 0.9) / this.plate.size;
       for (const plate of this.plates[t] ?? []) plate.setScale(plateScale);
       for (const pip of this.pips[t] ?? []) pip.setScale((layout.slotSize * 0.42) / (MAX_PIPS * 16));
-      for (const count of this.counts[t] ?? []) count?.setFontSize(Math.round(layout.slotSize * 0.26));
+      for (const count of this.counts[t] ?? []) if (count) drawStackTag(count.chip, count.label, layout.slotSize);
       (this.emptied[t] ?? []).forEach((mark) => {
         if (!mark) return;
         mark.clear();
@@ -133,13 +137,17 @@ export class BeltView {
         const count = this.counts[t]?.[c];
         const long = fixed === true && left >= COUNT_FROM;
         if (count) {
-          if (long) count.setText(String(left)).setPosition(pose.x + layout.slotSize * 0.3, pose.y + layout.slotSize * 0.32);
-          count.setVisible(long === true);
+          if (long) {
+            if (count.label.text !== String(left)) count.label.setText(String(left));
+            // Centred on the cubby's bottom board, under the item rather than over it.
+            count.tag.setPosition(pose.x, pose.y + fixedCubbyHeight(layout) / 2 - layout.slotSize * 0.02);
+          }
+          count.tag.setVisible(long === true);
         }
         const heldHere = state.held?.from.track === t && state.held.from.carrier === c;
         this.emptied[t]?.[c]?.setPosition(pose.x, pose.y).setVisible(fixed === true && left === 0 && !heldHere);
-        // Dots for items hidden below the top one: the stack's depth at a glance.
-        const hidden = long ? 0 : Math.min(MAX_PIPS, left - 1);
+        // Dots for items hidden below the top one: the stack's depth at a glance (fixed stacks have their tag).
+        const hidden = fixed ? 0 : Math.min(MAX_PIPS, left - 1);
         const pip = pips[c]!;
         if (hidden > 0) {
           const key = PIPS_TEXTURE(hidden);
@@ -154,4 +162,25 @@ export class BeltView {
       }
     }
   }
+}
+
+/**
+ * The tag of a fixed stack, centred on (0, 0): a dark chip with a brass rim, a little pile of three planks and the
+ * number of items left (the label, set by the caller).
+ */
+function drawStackTag(chip: Phaser.GameObjects.Graphics, label: Phaser.GameObjects.Text, slotSize: number): void {
+  const h = slotSize * 0.27;
+  const w = slotSize * 0.52;
+  const edge = Math.max(1, slotSize * 0.025);
+  chip.clear();
+  chip.fillStyle(hexNumber(TILE.badge), 1).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+  chip.lineStyle(edge, hexNumber(TILE.rim), 1).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+  // The pile: three short planks, offset like a stack seen from the side.
+  const px = -w / 2 + h * 0.6;
+  const plank = h * 0.16;
+  for (let i = 0; i < 3; i++) {
+    const y = h * 0.22 - i * plank * 1.45;
+    chip.fillStyle(hexNumber(i === 2 ? TILE.rimLight : TILE.rim), 1).fillRoundedRect(px - h * 0.3 + (i % 2) * h * 0.06, y - plank / 2, h * 0.6, plank, plank / 2);
+  }
+  label.setFontSize(Math.round(h * 0.78)).setPosition(-w / 2 + h * 1.05, 0);
 }
