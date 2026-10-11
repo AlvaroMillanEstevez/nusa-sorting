@@ -303,3 +303,23 @@ describe('ProgressStore', () => {
     expect(storage.items.has(SAVE_KEY)).toBe(false);
   });
 });
+
+describe('opening star chests', () => {
+  it('opens one chest per tap while there are stars for one, each with its own rewards, and keeps them', () => {
+    const storage = new FakeStorage();
+    const store = new ProgressStore(new LocalSaveService(storage));
+    const every = ECONOMY.chests.everyStars;
+    store.addChestStars(2 * every + 3);
+    const coinsOf = (rewards: readonly { kind: string; amount: number }[]) => rewards.reduce((n, r) => n + (r.kind === 'coins' ? r.amount : 0), 0);
+    const first = store.openChest(24)!;
+    const second = store.openChest(24)!;
+    expect(store.openChest(24)).toBeNull();
+    expect([first.number, second.number]).toEqual([1, 2]);
+    expect(store.wallet.coins).toBe(coinsOf(first.rewards) + coinsOf(second.rewards));
+    const boosters = [...first.rewards, ...second.rewards].filter((r) => r.kind === 'booster');
+    for (const reward of boosters) if (reward.kind === 'booster') expect(store.wallet.boosters[reward.booster]).toBeGreaterThanOrEqual(reward.amount);
+    expect(store.wallet.chestStars).toBe(3);
+    // Saved: a fresh store reads the same wallet.
+    expect(new ProgressStore(new LocalSaveService(storage)).wallet).toEqual(store.wallet);
+  });
+});

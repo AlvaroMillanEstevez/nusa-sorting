@@ -9,7 +9,7 @@ import { MAP } from '../ui/art/map';
 import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE, TILE } from '../ui/design/tokens';
 import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
-import { KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
+import { KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
 import { plannedLevels, wantsChest, wantsMapPreview, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
@@ -381,60 +381,82 @@ export class HomeScene extends Phaser.Scene {
   }
 
   /**
-   * What the chest held: it shakes and pops open, sparks fly, and its rewards come in one by one, each with its
-   * exact amount. Closing it refreshes the home screen (the chest stays lit if there are stars for another).
+   * What the chest held, in two moments. First the celebration: the chest shakes and pops open with confetti
+   * (still, with reduce motion). Then, always, what it gave: a row per reward with its colour icon and the exact
+   * amount ("+65 coins", "+1 Shuffle"), and only then the button to collect it. Closing refreshes the home screen
+   * (coins, and the chest, which stays lit if there are stars for another).
    */
   private showChestReward(rewards: readonly Reward[]): void {
     const screen = screenRect(this);
     const safe = viewSize(this);
     const w = Math.min(safe.width - SPACE.s * 2, 340);
-    const h = 320;
-    const modal = new KitModal(this, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: t('chest.opened') });
+    const rowH = 56;
+    const h = Math.min(safe.height - SPACE.s * 2, 252 + rewards.length * rowH);
+    const modal = new KitModal(this, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: t('chest.congrats') });
     modal.setPosition(screen.x, screen.y).setDepth(DEPTH_MODAL);
     this.modal = modal;
     const panel = modal.panel;
     const top = panel.contentTop;
-    const icon = uiIcon(this, 'chest', SKIN.text.accent, 64).setY(top + 44);
-    panel.add(icon);
-    const items = rewards.map((reward) => this.rewardChip(reward));
-    const gap = SPACE.l;
-    const total = items.reduce((sum, item) => sum + item.width, 0) + gap * (items.length - 1);
-    let x = -total / 2;
-    for (const item of items) {
-      item.container.setPosition(x + item.width / 2, top + 128).setAlpha(0).setScale(0.6);
-      x += item.width + gap;
-      panel.add(item.container);
-    }
-    panel.add(
-      new KitButton(this, 0, h / 2 - SPACE.m - 28, {
-        skin: SKIN,
-        variant: 'primary',
-        label: t('offer.ok'),
-        width: w - SPACE.l * 2,
-        height: 56,
-        onPress: () => {
-          modal.dismiss();
-          this.modal = null;
-          this.build();
-        },
-      }),
-    );
+    const still = reducedMotion();
+    const chest = uiIcon(this, 'chest', SKIN.text.accent, 56).setY(top + 32);
+    panel.add(chest);
+
+    // What it gave, hidden until the celebration is over.
+    const reveal = this.add.container(0, 0).setVisible(false);
+    reveal.add(kitText(this, 'label', t('chest.youGot').toUpperCase(), SKIN.text.secondary).setY(top + 76));
+    rewards.forEach((reward, i) => reveal.add(this.rewardRow(reward).setY(top + 108 + i * rowH)));
+    const collect = new KitButton(this, 0, h / 2 - SPACE.m - 28, {
+      skin: SKIN,
+      variant: 'primary',
+      label: t('chest.collect'),
+      width: w - SPACE.l * 2,
+      height: 56,
+      onPress: () => {
+        modal.dismiss();
+        this.modal = null;
+        this.build();
+      },
+    });
+    reveal.add(collect);
+    panel.add(reveal);
     modal.popIn();
     this.sfx.play('unlock');
-    const still = reducedMotion();
-    const burst = () => {
+
+    // The celebration: a shake and a pop with confetti.
+    if (!still) this.tweens.add({ targets: chest, angle: { from: -10, to: 10 }, duration: 70, yoyo: true, repeat: 3, delay: DURATION.slow, onComplete: () => chest.setAngle(0) });
+    const celebrateAt = still ? DURATION.slow : DURATION.slow + 4 * 140;
+    this.time.delayedCall(celebrateAt, () => {
+      if (!modal.scene) return;
       this.sfx.play('star3');
-      if (!still) new Effects(this, DEPTH_MODAL + 20).celebrate(screen.width + 2 * screen.x, safe.height);
-    };
-    this.tweens.chain({
-      targets: icon,
-      tweens: [
-        // A chest shakes before it opens (not with reduce motion).
-        ...(still ? [] : [{ angle: { from: -10, to: 10 }, duration: 70, yoyo: true, repeat: 3, delay: DURATION.slow }]),
-        { scale: 1.15, duration: DURATION.base, ease: EASE.pop, yoyo: true, onStart: () => icon.setAngle(0), onComplete: burst },
-        ...items.map((item, i) => ({ targets: item.container, alpha: 1, scale: 1, duration: DURATION.base, ease: EASE.pop, delay: i === 0 ? 0 : 120 })),
-      ],
+      if (!still) {
+        this.tweens.add({ targets: chest, scale: 1.25, duration: DURATION.base, ease: EASE.pop, yoyo: true });
+        new Effects(this, DEPTH_MODAL + 20).celebrate(screen.width + 2 * screen.x, safe.height);
+      }
     });
+    // Then what it gave, whatever happened to the animations before.
+    this.time.delayedCall(celebrateAt + (still ? 0 : 420), () => {
+      if (!modal.scene) return;
+      reveal.setVisible(true).setAlpha(still ? 1 : 0);
+      if (!still) this.tweens.add({ targets: reveal, alpha: 1, duration: DURATION.base, ease: EASE.enter });
+    });
+  }
+
+  /** A reward as a row: its colour icon (a coin, a booster's tile) and "+N coins" or "+N Shuffle". */
+  private rewardRow(reward: Reward): Phaser.GameObjects.Container {
+    const label =
+      reward.kind === 'coins'
+        ? t('chest.coins', { n: formatScore(reward.amount, getLocale()) })
+        : t('chest.booster', { n: reward.amount, name: t(`booster.${reward.booster}.name`) });
+    const text = kitText(this, 'number', label, SKIN.text.primary).setOrigin(0, 0.5);
+    const iconSize = 44;
+    const icon =
+      reward.kind === 'coins'
+        ? uiIcon(this, 'coin', SKIN.text.accent, 36)
+        : new KitBoosterButton(this, 0, 0, { texture: boosterTextureKey(reward.booster), size: iconSize, state: 'ready', count: 0, badge: false });
+    const width = iconSize + SPACE.s + text.width;
+    icon.setX(-width / 2 + iconSize / 2);
+    text.setX(-width / 2 + iconSize + SPACE.s);
+    return this.add.container(0, 0, [icon, text]);
   }
 
   private chooseLevel(level: number): void {
