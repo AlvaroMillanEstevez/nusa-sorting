@@ -88,7 +88,9 @@ function stateKey(state: GameState): string {
   const blocker = state.blocker ? `${state.blocker.at.shelf}:${state.blocker.at.slot}:${state.blocker.rngState}` : '-';
   // The solver ignores time, so only which stacks remain on the tracks matters, not where they are.
   const tracks = stackSignatures(state).sort().join(';');
-  return `${board}#${state.triplesCleared}#${blocker}#${tracks}`;
+  // A closed shelf takes nothing any more, unlike an empty one that is still open.
+  const closed = state.closed.map((c) => (c ? 'x' : '.')).join('');
+  return `${board}#${state.triplesCleared}#${blocker}#${tracks}#${closed}`;
 }
 
 /** Every non-empty carrier as the types of its stack, top first. */
@@ -255,7 +257,8 @@ export interface PlayerProfile {
   readonly splitRate: number;
   /**
    * Looks at the layers behind before acting: digs out a hidden layer where there is room to finish first, keeps
-   * the items it moves aside off shelves still hiding layers, and keeps the last free slot.
+   * the items it moves aside off shelves still hiding layers, keeps the last free slot, and does not empty a shelf
+   * that would close (unless that clears a triple).
    */
   readonly looksBehind: boolean;
 }
@@ -336,8 +339,11 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
           basePerMove +
           (isBeltSource(from) ? beltPickSeconds(state.tracks[from.track]!.speed) : 0) +
           movingShelfCost(state, from, to);
-        const score = clears ? 3 : pairs ? 2 : splits ? 0 : 1;
-        return { move, result, seconds, score, splits };
+        // A move that empties a shelf that then closes gives up its slots for good: a player who looks ahead
+        // treats it like splitting a pair, a last resort.
+        const closes = !clears && profile.looksBehind && result.events.some((e) => e.kind === 'shelfClosed');
+        const score = clears ? 3 : pairs ? 2 : splits || closes ? 0 : 1;
+        return { move, result, seconds, score, splits: splits || closes };
       })
       .filter((option) => option !== null);
     if (options.length === 0) break;

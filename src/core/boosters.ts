@@ -197,7 +197,8 @@ function isFullTriple(layer: Layer): boolean {
 
 /**
  * Shuffles the items on the board while keeping its structure: every occupied slot stays occupied (shelves,
- * layers and track stacks keep their shape), locked shelves keep their items, and the roaming blocker stays put.
+ * layers and track stacks keep their shape), locked shelves and fixed stacks keep their items, closed shelves
+ * stay empty, and the roaming blocker stays put.
  * The result never starts with a triple already formed (in any layer) and always leaves the player a way to
  * make progress (see canProgress). Not while holding a track item. `random` returns numbers in [0, 1).
  */
@@ -216,14 +217,16 @@ export function shuffleBoard(state: GameState, random: () => number, attempts = 
       }),
     );
   });
-  state.tracks.forEach((track, t) =>
+  // Fixed stacks keep their items: a shuffle mixes the shelves and the moving tracks only.
+  state.tracks.forEach((track, t) => {
+    if (track.speed === 0) return;
     track.carriers.forEach((carrier, c) =>
       stackOf(carrier).forEach((item, d) => {
         places.push({ kind: 'stack', track: t, carrier: c, depth: d });
         items.push(item);
       }),
-    ),
-  );
+    );
+  });
   if (items.length < 2) return fail('noShuffle');
 
   for (let attempt = 0; attempt < attempts; attempt++) {

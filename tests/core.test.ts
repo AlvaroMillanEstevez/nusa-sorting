@@ -354,6 +354,8 @@ describe('blocked detection', () => {
       held: null,
       clockStarted: true,
       frozenMs: 0,
+      closesWhenEmpty: [false],
+      closed: [false],
     };
     expect(isBlocked(reorderOnly)).toBe(true);
   });

@@ -67,9 +67,12 @@ export function carrierOfShelf(state: GameState, shelf: number): CarrierRef | nu
 
 /**
  * Where a carrier is along its track, in carrier units in [0, K): carrier i starts at i and moves `speed`
- * carriers per second of game time, wrapping around. A pure function of the tracks' running time.
+ * carriers per second of game time, wrapping around (fixed stacks, with speed 0, stay at i + 0.5, the middle of
+ * their slot). A pure function of the tracks' running time.
  */
 export function carrierOffset(track: TrackState, carrier: number, trackTimeMs: number): number {
+  // Fixed stacks sit in the middle of their own slot, whatever the time.
+  if (track.speed === 0) return carrier + 0.5;
   const k = track.carriers.length;
   const raw = carrier + (track.speed * trackTimeMs) / 1000;
   return ((raw % k) + k) % k;
@@ -109,6 +112,11 @@ export function triplesToUnlock(state: GameState, shelf: number): number {
   return isShelfLocked(state, shelf) ? state.unlockAt[shelf]! - state.triplesCleared : 0;
 }
 
+/** A shelf that closed once it emptied (see the 'closingShelves' mechanic): it takes nothing any more. */
+export function isShelfClosed(state: GameState, shelf: number): boolean {
+  return state.closed[shelf] === true;
+}
+
 export function isSlotBlocked(state: GameState, shelf: number, slot: number): boolean {
   const at = state.blocker?.at;
   return at !== undefined && at.shelf === shelf && at.slot === slot;
@@ -120,7 +128,7 @@ export function isSlotBlocked(state: GameState, shelf: number, slot: number): bo
  */
 export function freeFrontSlots(state: GameState, shelf: number): number[] {
   const front = state.shelves[shelf]?.layers[0];
-  if (!front || isShelfLocked(state, shelf)) return [];
+  if (!front || isShelfLocked(state, shelf) || isShelfClosed(state, shelf)) return [];
   return front.flatMap((slot, i) => (slot === null && !isSlotBlocked(state, shelf, i) ? [i] : []));
 }
 
@@ -156,9 +164,13 @@ export function isBlocked(state: GameState): boolean {
  *   copies needed must fit in the free slots; when it takes the very last one, the last item taken is a copy that
  *   completes the triple directly.
  *
- * Tracks loop, so every carrier comes round sooner or later (where they are now does not matter); time and
- * combos do not matter either. An item held from a track counts as still on top of its carrier (it can always go
- * back). Not meaningful once the level is over, or with no usable slot free (see isBlocked).
+ * Tracks loop, so every carrier comes round sooner or later (where they are now does not matter); fixed stacks
+ * are always in view; time and combos do not matter either. An item held from a track counts as still on top of
+ * its carrier (it can always go back). Closed shelves count for nothing.
+ *
+ * With shelves that close when emptied it is safe but no longer exact: emptying one while arranging would lose its
+ * slots, which this ignores, so it may still see a way on where a careful search would not; it never declares a
+ * board stuck that has one. Not meaningful once the level is over, or with no usable slot free (see isBlocked).
  */
 export function canProgress(state: GameState): boolean {
   let free = 0;
@@ -166,7 +178,7 @@ export function canProgress(state: GameState): boolean {
   let canHoldTriple = false;
   const inFronts = new Map<string, number>();
   state.shelves.forEach((shelf, s) => {
-    if (isShelfLocked(state, s)) return;
+    if (isShelfLocked(state, s) || isShelfClosed(state, s)) return;
     const blocked = blockedSlotOf(state, s);
     shelf.layers[0]!.forEach((item, i) => {
       if (i === blocked) return;
@@ -309,15 +321,19 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
 
 /** Why an item cannot be placed in the (valid, front, unlocked) slot `to`, or null if it can. */
 function checkTargetSlot(state: GameState, to: Position): InvalidMoveReason | null {
+  if (isShelfClosed(state, to.shelf)) return 'shelfClosed';
   if (isSlotBlocked(state, to.shelf, to.slot)) return 'slotBlocked';
   if (freeFrontSlots(state, to.shelf).length === 0) return 'shelfFull';
   if (itemAt(state, to)) return 'targetOccupied';
   return null;
 }
 
-/** Triples' consequences, then the win or blocked check, shared by every action that places an item. */
+/**
+ * Triples' consequences, then shelves that close once emptied, then the win, blocked or stuck check, shared by
+ * every action that places or removes items.
+ */
 export function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
-  let next = applyTriples(state, events);
+  let next = closeEmptied(applyTriples(state, events), events);
   if (isWon(next)) {
     next = addTimeBonus({ ...next, status: 'won' }, events);
     events.push({ kind: 'won' });
@@ -329,6 +345,22 @@ export function finishMove(state: GameState, events: GameEvent[]): { state: Game
     events.push({ kind: 'lost', reason: 'stuck' });
   }
   return { state: next, events };
+}
+
+/**
+ * Closes, for good, every shelf that closes when empty and has just emptied: nothing left in its front and no
+ * layers behind. A shelf under the roaming blocker waits: the blocker holds its slot until it jumps away.
+ */
+function closeEmptied(state: GameState, events: GameEvent[]): GameState {
+  let closed: boolean[] | null = null;
+  state.shelves.forEach((shelf, s) => {
+    if (!state.closesWhenEmpty[s] || state.closed[s] || shelf.layers.length > 1 || state.blocker?.at.shelf === s) return;
+    if (shelf.layers[0]!.some((slot) => slot !== null)) return;
+    closed ??= state.closed.slice();
+    closed[s] = true;
+    events.push({ kind: 'shelfClosed', shelf: s });
+  });
+  return closed ? { ...state, closed } : state;
 }
 
 /** On a win with time left: TIME_BONUS_PER_SECOND points for each whole second, added to the score. */
@@ -519,7 +551,7 @@ export function multiplierFor(combo: ComboState): number {
 function emptyUnlockedSlots(state: GameState): SlotRef[] {
   const slots: SlotRef[] = [];
   state.shelves.forEach((shelf, s) => {
-    if (isShelfLocked(state, s)) return;
+    if (isShelfLocked(state, s) || isShelfClosed(state, s)) return;
     shelf.layers[0]!.forEach((item, i) => {
       if (item === null) slots.push({ shelf: s, slot: i });
     });

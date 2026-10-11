@@ -13,6 +13,9 @@ import { level011 } from './level011';
 import { level012 } from './level012';
 import { level013 } from './level013';
 import { level014 } from './level014';
+import { level015 } from './level015';
+import { level016 } from './level016';
+import { level017 } from './level017';
 
 /**
  * The demo levels the game used while its mechanics were built: three base levels, one demo per mechanic
@@ -35,6 +38,9 @@ export const demoLevels: readonly LevelDefinition[] = [
   level012,
   level013,
   level014,
+  level015,
+  level016,
+  level017,
 ];
 
 /** Number of leading demo levels that use no mechanics. */

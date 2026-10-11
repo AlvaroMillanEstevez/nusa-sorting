@@ -154,7 +154,7 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
   tracks.forEach((track, t) => {
     // Shelves riding a track hold their items on the shelves themselves.
     if (track.shelves) return;
-    const stacks = recipe.stacks ?? { depth: [1, 1] as const, empty: 0 };
+    const stacks = (track.speed === 0 ? recipe.fixedStacks : undefined) ?? recipe.stacks ?? { depth: [1, 1] as const, empty: 0 };
     const empty = new Set(choose(random, track.carriers, stacks.empty));
     for (let carrier = 0; carrier < track.carriers; carrier++) {
       if (empty.has(carrier)) continue;
@@ -236,6 +236,15 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
     if (free.length === 0) return null;
     const start = free[Math.floor(random() * free.length)]!;
     mechanics.push({ kind: 'roamingBlocker', start, seed: Math.floor(random() * 1_000_000), removeAtCombo: recipe.blocker.removeAtCombo });
+  }
+  if (recipe.closing) {
+    // Fixed, unlocked shelves with something on them: they close once emptied.
+    const riding = new Set(tracks.flatMap((track) => track.shelves ?? []));
+    const eligible = shelves.flatMap((layers, shelf) =>
+      riding.has(shelf) || lockedShelves.includes(shelf) || layers.every((layer) => layer.every((type) => type === null)) ? [] : [shelf],
+    );
+    if (eligible.length < recipe.closing) return null;
+    mechanics.push({ kind: 'closingShelves', shelves: choose(random, eligible.length, recipe.closing).map((i) => eligible[i]!).sort((a, b) => a - b) });
   }
   if (tracks.length > 0) {
     mechanics.push({

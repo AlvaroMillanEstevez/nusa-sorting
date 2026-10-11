@@ -9,8 +9,10 @@ import { SLOTS_PER_LAYER, type BlockerState, type Carrier, type ComboState, type
  * an earlier one, so it cannot be used to undo moves.
  */
 
-/** Bumped whenever GameState or the snapshot changes shape: older snapshots are then dropped. */
-export const SNAPSHOT_FORMAT = 1;
+/**
+ * Bumped whenever GameState or the snapshot changes shape: older snapshots are then dropped. 2: closed shelves.
+ */
+export const SNAPSHOT_FORMAT = 2;
 
 export interface GameSnapshot {
   readonly format: number;
@@ -169,6 +171,15 @@ function restoreState(raw: unknown, initial: GameState): GameState | null {
   const blocker = restoreBlocker(raw.blocker, initial.blocker, shelves.length);
   if (timeLeftMs === undefined || typeof trackTimeMs !== 'number' || typeof frozenMs !== 'number' || !combo || blocker === undefined) return null;
   if (typeof raw.clockStarted !== 'boolean') return null;
+  // Closed shelves: only ones that close when empty, and empty with no layers behind.
+  if (!Array.isArray(raw.closed) || raw.closed.length !== shelves.length) return null;
+  const closed: boolean[] = [];
+  for (let s = 0; s < shelves.length; s++) {
+    const value = raw.closed[s] as unknown;
+    if (typeof value !== 'boolean') return null;
+    if (value && (!initial.closesWhenEmpty[s] || shelves[s]!.layers.length > 1 || shelves[s]!.layers[0]!.some((slot) => slot !== null))) return null;
+    closed.push(value);
+  }
 
   return {
     ...initial,
@@ -181,6 +192,7 @@ function restoreState(raw: unknown, initial: GameState): GameState | null {
     combo,
     blocker,
     clockStarted: raw.clockStarted,
+    closed,
   };
 }
 

@@ -142,13 +142,14 @@ export function createGame(level: LevelDefinition): GameState {
     held: null,
     clockStarted: false,
     frozenMs: 0,
+    closed: shelves.map(() => false),
     ...mechanics,
   };
   if (isBlocked(state)) throw new LevelError(`${level.id}: level starts blocked`);
   return state;
 }
 
-type MechanicState = Pick<GameState, 'unlockAt' | 'combo' | 'blocker' | 'tracks'>;
+type MechanicState = Pick<GameState, 'unlockAt' | 'combo' | 'blocker' | 'tracks' | 'closesWhenEmpty'>;
 
 /** Tracks as declared: the legacy single 'conveyor' becomes one horizontal track of one-item stacks. */
 function trackDefinitions(level: LevelDefinition): readonly TrackDefinition[] {
@@ -186,9 +187,10 @@ function parseMechanics(
   let combo: ComboState = newCombo(COMBO_DEFAULTS.windowSeconds, COMBO_DEFAULTS.pointsPerTriple, COMBO_DEFAULTS.multipliers);
   let blocker: BlockerState | null = null;
   const tracks: TrackState[] = [];
-  const checkSpeed = (speed: number, what: string) => {
-    if (!Number.isFinite(speed) || speed === 0 || Math.abs(speed) > CONVEYOR_LIMITS.maxSpeed) {
-      fail(`${what} speed must be non-zero and at most ${CONVEYOR_LIMITS.maxSpeed} slots per second`);
+  const closesWhenEmpty: boolean[] = shelves.map(() => false);
+  const checkSpeed = (speed: number, what: string, fixedAllowed = false) => {
+    if (!Number.isFinite(speed) || (speed === 0 && !fixedAllowed) || Math.abs(speed) > CONVEYOR_LIMITS.maxSpeed) {
+      fail(`${what} speed must be ${fixedAllowed ? 'at most' : 'non-zero and at most'} ${CONVEYOR_LIMITS.maxSpeed} slots per second`);
     }
   };
   if (kinds.has('conveyor') && kinds.has('tracks')) fail('use either conveyor or tracks, not both');
@@ -262,22 +264,44 @@ function parseMechanics(
             for (const { shelf } of shelfCarriers) {
               if (!Number.isInteger(shelf) || shelf < 0 || shelf >= shelves.length) fail(`track ${t} carries shelf ${shelf}, which does not exist`);
             }
+          } else if (definition.speed === 0) {
+            // Fixed stacks: all in view at once, and deeper (their count shows what is left).
+            if (carriers.length > CONVEYOR_LIMITS.maxFixedStacks) fail(`track ${t} has at most ${CONVEYOR_LIMITS.maxFixedStacks} fixed stacks`);
+            if ((carriers as readonly (readonly Item[])[]).some((stack) => stack.length > CONVEYOR_LIMITS.maxFixedStackDepth)) {
+              fail(`track ${t} fixed stacks hold at most ${CONVEYOR_LIMITS.maxFixedStackDepth} items`);
+            }
           } else if ((carriers as readonly (readonly Item[])[]).some((stack) => stack.length > CONVEYOR_LIMITS.maxStackDepth)) {
             fail(`track ${t} stacks hold at most ${CONVEYOR_LIMITS.maxStackDepth} items`);
           }
-          checkSpeed(definition.speed, `track ${t}`);
+          // Shelves never stand still on a track: speed 0 is for fixed stacks only.
+          checkSpeed(definition.speed, `track ${t}`, shelfCarriers.length === 0);
           tracks.push(toTrack(definition.orientation, definition.speed, carriers));
         });
         const useful = tracks.some((track) => track.carriers.some((c) => c.kind === 'shelf' || c.stack.length > 0));
         if (!useful) fail('tracks need at least one item');
         break;
       }
+      case 'closingShelves': {
+        if (mechanic.shelves.length === 0) fail('closingShelves needs at least one shelf');
+        for (const shelf of mechanic.shelves) {
+          if (!Number.isInteger(shelf) || shelf < 0 || shelf >= shelves.length) fail(`closing shelf ${shelf} does not exist`);
+          if (closesWhenEmpty[shelf]) fail(`shelf ${shelf} is listed twice as closing`);
+          // It would close at once.
+          if (shelves[shelf]!.layers.every((layer) => layer.every((slot) => slot === null))) fail(`closing shelf ${shelf} starts empty`);
+          closesWhenEmpty[shelf] = true;
+        }
+        break;
+      }
     }
+  }
+  // Only fixed shelves close: a shelf riding a track keeps going round.
+  for (const track of tracks) {
+    for (const carrier of track.carriers) if (carrier.kind === 'shelf' && closesWhenEmpty[carrier.shelf]) fail(`shelf ${carrier.shelf} rides a track, so it cannot close`);
   }
 
   if (blocker && unlockAt[blocker.at.shelf] !== null) fail('blocker cannot start on a locked shelf');
   if (unlockAt.every((value) => value !== null)) fail('at least one shelf must start unlocked');
-  return { unlockAt, combo, blocker, tracks };
+  return { unlockAt, combo, blocker, tracks, closesWhenEmpty };
 }
 
 function newCombo(windowSeconds: number, pointsPerTriple: number, multipliers: readonly number[]): ComboState {

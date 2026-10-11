@@ -61,7 +61,7 @@ export type TrackOrientation = 'horizontal' | 'vertical';
 
 /**
  * A pick-only slot on a track holding a stack of items; only the top one (stack[0]) can be taken, then the
- * next one moves up.
+ * next one moves up. On a track with speed 0 the carriers stay put: fixed one-slot stacks.
  */
 export interface StackCarrier {
   readonly kind: 'stack';
@@ -81,7 +81,7 @@ export interface ShelfCarrier {
 
 export type Carrier = StackCarrier | ShelfCarrier;
 
-/** A conveyor: a loop of carriers moving at constant speed along one axis. */
+/** A conveyor: a loop of carriers moving at constant speed along one axis; with speed 0, a row of fixed stacks. */
 export interface TrackState {
   readonly orientation: TrackOrientation;
   /** Carriers per second; the sign is the direction. */
@@ -129,6 +129,13 @@ export interface GameState {
   readonly clockStarted: boolean;
   /** Game time during which the clock stays still (the freeze booster); 0 when it runs. */
   readonly frozenMs: number;
+  /**
+   * Per shelf: true for a shelf that closes for good once it is empty (front empty, no layers behind); see the
+   * 'closingShelves' mechanic. Fixed by the level.
+   */
+  readonly closesWhenEmpty: readonly boolean[];
+  /** Per shelf: true once it has closed. A closed shelf is empty and takes nothing any more. */
+  readonly closed: readonly boolean[];
 }
 
 export interface Position {
@@ -146,6 +153,8 @@ export type InvalidMoveReason =
   | 'targetOccupied'
   | 'shelfLocked'
   | 'slotBlocked'
+  /** The target shelf has closed for good (see GameState.closed). */
+  | 'shelfClosed'
   | 'noTrack'
   | 'carrierEmpty'
   | 'alreadyHolding'
@@ -177,6 +186,8 @@ export type GameEvent =
   | { readonly kind: 'comboChanged'; readonly combo: number; readonly windowMs: number }
   | { readonly kind: 'scoreChanged'; readonly score: number; readonly delta: number; readonly shelf: number }
   | { readonly kind: 'shelfUnlocked'; readonly shelf: number }
+  /** A shelf that closes when empty has just emptied, and is closed for good. */
+  | { readonly kind: 'shelfClosed'; readonly shelf: number }
   | { readonly kind: 'blockerMoved'; readonly from: SlotRef; readonly to: SlotRef }
   | { readonly kind: 'blockerRemoved'; readonly at: SlotRef }
   | { readonly kind: 'beltItemTaken'; readonly itemId: number; readonly from: CarrierRef }

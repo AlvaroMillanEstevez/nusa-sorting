@@ -9,7 +9,8 @@ export type MechanicDefinition =
   | LockedShelvesMechanic
   | RoamingBlockerMechanic
   | ConveyorMechanic
-  | TracksMechanic;
+  | TracksMechanic
+  | ClosingShelvesMechanic;
 
 /**
  * Tunes the combo, which every level has: each triple scores, and triples cleared within the window of the
@@ -67,7 +68,10 @@ export interface TracksMechanic {
 
 export interface TrackDefinition {
   readonly orientation: 'horizontal' | 'vertical';
-  /** Carriers per second; positive moves right or down, negative left or up. */
+  /**
+   * Carriers per second; positive moves right or down, negative left or up. 0 for fixed stacks: one-slot
+   * carriers that never move (stacks only), each showing its top item, every one in view.
+   */
   readonly speed: number;
   /**
    * K carriers. Either all stacks (top item first; [] is an empty carrier), or all shelves riding the track:
@@ -76,11 +80,24 @@ export interface TrackDefinition {
   readonly carriers: readonly (readonly string[] | { readonly shelf: number })[];
 }
 
+/**
+ * Fixed shelves (not shelves riding a track) that close for good once emptied: when their front is empty and no
+ * layers are left behind, they take nothing any more. Players see from the start which ones will close.
+ */
+export interface ClosingShelvesMechanic {
+  readonly kind: 'closingShelves';
+  readonly shelves: readonly number[];
+}
+
 export const CONVEYOR_LIMITS = {
   maxSlots: 12,
   maxSpeed: 4,
   maxTracks: 4,
   maxStackDepth: 5,
+  /** Fixed stacks stay in view, so they may be deeper: their count shows how many are left. */
+  maxFixedStackDepth: 8,
+  /** Fixed stacks on one track: all of them are on screen at once. */
+  maxFixedStacks: 6,
 } as const;
 
 export const COMBO_DEFAULTS = {

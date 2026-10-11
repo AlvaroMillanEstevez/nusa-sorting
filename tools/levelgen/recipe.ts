@@ -5,6 +5,7 @@
 /** A column of a column layout: fixed shelves, a vertical track of stacks, or nothing else for now. */
 export type ColumnRecipe =
   | { readonly kind: 'shelves'; readonly count: number }
+  /** A vertical track of stacks; with speed 0, a column of fixed stacks (see `fixedStacks`). */
   | { readonly kind: 'track'; readonly speed: number; readonly carriers: number }
   /** A vertical track of `count` shelves riding it, ordinary shelves of the level in every other way. */
   | { readonly kind: 'shelfTrack'; readonly speed: number; readonly count: number };
@@ -41,8 +42,12 @@ export interface LevelRecipe {
   readonly shelves?: number;
   /** A horizontal belt of stacks under the grid. */
   readonly belt?: TrackRecipe;
-  /** Stacks on every track of the level. */
+  /** Stacks on every moving track of the level. */
   readonly stacks?: StackRecipe;
+  /** Stacks on tracks of speed 0 (fixed stacks), which may be deeper; `stacks` when not given. */
+  readonly fixedStacks?: StackRecipe;
+  /** Fixed shelves (not locked, not riding a track) that close for good once emptied. */
+  readonly closing?: number;
 
   /**
    * Item types in the level, one triple each: the first `types` of the generator's type order (types.ts), so

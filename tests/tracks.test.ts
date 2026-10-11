@@ -68,7 +68,8 @@ describe('tracks: data and ids', () => {
     ['no tracks', { mechanics: [{ kind: 'tracks', tracks: [] }] }, /between 1 and 4 tracks/],
     ['a track without carriers', { mechanics: [{ kind: 'tracks', tracks: [up([]), up([['C', 'C', 'C']])] }] }, /track 0 needs between 1 and 12 carriers/],
     ['a stack too deep', { mechanics: [{ kind: 'tracks', tracks: [up([['C', 'C', 'C', 'D', 'D', 'D']])] }] }, /at most 5 items/],
-    ['a zero speed', { mechanics: [{ kind: 'tracks', tracks: [up([['C', 'C', 'C']], 0)] }] }, /track 0 speed/],
+    // Speed 0 is for fixed stacks only: a track of shelves always moves.
+    ['a zero speed on a track of shelves', { mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'vertical', speed: 0, carriers: [{ shelf: 2 }] }] }] }, /track 0 speed/],
     ['no items at all', { mechanics: [{ kind: 'tracks', tracks: [up([[], []])] }] }, /at least one item/],
   ];
   it.each(bad)('rejects %s', (_name, change, message) => {
