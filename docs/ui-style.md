@@ -102,6 +102,10 @@ Curvas: `enter` (Cubic.easeOut) para lo que llega · `exit` (Cubic.easeIn) para 
 
 **Victoria y derrota** (`ResultOverlay.ts`): la victoria rellena sus estrellas una a una, cada una con su campanada (cada vez más aguda), mientras la puntuación sube; debajo, el bonus por tiempo y el récord. Acciones: continuar al mapa (principal) y repetir (para mejorar estrellas). La derrota dice el motivo («¡Se acabó el tiempo!», «¡No queda espacio!» o «¡No quedan movimientos posibles!», cuando queda sitio pero ninguna secuencia de jugadas puede formar un trío ni hacer avanzar una capa) y ofrece reintentar o volver al inicio. Los botones entran al final, pero funcionan desde el principio.
 
+**Pilas fijas y estanterías que se cierran** (mecánicas para los niveles 25 en adelante):
+- Pilas fijas (`BeltView.ts`, arte `drawFixedStacks`): cada pila es un cubículo de madera de un hueco que no se mueve, en una columna o fila del tablero. Solo se coge de ellas; detrás del objeto de delante se ve el siguiente en silueta, como en las cintas. Cuántos quedan: puntos para 1 a 3 objetos ocultos y, desde 5 objetos en total, el número de los que quedan en la esquina («5»), porque más allá de tres puntos se cuentan peor. Una pila vacía queda tapiada con dos tablillas: visiblemente vacía y sin uso.
+- Estanterías que se cierran (`BoardDecor.ts`, `ClosingShelves`): desde el inicio llevan en la esquina superior una marca discreta, una chapa redonda de madera con dos tablillas cruzadas, para que se pueda planificar. Al vaciarse del todo (sin capas detrás) se clausuran: la estantería se oscurece y le clavan dos tablones torcidos, que caen con un rebote corto y un golpe sordo (sin rebote con «Reducir movimiento»). Ya no aceptan objetos.
+
 **Temas** (`src/data/themes.ts`, aspecto en `src/ui/themeLook.ts`, fondo en `ThemeDecor.ts`, presentación en `ThemeIntro.ts`): cada nivel con tema cambia solo el fondo y los acentos (el borde de las estanterías y la línea bajo el HUD); el tablero conserva su tamaño y la pared de las estanterías, así que los iconos no pierden contraste. Los motivos se dibujan por código:
 
 | Nivel | Tema | Fondo y motivo | Acento |

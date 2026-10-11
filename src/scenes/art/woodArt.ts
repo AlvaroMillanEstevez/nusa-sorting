@@ -289,6 +289,86 @@ export function makeWoodArt(p: WoodPalette = WOOD): ArtSet {
       }
       g.lineStyle(edge, hex(p.line), 1).strokeRoundedRect(-half, -half, half * 2, half * 2, s * 0.05);
     },
+
+    drawFixedStacks(g, layout) {
+      const { pitch, cross, slotSize, slots, loopStart, orientation } = layout;
+      const edge = Math.max(1, slotSize * 0.03);
+      const box = slotSize * 0.98;
+      const frame = slotSize * 0.07;
+      for (let c = 0; c < slots; c++) {
+        const along = loopStart + (c + 0.5) * pitch;
+        const [cx, cy] = orientation === 'horizontal' ? [along, cross] : [cross, along];
+        const x = cx - box / 2;
+        const y = cy - box / 2;
+        // A wooden cubby: a frame around a dark back, like a little shelf for one stack.
+        g.fillStyle(hex(p.frame), 1).fillRoundedRect(x, y, box, box, slotSize * 0.06);
+        g.fillStyle(hex(p.wall), 1).fillRect(x + frame, y + frame, box - frame * 2, box - frame * 2.6);
+        g.fillStyle(hex(p.wallSlat), 1).fillRect(x + frame, y + frame, box - frame * 2, (box - frame * 2.6) * 0.2);
+        g.fillStyle(hex(p.plank), 1).fillRect(x, y + box - frame * 1.6, box, frame * 1.6);
+        g.fillStyle(hex(p.plankLight), 0.9).fillRect(x, y + box - frame * 1.6, box, frame * 0.4);
+        g.fillStyle(hex(p.frameLight), 0.8).fillRect(x + frame * 0.4, y + frame * 0.25, box - frame * 0.8, frame * 0.35);
+        g.lineStyle(edge, hex(p.line), 1).strokeRoundedRect(x, y, box, box, slotSize * 0.06);
+      }
+    },
+
+    drawEmptyStack(g, slotSize) {
+      const s = slotSize;
+      const edge = Math.max(1, s * 0.03);
+      const inner = s * 0.4;
+      // Dark and boarded across: nothing more comes out of it.
+      g.fillStyle(hex(p.wallShade), 0.9).fillRect(-inner, -inner, inner * 2, inner * 2);
+      for (const dy of [-0.16, 0.16]) {
+        g.fillStyle(hex(p.shutter), 1).fillRect(-inner, (dy - 0.07) * s, inner * 2, s * 0.14);
+        g.lineStyle(edge, hex(p.shutterDark), 1).strokeRect(-inner, (dy - 0.07) * s, inner * 2, s * 0.14);
+        g.fillStyle(hex(p.line), 1).fillCircle(-inner + s * 0.07, dy * s, s * 0.022).fillCircle(inner - s * 0.07, dy * s, s * 0.022);
+      }
+    },
+
+    drawClosingMark(g, s) {
+      const r = s * 0.17;
+      const edge = Math.max(1, s * 0.025);
+      // A round wooden tag with two small planks crossed on it: this shelf will be boarded up once empty.
+      g.fillStyle(hex(p.frameDark), 1).fillCircle(0, 0, r);
+      g.lineStyle(edge, hex(p.line), 1).strokeCircle(0, 0, r);
+      const arm = r * 0.72;
+      for (const sign of [1, -1]) {
+        g.lineStyle(r * 0.42, hex(p.line), 1).lineBetween(-arm, -arm * sign * 0.55, arm, arm * sign * 0.55);
+        g.lineStyle(r * 0.28, hex(p.crateLight), 1).lineBetween(-arm, -arm * sign * 0.55, arm, arm * sign * 0.55);
+      }
+      g.fillStyle(hex(p.brass), 1).fillCircle(0, 0, r * 0.14);
+    },
+
+    drawClosedPlanks(g, width, height, s) {
+      const edge = Math.max(1, s * 0.03);
+      const plank = s * 0.2;
+      // The shelf goes dark behind two planks nailed across it, a little askew.
+      g.fillStyle(hex(p.wallShade), 0.75).fillRoundedRect(-width / 2, -height / 2, width, height, s * 0.06);
+      for (const [dy, angle] of [
+        [-0.18, -0.05],
+        [0.2, 0.04],
+      ] as const) {
+        const cy = dy * height;
+        const w = width * 1.02;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const corner = (u: number, v: number) => ({ x: u * cos - v * sin, y: cy + u * sin + v * cos });
+        const pts = [corner(-w / 2, -plank / 2), corner(w / 2, -plank / 2), corner(w / 2, plank / 2), corner(-w / 2, plank / 2)];
+        g.fillStyle(hex(p.crate), 1).beginPath();
+        pts.forEach((pt, k) => (k === 0 ? g.moveTo(pt.x, pt.y) : g.lineTo(pt.x, pt.y)));
+        g.closePath();
+        g.fillPath();
+        g.lineStyle(Math.max(1, s * 0.02), hex(p.crateLight), 0.9).lineBetween(pts[0]!.x + s * 0.05, pts[0]!.y + s * 0.04, pts[1]!.x - s * 0.05, pts[1]!.y + s * 0.04);
+        g.lineStyle(edge, hex(p.line), 1).beginPath();
+        pts.forEach((pt, k) => (k === 0 ? g.moveTo(pt.x, pt.y) : g.lineTo(pt.x, pt.y)));
+        g.closePath();
+        g.strokePath();
+        for (const u of [-w / 2 + s * 0.14, w / 2 - s * 0.14]) {
+          const nail = corner(u, 0);
+          g.fillStyle(hex(p.line), 1).fillCircle(nail.x, nail.y, s * 0.03);
+          g.fillStyle(hex(p.brass), 1).fillCircle(nail.x, nail.y, s * 0.016);
+        }
+      }
+    },
   };
 }
 

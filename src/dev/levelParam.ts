@@ -4,6 +4,12 @@
  * behind `import.meta.env.DEV`, so production builds drop it.
  */
 export function parseLevelParam(search: string, numbers: readonly number[]): number | null {
+  // ?demo=N opens demo level N, which the game numbers 100 + N (see addDemoLevels).
+  const demo = new URLSearchParams(search).get('demo');
+  if (demo !== null && /^\d+$/.test(demo)) {
+    const index = numbers.indexOf(100 + Number(demo));
+    if (index !== -1) return index;
+  }
   const raw = new URLSearchParams(search).get('level');
   if (raw === null || !/^\d+$/.test(raw)) return null;
   const index = numbers.indexOf(Number(raw));

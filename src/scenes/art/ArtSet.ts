@@ -21,6 +21,14 @@ export interface ArtSet {
   drawLockVeil(g: Phaser.GameObjects.Graphics, width: number, height: number, s: number): void;
   /** The roaming blocker, centred on (0, 0). */
   drawBlocker(g: Phaser.GameObjects.Graphics, slotSize: number): void;
+  /** Fixed stacks: a row or column of wooden cubbies, one per carrier, that never move. */
+  drawFixedStacks(g: Phaser.GameObjects.Graphics, layout: TrackLayout): void;
+  /** The empty cubby of a fixed stack that has run out, centred on (0, 0): boarded up, out of use. */
+  drawEmptyStack(g: Phaser.GameObjects.Graphics, slotSize: number): void;
+  /** The small tag on a shelf that closes once emptied, centred on (0, 0): two crossed planks and their nails. */
+  drawClosingMark(g: Phaser.GameObjects.Graphics, s: number): void;
+  /** Planks nailed across a closed shelf, centred on (0, 0). */
+  drawClosedPlanks(g: Phaser.GameObjects.Graphics, width: number, height: number, s: number): void;
 }
 
 let current: ArtSet = woodArt;

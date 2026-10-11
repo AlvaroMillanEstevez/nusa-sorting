@@ -67,7 +67,7 @@ import { CRITICAL_TIME_MS, timeStage, type TimeStage } from '../ui/timeWarning';
 import { art, useShelfTrim } from './art/ArtSet';
 import { BakedLayer } from './art/BakedLayer';
 import { BeltController } from './BeltController';
-import { BlockerView, LockOverlays } from './BoardDecor';
+import { BlockerView, ClosingShelves, LockOverlays } from './BoardDecor';
 import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import { MovingShelves } from './MovingShelves';
@@ -88,7 +88,7 @@ import type { Arrival } from './map/arrival';
 import { fadeIn, fadeToScene } from './transitions';
 import type { HapticsService } from '../services/HapticsService';
 import { PauseMenu } from './PauseMenu';
-import { kitText, setReducedMotion } from './kit';
+import { kitText, reducedMotion, setReducedMotion } from './kit';
 import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
 
 const SELECTED_LIFT = 0.15;
@@ -190,6 +190,7 @@ export class GameScene extends Phaser.Scene {
   /** The current press landed on the theme intro screen: its release is not a tap on the board. */
   private pressOnIntro = false;
   private locks!: LockOverlays;
+  private closing!: ClosingShelves;
   private blocker!: BlockerView;
   private belt!: BeltController;
   private movingShelves!: MovingShelves;
@@ -244,6 +245,7 @@ export class GameScene extends Phaser.Scene {
     this.movingShelves = new MovingShelves(this);
     this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
     this.locks = new LockOverlays(this);
+    this.closing = new ClosingShelves(this);
     this.blocker = new BlockerView(this);
     this.belt = new BeltController({
       scene: this,
@@ -639,6 +641,7 @@ export class GameScene extends Phaser.Scene {
       if (isShelfLocked(this.state, shelf)) locked.set(shelf, triplesToUnlock(this.state, shelf));
     });
     this.locks.reset(locked);
+    this.closing.reset(this.state.closesWhenEmpty, this.state.closed);
     // A themed level trims the shelves and the HUD in its colours (the background is drawn in relayout).
     const look = themeLook(this.levelTheme());
     useShelfTrim(look?.trim ?? null);
@@ -1078,6 +1081,7 @@ export class GameScene extends Phaser.Scene {
     this.tutorial.layout(width, height, this.layout, this.baseScale());
     this.buildBoosterBar();
     this.locks.relayout(this.layout);
+    this.closing.relayout(this.layout);
     this.movingShelves.relayout(this.base, this.live.moving);
     this.placeBlocker();
     this.belt.relayout();
@@ -1567,6 +1571,12 @@ export class GameScene extends Phaser.Scene {
               this.hud.pulseCombo();
             });
           }
+          break;
+        }
+        case 'shelfClosed': {
+          // Boarded up once the move lands (and after any pop that emptied it).
+          this.closing.close(event.shelf, popAt + CLEAR_MS, reducedMotion());
+          this.time.delayedCall(popAt + CLEAR_MS, () => this.sfx.play('blockerGone'));
           break;
         }
         case 'shelfUnlocked': {

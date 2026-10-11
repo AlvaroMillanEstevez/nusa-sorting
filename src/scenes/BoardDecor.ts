@@ -174,3 +174,65 @@ export class BlockerView {
     art().drawBlocker(this.plate.clear(), slotSize);
   }
 }
+
+/**
+ * Shelves that close once emptied: from the start, a small wooden tag with crossed planks on the top corner of
+ * each (so the player can plan), and once one has closed, planks nailed across it. Closing shelves are fixed
+ * shelves, so nothing here follows a track.
+ */
+export class ClosingShelves {
+  private readonly marks = new Map<number, Phaser.GameObjects.Graphics>();
+  private readonly planks = new Map<number, Phaser.GameObjects.Graphics>();
+  private layout: BoardLayout | null = null;
+
+  constructor(private readonly scene: Phaser.Scene) {}
+
+  /** Replaces everything: a tag on each shelf still to close, planks on each closed one. */
+  reset(closesWhenEmpty: readonly boolean[], closed: readonly boolean[]): void {
+    this.clear();
+    closesWhenEmpty.forEach((closes, shelf) => {
+      if (!closes) return;
+      if (closed[shelf]) this.planks.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
+      else this.marks.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
+    });
+    if (this.layout) this.relayout(this.layout);
+  }
+
+  relayout(layout: BoardLayout): void {
+    this.layout = layout;
+    const s = layout.slotSize;
+    for (const [shelf, mark] of this.marks) {
+      const { rect } = layout.shelves[shelf]!;
+      mark.clear().setPosition(rect.x + rect.width - s * 0.16, rect.y + s * 0.14);
+      art().drawClosingMark(mark, s);
+    }
+    for (const [shelf, plank] of this.planks) {
+      const { rect } = layout.shelves[shelf]!;
+      plank.clear().setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      art().drawClosedPlanks(plank, rect.width, rect.height, s);
+    }
+  }
+
+  /** A shelf closes: its tag goes and planks are nailed across it, dropping in with a knock (shorter with reduce motion). */
+  close(shelf: number, delay: number, still: boolean): void {
+    const mark = this.marks.get(shelf);
+    this.marks.delete(shelf);
+    mark?.destroy();
+    const plank = this.scene.add.graphics().setDepth(DEPTH_LOCK);
+    this.planks.set(shelf, plank);
+    if (this.layout) this.relayout(this.layout);
+    plank.setAlpha(0);
+    if (still) {
+      this.scene.time.delayedCall(delay, () => plank.setAlpha(1));
+      return;
+    }
+    plank.setScale(1.25);
+    this.scene.tweens.add({ targets: plank, alpha: 1, scale: 1, delay, duration: 260, ease: 'Back.easeOut' });
+  }
+
+  private clear(): void {
+    for (const g of [...this.marks.values(), ...this.planks.values()]) g.destroy();
+    this.marks.clear();
+    this.planks.clear();
+  }
+}

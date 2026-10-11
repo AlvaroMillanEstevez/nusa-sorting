@@ -24,6 +24,7 @@ WSL usa `networkingMode=mirrored`: el móvil accede directamente a `http://<IP d
 Solo en `npm run dev`; el build de producción no los incluye.
 
 - `?level=N` — abre directamente el nivel N aunque esté bloqueado; el progreso se sigue guardando con normalidad.
+- `?demo=N` — añade los niveles de demostración de `tests/fixtures/demo-levels` (como niveles 101 en adelante) y abre la demo N; por ejemplo `?demo=15` (pilas fijas), `?demo=16` (estanterías que se cierran) y `?demo=17` (las dos con una cinta).
 - `?arrangement=K` — juega siempre la distribución K del nivel abierto (0 es la del fichero del nivel), sin avanzar la del guardado.
 - `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.

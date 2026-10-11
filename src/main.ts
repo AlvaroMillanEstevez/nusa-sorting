@@ -4,7 +4,7 @@ import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
 import { parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
-import { playList } from './scenes/playList';
+import { addDemoLevels, playList } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
 import { HomeScene } from './scenes/HomeScene';
 import { setKitFeedback, setReducedMotion } from './scenes/kit';
@@ -39,6 +39,12 @@ if (import.meta.env.DEV) {
   }
   const coins = parseCoinsParam(window.location.search);
   if (coins !== null) store.setCoins(coins);
+}
+
+// Development only: ?demo=N adds the demo levels of the test fixtures (as levels 101 and up) and opens demo N.
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo')) {
+  const { demoLevels } = await import('../tests/fixtures/demo-levels');
+  addDemoLevels(demoLevels);
 }
 
 const sound = new WebAudioSoundService();
