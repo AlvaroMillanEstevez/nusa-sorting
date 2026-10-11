@@ -20,10 +20,10 @@ const levels = [...gameLevels, ...demoLevels];
 const ids = ITEM_KINDS.map((k) => k.id);
 
 describe('item catalogue', () => {
-  it('has 26 food kinds and 25 cultural objects, with stable kebab-case ids and names in English and Indonesian', () => {
-    expect(ITEM_KINDS).toHaveLength(51);
-    expect(new Set(ids).size).toBe(51);
-    expect(ITEM_KINDS.filter((k) => k.category === 'cultural')).toHaveLength(25);
+  it('has 26 food kinds and 55 cultural objects, with stable kebab-case ids and names in English and Indonesian', () => {
+    expect(ITEM_KINDS).toHaveLength(81);
+    expect(new Set(ids).size).toBe(81);
+    expect(ITEM_KINDS.filter((k) => k.category === 'cultural')).toHaveLength(55);
     for (const kind of ITEM_KINDS) {
       expect(kind.id).toMatch(/^[a-z]+(-[a-z]+)*$/);
       expect(kind.name.en.length).toBeGreaterThan(0);
@@ -55,6 +55,13 @@ describe('cultural objects', () => {
     expect(perTheme('17-agustus')).toEqual(['bendera', 'karung', 'kelereng', 'panjat-pinang', 'peci', 'terompet']);
     expect(perTheme('pasar-malam')).toEqual(['lampion', 'arum-manis', 'balon', 'topeng', 'kembang-api', 'bianglala']);
     expect(perTheme('laut-nusantara')).toEqual(['pinisi', 'kerang', 'bintang-laut', 'jaring', 'layangan', 'kelapa']);
+    expect(perTheme('olahraga')).toEqual(['kok', 'raket', 'sepak-takraw', 'bola', 'piala', 'peluit']);
+    expect(perTheme('permainan-tradisional')).toEqual(['gasing', 'congklak', 'egrang', 'yoyo', 'bekel', 'lompat-tali']);
+    expect(perTheme('rempah-maluku')).toEqual(['cengkeh', 'pala', 'kayu-manis', 'lada', 'cobek', 'karung-rempah']);
+    expect(perTheme('sawah')).toEqual(['padi', 'cangkul', 'orang-orangan', 'kerbau', 'bakul', 'gubuk']);
+    expect(perTheme('fauna-nusantara')).toEqual(['komodo', 'orangutan', 'rangkong', 'penyu', 'cendrawasih', 'tarsius']);
+    // The closing festival brings no objects of its own.
+    expect(perTheme('festival-nusantara')).toEqual([]);
     for (const kind of ITEM_KINDS) {
       expect(kind.category === 'cultural', kind.id).toBe(kind.theme !== undefined);
       const theme = THEMES.find((t) => t.id === kind.theme);
@@ -70,8 +77,8 @@ describe('cultural objects', () => {
 describe('variants as item types', () => {
   it('gives every kind three variants, each its own item type', () => {
     expect(VARIANTS).toEqual(['original', 'alt1', 'alt2']);
-    expect(ALL_ITEM_TYPES).toHaveLength(153);
-    expect(new Set(ALL_ITEM_TYPES).size).toBe(153);
+    expect(ALL_ITEM_TYPES).toHaveLength(243);
+    expect(new Set(ALL_ITEM_TYPES).size).toBe(243);
     expect(itemTypeId('tempe')).toBe('tempe');
     expect(itemTypeId('tempe', 'alt1')).toBe('tempe:alt1');
   });

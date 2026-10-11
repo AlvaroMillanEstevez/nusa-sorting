@@ -3,6 +3,7 @@ import { darken, lighten } from './color';
 import type { BoosterId } from '../../data/economy';
 import { BOOSTER_TEMPLATES } from './boosterIcons';
 import { CULTURAL_TEMPLATES } from './culturalIcons';
+import { ISLAND_TEMPLATES } from './islandIcons';
 import { MORE_TEMPLATES } from './moreIcons';
 import { STARTER_TEMPLATES } from './starterIcons';
 import { OUTLINE, r1, type IconTemplate, type Paint, type Palette } from './template';
@@ -20,7 +21,7 @@ import { OUTLINE, r1, type IconTemplate, type Paint, type Palette } from './temp
 export type { IconTemplate, Paint, Palette } from './template';
 
 /** Every kind's icon. */
-export const ICON_TEMPLATES: Readonly<Record<string, IconTemplate>> = { ...STARTER_TEMPLATES, ...MORE_TEMPLATES, ...CULTURAL_TEMPLATES };
+export const ICON_TEMPLATES: Readonly<Record<string, IconTemplate>> = { ...STARTER_TEMPLATES, ...MORE_TEMPLATES, ...CULTURAL_TEMPLATES, ...ISLAND_TEMPLATES };
 
 
 // ---------------------------------------------------------------- variants

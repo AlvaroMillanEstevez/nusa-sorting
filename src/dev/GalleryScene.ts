@@ -44,6 +44,37 @@ const LOOK_ALIKES: readonly (readonly string[])[] = [
   ['bendera', 'panjat-pinang', 'terompet'],
   ['kendang', 'jaring', 'pinisi'],
   ['arum-manis', 'kerupuk-udang', 'klepon'],
+  // Levels 25-45 against the whole catalogue: round things.
+  ['sepak-takraw', 'congklak', 'onde-onde'],
+  ['sepak-takraw', 'bola', 'kelapa'],
+  ['bola', 'kelereng', 'bekel'],
+  ['yoyo', 'gasing', 'rambutan'],
+  ['bekel', 'manggis', 'balon'],
+  ['peluit', 'terompet', 'bekel'],
+  ['lada', 'klepon', 'durian'],
+  ['pala', 'rambutan', 'manggis'],
+  ['penyu', 'kerang', 'bintang-laut'],
+  // Birds, faces and animals.
+  ['rangkong', 'cendrawasih', 'komodo'],
+  ['orangutan', 'tarsius', 'topeng'],
+  ['kerbau', 'blangkon', 'topeng'],
+  ['komodo', 'ikan-bakar', 'sate'],
+  // Tall and thin things.
+  ['egrang', 'panjat-pinang', 'raket'],
+  ['kayu-manis', 'sate', 'tempe'],
+  ['cengkeh', 'kembang-api', 'cabai'],
+  ['padi', 'kembang-api', 'cengkeh'],
+  ['cangkul', 'raket', 'kipas'],
+  ['orang-orangan', 'wayang-kulit', 'caping'],
+  // Containers and buildings.
+  ['karung-rempah', 'karung', 'bakul'],
+  ['bakul', 'bakso', 'cobek'],
+  ['cobek', 'gong', 'nasi-goreng'],
+  ['piala', 'gong', 'es-teh-manis'],
+  ['gubuk', 'caping', 'bianglala'],
+  ['kok', 'arum-manis', 'terompet'],
+  ['congklak', 'pinisi', 'tempe'],
+  ['lompat-tali', 'jaring', 'kerupuk-udang'],
 ];
 
 const SIZES = [36, 40, 52] as const;
@@ -116,7 +147,8 @@ export class GalleryScene extends Phaser.Scene {
       return shelves;
     };
     const food = ITEM_KINDS.filter((k) => !k.theme);
-    const themed = THEMES.map((theme): Section => {
+    // A theme with no objects of its own (the closing festival) has nothing to show here.
+    const themed = THEMES.filter((theme) => ITEM_KINDS.some((k) => k.theme === theme.id)).map((theme): Section => {
       const kinds = ITEM_KINDS.filter((k) => k.theme === theme.id);
       return {
         title: t('gallery.theme', { name: t(`theme.${theme.id}`), level: theme.level }),

@@ -80,6 +80,41 @@ export const ITEM_KINDS: readonly ItemKind[] = [
   { id: 'jaring', name: { en: 'Fishing net', id: 'Jaring ikan' }, category: 'cultural', colorFamily: 'cream', theme: 'laut-nusantara' },
   { id: 'layangan', name: { en: 'Beach kite', id: 'Layangan' }, category: 'cultural', colorFamily: 'red', theme: 'laut-nusantara' },
   { id: 'kelapa', name: { en: 'Coconut', id: 'Kelapa' }, category: 'cultural', colorFamily: 'brown', theme: 'laut-nusantara' },
+  // Olahraga (level 25).
+  { id: 'kok', name: { en: 'Shuttlecock', id: 'Kok bulu tangkis' }, category: 'cultural', colorFamily: 'white', theme: 'olahraga' },
+  { id: 'raket', name: { en: 'Badminton racket', id: 'Raket bulu tangkis' }, category: 'cultural', colorFamily: 'red', theme: 'olahraga' },
+  { id: 'sepak-takraw', name: { en: 'Sepak takraw ball', id: 'Bola sepak takraw' }, category: 'cultural', colorFamily: 'yellow', theme: 'olahraga' },
+  { id: 'bola', name: { en: 'Football', id: 'Bola sepak' }, category: 'cultural', colorFamily: 'white', theme: 'olahraga' },
+  { id: 'piala', name: { en: 'Trophy', id: 'Piala' }, category: 'cultural', colorFamily: 'yellow', theme: 'olahraga' },
+  { id: 'peluit', name: { en: 'Whistle', id: 'Peluit' }, category: 'cultural', colorFamily: 'red', theme: 'olahraga' },
+  // Permainan tradisional (level 30).
+  { id: 'gasing', name: { en: 'Spinning top', id: 'Gasing' }, category: 'cultural', colorFamily: 'brown', theme: 'permainan-tradisional' },
+  { id: 'congklak', name: { en: 'Congklak board', id: 'Congklak' }, category: 'cultural', colorFamily: 'brown', theme: 'permainan-tradisional' },
+  { id: 'egrang', name: { en: 'Bamboo stilts', id: 'Egrang' }, category: 'cultural', colorFamily: 'yellow', theme: 'permainan-tradisional' },
+  { id: 'yoyo', name: { en: 'Yo-yo', id: 'Yoyo' }, category: 'cultural', colorFamily: 'red', theme: 'permainan-tradisional' },
+  { id: 'bekel', name: { en: 'Bekel ball and jacks', id: 'Bola bekel' }, category: 'cultural', colorFamily: 'pink', theme: 'permainan-tradisional' },
+  { id: 'lompat-tali', name: { en: 'Rubber band rope', id: 'Lompat tali karet' }, category: 'cultural', colorFamily: 'green', theme: 'permainan-tradisional' },
+  // Rempah Maluku (level 35).
+  { id: 'cengkeh', name: { en: 'Cloves', id: 'Cengkeh' }, category: 'cultural', colorFamily: 'brown', theme: 'rempah-maluku' },
+  { id: 'pala', name: { en: 'Nutmeg with mace', id: 'Pala' }, category: 'cultural', colorFamily: 'red', theme: 'rempah-maluku' },
+  { id: 'kayu-manis', name: { en: 'Cinnamon sticks', id: 'Kayu manis' }, category: 'cultural', colorFamily: 'brown', theme: 'rempah-maluku' },
+  { id: 'lada', name: { en: 'Peppercorns', id: 'Lada' }, category: 'cultural', colorFamily: 'green', theme: 'rempah-maluku' },
+  { id: 'cobek', name: { en: 'Stone mortar and pestle', id: 'Cobek dan ulekan' }, category: 'cultural', colorFamily: 'white', theme: 'rempah-maluku' },
+  { id: 'karung-rempah', name: { en: 'Spice sack', id: 'Karung rempah' }, category: 'cultural', colorFamily: 'orange', theme: 'rempah-maluku' },
+  // Sawah (level 40).
+  { id: 'padi', name: { en: 'Rice ear', id: 'Padi' }, category: 'cultural', colorFamily: 'yellow', theme: 'sawah' },
+  { id: 'cangkul', name: { en: 'Hoe', id: 'Cangkul' }, category: 'cultural', colorFamily: 'brown', theme: 'sawah' },
+  { id: 'orang-orangan', name: { en: 'Scarecrow', id: 'Orang-orangan sawah' }, category: 'cultural', colorFamily: 'red', theme: 'sawah' },
+  { id: 'kerbau', name: { en: 'Water buffalo', id: 'Kerbau' }, category: 'cultural', colorFamily: 'white', theme: 'sawah' },
+  { id: 'bakul', name: { en: 'Bamboo rice basket', id: 'Bakul' }, category: 'cultural', colorFamily: 'cream', theme: 'sawah' },
+  { id: 'gubuk', name: { en: 'Rice field hut', id: 'Gubuk sawah' }, category: 'cultural', colorFamily: 'yellow', theme: 'sawah' },
+  // Fauna Nusantara (level 45).
+  { id: 'komodo', name: { en: 'Komodo dragon', id: 'Komodo' }, category: 'cultural', colorFamily: 'green', theme: 'fauna-nusantara' },
+  { id: 'orangutan', name: { en: 'Orangutan', id: 'Orang utan' }, category: 'cultural', colorFamily: 'orange', theme: 'fauna-nusantara' },
+  { id: 'rangkong', name: { en: 'Hornbill', id: 'Burung rangkong' }, category: 'cultural', colorFamily: 'orange', theme: 'fauna-nusantara' },
+  { id: 'penyu', name: { en: 'Sea turtle', id: 'Penyu' }, category: 'cultural', colorFamily: 'brown', theme: 'fauna-nusantara' },
+  { id: 'cendrawasih', name: { en: 'Bird of paradise', id: 'Burung cendrawasih' }, category: 'cultural', colorFamily: 'yellow', theme: 'fauna-nusantara' },
+  { id: 'tarsius', name: { en: 'Tarsier', id: 'Tarsius' }, category: 'cultural', colorFamily: 'brown', theme: 'fauna-nusantara' },
 ];
 
 /** The level where a kind first appears: its theme's level for cultural objects, the first level for food. */
@@ -113,6 +148,13 @@ export const CONFUSABLE_GROUPS: readonly (readonly string[])[] = [
   ['kelapa', 'es-kelapa-muda'],
   // Both diamonds; the closest pair in greyscale after the gallery check.
   ['layangan', 'ketupat'],
+  // Levels 25-45, after the gallery check: two balls patterned with pentagons; two woven containers heaped
+  // high; stems radiating with round heads; brown sticks lying aslant; a pointed roof and a conical hat.
+  ['sepak-takraw', 'bola'],
+  ['karung-rempah', 'bakul'],
+  ['cengkeh', 'kembang-api'],
+  ['kayu-manis', 'sate'],
+  ['gubuk', 'caping'],
 ];
 
 /** The three colour variants of every kind; 'original' is the kind's own colours. */
