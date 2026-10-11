@@ -10,8 +10,10 @@ export type BoosterTileState = 'ready' | 'empty' | 'locked';
 
 export interface BoosterButtonOptions {
   readonly skin?: Skin;
-  /** Texture of the booster's colour icon. */
+  /** Texture of the booster's colour icon (or of another icon shown on the same tile, such as the clock). */
   readonly texture: string;
+  /** Default true; false shows the tile alone, without the corner badge (something that is not a booster). */
+  readonly badge?: boolean;
   /** Visible size of the square tile. Default 56. */
   readonly size?: number;
   readonly state: BoosterTileState;
@@ -37,6 +39,7 @@ export class KitBoosterButton extends Pressable {
   private tile: BoosterTileState;
   private units: number;
   private inUse = false;
+  private readonly showBadge: boolean;
 
   constructor(scene: Phaser.Scene, x: number, y: number, options: BoosterButtonOptions) {
     super(scene, x, y, options.onPress ?? null);
@@ -44,6 +47,7 @@ export class KitBoosterButton extends Pressable {
     this.skin = options.skin ?? SKIN;
     this.tile = options.state;
     this.units = options.count;
+    this.showBadge = options.badge ?? true;
     this.shadow = scene.add.graphics();
     this.ring = scene.add.graphics();
     this.face = scene.add.graphics();
@@ -122,6 +126,7 @@ export class KitBoosterButton extends Pressable {
   /** The corner badge: the count, a "+" to buy one, or a padlock. */
   private drawBadge(bx: number, by: number): void {
     this.badge.removeAll(true);
+    if (!this.showBadge) return;
     const r = Math.max(10, Math.round(this.size * 0.2));
     const g = this.scene.add.graphics();
     const { positive } = this.skin.fills;

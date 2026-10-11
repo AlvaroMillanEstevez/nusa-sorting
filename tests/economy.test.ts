@@ -6,6 +6,7 @@ import {
   chestContents,
   chestProgress,
   continueBoosters,
+  extraTimePrice,
   EMPTY_WALLET,
   introduceBooster,
   levelUpGift,
@@ -90,11 +91,19 @@ describe('boosters and continues', () => {
   });
 
   it('continue with the boosters that fit the defeat, unlocked ones only, up to a maximum per attempt', () => {
-    expect(continueBoosters('timeUp', 24, 0)).toEqual(['freeze']);
+    expect(continueBoosters('timeUp', 24, 0)).toEqual([]);
     expect(continueBoosters('blocked', 24, 0)).toEqual(['removeTriple', 'shuffle']);
     expect(continueBoosters('stuck', 8, 2)).toEqual(['removeTriple']);
-    expect(continueBoosters('timeUp', 3, 0)).toEqual([]);
+    expect(continueBoosters('blocked', 6, 0)).toEqual([]);
     expect(continueBoosters('stuck', 24, ECONOMY.continues.max)).toEqual([]);
+  });
+
+  it('sell more time with coins after running out of it, dearer each time, up to the maximum', () => {
+    const prices = [0, 1, 2].map((i) => extraTimePrice(i)!);
+    expect(prices[0]).toBe(ECONOMY.continues.time.price);
+    expect(prices[1]).toBeGreaterThan(prices[0]!);
+    expect(prices[2]).toBeGreaterThan(prices[1]!);
+    expect(extraTimePrice(ECONOMY.continues.max)).toBeNull();
   });
 
   it('continue with a booster the player has, or one bought at its shop price, never at another price', () => {

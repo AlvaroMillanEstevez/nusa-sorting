@@ -23,6 +23,8 @@ const ICONS: readonly (readonly [UiIconName, string])[] = [
   ...GAME_ICONS.flatMap((name) => [SKIN.text.primary, SKIN.text.secondary, SKIN.fills.primary.text, SKIN.fills.secondary.text, SKIN.fills.danger.text].map((c) => [name, c] as const)),
   ['star', SKIN.star.rim],
   ['starFilled', SKIN.star.filled],
+  // The clock on the tile of more time, when continuing after running out of it.
+  ['clock', SKIN.text.accent],
   ['starFilled', SKIN.text.accent],
   ['starFilled', SKIN.surface.border],
   ['combo', SKIN.status.combo],

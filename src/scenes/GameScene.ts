@@ -17,6 +17,7 @@ import {
   continueAfterBlocked,
   continueByShuffling,
   continueBoosters,
+  extraTimePrice,
   freezeClock,
   removeTriple,
   shuffleBoard,
@@ -79,7 +80,7 @@ import { TutorialHint } from './TutorialHint';
 import { Effects } from './Effects';
 import { BoosterBar } from './BoosterBar';
 import { boosterTextureKey } from './boosterTextures';
-import { showContinue } from './ContinuePanel';
+import { showContinue, type ContinueChoice } from './ContinuePanel';
 import { showOffer } from './Offer';
 import { BOOSTER_IDS, ECONOMY, type BoosterId } from '../data/economy';
 import { boosterBarRect } from '../ui/levelLayout';
@@ -819,59 +820,89 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * After a defeat, if the attempt still has continues left: the boosters that fit it (see continueBoosters),
-   * each used from the player's own or bought at its shop price there and then. Out of time, "freeze time" adds
-   * time to the clock; out of space or stuck, "remove a triple" takes one away and "shuffle" mixes the board (only
-   * offered when a shuffle with a way on exists). Giving up, or no booster unlocked yet, shows the defeat panel.
+   * After a defeat, if the attempt still has continues left (at most ECONOMY.continues.max). Out of time: more
+   * seconds bought with coins, dearer each time (see extraTimePrice). Out of space or stuck: the boosters that fit
+   * (see continueBoosters), each used from the player's own or bought at its shop price there and then: "remove a
+   * triple" takes one away and "shuffle" mixes the board (only offered when a shuffle with a way on exists).
+   * Giving up, or nothing to offer (no booster unlocked yet), shows the defeat panel.
    */
   private offerContinue(showLost: () => void): void {
     const reason = this.state.loseReason ?? 'blocked';
     const lost = this.state;
-    const runs: Record<BoosterId, (() => MoveResult) | null> = {
-      freeze: () => addTime(lost, ECONOMY.continues.freezeAddsSeconds * 1000),
-      removeTriple: () => continueAfterBlocked(lost),
-      shuffle: null,
-    };
-    const ids = continueBoosters(reason, playList[this.levelIndex]!.number, this.continuesUsed);
-    if (ids.includes('shuffle')) {
-      // Worked out now: offered only if a shuffle with a way on exists.
-      const shuffled = continueByShuffling(lost, Math.random);
-      if (shuffled.ok) runs.shuffle = () => shuffled;
-    }
-    const usable = ids.filter((id) => runs[id] !== null);
-    if (usable.length === 0) {
-      showLost();
-      return;
-    }
-    const use = (booster: BoosterId) => {
-      const result = runs[booster]!();
-      if (!result.ok || !this.store.useOrBuyBooster(booster)) {
-        showLost();
-        return;
-      }
+    const wallet = this.store.wallet;
+    // Whatever way the player picks: the new state, then the board and HUD follow it.
+    const carryOn = (state: GameState) => {
       this.continuesUsed++;
-      this.boostersUsed[booster]++;
-      this.state = result.state;
+      this.state = state;
       this.overlay.hide();
       this.buildBoosterBar();
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
-      if (booster === 'shuffle') {
-        this.sfx.play('advance');
-        this.sync(DURATION.slow);
-        this.saveSnapshot();
-      } else if (booster === 'freeze') {
-        this.sfx.play('unlock');
-        this.saveSnapshot();
-      } else {
-        this.play(result.events);
-      }
     };
-    const wallet = this.store.wallet;
+    const choices: ContinueChoice[] = [];
+    if (reason === 'timeUp') {
+      const price = extraTimePrice(this.continuesUsed);
+      const { seconds } = ECONOMY.continues.time;
+      if (price !== null) {
+        choices.push({
+          kind: 'time',
+          seconds,
+          price,
+          onUse: () => {
+            const result = addTime(lost, seconds * 1000);
+            if (!result.ok || !this.store.spendCoins(price)) {
+              showLost();
+              return;
+            }
+            carryOn(result.state);
+            this.sfx.play('unlock');
+            this.saveSnapshot();
+          },
+        });
+      }
+    } else {
+      const runs: Partial<Record<BoosterId, () => MoveResult>> = { removeTriple: () => continueAfterBlocked(lost) };
+      const ids = continueBoosters(reason, playList[this.levelIndex]!.number, this.continuesUsed);
+      if (ids.includes('shuffle')) {
+        // Worked out now: offered only if a shuffle with a way on exists.
+        const shuffled = continueByShuffling(lost, Math.random);
+        if (shuffled.ok) runs.shuffle = () => shuffled;
+      }
+      for (const booster of ids) {
+        const run = runs[booster];
+        if (!run) continue;
+        choices.push({
+          kind: 'booster',
+          booster,
+          have: wallet.boosters[booster],
+          price: boosterPrice(booster),
+          onUse: () => {
+            const result = run();
+            if (!result.ok || !this.store.useOrBuyBooster(booster)) {
+              showLost();
+              return;
+            }
+            this.boostersUsed[booster]++;
+            carryOn(result.state);
+            if (booster === 'shuffle') {
+              this.sfx.play('advance');
+              this.sync(DURATION.slow);
+              this.saveSnapshot();
+            } else {
+              this.play(result.events);
+            }
+          },
+        });
+      }
+    }
+    if (choices.length === 0) {
+      showLost();
+      return;
+    }
     showContinue(this, {
       title: t(LOSE_TITLES[reason]),
-      body: reason === 'timeUp' ? t('continue.time.body', { s: ECONOMY.continues.freezeAddsSeconds }) : t(reason === 'blocked' ? 'continue.space.body' : 'continue.stuck.body'),
+      body: t(reason === 'timeUp' ? 'continue.time.body' : reason === 'blocked' ? 'continue.space.body' : 'continue.stuck.body'),
       coins: wallet.coins,
-      choices: usable.map((booster) => ({ booster, have: wallet.boosters[booster], price: boosterPrice(booster), onUse: () => use(booster) })),
+      choices,
       onGiveUp: showLost,
     });
   }

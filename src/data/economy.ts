@@ -39,14 +39,15 @@ export const ECONOMY = {
   },
 
   /**
-   * Continuing after a defeat, within the same attempt, with a booster that fits the defeat: one the player has,
-   * or one bought there and then at its shop price (continues have no prices of their own).
+   * Continuing after a defeat, within the same attempt. Out of space or stuck: with a booster that fits, one the
+   * player has or one bought there and then at its shop price. Out of time: extra seconds bought with coins, each
+   * time in the attempt dearer.
    */
   continues: {
     /** At most this many continues per attempt. */
     max: 3,
-    /** Out of time, "freeze time" adds this many seconds to the clock (rather than stopping it). */
-    freezeAddsSeconds: 15,
+    /** Out of time: seconds added, the price of the first, and how much dearer each next one is (rounded to 5). */
+    time: { seconds: 15, price: 60, growth: 1.5 },
   },
 
   /** The player's level: every level's score adds experience. */

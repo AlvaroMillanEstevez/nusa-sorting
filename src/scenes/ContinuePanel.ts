@@ -4,7 +4,7 @@ import { getLocale, t } from '../i18n';
 import { SKIN, SPACE } from '../ui/design/tokens';
 import { formatScore } from '../ui/format';
 import { boosterTextureKey } from './boosterTextures';
-import { KitBoosterButton, KitButton, KitModal, KitPill, kitText } from './kit';
+import { KitBoosterButton, KitButton, KitModal, KitPill, kitText, uiIconKey } from './kit';
 import { screenRect, viewSize } from './view';
 
 const DEPTH_CONTINUE = 310;
@@ -12,15 +12,27 @@ const ROW = 76;
 const TILE = 56;
 const ACTION_W = 132;
 
-/** A booster that can continue the level. */
-export interface ContinueChoice {
-  readonly booster: BoosterId;
-  /** How many the player has: using one spends it. */
-  readonly have: number;
-  /** Its shop price, paid to buy one and use it at once when the player has none. */
-  readonly price: number;
-  readonly onUse: () => void;
-}
+/**
+ * A way to continue the level: a booster (used from the player's own, or bought at its shop price and used at
+ * once), or more time bought with coins.
+ */
+export type ContinueChoice =
+  | {
+      readonly kind: 'booster';
+      readonly booster: BoosterId;
+      /** How many the player has: using one spends it. */
+      readonly have: number;
+      /** Its shop price, paid to buy one and use it at once when the player has none. */
+      readonly price: number;
+      readonly onUse: () => void;
+    }
+  | {
+      readonly kind: 'time';
+      readonly seconds: number;
+      /** What these seconds cost now (dearer with each continue in the attempt). */
+      readonly price: number;
+      readonly onUse: () => void;
+    };
 
 export interface ContinueOptions {
   /** Why the level was lost: "Time's up!", "No space left!", "No moves left!". */
@@ -32,9 +44,10 @@ export interface ContinueOptions {
 }
 
 /**
- * Continuing after a defeat: the boosters that fit it, as the same tiles as the game's bar (with the count, or a
- * "+" when none is left), each with its button: use one, or buy one at its shop price and use it at once. Without
- * the coins for it the button is off and says so. Giving up is a button as big as any other, at the bottom.
+ * Continuing after a defeat. Out of space or stuck: the boosters that fit, as the same tiles as the game's bar
+ * (with the count, or a "+" when none is left), each with its button: use one, or buy one at its shop price and use
+ * it at once. Out of time: the clock on the same tile, and more seconds for coins. Without the coins for it a
+ * button is off and says so. Giving up is a button as big as any other, at the bottom.
  */
 export function showContinue(scene: Phaser.Scene, options: ContinueOptions): KitModal {
   const screen = screenRect(scene);
@@ -71,19 +84,34 @@ export function showContinue(scene: Phaser.Scene, options: ContinueOptions): Kit
 
   options.choices.forEach((choice, i) => {
     const rowY = y + ROW / 2 + i * ROW;
-    const owned = choice.have > 0;
+    const owned = choice.kind === 'booster' && choice.have > 0;
     const affordable = owned || options.coins >= choice.price;
     panel.add(
-      new KitBoosterButton(scene, -inner / 2 + TILE / 2, rowY, {
-        texture: boosterTextureKey(choice.booster),
-        size: TILE,
-        state: owned ? 'ready' : 'empty',
-        count: choice.have,
-      }),
+      choice.kind === 'booster'
+        ? new KitBoosterButton(scene, -inner / 2 + TILE / 2, rowY, {
+            texture: boosterTextureKey(choice.booster),
+            size: TILE,
+            state: owned ? 'ready' : 'empty',
+            count: choice.have,
+          })
+        : new KitBoosterButton(scene, -inner / 2 + TILE / 2, rowY, {
+            texture: uiIconKey('clock', SKIN.text.accent),
+            size: TILE,
+            state: 'ready',
+            count: 0,
+            badge: false,
+          }),
     );
     const textX = -inner / 2 + TILE + SPACE.s;
-    const name = kitText(scene, 'body', t(`booster.${choice.booster}.name`), SKIN.text.primary).setOrigin(0, 0.5).setPosition(textX, rowY - 10);
-    const note = owned ? t('shop.have', { n: choice.have }) : affordable ? t('continue.buyAndUse') : t('booster.notEnough');
+    const label = choice.kind === 'booster' ? t(`booster.${choice.booster}.name`) : t('continue.time.name', { s: choice.seconds });
+    const name = kitText(scene, 'body', label, SKIN.text.primary).setOrigin(0, 0.5).setPosition(textX, rowY - 10);
+    const note = !affordable
+      ? t('booster.notEnough')
+      : choice.kind === 'time'
+        ? t('continue.time.note')
+        : owned
+          ? t('shop.have', { n: choice.have })
+          : t('continue.buyAndUse');
     const caption = kitText(scene, 'caption', note, affordable ? SKIN.text.secondary : SKIN.status.criticalTime).setOrigin(0, 0.5).setPosition(textX, rowY + 12);
     const textRoom = inner - TILE - SPACE.s - ACTION_W - SPACE.s;
     if (name.width > textRoom) name.setScale(Math.max(0.7, textRoom / name.width));

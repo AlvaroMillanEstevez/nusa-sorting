@@ -124,15 +124,25 @@ export const boosterPrice = (booster: BoosterId): number => ECONOMY.boosters[boo
 export type ContinueReason = 'timeUp' | 'blocked' | 'stuck';
 
 /**
- * The boosters that can continue a level lost for `reason`, among those unlocked at level `levelNumber`: "freeze
- * time" when the clock ran out (it adds time), "remove a triple" and "shuffle" when the board is full or stuck.
- * None once the attempt has had ECONOMY.continues.max continues.
+ * The boosters that can continue a level lost for `reason`, among those unlocked at level `levelNumber`: "remove a
+ * triple" and "shuffle" when the board is full or stuck. None when the clock ran out (more time is bought with
+ * coins instead, see extraTimePrice; "freeze time" only ever stops the clock), nor once the attempt has had
+ * ECONOMY.continues.max continues.
  */
 export function continueBoosters(reason: ContinueReason, levelNumber: number, continuesUsed: number): BoosterId[] {
-  if (continuesUsed >= ECONOMY.continues.max) return [];
-  const fitting: readonly BoosterId[] = reason === 'timeUp' ? ['freeze'] : ['removeTriple', 'shuffle'];
+  if (continuesUsed >= ECONOMY.continues.max || reason === 'timeUp') return [];
   const unlocked = boostersUnlockedAt(levelNumber);
-  return fitting.filter((id) => unlocked.includes(id));
+  return (['removeTriple', 'shuffle'] as const).filter((id) => unlocked.includes(id));
+}
+
+/**
+ * The price in coins of more time after running out of it, for the continue number `continuesUsed` (0 for the
+ * first) in the attempt: dearer each time, and null past the maximum.
+ */
+export function extraTimePrice(continuesUsed: number): number | null {
+  const { max, time } = ECONOMY.continues;
+  if (continuesUsed >= max) return null;
+  return round(time.price * time.growth ** continuesUsed, 5);
 }
 
 /**
