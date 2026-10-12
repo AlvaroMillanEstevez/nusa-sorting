@@ -112,6 +112,9 @@ const gameScenes = () => [new BootScene(store), new HomeScene(sound, store, hapt
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
 if (import.meta.env.DEV && wantsGallery(window.location.search)) {
   void import('./dev/GalleryScene').then(({ GalleryScene }) => startGame([GalleryScene]));
+} else if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('cover')) {
+  // Development only: ?cover=landscape|portrait|square draws a store cover (tools/covers/render.sh saves them).
+  void import('./dev/CoverScene').then(({ CoverScene, parseCoverParam }) => startGame([new CoverScene(parseCoverParam(window.location.search)!)]));
 } else if (import.meta.env.DEV && wantsUikit(window.location.search)) {
   void import('./dev/UikitScene').then(({ UikitScene }) => startGame([UikitScene]));
 } else {

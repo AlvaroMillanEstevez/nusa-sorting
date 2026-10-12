@@ -29,6 +29,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.
+- `?cover=landscape|portrait|square` — dibuja una portada de la tienda con el arte del juego; `tools/covers/render.sh` (con `npm run dev` en marcha) las guarda en PNG a tamaño exacto en `docs/launch/covers`.
 - `?gallery` — abre la galería de iconos (tamaños reales, variantes, estanterías de madera y simulación de daltonismo y escala de grises) en vez del juego.
 - `?uikit` — abre el kit de interfaz (componentes en todos sus estados, iconos y formas de hueco). Página directa con `?uikit=components|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
 - `?show=pause|confirm|won|lost|blocked|autoplay|buy|continue|stuck` — abre ese panel al empezar el nivel, para revisarlo sin jugar (`won` usa una puntuación de 3 estrellas; `blocked` muestra el aviso de tablero lleno y su derrota; `autoplay` juega el nivel solo con el jugador experto simulado y sigue hasta el mapa, para ver efectos y coreografía; `buy` ofrece comprar el primer potenciador del nivel `continue` ofrece continuar tras perder y `stuck` tras quedarse sin movimientos posibles, todos dando antes en silencio las presentaciones de potenciadores).
