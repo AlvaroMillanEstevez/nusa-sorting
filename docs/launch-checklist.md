@@ -53,10 +53,9 @@ Envío sin SDK y sin anuncios. Requisitos leídos en docs.crazygames.com el 12 d
 - [x] **Igual a 60, 144 y 165 Hz.**
   - El reloj, las cintas y la ventana del combo avanzan por el tiempo transcurrido (`tick(state, delta)`); las animaciones son tweens por tiempo.
   - Lo comprueba `tests/frameRate.test.ts`.
-- [x] **Idioma:**
-  - inglés por defecto;
-  - indonesio si el navegador lo tiene entre sus idiomas preferidos (antes que el inglés).
-  - Sin SDK no hay `locale` de CrazyGames: se usa `navigator.languages`.
+- [x] **Idioma:** inglés por defecto e indonesio solo si el idioma principal del navegador es indonesio (`navigator.languages[0]`).
+  - Un móvil en español con el indonesio en segundo lugar sale en inglés.
+  - Sin SDK no hay `locale` de CrazyGames.
 - [x] Sin botón propio de pantalla completa, sin enlaces externos y sin promoción cruzada.
 - [x] Sin anuncios ni botones de anuncio. Nada se compra con dinero real.
 - [x] **Teclas:** Esc o P pausan.

@@ -11,14 +11,13 @@ const catalogs: Record<Locale, Record<MessageKey, string>> = { en, id };
 
 let currentLocale: Locale = DEFAULT_LOCALE;
 
-/** Picks the first supported locale from a browser-style language list (e.g. navigator.languages). */
+/**
+ * The game's language from the browser's (e.g. navigator.languages): only its main language counts, so a phone in
+ * Spanish that also lists Indonesian further down plays in English. English unless the main language is supported.
+ */
 export function resolveLocale(languages: readonly string[]): Locale {
-  for (const tag of languages) {
-    const base = tag.toLowerCase().split('-')[0];
-    const match = SUPPORTED_LOCALES.find((locale) => locale === base);
-    if (match) return match;
-  }
-  return DEFAULT_LOCALE;
+  const base = languages[0]?.toLowerCase().split('-')[0];
+  return SUPPORTED_LOCALES.find((locale) => locale === base) ?? DEFAULT_LOCALE;
 }
 
 export function setLocale(locale: Locale): void {

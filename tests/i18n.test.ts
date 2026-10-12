@@ -9,8 +9,10 @@ describe('resolveLocale', () => {
     expect(resolveLocale(['en-GB'])).toBe('en');
   });
 
-  it('picks the first supported language in order', () => {
-    expect(resolveLocale(['fr-FR', 'id', 'en'])).toBe('id');
+  it('follows only the main language: Indonesian further down the list does not count', () => {
+    expect(resolveLocale(['id', 'en'])).toBe('id');
+    expect(resolveLocale(['es-ES', 'id', 'en'])).toBe('en');
+    expect(resolveLocale(['fr-FR', 'id'])).toBe('en');
   });
 
   it('falls back to the default locale', () => {
