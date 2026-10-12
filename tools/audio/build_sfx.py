@@ -19,6 +19,7 @@ import zipfile
 from pathlib import Path
 
 import numpy as np
+from scipy.signal import butter, fftconvolve, sosfilt
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'src/assets/audio'
@@ -90,11 +91,19 @@ def pack(name: str) -> Path:
     return folder
 
 
-def note(start: float, length: float, pitch: float, keep: float) -> np.ndarray:
-    """A note of the gamelan recording, `keep` seconds of it at the most, faded out over its last third."""
+def note(start: float, length: float, pitch: float, keep: float, attack: float = 0.0, highcut: float | None = None) -> np.ndarray:
+    """
+    A note of the gamelan recording, `keep` seconds of it at the most, faded out over its last third; `attack`
+    softens its start (a fade in, in seconds) and `highcut` takes its highs off above that frequency.
+    """
     x = decode(GAMELAN, 1.0)[int((start - 0.005) * RATE) : int((start + length) * RATE)]
     x = resample(x, pitch)
     x = x[: int(keep * RATE)].copy()
+    if highcut:
+        x = sosfilt(butter(2, highcut, 'lowpass', fs=RATE, output='sos'), x).astype(np.float32)
+    if attack > 0:
+        n = min(x.size, int(attack * RATE))
+        x[:n] *= np.linspace(0, 1, n)
     fade = x.size // 3
     x[-fade:] *= np.linspace(1, 0, fade) ** 2
     return x
@@ -113,12 +122,12 @@ _decoded: dict = {}
 def gamelan_sounds() -> dict:
     """Triple, combo steps and win, from the gamelan's notes."""
     sounds = {}
-    # The triple: the fourth note, bright and clear, ringing a little under a second.
-    sounds['clear'] = (note(*SCALE[3], 2.0, 0.9), EVENT)
-    # A combo climbs the scale: step n of a combo plays combo{n} (WebAudioSoundService goes up an octave after
-    # the fifth).
+    # The triple: the fourth note in its own (warm) octave, with a soft start and no harsh highs, under the
+    # other events' level.
+    sounds['clear'] = (note(*SCALE[3], 1.0, 1.1, attack=0.01, highcut=3000), EVENT - 4)
+    # A combo climbs the scale gently: step n of a combo plays combo{n}, staying on the fifth beyond it.
     for i, (start, length) in enumerate(SCALE):
-        sounds[f'combo{i + 1}'] = (note(start, length, 2.0, 0.7), EVENT - 1)
+        sounds[f'combo{i + 1}'] = (note(start, length, 1.0, 0.9, attack=0.01, highcut=3000), EVENT - 5)
     # The win: the scale rising and the first note an octave up, ringing out over a soft low gong.
     steps = [note(start, length, 2.0, 0.8) for start, length in SCALE] + [note(*SCALE[0], 4.0, 1.4)]
     gap = int(0.11 * RATE)
@@ -171,6 +180,39 @@ def active_rms_db(x: np.ndarray) -> float:
 
 INTERFACE_FILES = {Path(SOUNDS[effect][1]).name for effect in INTERFACE}
 
+# What every effect goes through, Kenney's and the gamelan's alike, so they sound like one family: the same
+# gentle cut of the highest highs, and a very light small-room reverb (a short, dark tail mixed well under the dry
+# sound) that puts them all in the same space.
+POLISH_HIGHCUT = 7000
+ROOM_SECONDS = 0.35
+ROOM_DECAY = 0.07
+ROOM_WET = 0.12
+
+
+def room_impulse() -> np.ndarray:
+    rng = np.random.default_rng(7)
+    n = int(ROOM_SECONDS * RATE)
+    t = np.arange(n) / RATE
+    ir = rng.standard_normal(n) * np.exp(-t / ROOM_DECAY)
+    # A dark room: its reflections lose their highs.
+    ir = sosfilt(butter(2, 3500, 'lowpass', fs=RATE, output='sos'), ir)
+    ir[: int(0.008 * RATE)] = 0  # pre-delay
+    return (ir / np.sqrt(np.sum(ir**2))).astype(np.float32)
+
+
+ROOM = room_impulse()
+HIGHCUT = butter(2, POLISH_HIGHCUT, 'lowpass', fs=RATE, output='sos')
+
+
+def polish(x: np.ndarray) -> np.ndarray:
+    """The common processing: the high cut, then the room (the dry sound plus its tail)."""
+    dry = sosfilt(HIGHCUT, x).astype(np.float32)
+    wet = fftconvolve(dry, ROOM)[: dry.size + int(ROOM_SECONDS * RATE * 0.6)]
+    out = np.zeros(wet.size, dtype=np.float32)
+    out[: dry.size] += dry
+    out += ROOM_WET * wet.astype(np.float32)
+    return out
+
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
@@ -178,6 +220,7 @@ def main() -> None:
     sources = {effect: (trim(decode(pack(pack_name) / file, pitch)), target) for effect, (pack_name, file, target, pitch) in SOUNDS.items()}
     sources.update({effect: (trim(x), target) for effect, (x, target) in gamelan_sounds().items()})
     for effect, (x, target) in sources.items():
+        x = polish(x)
         gain = 10 ** ((target - active_rms_db(x)) / 20)
         # Never past -1 dBFS: quieter than the target rather than clipped.
         peak = np.abs(x).max() * gain

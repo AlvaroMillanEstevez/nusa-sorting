@@ -82,14 +82,10 @@ const RECORDING: Partial<Record<SoundEffect, { file: string; rate: number }>> = 
   star2: { file: 'star', rate: 2 ** (4 / 12) },
   star3: { file: 'star', rate: 2 ** (7 / 12) },
 };
-/**
- * A combo climbs the gamelan's five-note scale: step 2 plays its first note, step 6 its fifth, then the scale
- * again an octave up (no higher than that).
- */
+/** A combo climbs the gamelan's five-note scale gently: step 2 plays its first note, step 6 and beyond its fifth. */
 const COMBO_NOTES = 5;
 function comboNote(step: number): { file: string; rate: number } {
-  const n = Math.min(Math.max(step, 2) - 2, COMBO_NOTES * 2 - 1);
-  return { file: `combo${(n % COMBO_NOTES) + 1}`, rate: n >= COMBO_NOTES ? 2 : 1 };
+  return { file: `combo${Math.min(Math.max(step, 2) - 2, COMBO_NOTES - 1) + 1}`, rate: 1 };
 }
 
 export class WebAudioSoundService implements SoundService {
