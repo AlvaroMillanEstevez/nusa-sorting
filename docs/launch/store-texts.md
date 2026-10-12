@@ -24,7 +24,7 @@ Nothing here mentions ads, purchases with real money or other platforms.
 **Mouse**
 - Drag an item onto another shelf, or click an item and then click a free slot.
 - Click an item on a moving belt to take it, then click where it goes (or drag it there).
-- Esc or P: pause.
+- P: pause (or the pause button).
 
 **Touch**
 - Drag an item onto another shelf, or tap an item and then tap a free slot.

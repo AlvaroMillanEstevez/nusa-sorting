@@ -157,5 +157,6 @@ export const id: Record<MessageKey, string> = {
   'uikit.slots.sizes': 'Level tiga kolom: barang {square} px dengan slot persegi, {tall} px dengan slot setinggi 1,2',
   'uikit.slots.screen': '{w} × {h}',
   'uikit.sample': 'Kumpulkan 3 barang yang sama di satu rak',
+  'tutorial.skip': 'Lewati',
   'tutorial.firstTriple': 'Kumpulkan 3 barang yang sama di satu rak',
 };

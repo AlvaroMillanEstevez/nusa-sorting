@@ -58,8 +58,7 @@ Envío sin SDK y sin anuncios. Requisitos leídos en docs.crazygames.com el 12 d
   - Sin SDK no hay `locale` de CrazyGames.
 - [x] Sin botón propio de pantalla completa, sin enlaces externos y sin promoción cruzada.
 - [x] Sin anuncios ni botones de anuncio. Nada se compra con dinero real.
-- [x] **Teclas:** Esc o P pausan.
-  - Esc también sale de la pantalla completa del navegador: CrazyGames lo menciona como tecla con comportamiento propio, pero no la prohíbe.
+- [x] **Teclas:** P pausa (y el botón de pausa). Escape no se usa: en el navegador cierra la pantalla completa, y las directrices de calidad de CrazyGames piden no usarlo.
 - [x] **PEGI 12:** sin violencia, sin chat, sin contenido de usuarios.
 - [x] **Primera visita directa al nivel 1**, con el tutorial: no hay pantalla de título.
 - [x] **Ningún parámetro de desarrollo en producción:**

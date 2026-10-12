@@ -155,6 +155,7 @@ export const en = {
   'uikit.slots.sizes': 'Three-column levels: items {square} px with square slots, {tall} px with slots 1.2 tall',
   'uikit.slots.screen': '{w} × {h}',
   'uikit.sample': 'Gather 3 matching items on one shelf',
+  'tutorial.skip': 'Skip',
   'tutorial.firstTriple': 'Put 3 matching items on the same shelf',
 } as const;
 

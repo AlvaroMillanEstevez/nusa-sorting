@@ -292,7 +292,7 @@ export class GameScene extends Phaser.Scene {
     this.overlay = new ResultOverlay(this, (effect) => this.sfx.play(effect));
     this.decor = new ThemeDecor(this);
     this.themeIntro = new ThemeIntro(this);
-    this.tutorial = new TutorialHint(this);
+    this.tutorial = new TutorialHint(this, () => this.skipTutorial());
     this.effects = new Effects(this);
     this.boosterBar = new BoosterBar(this, (booster) => this.pressBooster(booster));
 
@@ -336,12 +336,11 @@ export class GameScene extends Phaser.Scene {
     if (resume) this.loadLevel(resume.levelIndex, resume);
     else this.loadLevel(this.startIndex ?? this.store.firstIncomplete(ids) ?? playList.length - 1);
     fadeIn(this);
-    // On a computer, Escape (or P) opens and closes the pause menu.
+    // On a computer, P opens and closes the pause menu. Not Escape: in the browser it leaves fullscreen, which
+    // CrazyGames asks games not to take over.
     const keyboard = this.input.keyboard;
-    keyboard?.on('keydown-ESC', this.togglePause, this);
     keyboard?.on('keydown-P', this.togglePause, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      keyboard?.off('keydown-ESC', this.togglePause, this);
       keyboard?.off('keydown-P', this.togglePause, this);
     });
     if (import.meta.env.DEV) {
@@ -930,6 +929,14 @@ export class GameScene extends Phaser.Scene {
       move,
       itemTexture: item ? itemTextureKey(item.type, this.store.colorBlindMode) : null,
     });
+  }
+
+  /** The player chose to skip the tutorial: done for good, as if completed. */
+  private skipTutorial(): void {
+    if (!this.tutorialActive) return;
+    this.tutorialActive = false;
+    this.store.markTutorialDone(FIRST_TRIPLE_TUTORIAL);
+    this.tutorial.finish();
   }
 
   /** After a move during the tutorial: done for good with a triple, else it points at the board's new state. */

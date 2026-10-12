@@ -2,6 +2,8 @@ import * as Phaser from 'phaser';
 import type { ShelfMove } from '../core';
 import { slotRect, type BoardLayout } from '../ui/boardLayout';
 import { FONTS, hexNumber, SKIN, TYPE } from '../ui/design/tokens';
+import { t } from '../i18n';
+import { KitButton } from './kit';
 import { addSvgTexture } from './svgTexture';
 import { RENDER_RATIO } from './view';
 
@@ -37,6 +39,10 @@ const DEPTH_MARKS = 104;
 const DEPTH_GHOST = 106;
 const DEPTH_HAND = 108;
 const DEPTH_BANNER = 110;
+/** The "Skip" button: height, and gap to the sign. */
+const SKIP_H = 44;
+const SKIP_GAP = 12;
+
 /** One showing of the gesture: press on the item, drag it over, let go, pause. */
 const CYCLE_MS = 2400;
 
@@ -65,12 +71,17 @@ export class TutorialHint {
   private readonly hand: Phaser.GameObjects.Image;
   private readonly panel: Phaser.GameObjects.Graphics;
   private readonly label: Phaser.GameObjects.Text;
+  /** "Skip": ends the tutorial for good, for players who know the genre. */
+  private readonly skip: KitButton;
   private readonly progress = { t: 0 };
   private loop: Phaser.Tweens.Tween | null = null;
   /** Hand and copy hide while the player is touching the board, so they do not get in the way. */
   private touching = false;
 
-  constructor(private readonly scene: Phaser.Scene) {
+  constructor(
+    private readonly scene: Phaser.Scene,
+    onSkip: () => void,
+  ) {
     this.marks = scene.add.graphics().setDepth(DEPTH_MARKS).setVisible(false);
     this.ghost = scene.add.image(0, 0, '__DEFAULT').setDepth(DEPTH_GHOST).setVisible(false);
     this.hand = scene.add.image(0, 0, '__DEFAULT').setDepth(DEPTH_HAND).setOrigin(TIP.x, TIP.y).setVisible(false);
@@ -81,6 +92,8 @@ export class TutorialHint {
       .setResolution(RENDER_RATIO)
       .setDepth(DEPTH_BANNER + 1)
       .setVisible(false);
+    this.skip = new KitButton(scene, 0, 0, { skin: SKIN, variant: 'secondary', label: t('tutorial.skip'), height: SKIP_H, onPress: onSkip });
+    this.skip.setDepth(DEPTH_BANNER + 1).setVisible(false);
   }
 
   get visible(): boolean {
@@ -121,7 +134,7 @@ export class TutorialHint {
 
   /** Fades the tutorial out for good (when completed). */
   finish(): void {
-    const parts = [this.marks, this.ghost, this.hand, this.panel, this.label];
+    const parts = [this.marks, this.ghost, this.hand, this.panel, this.label, this.skip];
     this.stopLoop();
     this.shown = null;
     this.scene.tweens.add({
@@ -139,7 +152,7 @@ export class TutorialHint {
   clear(): void {
     this.stopLoop();
     this.shown = null;
-    for (const part of [this.marks, this.ghost, this.hand, this.panel, this.label]) {
+    for (const part of [this.marks, this.ghost, this.hand, this.panel, this.label, this.skip]) {
       this.scene.tweens.killTweensOf(part);
       part.setVisible(false).setAlpha(1);
     }
@@ -180,28 +193,37 @@ export class TutorialHint {
       }
     }
 
-    // The text: in the gap above the board if it fits there, else at the screen edge farthest from the move.
+    // The text, with "Skip" beside it (or under it if the row does not fit): in the gap above the board if they
+    // fit there, else below it, else at the screen edge farthest from the move.
     const fontSize = Math.round(Math.max(16, Math.min(TYPE.button.size, this.width / 20)));
-    this.label.setFontSize(fontSize).setWordWrapWidth(Math.min(this.width - 48, 460)).setText(shown.text).setVisible(true).setAlpha(1);
+    const skipW = this.skip.width;
+    const besides = this.width - 48 - skipW - SKIP_GAP;
+    const stacked = besides < 220;
+    this.label.setFontSize(fontSize).setWordWrapWidth(Math.min(stacked ? this.width - 48 : besides, 460)).setText(shown.text).setVisible(true).setAlpha(1);
     const boxW = this.label.width + 28;
     const boxH = this.label.height + 16;
+    const rowW = stacked ? Math.max(boxW, skipW) : boxW + SKIP_GAP + skipW;
+    const rowH = stacked ? boxH + SKIP_GAP + SKIP_H : Math.max(boxH, SKIP_H);
     const boardTop = Math.min(...board.shelves.map((shelf) => shelf.rect.y));
     const boardBottom = Math.max(...board.shelves.map((shelf) => shelf.rect.y + shelf.rect.height));
     const hudBottom = board.hud.y + board.hud.height;
     let y: number;
-    if (boardTop - hudBottom >= boxH + 8) y = (hudBottom + boardTop) / 2;
-    else if (this.height - boardBottom >= boxH + 8) y = (boardBottom + this.height) / 2;
+    if (boardTop - hudBottom >= rowH + 8) y = (hudBottom + boardTop) / 2;
+    else if (this.height - boardBottom >= rowH + 8) y = (boardBottom + this.height) / 2;
     else {
       const moveY = slots ? (slots.from.y + slots.to.y) / 2 : this.height / 2;
-      y = moveY > (hudBottom + this.height) / 2 ? hudBottom + 8 + boxH / 2 : this.height - 8 - boxH / 2;
+      y = moveY > (hudBottom + this.height) / 2 ? hudBottom + 8 + rowH / 2 : this.height - 8 - rowH / 2;
     }
-    const x = this.width / 2;
-    this.label.setPosition(x, y);
+    // The sign, then the button: side by side, or one above the other.
+    const x = stacked ? this.width / 2 : this.width / 2 - rowW / 2 + boxW / 2;
+    const signY = stacked ? y - rowH / 2 + boxH / 2 : y;
+    this.skip.setPosition(stacked ? this.width / 2 : x + boxW / 2 + SKIP_GAP + skipW / 2, stacked ? y + rowH / 2 - SKIP_H / 2 : y).setVisible(true).setAlpha(1);
+    this.label.setPosition(x, signY);
     this.panel.clear().setVisible(true).setAlpha(1);
     // A small wooden sign, like the interface's panels.
-    this.panel.fillStyle(hexNumber(SKIN.surface.border), 1).fillRoundedRect(x - boxW / 2, y - boxH / 2 + 4, boxW, boxH, 12);
-    this.panel.fillStyle(hexNumber(SKIN.surface.fill), 1).fillRoundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 12);
-    this.panel.lineStyle(2, hexNumber(SKIN.status.combo), 0.9).strokeRoundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 12);
+    this.panel.fillStyle(hexNumber(SKIN.surface.border), 1).fillRoundedRect(x - boxW / 2, signY - boxH / 2 + 4, boxW, boxH, 12);
+    this.panel.fillStyle(hexNumber(SKIN.surface.fill), 1).fillRoundedRect(x - boxW / 2, signY - boxH / 2, boxW, boxH, 12);
+    this.panel.lineStyle(2, hexNumber(SKIN.status.combo), 0.9).strokeRoundedRect(x - boxW / 2, signY - boxH / 2, boxW, boxH, 12);
     this.animate();
   }
 
