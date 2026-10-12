@@ -6,7 +6,7 @@ import type { SaveData, Settings } from './SaveService';
 
 export const SAVE_VERSION = 3;
 
-const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null };
+const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null, music: true };
 
 export function emptySave(): SaveData {
   return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {}, tutorialsDone: [], wallet: EMPTY_WALLET, snapshot: null };
@@ -137,6 +137,7 @@ function parseSettings(value: unknown): Settings {
     colorBlindMode: typeof value.colorBlindMode === 'boolean' ? value.colorBlindMode : DEFAULT_SETTINGS.colorBlindMode,
     vibration: typeof value.vibration === 'boolean' ? value.vibration : DEFAULT_SETTINGS.vibration,
     reduceMotion: typeof value.reduceMotion === 'boolean' ? value.reduceMotion : DEFAULT_SETTINGS.reduceMotion,
+    music: typeof value.music === 'boolean' ? value.music : DEFAULT_SETTINGS.music,
   };
 }
 

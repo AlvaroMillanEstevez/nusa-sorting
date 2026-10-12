@@ -52,6 +52,7 @@ if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo
 
 const sound = new WebAudioSoundService();
 sound.setMuted(store.muted);
+sound.setMusic(store.music);
 // Audio starts, and resumes after the page was hidden or interrupted (iOS: a call, switching apps), only inside
 // a user gesture: every touchend, click and key press tries (it does nothing while audio is running).
 for (const type of ['touchend', 'click', 'keydown']) document.addEventListener(type, () => sound.unlock(), { capture: true, passive: true });

@@ -197,6 +197,14 @@ export class ProgressStore {
     this.setSetting('vibration', on);
   }
 
+  get music(): boolean {
+    return this.data.settings.music;
+  }
+
+  setMusic(on: boolean): void {
+    this.setSetting('music', on);
+  }
+
   setMuted(muted: boolean): void {
     this.setSetting('muted', muted);
   }

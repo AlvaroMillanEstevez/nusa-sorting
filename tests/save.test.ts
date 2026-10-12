@@ -37,7 +37,7 @@ class BrokenStorage implements StorageLike {
 const sample: SaveData = {
   version: SAVE_VERSION,
   progress: { completed: ['level001', 'level002'], bestScores: { level004: 1250 }, bestStars: { level004: 2 } },
-  settings: { muted: true, colorBlindMode: true, vibration: false, reduceMotion: true },
+  settings: { muted: true, colorBlindMode: true, vibration: false, reduceMotion: true, music: false },
   themesSeen: ['budaya-jawa'],
   lastArrangements: { 'nusa-003': 2 },
   tutorialsDone: ['first-triple'],

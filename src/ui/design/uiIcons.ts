@@ -41,6 +41,10 @@ export const UI_ICONS = {
   mute: (c) =>
     `<path d="M4 9.5h3l4.5-4v13L7 14.5H4z"${body(c)}/><path d="M4 9.5h3l4.5-4v13L7 14.5H4z"${stroke(c)}/>` +
     `<path d="M15.5 9.5l5 5M20.5 9.5l-5 5"${stroke(c)}/>`,
+  /** Background music: two quavers joined by a beam. */
+  music: (c) =>
+    `<ellipse cx="7" cy="17.5" rx="2.8" ry="2.2"${body(c)}/><ellipse cx="17" cy="15.5" rx="2.8" ry="2.2"${body(c)}/>` +
+    `<path d="M9.8 17.5V6.5l10-2v11M9.8 9.5l10-2"${stroke(c)}/><ellipse cx="7" cy="17.5" rx="2.8" ry="2.2"${stroke(c)}/><ellipse cx="17" cy="15.5" rx="2.8" ry="2.2"${stroke(c)}/>`,
   /** The level list: four rounded tiles. */
   levels: (c) =>
     [

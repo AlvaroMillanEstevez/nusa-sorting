@@ -429,7 +429,7 @@ export class HomeScene extends Phaser.Scene {
     reveal.add(collect);
     panel.add(reveal);
     modal.popIn();
-    this.sfx.play('unlock');
+    this.sfx.play('chest');
 
     // The celebration: a shake and a pop with confetti.
     if (!still) this.tweens.add({ targets: chest, angle: { from: -10, to: 10 }, duration: 70, yoyo: true, repeat: 3, delay: DURATION.slow, onComplete: () => chest.setAngle(0) });
@@ -547,6 +547,7 @@ export class HomeScene extends Phaser.Scene {
       vibration: this.store.vibration,
       canVibrate: this.haptics.supported,
       reduceMotion: this.store.reduceMotion,
+      music: this.sfx.hasMusic ? this.store.music : null,
     };
     const rows = settingsRowCount(state);
     const w = Math.min(safe.width - SPACE.s * 2, 360);
@@ -567,6 +568,10 @@ export class HomeScene extends Phaser.Scene {
       onReduceMotion: (on) => {
         this.store.setReduceMotion(on);
         setReducedMotion(on);
+      },
+      onMusic: (on) => {
+        this.sfx.setMusic(on);
+        this.store.setMusic(on);
       },
     });
     modal.panel.add(

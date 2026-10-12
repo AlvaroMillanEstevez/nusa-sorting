@@ -25,7 +25,11 @@ export type SoundEffect =
   | 'starCollect'
   | 'mapStep'
   /** The board fills up: no free slot left. */
-  | 'blocked';
+  | 'blocked'
+  /** A shelf that closes once emptied is boarded up. */
+  | 'shelfClosed'
+  /** A star chest opens. */
+  | 'chest';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {
@@ -33,7 +37,12 @@ export interface SoundService {
   setMuted(muted: boolean): void;
   /** Must be called from a user gesture: browsers keep audio locked until then. */
   unlock(): void;
-  play(effect: SoundEffect): void;
+  /** `step` raises some effects' pitch: the combo's count (it rises with every step of a combo). */
+  play(effect: SoundEffect, step?: number): void;
+  /** Whether the game has background music (the setting is only offered then). */
+  readonly hasMusic: boolean;
+  /** Background music on or off (it still only plays while sound is not muted). */
+  setMusic(on: boolean): void;
 }
 
 export class NoopSoundService implements SoundService {
@@ -45,5 +54,9 @@ export class NoopSoundService implements SoundService {
 
   unlock(): void {}
 
-  play(_effect: SoundEffect): void {}
+  play(_effect: SoundEffect, _step?: number): void {}
+
+  readonly hasMusic = false;
+
+  setMusic(_on: boolean): void {}
 }

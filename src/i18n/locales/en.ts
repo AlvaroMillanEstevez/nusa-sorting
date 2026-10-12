@@ -89,6 +89,7 @@ export const en = {
   'levelUp.newTitle': 'New title: {title}',
   'levelUp.reached': 'Player level {n}',
   'settings.vibration': 'Vibration',
+  'settings.music': 'Music',
   'settings.reduceMotion': 'Reduce motion',
   'settings.title': 'Settings',
   'pause.home': 'Home',

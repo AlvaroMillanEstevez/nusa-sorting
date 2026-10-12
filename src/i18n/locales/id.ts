@@ -91,6 +91,7 @@ export const id: Record<MessageKey, string> = {
   'levelUp.newTitle': 'Gelar baru: {title}',
   'levelUp.reached': 'Level pemain {n}',
   'settings.vibration': 'Getar',
+  'settings.music': 'Musik',
   'settings.reduceMotion': 'Kurangi gerakan',
   'settings.title': 'Pengaturan',
   'pause.home': 'Beranda',

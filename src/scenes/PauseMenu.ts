@@ -17,6 +17,7 @@ export interface PauseHandlers {
   onColorBlind(on: boolean): void;
   onVibration(on: boolean): void;
   onReduceMotion(on: boolean): void;
+  onMusic(on: boolean): void;
 }
 
 export interface PauseInfo {
@@ -27,6 +28,8 @@ export interface PauseInfo {
   readonly vibration: boolean;
   readonly canVibrate: boolean;
   readonly reduceMotion: boolean;
+  /** Background music on or off; null where the game has none. */
+  readonly music: boolean | null;
   /** The level has started (a move or a touch): restarting or leaving asks first. */
   readonly started: boolean;
 }
@@ -166,6 +169,10 @@ export class PauseMenu {
       onReduceMotion: (on) => {
         this.info = { ...this.info!, reduceMotion: on };
         this.handlers.onReduceMotion(on);
+      },
+      onMusic: (on) => {
+        this.info = { ...this.info!, music: on };
+        this.handlers.onMusic(on);
       },
     });
   }

@@ -12,6 +12,8 @@ export interface Settings {
    * the system's preference (prefers-reduced-motion) applies.
    */
   readonly reduceMotion: boolean | null;
+  /** Background music (sound effects follow `muted`). */
+  readonly music: boolean;
 }
 
 /** Everything the game persists. `version` is the schema version, bumped on any incompatible change. */

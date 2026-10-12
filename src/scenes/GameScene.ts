@@ -288,6 +288,10 @@ export class GameScene extends Phaser.Scene {
         this.store.setReduceMotion(on);
         setReducedMotion(on);
       },
+      onMusic: (on: boolean) => {
+        this.sfx.setMusic(on);
+        this.store.setMusic(on);
+      },
     });
     this.overlay = new ResultOverlay(this, (effect) => this.sfx.play(effect));
     this.decor = new ThemeDecor(this);
@@ -448,6 +452,7 @@ export class GameScene extends Phaser.Scene {
       levelNumber: playList[this.levelIndex]!.number,
       special: isSpecialLevel(this.level),
       soundOn: !this.sfx.muted,
+      music: this.sfx.hasMusic ? this.store.music : null,
       colorBlind: this.store.colorBlindMode,
       vibration: this.store.vibration,
       canVibrate: this.haptics.supported,
@@ -1577,7 +1582,7 @@ export class GameScene extends Phaser.Scene {
             this.effects.comboBurst(x, rect.y - this.layout.slotSize * 0.55, combo, popAt + 60, viewSize(this).width);
             if (combo >= 4) this.haptics.pulse('combo');
             this.time.delayedCall(popAt, () => {
-              this.sfx.play('combo');
+              this.sfx.play('combo', combo);
               this.hud.pulseCombo();
             });
           }
@@ -1586,7 +1591,7 @@ export class GameScene extends Phaser.Scene {
         case 'shelfClosed': {
           // Boarded up once the move lands (and after any pop that emptied it).
           this.closing.close(event.shelf, popAt + CLEAR_MS, reducedMotion());
-          this.time.delayedCall(popAt + CLEAR_MS, () => this.sfx.play('blockerGone'));
+          this.time.delayedCall(popAt + CLEAR_MS, () => this.sfx.play('shelfClosed'));
           break;
         }
         case 'shelfUnlocked': {

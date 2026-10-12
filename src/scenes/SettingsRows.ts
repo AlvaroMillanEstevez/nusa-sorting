@@ -12,6 +12,8 @@ export interface SettingsState {
   /** The device can vibrate (the row is left out where it cannot, e.g. iOS Safari). */
   readonly canVibrate: boolean;
   readonly reduceMotion: boolean;
+  /** Background music on or off; null where the game has none (the row is left out). */
+  readonly music: boolean | null;
 }
 
 export interface SettingsHandlers {
@@ -19,13 +21,14 @@ export interface SettingsHandlers {
   onColorBlind(on: boolean): void;
   onVibration(on: boolean): void;
   onReduceMotion(on: boolean): void;
+  onMusic(on: boolean): void;
 }
 
 /** Height of one settings row. */
 export const SETTINGS_ROW = 52;
 
 /** How many rows `settingsRows` adds for a state. */
-export const settingsRowCount = (state: SettingsState): number => (state.canVibrate ? 4 : 3);
+export const settingsRowCount = (state: SettingsState): number => 3 + (state.canVibrate ? 1 : 0) + (state.music === null ? 0 : 1);
 
 /**
  * The settings as switch rows (icon and label on the left, a switch on the right), added to `parent` from `top`:
@@ -50,8 +53,11 @@ export function settingsRows(
     parent.add(text);
     parent.add(new KitToggle(scene, x + width - 30, y, SKIN, on, onChange));
   };
-  row(top, state.soundOn ? 'sound' : 'mute', 'pause.sound', state.soundOn, (on) => handlers.onSound(on));
-  row(top + SETTINGS_ROW, 'eye', 'pause.colorBlind', state.colorBlind, (on) => handlers.onColorBlind(on));
-  row(top + SETTINGS_ROW * 2, 'motion', 'settings.reduceMotion', state.reduceMotion, (on) => handlers.onReduceMotion(on));
-  if (state.canVibrate) row(top + SETTINGS_ROW * 3, 'bolt', 'settings.vibration', state.vibration, (on) => handlers.onVibration(on));
+  let y = top;
+  const next = () => (y += SETTINGS_ROW) - SETTINGS_ROW;
+  row(next(), state.soundOn ? 'sound' : 'mute', 'pause.sound', state.soundOn, (on) => handlers.onSound(on));
+  if (state.music !== null) row(next(), 'music', 'settings.music', state.music, (on) => handlers.onMusic(on));
+  row(next(), 'eye', 'pause.colorBlind', state.colorBlind, (on) => handlers.onColorBlind(on));
+  row(next(), 'motion', 'settings.reduceMotion', state.reduceMotion, (on) => handlers.onReduceMotion(on));
+  if (state.canVibrate) row(next(), 'bolt', 'settings.vibration', state.vibration, (on) => handlers.onVibration(on));
 }
