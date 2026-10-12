@@ -3,7 +3,7 @@ import { playerLevel, rewardWin } from '../core/economy';
 import { ECONOMY } from '../data/economy';
 import { SKIN } from '../ui/design/tokens';
 import type { UiIconName } from '../ui/design/uiIcons';
-import { prepareItemTextures } from './itemTextures';
+import { prepareAllInBackground, prepareLevelTextures } from './itemTextures';
 import { prepareBoosterTextures } from './boosterTextures';
 import { loadUiFonts, prepareUiIcon } from './kit';
 import { prepareTutorialTextures } from './TutorialHint';
@@ -42,8 +42,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Load timing for the browser's performance tools (no output of its own).
+    performance.mark('nusa:boot');
     const icons = ICONS.map(([name, color]) => prepareUiIcon(this, name, color));
-    void Promise.all([prepareItemTextures(this), prepareBoosterTextures(this), prepareTutorialTextures(this), loadUiFonts(), ...icons]).then(() => this.start());
+    void Promise.all([prepareBoosterTextures(this), prepareTutorialTextures(this), loadUiFonts(), ...icons]).then(() => this.start());
   }
 
   /** Development only (?arrival=N): a three-star win of level N, with rewards that show every step. */
@@ -73,7 +75,7 @@ export class BootScene extends Phaser.Scene {
     if (!dev || (dev.level === null && !dev.home)) {
       const resume = resumeFromSnapshot(this.store.snapshot);
       if (resume) {
-        this.scene.start('Game', { resume } satisfies GameData);
+        this.openLevel(resume.levelIndex, { resume });
         return;
       }
       // It no longer fits the game (the level or the format changed): dropped quietly.
@@ -81,13 +83,24 @@ export class BootScene extends Phaser.Scene {
     }
     const start = startScreen(this.store.progress.completed.length, dev);
     if (start.scene === 'Game') {
-      this.scene.start('Game', { levelIndex: start.levelIndex } satisfies GameData);
+      this.openLevel(start.levelIndex, { levelIndex: start.levelIndex });
       return;
     }
     // Development only: ?arrival=N plays the sequence that follows winning level N with three stars, with sample
     // rewards (coins, a player level, and stars that light up the chest) that are shown but not saved.
     const arrived = import.meta.env.DEV ? parseArrivalParam(search, playList.length) : null;
     const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
+    performance.mark('nusa:playable');
     this.scene.start('Home', data);
+    void prepareAllInBackground(this);
+  }
+
+  /** Opens a level once its own item icons are ready; the other levels' are drawn afterwards, in the background. */
+  private openLevel(levelIndex: number, data: GameData): void {
+    void prepareLevelTextures(this, levelIndex).then(() => {
+      performance.mark('nusa:playable');
+      this.scene.start('Game', data);
+      void prepareAllInBackground(this);
+    });
   }
 }

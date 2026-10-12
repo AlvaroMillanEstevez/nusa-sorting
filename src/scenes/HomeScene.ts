@@ -16,6 +16,7 @@ import { wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
+import { prepareLevelTextures } from './itemTextures';
 import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
 import { settingsRowCount, settingsRows, SETTINGS_ROW } from './SettingsRows';
@@ -474,7 +475,8 @@ export class HomeScene extends Phaser.Scene {
       return;
     }
     this.sfx.play('pick');
-    fadeToScene(this, 'Game', { levelIndex: level });
+    // Its icons are usually ready (drawn in the background since the game opened); if not, a moment's wait.
+    void prepareLevelTextures(this, level).then(() => fadeToScene(this, 'Game', { levelIndex: level }));
   }
 
   /**
