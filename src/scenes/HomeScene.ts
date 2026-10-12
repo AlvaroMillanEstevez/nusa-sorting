@@ -1,17 +1,18 @@
 import * as Phaser from 'phaser';
 import { chestProgress, playerLevel, playerTitle } from '../core/economy';
-import type { Reward } from '../data/economy';
+import { ECONOMY, type Reward } from '../data/economy';
 import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { MAP } from '../ui/art/map';
+import type { UiIconName } from '../ui/design/uiIcons';
 import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE, TILE } from '../ui/design/tokens';
 import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
 import { KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
-import { wantsChest, wantsShop } from '../dev/uiParams';
+import { wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
@@ -153,6 +154,8 @@ export class HomeScene extends Phaser.Scene {
       this.openShop();
     } else if (import.meta.env.DEV && wantsChest(window.location.search)) {
       this.pressChest();
+    } else if (import.meta.env.DEV && wantsCoinsHelp(window.location.search)) {
+      this.openCoinsHelp();
     }
   }
 
@@ -227,7 +230,7 @@ export class HomeScene extends Phaser.Scene {
 
   /**
    * The top bar: the player's level (with its experience bar), coins and stars on the left, settings on the
-   * right, and the title on a wooden sign below. Tapping the coins opens the shop.
+   * right, and the title on a wooden sign below. Tapping the coins explains how to get them.
    */
   private buildBar(width: number): void {
     const screen = screenRect(this);
@@ -243,7 +246,7 @@ export class HomeScene extends Phaser.Scene {
     const [lw, cw, sw] = [104, 104, 84].map((w) => Math.round(w * k)) as [number, number, number];
     this.levelPill = new KitPill(this, SPACE.s + lw / 2, row, { skin: SKIN, icon: 'trophy', value: '', height: 40, width: lw });
     this.coinsPill = new KitPill(this, SPACE.s + lw + SPACE.xs + cw / 2, row, { skin: SKIN, icon: 'coin', value: '', tint: SKIN.text.accent, height: 40, width: cw });
-    this.coinsPill.setSize(cw, 44).setInteractive().on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openShop());
+    this.coinsPill.setSize(cw, 44).setInteractive().on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openCoinsHelp());
     this.starsPill = new KitPill(this, SPACE.s + lw + cw + SPACE.xs * 2 + sw / 2, row, { skin: SKIN, icon: 'starFilled', value: String(this.store.totalStars), tint: SKIN.star.filled, height: 40, width: sw });
     // The player's title, under their level.
     this.titleCaption = kitText(this, 'caption', '', SKIN.text.primary).setStroke(SKIN.surface.border, 4).setPosition(SPACE.s + lw / 2, row + 28);
@@ -472,6 +475,63 @@ export class HomeScene extends Phaser.Scene {
     }
     this.sfx.play('pick');
     fadeToScene(this, 'Game', { levelIndex: level });
+  }
+
+  /**
+   * How to get coins: a short modal with one row per source (winning levels, more the first time; stars; player
+   * levels; star chests), each with its icon, and a button on to the shop.
+   */
+  private openCoinsHelp(): void {
+    if (this.modal || this.sequence?.running) return;
+    const screen = screenRect(this);
+    const safe = viewSize(this);
+    const w = Math.min(safe.width - SPACE.s * 2, 360);
+    const h = Math.min(safe.height - SPACE.s * 2, 456);
+    const modal = new KitModal(this, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: t('coinsHelp.title') });
+    modal.setPosition(screen.x, screen.y).setDepth(DEPTH_MODAL);
+    const panel = modal.panel;
+    const close = () => {
+      modal.dismiss();
+      this.modal = null;
+    };
+    const rows: readonly { icon: UiIconName; color: string; title: string; note: string }[] = [
+      { icon: 'check', color: SKIN.text.accent, title: t('coinsHelp.levels'), note: t('coinsHelp.levelsNote') },
+      { icon: 'starFilled', color: SKIN.star.filled, title: t('coinsHelp.stars'), note: t('coinsHelp.starsNote') },
+      { icon: 'trophy', color: SKIN.text.accent, title: t('coinsHelp.levelUp'), note: t('coinsHelp.levelUpNote') },
+      { icon: 'chest', color: SKIN.text.accent, title: t('coinsHelp.chests'), note: t('coinsHelp.chestsNote', { n: ECONOMY.chests.everyStars }) },
+    ];
+    const buttonY = h / 2 - SPACE.m - 28;
+    const top = panel.contentTop + SPACE.xs;
+    // Rows share the room between the title and the button, up to 64 px each (they tighten on a short screen).
+    const rowH = Math.min(64, (buttonY - 28 - SPACE.s - top) / rows.length);
+    const iconSize = 36;
+    const inner = w - SPACE.l * 2;
+    const textX = -inner / 2 + iconSize + SPACE.s;
+    rows.forEach((row, i) => {
+      const y = top + rowH * (i + 0.5);
+      panel.add(uiIcon(this, row.icon, row.color, iconSize).setPosition(-inner / 2 + iconSize / 2, y));
+      const title = kitText(this, 'button', row.title, SKIN.text.primary, 18).setOrigin(0, 1).setPosition(textX, y + 1);
+      const note = kitText(this, 'body', row.note, SKIN.text.secondary, 14).setOrigin(0, 0).setPosition(textX, y + 3);
+      note.setAlign('left').setWordWrapWidth(inner / 2 - textX);
+      panel.add([title, note]);
+    });
+    panel.add(
+      new KitButton(this, 0, buttonY, {
+        skin: SKIN,
+        variant: 'primary',
+        icon: 'shop',
+        label: t('coinsHelp.toShop'),
+        width: inner,
+        height: 56,
+        onPress: () => {
+          close();
+          this.openShop();
+        },
+      }),
+    );
+    panel.add(new KitIconButton(this, w / 2 - 30, -h / 2 + 30, { skin: SKIN, icon: 'close', onPress: close }));
+    modal.popIn();
+    this.modal = modal;
   }
 
   private openSettings(): void {
