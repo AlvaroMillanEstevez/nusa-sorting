@@ -12,6 +12,8 @@ export interface StallFrame {
   /** The signs the HUD and the boosters hang on (the boosters' only once a booster is unlocked). */
   readonly hud: Rect;
   readonly boosters: Rect | null;
+  /** False: only the signs (when the backdrop is a picture that already shows the stall). */
+  readonly decor?: boolean;
 }
 
 /**
@@ -24,6 +26,11 @@ export function drawStall(g: Phaser.GameObjects.Graphics, width: number, height:
   const unit = Math.min(width, height);
   const post = Math.round(unit * 0.03);
   const { awning, board } = frame;
+  if (frame.decor === false) {
+    sign(g, frame.hud, awning);
+    if (frame.boosters) sign(g, frame.boosters, awning);
+    return;
+  }
 
   // The sides shaded towards the edges.
   if (board) {

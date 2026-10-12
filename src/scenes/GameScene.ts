@@ -90,6 +90,7 @@ import type { HapticsService } from '../services/HapticsService';
 import { PauseMenu } from './PauseMenu';
 import { kitText, reducedMotion, setReducedMotion } from './kit';
 import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
+import { artHooks } from './artHooks';
 
 const SELECTED_LIFT = 0.15;
 const SELECTED_SCALE = 1.12;
@@ -193,6 +194,8 @@ export class GameScene extends Phaser.Scene {
   private closing!: ClosingShelves;
   private blocker!: BlockerView;
   private belt!: BeltController;
+  /** What a mock-up's other art made (?artpilot in development), redrawn with the board. */
+  private artMade: Phaser.GameObjects.GameObject[] = [];
   private movingShelves!: MovingShelves;
   private dropMark!: Phaser.GameObjects.Graphics;
   /** Last pointer position, for the drop-target outline while dragging. */
@@ -629,6 +632,8 @@ export class GameScene extends Phaser.Scene {
       this.level = playedLevel(index, this.arrangement);
       this.state = createGame(this.level);
     }
+    // A mock-up's other art (?artpilot in development) dresses the level before its items are made.
+    artHooks()?.dressLevel(this, this.level);
     this.continuesUsed = resume?.continuesUsed ?? 0;
     this.boostersUsed = { ...(resume?.boostersUsed ?? NO_BOOSTERS_USED) };
     for (const shelf of this.state.shelves) {
@@ -1113,6 +1118,14 @@ export class GameScene extends Phaser.Scene {
   /** Fixed shelves; shelves riding tracks are drawn and moved by MovingShelves. */
   private drawBoard(): void {
     const fixed = this.base.shelves.filter((_, i) => !this.live.moving[i]).map((shelf) => shelf.rect);
+    for (const made of this.artMade) made.destroy();
+    const hooks = artHooks();
+    this.artMade = hooks ? hooks.drawShelves(this, this.base.shelves.filter((_, i) => !this.live.moving[i]), this.base.slotSize) : [];
+    if (hooks) {
+      const backdrop = hooks.backdrop(this, screenRect(this), Boolean(this.layout.side));
+      if (backdrop && !this.levelTheme()) this.artMade.push(backdrop);
+      else backdrop?.destroy();
+    }
     // Room for the brackets under each board.
     this.board.draw(boundsAround(fixed, this.base.slotSize * 0.3), (g) =>
       this.base.shelves.forEach((shelf, i) => {

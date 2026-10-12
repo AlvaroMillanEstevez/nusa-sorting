@@ -44,6 +44,13 @@ if (import.meta.env.DEV) {
   if (chestStars !== null) store.addChestStars(chestStars - store.wallet.chestStars);
 }
 
+// Development only: ?artpilot dresses the levels with the illustrated pilot art (a mock-up; see src/dev/artPilot).
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('artpilot')) {
+  const { installArtPilot } = await import('./dev/artPilot');
+  await installArtPilot();
+  store.markTutorialDone('first-triple');
+}
+
 // Development only: ?demo=N adds the demo levels of the test fixtures (as levels 101 and up) and opens demo N.
 if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo')) {
   const { demoLevels } = await import('../tests/fixtures/demo-levels');
@@ -114,7 +121,10 @@ setKitFeedback({ press: () => sound.play('tap'), open: () => sound.play('open'),
 const gameScenes = () => [new BootScene(store), new HomeScene(sound, store, haptics), new GameScene(sound, store, haptics)];
 
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
-if (import.meta.env.DEV && wantsGallery(window.location.search)) {
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('artpilot') === 'gallery') {
+  // Development only: ?artpilot=gallery compares the pilot's objects with the current icons at real sizes.
+  void import('./dev/ArtPilotGallery').then(({ ArtPilotGallery }) => startGame([ArtPilotGallery]));
+} else if (import.meta.env.DEV && wantsGallery(window.location.search)) {
   void import('./dev/GalleryScene').then(({ GalleryScene }) => startGame([GalleryScene]));
 } else if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview')) {
   // Development only: ?preview=landscape|portrait plays the store video: the cover, then a short board solved by

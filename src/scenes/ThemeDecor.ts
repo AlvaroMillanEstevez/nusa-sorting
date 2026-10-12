@@ -4,6 +4,7 @@ import type { ThemeLook } from '../ui/themeLook';
 import { BakedLayer } from './art/BakedLayer';
 import { SKIN } from '../ui/design/tokens';
 import { drawStall } from './StallDecor';
+import { artHooks } from './artHooks';
 
 /** Under everything: the board, the tracks and the HUD are drawn over it. */
 const DEPTH_DECOR = -100;
@@ -31,15 +32,22 @@ export class ThemeDecor {
     this.layer.setPosition(screen.x, screen.y);
     const local = (r: Rect): Rect => ({ ...r, x: r.x - screen.x, y: r.y - screen.y });
     this.layer.draw({ x: 0, y: 0, width, height }, (g) => {
+      // A mock-up's picture backdrop (?artpilot) replaces the drawn one in levels without a theme.
+      const picture = !look && artHooks() !== null;
       const [top, bottom] = (look ? look.sky : SKIN.backdrop).map(hex) as [number, number];
-      g.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(0, 0, width, height);
+      if (!picture) g.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(0, 0, width, height);
+      // In portrait, the picture's floor is darkened under the boosters' bar so the tiles keep their contrast.
+      if (picture && !layout.side) {
+        const shade = hex(SKIN.backdrop[1]);
+        g.fillGradientStyle(shade, shade, shade, shade, 0, 0, 0.75, 0.75).fillRect(0, height * 0.72, width, height * 0.28);
+      }
       const hudBottom = layout.hud.height - screen.y;
       const bounds = boardBounds(layout);
       const board = bounds && local(bounds);
       if (look) this.motif(g, look, width, height, hudBottom, board);
       // Wide screens: the warung around the board, over the theme's motif.
       const side = layout.side;
-      if (side) drawStall(g, width, height, { awning: hudBottom, board, hud: local(side.hud), boosters: boosters ? local(side.boosters) : null });
+      if (side) drawStall(g, width, height, { awning: hudBottom, board, hud: local(side.hud), boosters: boosters ? local(side.boosters) : null, decor: !picture });
     });
   }
 

@@ -1,0 +1,146 @@
+{
+ "objects": {
+  "sate": {
+   "bounds": [
+    8.6,
+    8.2,
+    91.0,
+    88.7
+   ],
+   "bytes": 18490,
+   "backBytes": 5130
+  },
+  "es-teh-manis": {
+   "bounds": [
+    27.0,
+    5.1,
+    73.0,
+    88.7
+   ],
+   "bytes": 11974,
+   "backBytes": 2754
+  },
+  "rambutan": {
+   "bounds": [
+    9.0,
+    18.4,
+    91.8,
+    88.3
+   ],
+   "bytes": 23438,
+   "backBytes": 6420
+  },
+  "ketupat": {
+   "bounds": [
+    15.6,
+    4.7,
+    84.4,
+    91.4
+   ],
+   "bytes": 12284,
+   "backBytes": 3990
+  },
+  "bakso": {
+   "bounds": [
+    9.0,
+    19.9,
+    91.0,
+    86.3
+   ],
+   "bytes": 14454,
+   "backBytes": 3144
+  },
+  "klepon": {
+   "bounds": [
+    9.8,
+    19.5,
+    89.8,
+    87.9
+   ],
+   "bytes": 19134,
+   "backBytes": 4838
+  }
+ },
+ "shelf": {
+  "geometry": {
+   "post": 0.08,
+   "divider": 0.06,
+   "interior": 0.94,
+   "beam": 0.14,
+   "overhangTop": 0.06,
+   "slot": 1.2,
+   "plank": 0.18
+  },
+  "source": {
+   "columns": [
+    [
+     0,
+     62
+    ],
+    [
+     62,
+     467
+    ],
+    [
+     467,
+     501
+    ],
+    [
+     501,
+     879
+    ],
+    [
+     879,
+     920
+    ],
+    [
+     920,
+     1298
+    ],
+    [
+     1298,
+     1389
+    ]
+   ],
+   "rows": [
+    [
+     0,
+     121
+    ],
+    [
+     121,
+     535
+    ],
+    [
+     535,
+     708
+    ]
+   ],
+   "size": [
+    1389,
+    708
+   ]
+  },
+  "image": [
+   682,
+   334
+  ],
+  "bytes": 14404
+ },
+ "backgrounds": {
+  "background-portrait": {
+   "size": [
+    1024,
+    1536
+   ],
+   "bytes": 137704
+  },
+  "background-landscape": {
+   "size": [
+    1672,
+    941
+   ],
+   "bytes": 172656
+  }
+ }
+}

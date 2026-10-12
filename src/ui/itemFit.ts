@@ -110,12 +110,18 @@ export interface ItemFit {
 
 const NONE: ItemFit = { scale: 1, drop: 0 };
 
+/** Development only (?artpilot): other drawings' bounds, for kinds drawn with other art in a mock-up. */
+let boundsOverride: Readonly<Record<string, readonly [number, number, number, number]>> = {};
+export function setItemBoundsOverride(bounds: Readonly<Record<string, readonly [number, number, number, number]>>): void {
+  boundsOverride = bounds;
+}
+
 /**
  * How an item of `kind` fits a slot `aspect` times as tall as wide. Square slots (aspect 1) keep today's look
  * exactly. Taller ones rest every item on the base and let tall items grow, uniformly, into the extra height.
  */
 export function itemFit(kind: string, aspect: number): ItemFit {
-  const bounds = ITEM_BOUNDS[kind];
+  const bounds = boundsOverride[kind] ?? ITEM_BOUNDS[kind];
   if (aspect <= 1 || !bounds) return NONE;
   const [left, top, right, bottom] = bounds;
   const width = right - left;
