@@ -3,6 +3,7 @@ import type { BoardLayout, Rect } from '../ui/boardLayout';
 import type { ThemeLook } from '../ui/themeLook';
 import { BakedLayer } from './art/BakedLayer';
 import { SKIN } from '../ui/design/tokens';
+import { drawStall } from './StallDecor';
 
 /** Under everything: the board, the tracks and the HUD are drawn over it. */
 const DEPTH_DECOR = -100;
@@ -24,7 +25,7 @@ export class ThemeDecor {
    * Draws the background over the whole screen (`screen`, in world coordinates: it starts above and left of the
    * safe area). Without a theme it is the warm warung backdrop of the interface.
    */
-  draw(look: ThemeLook | null, screen: Rect, layout: BoardLayout): void {
+  draw(look: ThemeLook | null, screen: Rect, layout: BoardLayout, boosters = false): void {
     const { width, height } = screen;
     // Drawn in screen coordinates: the layer sits at the screen's corner, and the board is moved to match.
     this.layer.setPosition(screen.x, screen.y);
@@ -32,34 +33,42 @@ export class ThemeDecor {
     this.layer.draw({ x: 0, y: 0, width, height }, (g) => {
       const [top, bottom] = (look ? look.sky : SKIN.backdrop).map(hex) as [number, number];
       g.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(0, 0, width, height);
-      if (!look) return;
       const hudBottom = layout.hud.height - screen.y;
-      // Strings hang across the screen but stop at the board, so none shows through the gaps between shelves.
-      const board = boardBounds(layout);
-      const clear = outsideBoard(board && local(board));
-      switch (look.motif) {
-        case 'batik':
-          return batik(g, look, width, height);
-        case 'bunting':
-          return bunting(g, look, width, height, hudBottom, clear);
-        case 'bulbs':
-          return bulbs(g, look, width, height, hudBottom, clear);
-        case 'waves':
-          return waves(g, look, width, height);
-        case 'court':
-          return court(g, look, width, height);
-        case 'chalk':
-          return chalk(g, look, width, height);
-        case 'spices':
-          return spices(g, look, width, height);
-        case 'terraces':
-          return terraces(g, look, width, height);
-        case 'leaves':
-          return leaves(g, look, width, height);
-        case 'festival':
-          return festival(g, look, width, height, hudBottom, clear);
-      }
+      const bounds = boardBounds(layout);
+      const board = bounds && local(bounds);
+      if (look) this.motif(g, look, width, height, hudBottom, board);
+      // Wide screens: the warung around the board, over the theme's motif.
+      const side = layout.side;
+      if (side) drawStall(g, width, height, { awning: hudBottom, board, hud: local(side.hud), boosters: boosters ? local(side.boosters) : null });
     });
+  }
+
+  /** A themed level's motif over its sky (`board` in screen coordinates). */
+  private motif(g: Phaser.GameObjects.Graphics, look: ThemeLook, width: number, height: number, hudBottom: number, board: Rect | null): void {
+    // Strings hang across the screen but stop at the board, so none shows through the gaps between shelves.
+    const clear = outsideBoard(board);
+    switch (look.motif) {
+      case 'batik':
+        return batik(g, look, width, height);
+      case 'bunting':
+        return bunting(g, look, width, height, hudBottom, clear);
+      case 'bulbs':
+        return bulbs(g, look, width, height, hudBottom, clear);
+      case 'waves':
+        return waves(g, look, width, height);
+      case 'court':
+        return court(g, look, width, height);
+      case 'chalk':
+        return chalk(g, look, width, height);
+      case 'spices':
+        return spices(g, look, width, height);
+      case 'terraces':
+        return terraces(g, look, width, height);
+      case 'leaves':
+        return leaves(g, look, width, height);
+      case 'festival':
+        return festival(g, look, width, height, hudBottom, clear);
+    }
   }
 }
 

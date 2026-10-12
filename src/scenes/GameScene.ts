@@ -703,7 +703,7 @@ export class GameScene extends Phaser.Scene {
 
   private buildBoosterBar(): void {
     const { width, height } = viewSize(this);
-    this.boosterBar.build(boosterBarRect(width, height, this.layout.hud.height), this.unlockedBoosters(), this.store.wallet.boosters);
+    this.boosterBar.build(this.layout.side?.boosters ?? boosterBarRect(width, height, this.layout.hud.height), this.unlockedBoosters(), this.store.wallet.boosters);
     this.boosterBar.setActive(this.aiming ? 'removeTriple' : this.state.frozenMs > 0 ? 'freeze' : null);
   }
 
@@ -1086,7 +1086,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.layout(width, this.layout);
     this.overlay.layout();
     this.pauseMenu.relayout();
-    this.decor.draw(themeLook(this.levelTheme()), screenRect(this), this.layout);
+    this.decor.draw(themeLook(this.levelTheme()), screenRect(this), this.layout, this.unlockedBoosters().length > 0);
     this.themeIntro.layout();
     this.tutorial.layout(width, height, this.layout, this.baseScale());
     this.buildBoosterBar();

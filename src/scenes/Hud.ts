@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { getLocale, t } from '../i18n';
-import type { BoardLayout } from '../ui/boardLayout';
+import type { BoardLayout, Rect } from '../ui/boardLayout';
 import { DURATION, EASE, hexNumber, SKIN, SPACE } from '../ui/design/tokens';
 import { formatScore, formatTime } from '../ui/format';
 import { timeStage, type TimeStage } from '../ui/timeWarning';
@@ -10,6 +10,9 @@ const DEPTH_HUD = 150;
 /** The biggest numbers the pills are sized for, so they never resize while playing. */
 const WIDEST_SCORE = '00 000';
 const WIDEST_TIME = '0:00';
+/** The side column's pills (wide screens), and the room above the first row for the sign's top edge. */
+const SIDE_PILL = 44;
+const SIDE_TOP = 26;
 
 export interface HudHandlers {
   onPause(): void;
@@ -58,20 +61,24 @@ export class Hud {
   }
 
   /** The pills, built for a height (they are rebuilt when the HUD's rows change size). */
-  private build(height: number): void {
+  private build(height: number, width?: number): void {
     for (const part of [this.time, this.score, this.combo, this.intro, this.hint, this.special]) part?.destroy();
     const skin = SKIN;
-    this.time = new KitPill(this.scene, 0, 0, { skin, icon: 'clock', value: WIDEST_TIME, width: Math.round(height * 2.7), height });
-    this.score = new KitPill(this.scene, 0, 0, { skin, label: t('hud.scoreLabel'), value: WIDEST_SCORE, height });
-    this.combo = new KitPill(this.scene, 0, 0, { skin, icon: 'combo', value: '×00', tint: skin.status.combo, height });
+    // In the side column (wide screens) every pill is as wide as the column; the clock shares its row with pause.
+    const wide = width === undefined ? {} : { width };
+    const clockWidth = width === undefined ? Math.round(height * 2.7) : width - 44 - SPACE.xs;
+    this.time = new KitPill(this.scene, 0, 0, { skin, icon: 'clock', value: WIDEST_TIME, width: clockWidth, height });
+    this.score = new KitPill(this.scene, 0, 0, { skin, label: t('hud.scoreLabel'), value: WIDEST_SCORE, height, ...wide });
+    this.combo = new KitPill(this.scene, 0, 0, { skin, icon: 'combo', value: '×00', tint: skin.status.combo, height, ...wide });
     this.intro = new KitPill(this.scene, 0, 0, {
       skin,
       label: t('hud.levelLabel'),
       value: '00',
       height,
+      ...wide,
       ...(this.isSpecial ? { icon: 'starFilled' as const, tint: skin.text.accent } : {}),
     });
-    this.special = new KitPill(this.scene, 0, 0, { skin, icon: 'starFilled', value: t('hud.special'), tint: skin.text.accent, height });
+    this.special = new KitPill(this.scene, 0, 0, { skin, icon: 'starFilled', value: t('hud.special'), tint: skin.text.accent, height, ...wide });
     this.hint = kitText(this.scene, 'label', t('hud.tapToStart'), skin.text.secondary);
     for (const part of [this.time, this.score, this.combo, this.intro, this.special, this.hint]) part.setDepth(DEPTH_HUD);
     this.time.setValue(this.timeText || WIDEST_TIME);
@@ -84,6 +91,10 @@ export class Hud {
   layout(width: number, layout: BoardLayout): void {
     this.width = width;
     this.layoutRef = layout;
+    if (layout.side) {
+      this.layoutSide(layout.side.hud);
+      return;
+    }
     const row = layout.hudRowHeight;
     const inline = layout.statusInline || !layout.statusRow;
     const pillH = Math.round(Math.min(44, row * (inline ? 0.82 : 0.66)));
@@ -116,6 +127,36 @@ export class Hud {
     this.frozenBadge = uiIcon(this.scene, 'freeze', SKIN.text.primary, pillH * 0.7)
       .setPosition(this.time.x - this.time.pillWidth / 2 - pillH * 0.45, cy)
       .setDepth(DEPTH_HUD)
+      .setVisible(this.frozen);
+    this.setHint(this.signText);
+  }
+
+  /**
+   * Wide screens: the HUD down a wooden sign left of the board (drawn by the backdrop). Rows: pause and the
+   * clock; the score (the level before the first touch); the combo (the hint before it); the special badge.
+   */
+  private layoutSide(rect: Rect): void {
+    const pillH = SIDE_PILL;
+    const inner = rect.width - SPACE.s * 2;
+    this.build(pillH, inner);
+    const left = rect.x + SPACE.s;
+    const cx = rect.x + rect.width / 2;
+    const rowY = (i: number) => rect.y + SIDE_TOP + pillH / 2 + i * (pillH + SPACE.s);
+    this.pause.setPosition(left + 22, rowY(0));
+    this.time.setPosition(left + 44 + SPACE.xs + this.time.pillWidth / 2, rowY(0));
+    this.score.setPosition(cx, rowY(1));
+    this.intro.setPosition(cx, rowY(1));
+    this.combo.setPosition(cx, rowY(2));
+    this.hint.setOrigin(0.5).setPosition(cx, rowY(2));
+    this.hint.setScale(1);
+    if (this.hint.width > inner) this.hint.setScale(Math.max(12 / 14, inner / this.hint.width));
+    this.special.setPosition(cx, rowY(3));
+    this.refresh();
+    this.drawAccent();
+    this.frozenBadge?.destroy();
+    this.frozenBadge = uiIcon(this.scene, 'freeze', SKIN.text.primary, pillH * 0.6)
+      .setPosition(this.time.x + this.time.pillWidth / 2 - pillH * 0.45, rowY(0))
+      .setDepth(DEPTH_HUD + 1)
       .setVisible(this.frozen);
     this.setHint(this.signText);
   }
@@ -190,7 +231,7 @@ export class Hud {
     this.hint.setVisible(waiting);
     this.score.setVisible(!waiting);
     this.combo.setVisible(!waiting && this.comboShown);
-    this.special.setVisible(this.isSpecial && !(waiting && this.layoutRef?.statusInline));
+    this.special.setVisible(this.isSpecial && (Boolean(this.layoutRef?.side) || !(waiting && this.layoutRef?.statusInline)));
     this.time.setAlpha(waiting ? 0.7 : 1);
   }
 

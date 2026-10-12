@@ -139,6 +139,16 @@ La primera vez en un tema sale su presentación: el nombre en los dos idiomas, u
 
 **Estrellas**: ganar da siempre 1; 2 y 3 dependen de la puntuación, que incluye un bonus de 20 puntos por segundo que sobra. Los umbrales salen de una fórmula sobre el propio nivel (`STAR_FORMULA` en `src/core/stars.ts`): con B = tríos × puntos por trío (sin combo) y F = el bonus de tiempo completo (tiempo límite × 20), **2 estrellas = 1,25·B + 0,2·F** y **3 estrellas = 1,7·B + 0,4·F**.
 
+**Escritorio y pantallas anchas**: dos piezas.
+- **Escala de interfaz** (`uiScale` en `scenes/view.ts`): en ventanas mayores de 960 × 540 todo el juego se compone como si la pantalla midiera eso (lo que limite antes, ancho o alto) y se dibuja más grande, hasta ×2,5. Por ejemplo: 1280 × 720 → ×1,33; 1920 × 1080 → ×2. Los móviles y las ventanas pequeñas siguen a ×1. Textos, iconos y capas horneadas se rasterizan a esa escala (`pixelRatio()`), así que no pierden nitidez.
+- **Composición ancha** (`wideLayout` en `levelLayout.ts`), cuando la pantalla es al menos 1,45 veces más ancha que alta y mide 440 o más de alto (ventanas de ordenador y tabletas en horizontal; no los móviles en horizontal):
+  - El HUD baja por un cartel de madera a la izquierda del tablero: pausa y reloj, puntuación (o el nivel antes del primer toque), combo (o «Toca para empezar»), distintivo especial.
+  - Los potenciadores van en otro cartel a la derecha.
+  - El tablero ocupa toda la altura bajo un toldo de rayas.
+  - Alrededor se dibuja el puesto (`StallDecor.ts`): postes de madera, toldo con borde festoneado, guirnaldas de bombillas, ketupat y farolillos, y un cesto de fruta sobre una caja a cada lado. Todo fuera del tablero, con los lados algo sombreados para que la vista vaya a él. Los colores están en `WOOD` (`ui/art/wood.ts`).
+  - El tutorial del nivel 1 se coloca en la columna izquierda, bajo el cartel.
+  - El menú de pausa pasa a acciones y ajustes lado a lado siempre que la versión alta no quepa.
+
 **Zonas seguras**: la página usa `viewport-fit=cover`; el lienzo ocupa toda la pantalla y la cámara coloca el origen del mundo en la esquina de la zona segura (`safeInsets` en `view.ts`). Layouts, HUD y paneles se calculan para la zona segura; fondos y atenuados cubren la pantalla entera.
 
 **Efectos** (`Effects.ts`; ninguno bloquea la siguiente jugada: son animaciones sobre objetos que no reciben toques, con emisores de partículas creados una vez):
@@ -195,7 +205,17 @@ Lo que hacen bien los juegos bien valorados del género y los casuales premium, 
 6. **Pulgares abajo**: las acciones de los paneles en su parte baja; el HUD arriba, ligero.
 7. **Transición con identidad**: sustituir el fundido entre niveles por un barrido con un motivo de batik (o la persiana de la tienda del warung) en menos de 420 ms.
 8. **Vibración háptica** en el trío y la victoria (Android con `navigator.vibrate`; iOS Safari no la permite) detrás de un servicio como `SoundService` y con su ajuste.
-9. **Zonas seguras**: `viewport-fit=cover` ya está activado; el HUD debe respetar `env(safe-area-inset-*)` en móviles con muesca.
+9. **Escritorio y pantallas anchas**: dos piezas.
+- **Escala de interfaz** (`uiScale` en `scenes/view.ts`): en ventanas mayores de 960 × 540 todo el juego se compone como si la pantalla midiera eso (lo que limite antes, ancho o alto) y se dibuja más grande, hasta ×2,5. Por ejemplo: 1280 × 720 → ×1,33; 1920 × 1080 → ×2. Los móviles y las ventanas pequeñas siguen a ×1. Textos, iconos y capas horneadas se rasterizan a esa escala (`pixelRatio()`), así que no pierden nitidez.
+- **Composición ancha** (`wideLayout` en `levelLayout.ts`), cuando la pantalla es al menos 1,45 veces más ancha que alta y mide 440 o más de alto (ventanas de ordenador y tabletas en horizontal; no los móviles en horizontal):
+  - El HUD baja por un cartel de madera a la izquierda del tablero: pausa y reloj, puntuación (o el nivel antes del primer toque), combo (o «Toca para empezar»), distintivo especial.
+  - Los potenciadores van en otro cartel a la derecha.
+  - El tablero ocupa toda la altura bajo un toldo de rayas.
+  - Alrededor se dibuja el puesto (`StallDecor.ts`): postes de madera, toldo con borde festoneado, guirnaldas de bombillas, ketupat y farolillos, y un cesto de fruta sobre una caja a cada lado. Todo fuera del tablero, con los lados algo sombreados para que la vista vaya a él. Los colores están en `WOOD` (`ui/art/wood.ts`).
+  - El tutorial del nivel 1 se coloca en la columna izquierda, bajo el cartel.
+  - El menú de pausa pasa a acciones y ajustes lado a lado siempre que la versión alta no quepa.
+
+**Zonas seguras**: `viewport-fit=cover` ya está activado; el HUD debe respetar `env(safe-area-inset-*)` en móviles con muesca.
 10. **Progreso a la vista**: barra hacia el próximo tema en el panel de victoria y en el mapa (el componente ya existe).
 11. **Lista de niveles como recorrido**: un camino por islas de Nusantara agrupado por temas, en vez de una cuadrícula.
 12. **Monedas y tienda con el mismo kit**: la moneda es una `KitPill` con el icono `coin`; la tienda, un `KitPanel` con botones `KitButton`; los potenciadores, `KitIconButton` con contador.

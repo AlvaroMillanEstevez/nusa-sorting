@@ -1,5 +1,5 @@
 import { carrierOffset, createGame, type GameState, type LevelDefinition } from '../core';
-import { computeBoardLayout, shelfLayoutCentred, trackPose, type BoardLayout, type Rect, type ShelfLayout } from './boardLayout';
+import { computeBoardLayout, MARGIN, shelfLayoutCentred, trackPose, translateLayout, type BoardLayout, type Rect, type ShelfLayout } from './boardLayout';
 import { computeColumnLayout, type ColumnSpec } from './columnLayout';
 
 /** Item size relative to its slot (shelves and tracks alike): items stand close together. */
@@ -44,7 +44,59 @@ export function boosterBarRect(width: number, height: number, hudHeight: number)
     : { x: 0, y: height - BOOSTER_BAR, width, height: BOOSTER_BAR };
 }
 
+/**
+ * Wide screens: desktop windows (CrazyGames shows games at 16:9) and tablets held sideways, but not phones held
+ * sideways, which are too short for it. There the HUD goes in a column left of the board and the boosters in one
+ * right of it, under the warung's awning, and the board takes the whole height below the awning.
+ */
+export const WIDE_ASPECT = 1.45;
+const WIDE_MIN_HEIGHT = 440;
+export const isWide = (width: number, height: number): boolean => width / height >= WIDE_ASPECT && height >= WIDE_MIN_HEIGHT;
+/** The awning across the top of a wide screen. */
+export const awningHeight = (height: number): number => Math.round(height * 0.075);
+/** The HUD's column on a wide screen. */
+const sideColumn = (width: number): number => Math.round(Math.min(200, Math.max(156, width * 0.17)));
+/** Between the board and the side columns. */
+const SIDE_GAP = 20;
+/**
+ * The wooden signs the side columns hang on, as tall as the HUD's four rows (pause and clock, score, combo,
+ * special badge) and the boosters' three tiles. Hung a little below the awning.
+ */
+export const SIDE_SIGN_HEIGHT = 276;
+const SIGN_DROP = 16;
+/** The boosters' sign: wider than the bar, so the tiles sit on wood. */
+const BOOSTER_SIGN = 92;
+
+function wideLayout(level: LevelDefinition, state: GameState, width: number, height: number): BoardLayout {
+  const column = sideColumn(width);
+  const right = BOOSTER_SIGN;
+  const top = awningHeight(height);
+  // The board between the columns, below the awning; then the columns close in on it from both sides.
+  const areaX = column + SIDE_GAP;
+  const areaW = width - areaX - right - SIDE_GAP;
+  const inArea = layoutInArea(level, state, areaW, height - top, true);
+  const board = translateLayout(inArea, areaX, top);
+  const bounds = boardRect(board);
+  const left = bounds ? bounds.x : areaX;
+  const end = bounds ? bounds.x + bounds.width : areaX + areaW;
+  const hudX = Math.max(MARGIN, left - SIDE_GAP - column);
+  const signY = top + SIGN_DROP;
+  const hudRect = { x: hudX, y: signY, width: column, height: SIDE_SIGN_HEIGHT };
+  const boosters = { x: Math.min(width - MARGIN - BOOSTER_SIGN, end + SIDE_GAP), y: signY, width: BOOSTER_SIGN, height: SIDE_SIGN_HEIGHT };
+  return { ...board, hud: { x: 0, y: 0, width, height: top }, hudRowHeight: top, statusRow: null, statusInline: true, side: { hud: hudRect, boosters } };
+}
+
+/** The area the shelves, tracks and belt of a layout cover, or null if there are none. */
+function boardRect(layout: BoardLayout): Rect | null {
+  const rects = [...layout.shelves.map((s) => s.rect), ...layout.tracks.map((t) => t.rect), ...(layout.belt ? [layout.belt.rect] : [])];
+  if (rects.length === 0) return null;
+  const x = Math.min(...rects.map((r) => r.x));
+  const y = Math.min(...rects.map((r) => r.y));
+  return { x, y, width: Math.max(...rects.map((r) => r.x + r.width)) - x, height: Math.max(...rects.map((r) => r.y + r.height)) - y };
+}
+
 export function layoutForLevel(level: LevelDefinition, state: GameState, width: number, height: number): BoardLayout {
+  if (isWide(width, height)) return wideLayout(level, state, width, height);
   // The board keeps clear of the booster bar; the HUD still spans the whole width.
   const landscape = width > height;
   const board = layoutInArea(level, state, landscape ? width - BOOSTER_BAR : width, landscape ? height : height - BOOSTER_BAR);
@@ -52,11 +104,11 @@ export function layoutForLevel(level: LevelDefinition, state: GameState, width: 
   return { ...board, hud: { ...board.hud, width }, statusRow: board.statusRow && { ...board.statusRow, width } };
 }
 
-function layoutInArea(level: LevelDefinition, state: GameState, width: number, height: number): BoardLayout {
+function layoutInArea(level: LevelDefinition, state: GameState, width: number, height: number, noHud = false): BoardLayout {
   // Score and combo are shown in every level.
   const withStatusRow = true;
   if (!level.layout) {
-    return computeBoardLayout(width, height, level.shelves.length, 3, withStatusRow, state.tracks[0]?.carriers.length ?? 0);
+    return computeBoardLayout(width, height, level.shelves.length, 3, withStatusRow, state.tracks[0]?.carriers.length ?? 0, noHud);
   }
   const columns: ColumnSpec[] = level.layout.columns.map((column): ColumnSpec => {
     if (column.kind === 'shelves') return column;
@@ -66,7 +118,7 @@ function layoutInArea(level: LevelDefinition, state: GameState, width: number, h
     }
     return { kind: 'track', track: column.track, slots: track.carriers.length };
   });
-  return computeColumnLayout(width, height, columns, level.shelves.length, state.tracks.length, withStatusRow);
+  return computeColumnLayout(width, height, columns, level.shelves.length, state.tracks.length, withStatusRow, noHud);
 }
 
 export function itemSize(layout: BoardLayout): number {

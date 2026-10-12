@@ -5,7 +5,7 @@ import { FONTS, hexNumber, SKIN, TYPE } from '../ui/design/tokens';
 import { t } from '../i18n';
 import { KitButton } from './kit';
 import { addSvgTexture } from './svgTexture';
-import { RENDER_RATIO } from './view';
+import { pixelRatio } from './view';
 
 export const HAND_TEXTURE = 'tutorial:hand';
 const HAND_TEXTURE_SIZE = 192;
@@ -89,7 +89,7 @@ export class TutorialHint {
     this.label = scene.add
       .text(0, 0, '', { fontFamily: FONTS.display, fontStyle: String(TYPE.button.weight), color: SKIN.text.primary, align: 'center' })
       .setOrigin(0.5)
-      .setResolution(RENDER_RATIO)
+      .setResolution(pixelRatio())
       .setDepth(DEPTH_BANNER + 1)
       .setVisible(false);
     this.skip = new KitButton(scene, 0, 0, { skin: SKIN, variant: 'secondary', label: t('tutorial.skip'), height: SKIP_H, onPress: onSkip });
@@ -197,9 +197,12 @@ export class TutorialHint {
     // fit there, else below it, else at the screen edge farthest from the move.
     const fontSize = Math.round(Math.max(16, Math.min(TYPE.button.size, this.width / 20)));
     const skipW = this.skip.width;
+    // Wide screens: in the HUD's column, under its sign, where nothing else is.
+    const column = board.side?.hud;
     const besides = this.width - 48 - skipW - SKIP_GAP;
-    const stacked = besides < 220;
-    this.label.setFontSize(fontSize).setWordWrapWidth(Math.min(stacked ? this.width - 48 : besides, 460)).setText(shown.text).setVisible(true).setAlpha(1);
+    const stacked = column !== undefined || besides < 220;
+    const wrap = column ? column.width + 24 : Math.min(stacked ? this.width - 48 : besides, 460);
+    this.label.setFontSize(column ? Math.min(fontSize, 18) : fontSize).setWordWrapWidth(wrap).setText(shown.text).setVisible(true).setAlpha(1);
     const boxW = this.label.width + 28;
     const boxH = this.label.height + 16;
     const rowW = stacked ? Math.max(boxW, skipW) : boxW + SKIP_GAP + skipW;
@@ -208,16 +211,18 @@ export class TutorialHint {
     const boardBottom = Math.max(...board.shelves.map((shelf) => shelf.rect.y + shelf.rect.height));
     const hudBottom = board.hud.y + board.hud.height;
     let y: number;
-    if (boardTop - hudBottom >= rowH + 8) y = (hudBottom + boardTop) / 2;
+    if (column) y = column.y + column.height + SKIP_GAP * 2 + rowH / 2;
+    else if (boardTop - hudBottom >= rowH + 8) y = (hudBottom + boardTop) / 2;
     else if (this.height - boardBottom >= rowH + 8) y = (boardBottom + this.height) / 2;
     else {
       const moveY = slots ? (slots.from.y + slots.to.y) / 2 : this.height / 2;
       y = moveY > (hudBottom + this.height) / 2 ? hudBottom + 8 + rowH / 2 : this.height - 8 - rowH / 2;
     }
     // The sign, then the button: side by side, or one above the other.
-    const x = stacked ? this.width / 2 : this.width / 2 - rowW / 2 + boxW / 2;
+    const centre = column ? column.x + column.width / 2 : this.width / 2;
+    const x = stacked ? centre : centre - rowW / 2 + boxW / 2;
     const signY = stacked ? y - rowH / 2 + boxH / 2 : y;
-    this.skip.setPosition(stacked ? this.width / 2 : x + boxW / 2 + SKIP_GAP + skipW / 2, stacked ? y + rowH / 2 - SKIP_H / 2 : y).setVisible(true).setAlpha(1);
+    this.skip.setPosition(stacked ? centre : x + boxW / 2 + SKIP_GAP + skipW / 2, stacked ? y + rowH / 2 - SKIP_H / 2 : y).setVisible(true).setAlpha(1);
     this.label.setPosition(x, signY);
     this.panel.clear().setVisible(true).setAlpha(1);
     // A small wooden sign, like the interface's panels.

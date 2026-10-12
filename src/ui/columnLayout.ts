@@ -58,8 +58,9 @@ export function computeColumnLayout(
   shelfCount: number,
   trackCount: number,
   withStatusRow = false,
+  noHud = false,
 ): BoardLayout {
-  const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow);
+  const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow, noHud);
   const areaTop = hud.height + MARGIN;
   const areaHeight = Math.max(1, height - hud.height - MARGIN * 2);
 

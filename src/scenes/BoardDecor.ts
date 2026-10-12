@@ -3,7 +3,7 @@ import { t } from '../i18n';
 import type { BoardLayout } from '../ui/boardLayout';
 import type { LiveBoard } from '../ui/levelLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
-import { RENDER_RATIO } from './view';
+import { pixelRatio } from './view';
 import { art } from './art/ArtSet';
 
 /** Above the dimmed back layer (depth < 5), below front items (10). */
@@ -21,7 +21,7 @@ export class LockOverlays {
   /** Replaces all overlays: one per shelf in `remaining` (shelf → triples still needed). */
   reset(remaining: ReadonlyMap<number, number>): void {
     this.clear();
-    const resolution = RENDER_RATIO;
+    const resolution = pixelRatio();
     for (const [shelf, count] of remaining) {
       this.veils.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
       const label = this.scene.add

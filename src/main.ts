@@ -15,7 +15,7 @@ import { WebAudioSoundService } from './services/WebAudioSoundService';
 import { preventPageGestures } from './ui/preventPageGestures';
 import { SKIN } from './ui/design/tokens';
 import { setSlotAspect } from './ui/boardLayout';
-import { forceSafeArea, RENDER_RATIO } from './scenes/view';
+import { forceSafeArea, RENDER_RATIO, updateUiScale } from './scenes/view';
 import { useCuts } from './scenes/transitions';
 
 setLocale((import.meta.env.DEV ? parseLang(window.location.search) : null) ?? resolveLocale(navigator.languages));
@@ -64,6 +64,7 @@ function pageSize(): { width: number; height: number } {
 
 function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
   const { width, height } = pageSize();
+  updateUiScale(width, height);
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     backgroundColor: SKIN.backdrop[1],
@@ -96,6 +97,7 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
   });
   const resize = () => {
     const size = pageSize();
+    updateUiScale(size.width, size.height);
     game.scale.resize(Math.round(size.width * RENDER_RATIO), Math.round(size.height * RENDER_RATIO));
   };
   window.addEventListener('resize', resize);

@@ -1,6 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { Rect } from '../../ui/boardLayout';
-import { RENDER_RATIO } from '../view';
+import { pixelRatio } from '../view';
 
 /**
  * A vector drawing (shelves, rails) cached in a texture. Phaser redraws Graphics commands every frame; the
@@ -31,7 +31,7 @@ export class BakedLayer {
     paint(this.g);
     if (!bounds) return;
     // The texture has one texel per device pixel, so it stays as sharp as the vector drawing.
-    const r = RENDER_RATIO;
+    const r = pixelRatio();
     const width = Math.max(2, Math.ceil(bounds.width * r));
     const height = Math.max(2, Math.ceil(bounds.height * r));
     this.offsetX = bounds.x;

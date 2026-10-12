@@ -21,7 +21,7 @@ import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
 import { settingsRowCount, settingsRows, SETTINGS_ROW } from './SettingsRows';
 import { fadeIn, fadeToScene } from './transitions';
-import { fitCamera, pointerAt, screenRect, viewSize } from './view';
+import { fitCamera, pixelRatio, pointerAt, screenRect, viewSize } from './view';
 
 /** What the home screen is opened with. */
 export interface HomeData {
@@ -257,6 +257,7 @@ export class HomeScene extends Phaser.Scene {
     const gear = new KitIconButton(this, width - SPACE.s - 22, row, { skin: SKIN, icon: 'settings', onPress: () => this.openSettings() });
     const title = this.add
       .text(width / 2, 86, t('game.title'), { fontFamily: FONTS.display, fontStyle: '600', fontSize: '34px', color: SKIN.text.primary })
+      .setResolution(pixelRatio() * 1.5)
       .setOrigin(0.5)
       .setStroke(SKIN.surface.border, 7)
       .setShadow(0, 4, '#000000', 0.35, true, true);

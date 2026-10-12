@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { uiIconSvg, type UiIconName } from '../../ui/design/uiIcons';
 import { addSvgTexture } from '../svgTexture';
-import { RENDER_RATIO } from '../view';
+import { pixelRatio } from '../view';
 
 /** Interface icons are rasterized once per colour at this size (CSS px) and drawn at their size or smaller. */
 const ICON_PX = 48;
@@ -10,7 +10,7 @@ export const uiIconKey = (name: UiIconName, color: string) => `ui:${name}:${colo
 
 /** Rasterizes an icon in a colour (once). */
 export function prepareUiIcon(scene: Phaser.Scene, name: UiIconName, color: string): Promise<void> {
-  return addSvgTexture(scene.textures, uiIconKey(name, color), uiIconSvg(name, color), ICON_PX * RENDER_RATIO);
+  return addSvgTexture(scene.textures, uiIconKey(name, color), uiIconSvg(name, color), ICON_PX * pixelRatio());
 }
 
 /**

@@ -35,6 +35,16 @@ export const WOOD = {
   crate: '#c48a4c',
   crateLight: '#dfaa6c',
   crateDark: '#7e5126',
+  /** The stall around the board on wide screens: striped awning, string lights, ketupat and lanterns. */
+  awningRed: '#a8432f',
+  awningRedDark: '#7a2c1d',
+  awningCream: '#ecd5a6',
+  awningCreamDark: '#c4a676',
+  bulb: '#ffd27e',
+  ketupat: '#7cb24a',
+  ketupatDark: '#3f6b23',
+  lantern: '#d0463a',
+  lanternDark: '#8a2a1f',
 } as const;
 
 export type WoodPalette = { readonly [K in keyof typeof WOOD]: string };

@@ -66,6 +66,11 @@ export interface BoardLayout {
   /** Every track of the level on screen, in the level's track order. */
   readonly tracks: readonly TrackLayout[];
   readonly shelves: readonly ShelfLayout[];
+  /**
+   * On wide screens (see levelLayout's wideLayout): the HUD in a column left of the board, the boosters in one
+   * right of it, and the stall's awning across the top (its height is `hud.height`). Absent elsewhere.
+   */
+  readonly side?: { readonly hud: Rect; readonly boosters: Rect };
 }
 
 // Shelf geometry in units of slotSize: a thin frame at the sides and top, the front board below the slots.
@@ -123,8 +128,9 @@ export function computeBoardLayout(
   slotsPerLayer = 3,
   withStatusRow = false,
   beltSlots = 0,
+  noHud = false,
 ): BoardLayout {
-  const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow);
+  const { hud, hudRowHeight, statusRow, statusInline } = hudArea(width, height, withStatusRow, noHud);
   const shelfW = SHELF_WIDTH_UNITS(slotsPerLayer);
   const shelfH = shelfHeightUnits();
   const contentWidth = Math.max(1, width - MARGIN * 2);
@@ -179,7 +185,10 @@ export function hudArea(
   width: number,
   height: number,
   withStatusRow: boolean,
+  noHud = false,
 ): { hud: Rect; hudRowHeight: number; statusRow: Rect | null; statusInline: boolean } {
+  // A board laid out in an area of its own, with the HUD elsewhere (wide screens).
+  if (noHud) return { hud: { x: 0, y: 0, width, height: 0 }, hudRowHeight: 0, statusRow: null, statusInline: true };
   const hudRowHeight = hudHeight(height);
   const statusInline = withStatusRow && width > height;
   const statusRow: Rect | null = !withStatusRow
@@ -381,4 +390,21 @@ export function boundsAround(rects: readonly Rect[], margin: number): Rect | nul
   const x1 = Math.ceil(Math.max(...rects.map((r) => r.x + r.width)) + margin);
   const y1 = Math.ceil(Math.max(...rects.map((r) => r.y + r.height)) + margin);
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+/** The same layout moved by (dx, dy): for a board laid out in an area that does not start at the corner. */
+export function translateLayout(layout: BoardLayout, dx: number, dy: number): BoardLayout {
+  const rect = (r: Rect): Rect => ({ ...r, x: r.x + dx, y: r.y + dy });
+  return {
+    ...layout,
+    hud: rect(layout.hud),
+    statusRow: layout.statusRow && rect(layout.statusRow),
+    belt: layout.belt && { ...layout.belt, rect: rect(layout.belt.rect), loopX: layout.belt.loopX + dx, y: layout.belt.y + dy },
+    tracks: layout.tracks.map((track) =>
+      track.orientation === 'horizontal'
+        ? { ...track, rect: rect(track.rect), loopStart: track.loopStart + dx, cross: track.cross + dy }
+        : { ...track, rect: rect(track.rect), loopStart: track.loopStart + dy, cross: track.cross + dx },
+    ),
+    shelves: layout.shelves.map((shelf) => ({ ...shelf, rect: rect(shelf.rect), slots: shelf.slots.map((p) => ({ x: p.x + dx, y: p.y + dy })) })),
+  };
 }

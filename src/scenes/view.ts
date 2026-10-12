@@ -7,6 +7,26 @@ import type * as Phaser from 'phaser';
  */
 export const RENDER_RATIO = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
 
+/**
+ * The interface's scale on big windows. Layouts are made for the screen in CSS pixels; on a desktop window bigger
+ * than DESIGN_SIZE (CrazyGames shows games at up to 1920×1080) the whole game is laid out as if the screen were
+ * DESIGN_SIZE wide or tall, whichever is tighter, and drawn larger, so nothing looks lost in the middle of the
+ * window. Phones and small windows keep a scale of 1.
+ */
+export const DESIGN_SIZE = { width: 960, height: 540 } as const;
+const MAX_UI_SCALE = 2.5;
+let uiScale = 1;
+
+/** Called with the page's size in CSS pixels, before the canvas is sized or resized. */
+export function updateUiScale(width: number, height: number): void {
+  uiScale = Math.min(MAX_UI_SCALE, Math.max(1, Math.min(width / DESIGN_SIZE.width, height / DESIGN_SIZE.height)));
+}
+
+/** Device pixels per world unit: the screen's density times the interface scale. Text and icons use it. */
+export function pixelRatio(): number {
+  return RENDER_RATIO * uiScale;
+}
+
 /** Space taken by a phone's notch, rounded corners or home bar on each side, in CSS px. */
 export interface Insets {
   readonly top: number;
@@ -46,10 +66,11 @@ export function safeInsets(): Insets {
 /** The whole screen in CSS pixels, notch included. */
 export function screenSize(scene: Phaser.Scene): { width: number; height: number } {
   const { width, height } = scene.scale.gameSize;
-  return { width: width / RENDER_RATIO, height: height / RENDER_RATIO };
+  const ratio = pixelRatio();
+  return { width: width / ratio, height: height / ratio };
 }
 
-/** The safe area in CSS pixels: what layouts are computed for. World (0, 0) is its top-left corner. */
+/** The safe area in world units (CSS pixels at scale 1): what layouts are computed for. World (0, 0) is its top-left corner. */
 export function viewSize(scene: Phaser.Scene): { width: number; height: number } {
   const { width, height } = screenSize(scene);
   const inset = safeInsets();
@@ -69,11 +90,12 @@ export function screenRect(scene: Phaser.Scene): { x: number; y: number; width: 
 export function fitCamera(scene: Phaser.Scene): void {
   const { width, height } = scene.scale.gameSize;
   const inset = safeInsets();
-  scene.cameras.main.setSize(width, height).setOrigin(0, 0).setZoom(RENDER_RATIO).setScroll(-inset.left, -inset.top);
+  scene.cameras.main.setSize(width, height).setOrigin(0, 0).setZoom(pixelRatio()).setScroll(-inset.left, -inset.top);
 }
 
 /** Where a pointer is, in world coordinates (CSS pixels from the safe area's corner). */
 export function pointerAt(pointer: Phaser.Input.Pointer): { x: number; y: number } {
   const inset = safeInsets();
-  return { x: pointer.x / RENDER_RATIO - inset.left, y: pointer.y / RENDER_RATIO - inset.top };
+  const ratio = pixelRatio();
+  return { x: pointer.x / ratio - inset.left, y: pointer.y / ratio - inset.top };
 }

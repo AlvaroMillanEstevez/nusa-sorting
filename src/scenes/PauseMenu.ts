@@ -85,11 +85,13 @@ export class PauseMenu {
     const info = this.info!;
     const screen = screenRect(this.scene);
     const safe = viewSize(this.scene);
-    const wide = safe.height < 540;
     const confirm = this.view !== 'menu';
-    const panelW = Math.min(safe.width - SPACE.s * 2, confirm ? 360 : wide ? 600 : 360);
     const extraRows = (settingsRowCount(info) - 2) * SETTINGS_ROW;
-    const panelH = confirm ? 280 : wide ? Math.min(safe.height - SPACE.s * 2, 300 + extraRows / 2) : 470 + extraRows;
+    // Actions above settings when that fits the screen's height, else side by side.
+    const tallH = 470 + extraRows;
+    const wide = safe.height < tallH + SPACE.s * 2 && safe.width > safe.height;
+    const panelW = Math.min(safe.width - SPACE.s * 2, confirm ? 360 : wide ? 600 : 360);
+    const panelH = confirm ? 280 : wide ? Math.min(safe.height - SPACE.s * 2, 300 + extraRows / 2) : Math.min(safe.height - SPACE.s * 2, tallH);
     const modal = new KitModal(this.scene, screen.width, screen.height, {
       skin: SKIN,
       width: panelW,
