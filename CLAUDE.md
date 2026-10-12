@@ -14,6 +14,8 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `npm run levelgen -- all` — regenera los niveles desde sus recetas (`tools/levelgen/recipes.ts`); `npm run levelgen -- N` regenera solo el nivel N y `npm run levelgen -- N --seed S` lo prueba con otra semilla. Escribe en `src/data/levels`; revisar el diff antes de hacer commit.
 - `npm run economy` — simula la economía en todos los niveles (monedas, nivel de jugador, cofres y potenciadores al alcance) con los valores de `src/data/economy.ts`.
 - `npm run levelgen -- report` — informe de los niveles actuales sin regenerarlos: huecos libres al empezar, huecos libres medios, presión de espacio y resultados del jugador simulado.
+- `npm run package` — build de producción comprobado (sin código de desarrollo, rutas relativas, tamaño y número de archivos) y `.zip` para el portal de CrazyGames en `release/`. Lista de comprobación del envío: `docs/launch-checklist.md`.
+- `node tools/preview/record.mjs [landscape|portrait|both]` — graba los vídeos de vista previa (con `npm run dev` en marcha) en `docs/launch/videos`; `tools/covers/render.sh` hace lo mismo con las portadas.
 
 ## Probar en el móvil
 
@@ -29,6 +31,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?resetSave` — borra el guardado (progreso y ajustes) antes de empezar.
 - `?beltSpeed=X` y `?beltSlots=K` — cambian la velocidad y el número de huecos de la cinta del nivel abierto.
 - `?timeScale=X` — multiplica el tiempo de cualquier nivel (por ejemplo `0.8`), para probar ritmos distintos jugando.
+- `?preview=landscape|portrait` — el vídeo de vista previa: la portada, un tablero pequeño que se resuelve solo (tríos, combos, cinta, estanterías que se cierran) en lugar del nivel 33 y la llegada al mapa, con cortes en vez de fundidos. Úsalo con `&level=33&show=autoplay&progress=32&boosters=1&resetSave` (lo hace `tools/preview/record.mjs`).
 - `?cover=landscape|portrait|square` — dibuja una portada de la tienda con el arte del juego; `tools/covers/render.sh` (con `npm run dev` en marcha) las guarda en PNG a tamaño exacto en `docs/launch/covers`.
 - `?gallery` — abre la galería de iconos (tamaños reales, variantes, estanterías de madera y simulación de daltonismo y escala de grises) en vez del juego.
 - `?uikit` — abre el kit de interfaz (componentes en todos sus estados, iconos y formas de hueco). Página directa con `?uikit=components|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
