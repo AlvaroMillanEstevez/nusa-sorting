@@ -120,14 +120,8 @@ _decoded: dict = {}
 
 
 def gamelan_sounds() -> dict:
-    """Triple, combo steps and win, from the gamelan's notes."""
+    """The win, from the gamelan's notes (the triple and the combo are synthesized in the game)."""
     sounds = {}
-    # The triple: the fourth note in its own (warm) octave, with a soft start and no harsh highs, under the
-    # other events' level.
-    sounds['clear'] = (note(*SCALE[3], 1.0, 1.1, attack=0.01, highcut=3000), EVENT - 4)
-    # A combo climbs the scale gently: step n of a combo plays combo{n}, staying on the fifth beyond it.
-    for i, (start, length) in enumerate(SCALE):
-        sounds[f'combo{i + 1}'] = (note(start, length, 1.0, 0.9, attack=0.01, highcut=3000), EVENT - 5)
     # The win: the scale rising and the first note an octave up, ringing out over a soft low gong.
     steps = [note(start, length, 2.0, 0.8) for start, length in SCALE] + [note(*SCALE[0], 4.0, 1.4)]
     gap = int(0.11 * RATE)

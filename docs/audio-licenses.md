@@ -25,19 +25,27 @@ En el juego:
 - **Fundidos:** entra con un fundido de 2 s en el inicio y el mapa, y se desvanece en 1,5 s al entrar en un nivel. Al volver sigue por donde iba.
 - **Ajuste:** «Música» / «Musik», en ajustes y en el menú de pausa; se guarda.
 
-## Efectos de gamelan
+## Victoria con gamelan
 
 Notas sueltas de metalófono cortadas de [*Gamelan — Generative Sound by Glorb*, de bassimat, Freesound 855565](https://freesound.org/people/bassimat/sounds/855565/), con licencia CC0 1.0. Lo hace `python3 tools/audio/build_sfx.py`.
 
-En la grabación, cada nota empieza tras silencio digital, así que se cortan limpias. Se usan las cinco notas de su escala (151, 174, 198, 222 y 264 Hz):
-- **Trío y combo:** en su octava original, que suena más cálida, con un ataque suavizado de 10 ms, los agudos cortados por encima de 3 kHz y 4-5 dB por debajo de los demás acontecimientos.
-- **Victoria:** una octava más aguda.
+En la grabación, cada nota empieza tras silencio digital, así que se cortan limpias. La victoria usa las cinco notas de su escala (151, 174, 198, 222 y 264 Hz), una octava más agudas.
+
+El trío y el combo usaron también notas de este gamelan entre el 12 y el 13 de octubre de 2026 (`clear.mp3` y `combo1.mp3`–`combo5.mp3`). Se retiraron porque a Koke no le convencían.
 
 | Archivo | Uso | Notas de la fuente |
 |---|---|---|
-| `clear.mp3` | Trío | La cuarta nota (222 Hz, a 18,84 s), 1,1 s |
-| `combo1.mp3`–`combo5.mp3` | Cada paso de un combo sube una nota de la escala (saltos de 2-3 semitonos) y se queda en la quinta | Las cinco notas (a 62,41, 22,24, 79,77, 18,84 y 47,66 s) |
 | `win.mp3` | Victoria | Arpegio ascendente de las cinco notas más la primera una octava arriba, sobre un gong grave suave (a 95,67 s) |
+
+## Trío y combo (sintetizados)
+
+No usan archivos: el juego los sintetiza en el momento (`WebAudioSoundService`), como antes de los efectos grabados.
+- **Trío:** un arpegio corto de onda triangular (660, 830 y 990 Hz) con un destello senoidal una octava por encima.
+- **Combo:** un barrido ascendente con una nota senoidal encima. Cada paso sube por una escala pentatónica: 0, 2, 4, 7, 9, 12, 14 y 16 semitonos, sin saltos mayores de una tercera menor y hasta una octava y una tercera.
+
+Al no haber grabación, no hay licencia que documentar.
+
+Pasan por el mismo corte de agudos que los grabados (paso bajo a 7 kHz), pero no por la reverberación de sala.
 
 ## Efectos de Kenney
 
@@ -72,7 +80,7 @@ Volúmenes (RMS de la parte audible, en dBFS):
 
 Los picos nunca pasan de −1 dBFS.
 
-**Procesado común** a todos los efectos (Kenney y gamelan), para que suenen de la misma familia:
+**Procesado común** a todos los efectos grabados (Kenney y gamelan), para que suenen de la misma familia:
 - el mismo corte de agudos (paso bajo de 2.º orden a 7 kHz);
 - una reverberación de sala muy sutil: respuesta al impulso sintética de 0,35 s que se apaga en unos 70 ms, oscura (paso bajo a 3,5 kHz), con 8 ms de pre-retardo y mezclada unos 18 dB por debajo del sonido seco.
 

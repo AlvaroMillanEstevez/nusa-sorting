@@ -20,8 +20,8 @@ const note = (at: number, freq: number, duration = 0.09, wave: OscillatorType = 
 });
 
 /**
- * Synthesized stand-ins: what plays until the recorded effects (src/assets/audio, see tools/audio/build_sfx.py)
- * are loaded and decoded, or if one cannot be.
+ * Synthesized effects. The triple and the combo are always these; the others are stand-ins, played until the
+ * recorded effects (src/assets/audio, see tools/audio/build_sfx.py) are loaded and decoded, or if one cannot be.
  */
 const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   pick: [{ at: 0, duration: 0.06, freq: 620, freqEnd: 880, wave: 'sine', gain: 0.18 }],
@@ -82,11 +82,15 @@ const RECORDING: Partial<Record<SoundEffect, { file: string; rate: number }>> = 
   star2: { file: 'star', rate: 2 ** (4 / 12) },
   star3: { file: 'star', rate: 2 ** (7 / 12) },
 };
-/** A combo climbs the gamelan's five-note scale gently: step 2 plays its first note, step 6 and beyond its fifth. */
-const COMBO_NOTES = 5;
-function comboNote(step: number): { file: string; rate: number } {
-  return { file: `combo${Math.min(Math.max(step, 2) - 2, COMBO_NOTES - 1) + 1}`, rate: 1 };
-}
+/**
+ * The triple and the combo are synthesized (Koke preferred them to recorded ones). A combo climbs a pentatonic
+ * scale from its second step: each step a little higher, never a jump bigger than a minor third, up to an octave
+ * and a third.
+ */
+const COMBO_SCALE = [0, 2, 4, 7, 9, 12, 14, 16];
+const comboRate = (step: number) => 2 ** (COMBO_SCALE[Math.min(Math.max(step, 2) - 2, COMBO_SCALE.length - 1)]! / 12);
+/** Synthesized effects lose the same highs as the recorded ones (see tools/audio/build_sfx.py), without the room. */
+const SYNTH_HIGHCUT = 7000;
 
 export class WebAudioSoundService implements SoundService {
   private context: AudioContext | null = null;
@@ -106,6 +110,7 @@ export class WebAudioSoundService implements SoundService {
   private musicPosition = 0;
   private musicStartedAt = 0;
   private musicStop: ReturnType<typeof setTimeout> | null = null;
+  private synthFilter: BiquadFilterNode | null = null;
 
   readonly hasMusic = MUSIC_URL !== null;
 
@@ -242,7 +247,7 @@ export class WebAudioSoundService implements SoundService {
   play(effect: SoundEffect, step?: number): void {
     const { context, master } = this;
     if (!context || !master || this._muted || context.state !== 'running') return;
-    const recording = RECORDING[effect] ?? (effect === 'combo' ? comboNote(step ?? 2) : { file: effect, rate: 1 });
+    const recording = RECORDING[effect] ?? { file: effect, rate: 1 };
     const buffer = this.buffers.get(recording.file);
     if (buffer) {
       const source = context.createBufferSource();
@@ -252,10 +257,23 @@ export class WebAudioSoundService implements SoundService {
       source.start();
       return;
     }
-    this.synthesize(context, master, effect);
+    this.synthesize(context, this.synthOut(context, master), effect, effect === 'combo' ? comboRate(step ?? 2) : 1);
   }
 
-  private synthesize(context: AudioContext, master: GainNode, effect: SoundEffect): void {
+  /** Where synthesized tones go: through the same high cut as the recordings, then to the master. */
+  private synthOut(context: AudioContext, master: GainNode): AudioNode {
+    if (!this.synthFilter) {
+      this.synthFilter = context.createBiquadFilter();
+      this.synthFilter.type = 'lowpass';
+      this.synthFilter.frequency.value = SYNTH_HIGHCUT;
+      this.synthFilter.Q.value = Math.SQRT1_2;
+      this.synthFilter.connect(master);
+    }
+    return this.synthFilter;
+  }
+
+  /** Plays an effect's tones; `rate` raises them all (the combo's scale). */
+  private synthesize(context: AudioContext, out: AudioNode, effect: SoundEffect, rate = 1): void {
     const now = context.currentTime;
     for (const tone of EFFECTS[effect]) {
       const start = now + tone.at;
@@ -263,13 +281,13 @@ export class WebAudioSoundService implements SoundService {
       const osc = context.createOscillator();
       const env = context.createGain();
       osc.type = tone.wave;
-      osc.frequency.setValueAtTime(tone.freq, start);
-      if (tone.freqEnd) osc.frequency.exponentialRampToValueAtTime(tone.freqEnd, end);
+      osc.frequency.setValueAtTime(tone.freq * rate, start);
+      if (tone.freqEnd) osc.frequency.exponentialRampToValueAtTime(tone.freqEnd * rate, end);
       // Short attack and exponential release so tones don't click.
       env.gain.setValueAtTime(0.0001, start);
       env.gain.exponentialRampToValueAtTime(tone.gain, start + 0.008);
       env.gain.exponentialRampToValueAtTime(0.0001, end);
-      osc.connect(env).connect(master);
+      osc.connect(env).connect(out);
       osc.start(start);
       osc.stop(end + 0.02);
     }
