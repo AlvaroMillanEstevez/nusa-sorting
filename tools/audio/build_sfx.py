@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Builds the game's sound effects (src/assets/audio/*.mp3) from recorded CC0 packs by Kenney (www.kenney.nl):
-downloads the packs once into a cache, cuts each sound's silences, sets its loudness by kind of sound so all of
-them sit together, and encodes a short mono MP3. Sources and licences: docs/audio-licenses.md.
+Builds the game's sound effects (src/assets/audio/*.mp3) from recorded CC0 sources: packs by Kenney
+(www.kenney.nl), downloaded once into a cache, and single metallophone notes cut from "Gamelan — Generative Sound
+by Glorb" by bassimat (Freesound 855565, CC0 1.0), kept as a WAV in src/assets/audio/source/ (not in git, not in
+the build). Each sound's silences are cut, its loudness set by kind of sound so all of them sit together, and it
+is encoded as a short mono MP3. Sources and licences: docs/audio-licenses.md.
 
     python3 tools/audio/build_sfx.py            (needs ffmpeg with libmp3lame, and numpy)
 
@@ -38,17 +40,16 @@ SOFT, PLAY, EVENT, BIG = -27.0, -23.0, -20.0, -18.0
 
 # effect: (pack, file in the pack, target, pitch) — pitch > 1 plays the recording higher (and shorter).
 SOUNDS = {
-    'tap': ('interface-sounds', 'Audio/click_002.ogg', SOFT, 1.0),
-    'open': ('interface-sounds', 'Audio/open_002.ogg', SOFT, 1.0),
-    'close': ('interface-sounds', 'Audio/close_002.ogg', SOFT, 1.0),
+    # The interface: soft and warm, no hiss. A low wooden tock for buttons; a deep swell that rises to open a
+    # panel and its counterpart that sinks to close one (filtered and faded in, see INTERFACE).
+    'tap': ('interface-sounds', 'Audio/drop_003.ogg', SOFT, 1.0),
+    'open': ('interface-sounds', 'Audio/maximize_006.ogg', SOFT, 1.0),
+    'close': ('interface-sounds', 'Audio/minimize_008.ogg', SOFT, 1.0),
     'pick': ('impact-sounds', 'Audio/impactWood_light_002.ogg', PLAY - 3, 1.3),
     'drop': ('impact-sounds', 'Audio/impactWood_light_001.ogg', PLAY, 1.0),
     'beltPick': ('impact-sounds', 'Audio/impactWood_light_003.ogg', PLAY - 3, 1.2),
     'advance': ('casino-audio', 'Audio/card-slide-2.ogg', PLAY - 2, 1.0),
     'invalid': ('interface-sounds', 'Audio/error_004.ogg', PLAY, 1.0),
-    'clear': ('interface-sounds', 'Audio/confirmation_002.ogg', EVENT, 1.0),
-    # Played higher with every step of a combo (see WebAudioSoundService).
-    'combo': ('interface-sounds', 'Audio/glass_001.ogg', EVENT, 1.0),
     # The three stars of a win: one chime, played higher for each star.
     'star': ('interface-sounds', 'Audio/glass_002.ogg', EVENT, 1.0),
     'starCollect': ('interface-sounds', 'Audio/glass_004.ogg', SOFT + 2, 1.0),
@@ -60,11 +61,24 @@ SOUNDS = {
     'blockerMove': ('impact-sounds', 'Audio/impactWood_medium_002.ogg', PLAY - 1, 1.0),
     'blockerGone': ('impact-sounds', 'Audio/impactPlank_medium_003.ogg', EVENT, 1.1),
     'blocked': ('impact-sounds', 'Audio/impactWood_heavy_000.ogg', BIG, 0.9),
-    # Steel drums: a rising phrase to win, a falling one to lose.
-    'win': ('music-jingles', 'Audio/Steel jingles/jingles_STEEL02.ogg', BIG, 1.0),
+    # Steel drums: a falling phrase to lose (winning is a gamelan phrase, see GAMELAN).
     'lose': ('music-jingles', 'Audio/Steel jingles/jingles_STEEL14.ogg', BIG - 1, 1.0),
     'chest': ('rpg-audio', 'Audio/handleCoins.ogg', EVENT, 1.0),
 }
+
+
+# Interface sounds: no highs (they made the old ones hiss) and a gentle start, so nothing clicks.
+INTERFACE = {'tap', 'open', 'close'}
+INTERFACE_FILTER = 'lowpass=f=5000,afade=t=in:d=0.003'
+
+# Gamelan: single notes of the metallophone ("saron"-like, inharmonic partials with beating pairs), each starting
+# after digital silence in the source, so they cut cleanly. Pitch is the strongest partial; played an octave
+# higher (pitch 2) so they ring clearly on phone speakers.
+GAMELAN = ROOT / 'src/assets/audio/source/855565__bassimat__gamelan-generative-sound-by-glorb.wav'
+# The five notes of its scale, low to high: (start in the source, seconds).
+SCALE = [(62.41, 1.72), (22.24, 2.38), (79.77, 2.11), (18.84, 2.38), (47.66, 0.64)]
+# A low, gong-like note to round off the win.
+GONG = (95.67, 2.62)
 
 
 def pack(name: str) -> Path:
@@ -76,15 +90,65 @@ def pack(name: str) -> Path:
     return folder
 
 
+def note(start: float, length: float, pitch: float, keep: float) -> np.ndarray:
+    """A note of the gamelan recording, `keep` seconds of it at the most, faded out over its last third."""
+    x = decode(GAMELAN, 1.0)[int((start - 0.005) * RATE) : int((start + length) * RATE)]
+    x = resample(x, pitch)
+    x = x[: int(keep * RATE)].copy()
+    fade = x.size // 3
+    x[-fade:] *= np.linspace(1, 0, fade) ** 2
+    return x
+
+
+def resample(x: np.ndarray, pitch: float) -> np.ndarray:
+    if pitch == 1.0:
+        return x
+    positions = np.arange(0, x.size - 1, pitch)
+    return np.interp(positions, np.arange(x.size), x).astype(np.float32)
+
+
+_decoded: dict = {}
+
+
+def gamelan_sounds() -> dict:
+    """Triple, combo steps and win, from the gamelan's notes."""
+    sounds = {}
+    # The triple: the fourth note, bright and clear, ringing a little under a second.
+    sounds['clear'] = (note(*SCALE[3], 2.0, 0.9), EVENT)
+    # A combo climbs the scale: step n of a combo plays combo{n} (WebAudioSoundService goes up an octave after
+    # the fifth).
+    for i, (start, length) in enumerate(SCALE):
+        sounds[f'combo{i + 1}'] = (note(start, length, 2.0, 0.7), EVENT - 1)
+    # The win: the scale rising and the first note an octave up, ringing out over a soft low gong.
+    steps = [note(start, length, 2.0, 0.8) for start, length in SCALE] + [note(*SCALE[0], 4.0, 1.4)]
+    gap = int(0.11 * RATE)
+    total = max(i * gap + step.size for i, step in enumerate(steps))
+    win = np.zeros(total, dtype=np.float32)
+    for i, step in enumerate(steps):
+        win[i * gap : i * gap + step.size] += step * (0.8 if i < len(steps) - 1 else 1.0)
+    gong = note(*GONG, 1.0, 1.6) * 0.35
+    at = gap * (len(steps) - 1)
+    end = min(total, at + gong.size)
+    win[at:end] += gong[: end - at]
+    sounds['win'] = (win, BIG)
+    return sounds
+
+
 def decode(path: Path, pitch: float) -> np.ndarray:
+    key = (str(path), pitch)
+    if key in _decoded:
+        return _decoded[key]
     # A higher pitch: resampled as if recorded at a lower rate, then played back at RATE.
     filters = f'asetrate={int(RATE * pitch)},aresample={RATE}' if pitch != 1.0 else 'anull'
+    if path.name in INTERFACE_FILES:
+        filters += ',' + INTERFACE_FILTER
     raw = subprocess.run(
         ['ffmpeg', '-v', 'error', '-i', str(path), '-af', filters, '-ac', '1', '-ar', str(RATE), '-f', 'f32le', '-'],
         capture_output=True,
         check=True,
     ).stdout
-    return np.frombuffer(raw, dtype=np.float32).copy()
+    _decoded[key] = np.frombuffer(raw, dtype=np.float32).copy()
+    return _decoded[key]
 
 
 def trim(x: np.ndarray, floor_db: float = -50.0) -> np.ndarray:
@@ -105,11 +169,15 @@ def active_rms_db(x: np.ndarray) -> float:
     return float(20 * np.log10(np.sqrt(np.mean(loud**2)) + 1e-12))
 
 
+INTERFACE_FILES = {Path(SOUNDS[effect][1]).name for effect in INTERFACE}
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     report = {}
-    for effect, (pack_name, file, target, pitch) in SOUNDS.items():
-        x = trim(decode(pack(pack_name) / file, pitch))
+    sources = {effect: (trim(decode(pack(pack_name) / file, pitch)), target) for effect, (pack_name, file, target, pitch) in SOUNDS.items()}
+    sources.update({effect: (trim(x), target) for effect, (x, target) in gamelan_sounds().items()})
+    for effect, (x, target) in sources.items():
         gain = 10 ** ((target - active_rms_db(x)) / 20)
         # Never past -1 dBFS: quieter than the target rather than clipped.
         peak = np.abs(x).max() * gain

@@ -117,6 +117,8 @@ export class HomeScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(MAP.seaBottom);
+    // Music plays on the home screen and map, never in a level (it fades back in on return).
+    this.sfx.wantMusic(true);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.sfx.unlock();
       if (this.modal) return;

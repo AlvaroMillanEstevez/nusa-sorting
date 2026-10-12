@@ -240,6 +240,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // No music in levels: it fades out as the level opens.
+    this.sfx.wantMusic(false);
     this.haptics.setEnabled(this.store.vibration);
     this.board = new BakedLayer(this, 0);
     this.movingShelves = new MovingShelves(this);

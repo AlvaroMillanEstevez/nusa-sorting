@@ -62,11 +62,19 @@ const FILES: Record<string, string> = Object.fromEntries(
     url,
   ]),
 );
-/** Background music: the first file in src/assets/audio/music, if any (none is shipped yet). */
+/**
+ * Background music: the first track in src/assets/audio/music (built by tools/audio/build_music.py), and how long
+ * its loop is (MP3 adds silent samples at its start, so the loop is played as an exact stretch, not the file).
+ */
 const MUSIC_URL: string | null =
   Object.values(import.meta.glob('../assets/audio/music/*.mp3', { eager: true, query: '?url', import: 'default' }) as Record<string, string>)[0] ?? null;
-/** The music sits well under the effects. */
-const MUSIC_GAIN = 0.35;
+const MUSIC_LOOP: number | null =
+  Object.values(import.meta.glob('../assets/audio/music/*.json', { eager: true, import: 'loopSeconds' }) as Record<string, number>)[0] ?? null;
+/** The track itself is mastered well under the effects; this is only the fade's top. */
+const MUSIC_GAIN = 1;
+/** Seconds to fade the music in (on the home screen and map) and out (going into a level). */
+const MUSIC_FADE_IN = 2;
+const MUSIC_FADE_OUT = 1.5;
 
 /** Which recording an effect plays, and how much higher. The stars rise a major third, then a fifth. */
 const RECORDING: Partial<Record<SoundEffect, { file: string; rate: number }>> = {
@@ -74,8 +82,15 @@ const RECORDING: Partial<Record<SoundEffect, { file: string; rate: number }>> = 
   star2: { file: 'star', rate: 2 ** (4 / 12) },
   star3: { file: 'star', rate: 2 ** (7 / 12) },
 };
-/** A combo's sound climbs a semitone and a half per step, up to eight steps. */
-const comboRate = (step: number) => 2 ** ((Math.min(Math.max(step, 2), 10) - 2) * 1.5 / 12);
+/**
+ * A combo climbs the gamelan's five-note scale: step 2 plays its first note, step 6 its fifth, then the scale
+ * again an octave up (no higher than that).
+ */
+const COMBO_NOTES = 5;
+function comboNote(step: number): { file: string; rate: number } {
+  const n = Math.min(Math.max(step, 2) - 2, COMBO_NOTES * 2 - 1);
+  return { file: `combo${(n % COMBO_NOTES) + 1}`, rate: n >= COMBO_NOTES ? 2 : 1 };
+}
 
 export class WebAudioSoundService implements SoundService {
   private context: AudioContext | null = null;
@@ -85,9 +100,16 @@ export class WebAudioSoundService implements SoundService {
   private readonly encoded = new Map<string, Promise<ArrayBuffer | null>>();
   private readonly buffers = new Map<string, AudioBuffer>();
   private musicOn = true;
+  /** The screen wants music (home screen and map), not a level. */
+  private musicWanted = false;
   private musicGain: GainNode | null = null;
+  private musicBuffer: Promise<AudioBuffer | null> | null = null;
   private musicSource: AudioBufferSourceNode | null = null;
-  private musicLoading = false;
+  /** Where the loop starts in the decoded track (after MP3's silent lead-in), and where it was when it stopped. */
+  private musicLoopStart = 0;
+  private musicPosition = 0;
+  private musicStartedAt = 0;
+  private musicStop: ReturnType<typeof setTimeout> | null = null;
 
   readonly hasMusic = MUSIC_URL !== null;
 
@@ -114,12 +136,13 @@ export class WebAudioSoundService implements SoundService {
 
   setMusic(on: boolean): void {
     this.musicOn = on;
-    if (!on) {
-      this.musicSource?.stop();
-      this.musicSource = null;
-    } else {
-      this.startMusic();
-    }
+    this.updateMusic();
+  }
+
+  /** The home screen and map want music; a level does not: it fades in or out. */
+  wantMusic(wanted: boolean): void {
+    this.musicWanted = wanted;
+    this.updateMusic();
   }
 
   unlock(): void {
@@ -130,14 +153,14 @@ export class WebAudioSoundService implements SoundService {
         this.master.gain.value = this._muted ? 0 : 1;
         this.master.connect(this.context.destination);
         this.musicGain = this.context.createGain();
-        this.musicGain.gain.value = MUSIC_GAIN;
+        this.musicGain.gain.value = 0;
         this.musicGain.connect(this.master);
         this.decodeAll(this.context);
       }
       // 'suspended' before the first gesture or after the page was hidden; 'interrupted' on iOS after a call or
       // switching apps. Either way it only resumes inside a user gesture.
       if (this.context.state !== 'running' && this.context.state !== 'closed') void this.context.resume();
-      this.startMusic();
+      this.updateMusic();
     } catch {
       // No Web Audio support: the game stays silent.
       this.context = null;
@@ -157,35 +180,73 @@ export class WebAudioSoundService implements SoundService {
     }
   }
 
-  private startMusic(): void {
+  /** Starts, resumes or fades out the music to match what is wanted now. */
+  private updateMusic(): void {
     const { context, musicGain } = this;
-    if (!MUSIC_URL || !this.musicOn || !context || !musicGain || this.musicSource || this.musicLoading) return;
-    this.musicLoading = true;
-    void fetch(MUSIC_URL)
+    if (!context || !musicGain || !MUSIC_URL) return;
+    const now = context.currentTime;
+    if (this.musicWanted && this.musicOn) {
+      if (this.musicStop) clearTimeout(this.musicStop);
+      this.musicStop = null;
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setValueAtTime(musicGain.gain.value, now);
+      musicGain.gain.linearRampToValueAtTime(MUSIC_GAIN, now + MUSIC_FADE_IN);
+      if (!this.musicSource) void this.startMusic(context, musicGain);
+      return;
+    }
+    if (!this.musicSource || this.musicStop) return;
+    musicGain.gain.cancelScheduledValues(now);
+    musicGain.gain.setValueAtTime(musicGain.gain.value, now);
+    musicGain.gain.linearRampToValueAtTime(0, now + MUSIC_FADE_OUT);
+    // Stopped once silent; it comes back from where it was.
+    this.musicStop = setTimeout(() => {
+      this.musicStop = null;
+      const source = this.musicSource;
+      if (!source) return;
+      this.musicPosition = this.loopPosition(context);
+      source.stop();
+      this.musicSource = null;
+    }, MUSIC_FADE_OUT * 1000 + 50);
+  }
+
+  private async startMusic(context: AudioContext, musicGain: GainNode): Promise<void> {
+    this.musicBuffer ??= fetch(MUSIC_URL!)
       .then((response) => response.arrayBuffer())
       .then((data) => context.decodeAudioData(data))
       .then((buffer) => {
-        this.musicLoading = false;
-        if (!this.musicOn || this.musicSource) return;
-        const source = context.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.connect(musicGain);
-        // A slow fade in, so it never starts abruptly.
-        musicGain.gain.setValueAtTime(0, context.currentTime);
-        musicGain.gain.linearRampToValueAtTime(MUSIC_GAIN, context.currentTime + 3);
-        source.start();
-        this.musicSource = source;
+        // The loop starts at the first sound, after the MP3's silent lead-in.
+        const samples = buffer.getChannelData(0);
+        let first = 0;
+        while (first < samples.length && Math.abs(samples[first]!) < 1e-4) first++;
+        this.musicLoopStart = first / buffer.sampleRate;
+        return buffer;
       })
-      .catch(() => {
-        this.musicLoading = false;
-      });
+      .catch(() => null);
+    const buffer = await this.musicBuffer;
+    // Still wanted, and not started meanwhile?
+    if (!buffer || this.musicSource || !this.musicWanted || !this.musicOn) return;
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.loopStart = this.musicLoopStart;
+    source.loopEnd = Math.min(buffer.duration, this.musicLoopStart + (MUSIC_LOOP ?? buffer.duration));
+    source.connect(musicGain);
+    source.start(0, this.musicLoopStart + this.musicPosition);
+    this.musicStartedAt = context.currentTime - this.musicPosition;
+    this.musicSource = source;
+  }
+
+  /** Seconds into the loop the music is now. */
+  private loopPosition(context: AudioContext): number {
+    const length = MUSIC_LOOP ?? 0;
+    const played = context.currentTime - this.musicStartedAt;
+    return length > 0 ? played % length : 0;
   }
 
   play(effect: SoundEffect, step?: number): void {
     const { context, master } = this;
     if (!context || !master || this._muted || context.state !== 'running') return;
-    const recording = RECORDING[effect] ?? { file: effect, rate: effect === 'combo' ? comboRate(step ?? 2) : 1 };
+    const recording = RECORDING[effect] ?? (effect === 'combo' ? comboNote(step ?? 2) : { file: effect, rate: 1 });
     const buffer = this.buffers.get(recording.file);
     if (buffer) {
       const source = context.createBufferSource();

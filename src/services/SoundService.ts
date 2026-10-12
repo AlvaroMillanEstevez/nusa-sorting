@@ -43,6 +43,8 @@ export interface SoundService {
   readonly hasMusic: boolean;
   /** Background music on or off (it still only plays while sound is not muted). */
   setMusic(on: boolean): void;
+  /** Whether the screen wants music: the home screen and map do, levels do not (it fades in and out). */
+  wantMusic(wanted: boolean): void;
 }
 
 export class NoopSoundService implements SoundService {
@@ -59,4 +61,6 @@ export class NoopSoundService implements SoundService {
   readonly hasMusic = false;
 
   setMusic(_on: boolean): void {}
+
+  wantMusic(_wanted: boolean): void {}
 }
