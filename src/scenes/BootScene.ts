@@ -3,7 +3,7 @@ import { playerLevel, rewardWin } from '../core/economy';
 import { ECONOMY } from '../data/economy';
 import { SKIN } from '../ui/design/tokens';
 import type { UiIconName } from '../ui/design/uiIcons';
-import { prepareAllInBackground, prepareLevelTextures } from './itemTextures';
+import { prepareAllInBackground, prepareLevelTextures, settle } from './itemTextures';
 import { prepareBoosterTextures } from './boosterTextures';
 import { loadUiFonts, prepareUiIcon } from './kit';
 import { prepareTutorialTextures } from './TutorialHint';
@@ -92,15 +92,17 @@ export class BootScene extends Phaser.Scene {
     const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
     performance.mark('nusa:playable');
     this.scene.start('Home', data);
-    void prepareAllInBackground(this);
+    void prepareAllInBackground(this, this.store.firstIncomplete(playList.map((entry) => entry.level.id)) ?? 0, this.store.colorBlindMode);
   }
 
   /** Opens a level once its own item icons are ready; the other levels' are drawn afterwards, in the background. */
   private openLevel(levelIndex: number, data: GameData): void {
-    void prepareLevelTextures(this, levelIndex).then(() => {
-      performance.mark('nusa:playable');
-      this.scene.start('Game', data);
-      void prepareAllInBackground(this);
-    });
+    void prepareLevelTextures(this, levelIndex)
+      .then(settle)
+      .then(() => {
+        performance.mark('nusa:playable');
+        this.scene.start('Game', data);
+        void prepareAllInBackground(this, levelIndex + 1, this.store.colorBlindMode);
+      });
   }
 }

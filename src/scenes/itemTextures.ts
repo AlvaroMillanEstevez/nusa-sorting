@@ -61,15 +61,44 @@ export function prepareLevelTextures(scene: Phaser.Scene, levelIndex: number): P
 let background: Promise<void> | null = null;
 
 /**
- * Rasterizes every other level's icons in the background, a few types at a time with a pause between them, so
- * the screen keeps moving meanwhile. Started once, after the first screen opens.
+ * Resolves when the browser has time to spare, and never sooner than BACKGROUND_GAP after the last time: each
+ * icon also costs the GPU an upload, which should never pile up behind the game's frames.
  */
-export function prepareAllInBackground(scene: Phaser.Scene): Promise<void> {
+const BACKGROUND_GAP = 80;
+function spareTime(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(() => resolve(), { timeout: 300 });
+      else resolve();
+    }, BACKGROUND_GAP);
+  });
+}
+
+/** Two frames: time for the GPU to take in what was just uploaded before a screen starts drawing. */
+export function settle(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+}
+
+/**
+ * Rasterizes every level's icons in the background, one at a time and only in the browser's spare time, so the
+ * game keeps its frame rate meanwhile. Started once, after the first screen opens, from the level the player is
+ * heading for (`fromLevel`) onwards, then the levels before it; the colour-blind versions come last, unless the
+ * mode is on. Levels opened before it gets to them draw their own icons first (prepareLevelTextures).
+ */
+export function prepareAllInBackground(scene: Phaser.Scene, fromLevel: number, colorBlind: boolean): Promise<void> {
   background ??= (async () => {
-    const types = [...levelItemTypes()];
-    for (let i = 0; i < types.length; i += 3) {
-      await prepareTypes(scene, types.slice(i, i + 3));
-      await new Promise((resolve) => setTimeout(resolve, 16));
+    const levels = [...playList.slice(fromLevel), ...playList.slice(0, fromLevel)];
+    const types = new Set<ItemType>();
+    for (const { level } of levels) for (const type of typesOf(level)) types.add(type);
+    const textures = scene.textures;
+    const jobs: (readonly [string, () => string])[] = [];
+    for (const type of types) {
+      jobs.push([itemTextureKey(type, colorBlind), () => renderItemSvg(type, colorBlind)]);
+      jobs.push([itemBackTextureKey(type), () => renderSilhouette(type)]);
+    }
+    for (const type of types) jobs.push([itemTextureKey(type, !colorBlind), () => renderItemSvg(type, !colorBlind)]);
+    for (const [key, svg] of jobs) {
+      if (!textures.exists(key)) await addSvgTexture(textures, key, svg(), ITEM_TEXTURE_SIZE, spareTime);
     }
   })();
   return background;
