@@ -13,11 +13,11 @@ Nothing here mentions ads, purchases with real money or other platforms.
 
 > Welcome to the warung! In Nusa Sorting, the shelves of an Indonesian street stall are a jumble of sate, iced tea, rambutan, ketupat and dozens of other treats and treasures. Drag them from shelf to shelf and put three of a kind together to clear them. Behind each row more items wait their turn, so plan your moves and keep space free.
 >
-> Travel across the archipelago through 50 handcrafted levels and ten themed islands: Javanese culture, 17 August, the night market, the seas of Nusantara, sports, traditional games, Maluku spices, rice fields, Indonesian wildlife and a final festival. Every island brings its own objects, from wayang puppets and kites to komodo dragons and spice sacks.
+> Travel across the archipelago through 50 handcrafted levels and ten themed islands: Javanese culture, Independence Day, the night market, the seas of Nusantara, sports, traditional games, Maluku spices, rice fields, Indonesian wildlife and a final festival. Every island brings its own objects, from wayang puppets and kites to komodo dragons and spice sacks.
 >
 > New ideas keep arriving as you go: belts that carry stacks past the shelves, fixed stacks, locked shelves that open after a few triples, shelves that close once emptied and a crate that wanders around the board. Clear triples in a row for combos, earn up to three stars per level, open star chests and use boosters to freeze the clock, remove a triple or shuffle the board. Every level can be beaten without them.
 >
-> Relaxed to pick up, satisfying to master. Selamat bermain!
+> Easy to pick up, satisfying to master. Selamat bermain!
 
 ## Controls
 
@@ -33,11 +33,11 @@ Nothing here mentions ads, purchases with real money or other platforms.
 ## Suggested tags and category
 
 - Category: **Puzzle**
-- Tags: Sorting, Match 3, Casual, Brain, Food, Relaxing, Mobile, Single player
+- Tags: Sorting, Triple match, Match 3, Casual, Brain, Food, Relaxing, Mobile, Single player
 - Orientation (portal setting): both landscape and portrait are supported; portrait suits phones best.
 
 ## For reference
 
 - Languages: English (default) and Indonesian (chosen automatically when the browser's language is Indonesian).
-- Age: no violence, no chat, no user content; suitable for PEGI 12 (and younger players).
+- Age: no violence, no chat, no user content; suitable for PEGI 12.
 - Progress is saved in the browser only.
