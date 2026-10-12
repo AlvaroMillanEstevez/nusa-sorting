@@ -22,6 +22,8 @@ type PilotObject = keyof typeof pilot.objects;
 export const PILOT_SHEETS_ORDER = Object.keys(pilot.objects) as PilotObject[];
 /** The kind a drawing is of. */
 export const pilotKind = (object: string) => object.replace(/-\d$/, '');
+/** The theme a drawing belongs to, or null for food. */
+export const pilotTheme = (object: string): string | null => (pilot.objects as Record<string, { theme?: string | null }>)[object]?.theme ?? null;
 
 /**
  * The order the mock-up gives a level's kinds the drawings in: the latest drawing of each kind first, then the

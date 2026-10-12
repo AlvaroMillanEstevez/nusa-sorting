@@ -38,7 +38,21 @@ SHEETS = {
     'objects-sheet-3.png': ['mie-goreng', 'rendang', 'gado-gado', 'ayam-goreng', 'ikan-bakar', 'martabak-manis'],
     'objects-sheet-4.png': ['tempe', 'tahu-goreng', 'pisang-goreng', 'dadar-gulung', 'es-cendol', 'es-kelapa-muda'],
     'objects-sheet-5.png': ['jamu', 'durian', 'manggis', 'salak', 'cabai', 'klepon-3'],
+    # The themes' cultural objects (13 October, rules: a silhouette that names the object even in black and
+    # white, one piece per cell, no pale colours), by catalogue id. 'bunting' is not in the catalogue: the
+    # 17 Agustus sheet drew red and white bunting where the catalogue has the paper trumpet (terompet).
+    'objects-budaya-jawa.png': ['blangkon', 'batik', 'wayang-kulit', 'kendang', 'gong', 'caping'],
+    'objects-17-agustus.png': ['bendera', 'karung', 'kelereng', 'panjat-pinang', 'peci', 'bunting'],
+    'objects-pasar-malam.png': ['lampion', 'arum-manis', 'balon', 'topeng', 'kembang-api', 'bianglala'],
+    'objects-laut-nusantara.png': ['pinisi', 'kerang', 'bintang-laut', 'jaring', 'layangan', 'kelapa'],
+    'objects-olahraga.png': ['kok', 'raket', 'sepak-takraw', 'sepatu', 'piala', 'peluit'],
+    'objects-permainan-tradisional.png': ['gasing', 'congklak', 'egrang', 'yoyo', 'bekel', 'lompat-tali'],
+    'objects-rempah-maluku.png': ['cengkeh', 'pala', 'kayu-manis', 'lada', 'cobek', 'karung-rempah'],
+    'objects-sawah.png': ['padi', 'cangkul', 'orang-orangan', 'kerbau', 'bakul', 'gubuk'],
+    'objects-fauna-nusantara.png': ['komodo', 'orangutan', 'rangkong', 'penyu', 'cendrawasih', 'tarsius'],
 }
+# Each sheet's theme, for the gallery's sections (food sheets have none).
+SHEET_THEME = {name: name[len('objects-') : -len('.png')] for name in SHEETS if not name.startswith('objects-sheet')}
 
 # How colour-blind players see a colour: Viénot, Brettel & Mollon (1999) in linear RGB, as the game's own
 # simulation (src/ui/icons/color.ts).
@@ -93,21 +107,32 @@ def save_webp(image: Image.Image, name: str) -> int:
 def objects(file: str, names: list) -> dict:
     sheet = Image.open(SRC / file).convert('RGBA')
     a = np.array(sheet)
-    solid = a[..., 3] > 20
-    labels, count = ndimage.label(solid)
-    sizes = ndimage.sum(solid, labels, range(1, count + 1))
-    big = sorted((i + 1 for i, s in enumerate(sizes) if s > 2000), key=lambda i: ndimage.find_objects(labels == i)[0][0].start)
-    # Two rows of three, each row sorted left to right.
-    boxes = [(i, ndimage.find_objects(labels == i)[0]) for i in big]
-    rows = sorted(boxes, key=lambda b: b[1][0].start)
-    ordered = sorted(rows[:3], key=lambda b: b[1][1].start) + sorted(rows[3:], key=lambda b: b[1][1].start)
+    h, w = a.shape[:2]
+    # The sheets are a grid of three columns and two rows, one object per cell. An object is the solid parts
+    # (alpha > 200) whose centre falls in its cell, grown a little; soft shadows can touch between cells, so they
+    # are never used to tell objects apart.
+    core = a[..., 3] > 200
+    labels, count = ndimage.label(core)
+    sizes = ndimage.sum(core, labels, range(1, count + 1))
+    centres = ndimage.center_of_mass(core, labels, range(1, count + 1))
+    cells = [(row, col) for row in range(2) for col in range(3)]
+    members = {cell: [] for cell in cells}
+    for i, ((cy, cx), size) in enumerate(zip(centres, sizes)):
+        if size < 300:
+            continue
+        members[(min(1, int(cy * 2 / h)), min(2, int(cx * 3 / w)))].append(i + 1)
+    others_all = np.isin(labels, [i for cell in cells for i in members[cell]])
     info = {}
-    for name, (label, (ys, xs)) in zip(names, ordered):
-        own = ndimage.binary_dilation(labels == label, iterations=6)
-        # The soft shadow (faint alpha) under and around the object belongs to it too.
+    for name, cell in zip(names, cells):
+        mine = np.isin(labels, members[cell])
+        own = ndimage.binary_dilation(mine, iterations=8)
+        ys, xs = np.nonzero(mine)
+        ys, xs = slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1)
+        others = ndimage.binary_dilation(others_all & ~mine, iterations=12)
+        # The soft shadow (faint alpha) under and around the object belongs to it too, away from its neighbours.
         shadow_zone = np.zeros_like(own)
-        shadow_zone[ys.start : min(a.shape[0], ys.stop + 40), max(0, xs.start - 30) : xs.stop + 30] = True
-        keep = own | (shadow_zone & (a[..., 3] <= 20) & ~ndimage.binary_dilation(solid & ~(labels == label), iterations=12))
+        shadow_zone[ys.start : min(h, ys.stop + 40), max(0, xs.start - 30) : xs.stop + 30] = True
+        keep = (own | (shadow_zone & (a[..., 3] <= 200))) & ~others
         part = a.copy()
         part[..., 3] = np.where(keep, part[..., 3], 0)
         # Nearly opaque in the sheet: fully opaque here.
@@ -140,7 +165,7 @@ def objects(file: str, names: list) -> dict:
         size_back = save_webp(sil, f'{name}-back.webp')
         for vision in ('grey', 'deut', 'prot'):
             save_webp(simulate(square, vision), f'{name}-{vision}.webp')
-        info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back}
+        info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back, 'theme': SHEET_THEME.get(file)}
     return info
 
 

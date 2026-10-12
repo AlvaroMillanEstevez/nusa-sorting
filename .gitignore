@@ -5,3 +5,4 @@ coverage/
 .DS_Store
 release/
 src/assets/audio/**/*.wav
+src/dev/artpilot/*.webp

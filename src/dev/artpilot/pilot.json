@@ -3,172 +3,189 @@
   "sate": {
    "bounds": [
     8.6,
-    8.2,
+    9.0,
     91.0,
-    88.7
+    89.5
    ],
-   "bytes": 18490,
-   "backBytes": 5130
+   "bytes": 18428,
+   "backBytes": 5034,
+   "theme": null
   },
   "es-teh-manis": {
    "bounds": [
-    27.0,
+    26.6,
     5.1,
-    73.0,
-    88.7
+    73.4,
+    89.8
    ],
-   "bytes": 11974,
-   "backBytes": 2754
+   "bytes": 12196,
+   "backBytes": 2796,
+   "theme": null
   },
   "rambutan": {
    "bounds": [
-    9.0,
-    18.4,
+    8.2,
+    19.9,
     91.8,
-    88.3
+    89.8
    ],
-   "bytes": 23438,
-   "backBytes": 6420
+   "bytes": 23576,
+   "backBytes": 6608,
+   "theme": null
   },
   "ketupat": {
    "bounds": [
-    15.6,
+    15.2,
     4.7,
     84.4,
     91.4
    ],
-   "bytes": 12284,
-   "backBytes": 3990
+   "bytes": 12362,
+   "backBytes": 4024,
+   "theme": null
   },
   "bakso": {
    "bounds": [
     9.0,
-    19.9,
-    91.0,
-    86.3
+    23.8,
+    96.1,
+    90.2
    ],
-   "bytes": 14454,
-   "backBytes": 3144
+   "bytes": 14906,
+   "backBytes": 3078,
+   "theme": null
   },
   "klepon": {
    "bounds": [
-    9.8,
-    19.5,
-    89.8,
-    87.9
+    9.4,
+    21.1,
+    90.6,
+    90.2
    ],
-   "bytes": 19134,
-   "backBytes": 4838
+   "bytes": 19356,
+   "backBytes": 4868,
+   "theme": null
   },
   "klepon-2": {
    "bounds": [
-    9.0,
-    16.4,
-    90.2,
-    88.7
+    7.0,
+    14.5,
+    90.6,
+    89.1
    ],
-   "bytes": 18226,
-   "backBytes": 4064
+   "bytes": 19222,
+   "backBytes": 4136,
+   "theme": null
   },
   "ketupat-2": {
    "bounds": [
     14.8,
     4.7,
-    84.8,
+    85.2,
     89.5
    ],
-   "bytes": 12124,
-   "backBytes": 3928
+   "bytes": 12526,
+   "backBytes": 3906,
+   "theme": null
   },
   "rambutan-2": {
    "bounds": [
     9.4,
-    7.4,
+    9.0,
     93.8,
-    87.9
+    89.5
    ],
-   "bytes": 23838,
-   "backBytes": 6632
+   "bytes": 23836,
+   "backBytes": 6696,
+   "theme": null
   },
   "nasi-goreng": {
    "bounds": [
     6.6,
-    22.7,
-    91.0,
-    89.5
+    23.4,
+    92.2,
+    91.4
    ],
-   "bytes": 15628,
-   "backBytes": 3712
+   "bytes": 16084,
+   "backBytes": 3796,
+   "theme": null
   },
   "kerupuk-udang": {
    "bounds": [
     9.4,
-    17.6,
-    89.5,
-    88.3
+    19.1,
+    91.4,
+    91.4
    ],
-   "bytes": 13166,
-   "backBytes": 3482
+   "bytes": 13550,
+   "backBytes": 3444,
+   "theme": null
   },
   "onde-onde": {
    "bounds": [
-    11.3,
+    10.5,
     5.5,
-    92.2,
-    86.7
+    92.6,
+    88.3
    ],
-   "bytes": 19104,
-   "backBytes": 3986
+   "bytes": 19940,
+   "backBytes": 4092,
+   "theme": null
   },
   "mie-goreng": {
    "bounds": [
     5.1,
-    9.0,
+    14.1,
     91.0,
-    85.9
+    91.0
    ],
-   "bytes": 18586,
-   "backBytes": 3888
+   "bytes": 18578,
+   "backBytes": 3956,
+   "theme": null
   },
   "rendang": {
    "bounds": [
     9.4,
     21.5,
-    91.4,
+    91.0,
     91.4
    ],
-   "bytes": 16996,
-   "backBytes": 3640
+   "bytes": 17116,
+   "backBytes": 3544,
+   "theme": null
   },
   "gado-gado": {
    "bounds": [
-    9.8,
-    8.2,
+    9.4,
+    10.9,
     94.9,
-    87.9
+    91.0
    ],
-   "bytes": 19528,
-   "backBytes": 3828
+   "bytes": 19816,
+   "backBytes": 3906,
+   "theme": null
   },
   "ayam-goreng": {
    "bounds": [
     6.6,
-    5.1,
-    89.8,
-    86.7
+    6.6,
+    91.4,
+    89.5
    ],
-   "bytes": 17584,
-   "backBytes": 4384
+   "bytes": 17988,
+   "backBytes": 4458,
+   "theme": null
   },
   "ikan-bakar": {
    "bounds": [
     9.0,
-    25.0,
-    91.0,
-    86.7
+    29.7,
+    91.4,
+    91.8
    ],
-   "bytes": 15412,
-   "backBytes": 3506
+   "bytes": 15544,
+   "backBytes": 3540,
+   "theme": null
   },
   "martabak-manis": {
    "bounds": [
@@ -177,128 +194,735 @@
     93.8,
     89.5
    ],
-   "bytes": 19462,
-   "backBytes": 3438
+   "bytes": 19606,
+   "backBytes": 3366,
+   "theme": null
   },
   "tempe": {
    "bounds": [
     7.0,
-    17.6,
-    89.5,
-    88.3
+    18.0,
+    90.6,
+    89.5
    ],
-   "bytes": 13856,
-   "backBytes": 3390
+   "bytes": 14060,
+   "backBytes": 3362,
+   "theme": null
   },
   "tahu-goreng": {
    "bounds": [
-    9.4,
-    15.6,
-    89.5,
-    88.7
+    9.0,
+    15.2,
+    91.0,
+    89.5
    ],
-   "bytes": 15362,
-   "backBytes": 3608
+   "bytes": 16200,
+   "backBytes": 3762,
+   "theme": null
   },
   "pisang-goreng": {
    "bounds": [
-    11.7,
+    10.5,
     4.7,
-    91.0,
-    87.5
+    92.2,
+    89.8
    ],
-   "bytes": 15496,
-   "backBytes": 4120
+   "bytes": 16652,
+   "backBytes": 4402,
+   "theme": null
   },
   "dadar-gulung": {
    "bounds": [
     4.7,
-    10.9,
+    12.9,
     91.8,
-    87.9
+    89.5
    ],
-   "bytes": 16634,
-   "backBytes": 3346
+   "bytes": 16622,
+   "backBytes": 3342,
+   "theme": null
   },
   "es-cendol": {
    "bounds": [
     23.4,
-    4.7,
-    73.8,
-    89.1
+    5.1,
+    76.2,
+    92.6
    ],
-   "bytes": 11836,
-   "backBytes": 2984
+   "bytes": 12472,
+   "backBytes": 3076,
+   "theme": null
   },
   "es-kelapa-muda": {
    "bounds": [
-    14.8,
+    13.7,
     5.1,
-    86.7,
-    89.8
+    87.5,
+    92.6
    ],
-   "bytes": 12982,
-   "backBytes": 3662
+   "bytes": 13942,
+   "backBytes": 3762,
+   "theme": null
   },
   "jamu": {
    "bounds": [
-    24.6,
+    27.0,
     5.1,
-    71.5,
-    88.3
+    74.6,
+    89.8
    ],
-   "bytes": 8906,
-   "backBytes": 2524
+   "bytes": 8864,
+   "backBytes": 2448,
+   "theme": null
   },
   "durian": {
    "bounds": [
-    9.8,
-    5.1,
-    90.6,
-    87.9
+    9.4,
+    5.9,
+    91.0,
+    89.5
    ],
-   "bytes": 18146,
-   "backBytes": 5474
+   "bytes": 18332,
+   "backBytes": 5518,
+   "theme": null
   },
   "manggis": {
    "bounds": [
-    14.1,
+    13.3,
     5.1,
-    87.1,
-    87.5
+    87.9,
+    89.5
    ],
-   "bytes": 14756,
-   "backBytes": 3472
+   "bytes": 15144,
+   "backBytes": 3610,
+   "theme": null
   },
   "salak": {
    "bounds": [
-    11.3,
+    12.5,
     5.1,
-    81.2,
-    89.5
+    82.8,
+    89.8
    ],
-   "bytes": 17092,
-   "backBytes": 3578
+   "bytes": 17378,
+   "backBytes": 3512,
+   "theme": null
   },
   "cabai": {
    "bounds": [
-    9.4,
-    9.4,
-    90.6,
-    88.7
+    9.0,
+    9.8,
+    91.0,
+    89.5
    ],
-   "bytes": 12804,
-   "backBytes": 4086
+   "bytes": 12876,
+   "backBytes": 4284,
+   "theme": null
   },
   "klepon-3": {
    "bounds": [
-    9.8,
+    9.4,
     10.5,
     91.4,
+    89.1
+   ],
+   "bytes": 19620,
+   "backBytes": 4208,
+   "theme": null
+  },
+  "blangkon": {
+   "bounds": [
+    5.1,
+    17.2,
+    91.0,
+    89.5
+   ],
+   "bytes": 20364,
+   "backBytes": 3120,
+   "theme": "budaya-jawa"
+  },
+  "batik": {
+   "bounds": [
+    9.0,
+    23.4,
+    91.4,
+    89.5
+   ],
+   "bytes": 16942,
+   "backBytes": 3138,
+   "theme": "budaya-jawa"
+  },
+  "wayang-kulit": {
+   "bounds": [
+    20.7,
+    5.1,
+    82.4,
+    89.8
+   ],
+   "bytes": 19748,
+   "backBytes": 7878,
+   "theme": "budaya-jawa"
+  },
+  "kendang": {
+   "bounds": [
+    6.6,
+    20.7,
+    91.8,
+    89.5
+   ],
+   "bytes": 14192,
+   "backBytes": 3220,
+   "theme": "budaya-jawa"
+  },
+  "gong": {
+   "bounds": [
+    12.1,
+    4.7,
+    87.9,
+    89.5
+   ],
+   "bytes": 19190,
+   "backBytes": 6416,
+   "theme": "budaya-jawa"
+  },
+  "caping": {
+   "bounds": [
+    9.0,
+    23.8,
+    95.3,
+    89.5
+   ],
+   "bytes": 12940,
+   "backBytes": 3156,
+   "theme": "budaya-jawa"
+  },
+  "bendera": {
+   "bounds": [
+    5.5,
+    5.5,
+    90.6,
     88.7
    ],
-   "bytes": 19344,
-   "backBytes": 4124
+   "bytes": 12812,
+   "backBytes": 4622,
+   "theme": "17-agustus"
+  },
+  "karung": {
+   "bounds": [
+    13.3,
+    5.1,
+    86.7,
+    89.1
+   ],
+   "bytes": 18278,
+   "backBytes": 3642,
+   "theme": "17-agustus"
+  },
+  "kelereng": {
+   "bounds": [
+    9.8,
+    17.2,
+    94.9,
+    89.1
+   ],
+   "bytes": 12650,
+   "backBytes": 3606,
+   "theme": "17-agustus"
+  },
+  "panjat-pinang": {
+   "bounds": [
+    16.4,
+    5.1,
+    80.9,
+    89.8
+   ],
+   "bytes": 21428,
+   "backBytes": 7842,
+   "theme": "17-agustus"
+  },
+  "peci": {
+   "bounds": [
+    5.5,
+    27.7,
+    91.4,
+    93.0
+   ],
+   "bytes": 7386,
+   "backBytes": 2892,
+   "theme": "17-agustus"
+  },
+  "bunting": {
+   "bounds": [
+    9.4,
+    33.2,
+    95.3,
+    88.7
+   ],
+   "bytes": 13920,
+   "backBytes": 5156,
+   "theme": "17-agustus"
+  },
+  "lampion": {
+   "bounds": [
+    15.2,
+    4.3,
+    84.8,
+    89.5
+   ],
+   "bytes": 13182,
+   "backBytes": 4074,
+   "theme": "pasar-malam"
+  },
+  "arum-manis": {
+   "bounds": [
+    14.5,
+    5.1,
+    85.5,
+    89.5
+   ],
+   "bytes": 15536,
+   "backBytes": 4360,
+   "theme": "pasar-malam"
+  },
+  "balon": {
+   "bounds": [
+    23.8,
+    5.1,
+    76.2,
+    89.5
+   ],
+   "bytes": 8964,
+   "backBytes": 3480,
+   "theme": "pasar-malam"
+  },
+  "topeng": {
+   "bounds": [
+    7.8,
+    7.4,
+    96.1,
+    89.5
+   ],
+   "bytes": 22614,
+   "backBytes": 4910,
+   "theme": "pasar-malam"
+  },
+  "kembang-api": {
+   "bounds": [
+    9.4,
+    5.1,
+    90.6,
+    89.1
+   ],
+   "bytes": 29208,
+   "backBytes": 8210,
+   "theme": "pasar-malam"
+  },
+  "bianglala": {
+   "bounds": [
+    14.8,
+    4.7,
+    87.9,
+    89.5
+   ],
+   "bytes": 23740,
+   "backBytes": 7172,
+   "theme": "pasar-malam"
+  },
+  "pinisi": {
+   "bounds": [
+    9.0,
+    4.7,
+    90.2,
+    89.8
+   ],
+   "bytes": 22264,
+   "backBytes": 6466,
+   "theme": "laut-nusantara"
+  },
+  "kerang": {
+   "bounds": [
+    9.4,
+    19.1,
+    91.0,
+    89.5
+   ],
+   "bytes": 15158,
+   "backBytes": 3482,
+   "theme": "laut-nusantara"
+  },
+  "bintang-laut": {
+   "bounds": [
+    9.4,
+    5.9,
+    94.5,
+    89.5
+   ],
+   "bytes": 20156,
+   "backBytes": 4802,
+   "theme": "laut-nusantara"
+  },
+  "jaring": {
+   "bounds": [
+    7.8,
+    15.6,
+    91.0,
+    89.5
+   ],
+   "bytes": 22128,
+   "backBytes": 3704,
+   "theme": "laut-nusantara"
+  },
+  "layangan": {
+   "bounds": [
+    9.0,
+    4.3,
+    95.3,
+    89.1
+   ],
+   "bytes": 18250,
+   "backBytes": 5674,
+   "theme": "laut-nusantara"
+  },
+  "kelapa": {
+   "bounds": [
+    7.8,
+    5.1,
+    92.2,
+    88.7
+   ],
+   "bytes": 26370,
+   "backBytes": 5142,
+   "theme": "laut-nusantara"
+  },
+  "kok": {
+   "bounds": [
+    11.7,
+    4.7,
+    88.3,
+    89.5
+   ],
+   "bytes": 13210,
+   "backBytes": 4362,
+   "theme": "olahraga"
+  },
+  "raket": {
+   "bounds": [
+    9.0,
+    4.7,
+    91.0,
+    89.8
+   ],
+   "bytes": 23042,
+   "backBytes": 4262,
+   "theme": "olahraga"
+  },
+  "sepak-takraw": {
+   "bounds": [
+    10.5,
+    5.1,
+    90.6,
+    89.5
+   ],
+   "bytes": 16888,
+   "backBytes": 3858,
+   "theme": "olahraga"
+  },
+  "sepatu": {
+   "bounds": [
+    5.1,
+    17.2,
+    91.4,
+    90.6
+   ],
+   "bytes": 14534,
+   "backBytes": 3958,
+   "theme": "olahraga"
+  },
+  "piala": {
+   "bounds": [
+    7.0,
+    4.7,
+    87.5,
+    89.5
+   ],
+   "bytes": 18026,
+   "backBytes": 6438,
+   "theme": "olahraga"
+  },
+  "peluit": {
+   "bounds": [
+    8.6,
+    8.2,
+    93.0,
+    88.7
+   ],
+   "bytes": 18546,
+   "backBytes": 5184,
+   "theme": "olahraga"
+  },
+  "gasing": {
+   "bounds": [
+    12.5,
+    4.7,
+    87.5,
+    88.3
+   ],
+   "bytes": 14638,
+   "backBytes": 3952,
+   "theme": "permainan-tradisional"
+  },
+  "congklak": {
+   "bounds": [
+    8.6,
+    32.0,
+    91.4,
+    90.6
+   ],
+   "bytes": 11874,
+   "backBytes": 2680,
+   "theme": "permainan-tradisional"
+  },
+  "egrang": {
+   "bounds": [
+    27.7,
+    5.1,
+    73.4,
+    89.8
+   ],
+   "bytes": 13702,
+   "backBytes": 5692,
+   "theme": "permainan-tradisional"
+  },
+  "yoyo": {
+   "bounds": [
+    6.2,
+    11.7,
+    90.6,
+    88.7
+   ],
+   "bytes": 15342,
+   "backBytes": 3942,
+   "theme": "permainan-tradisional"
+  },
+  "bekel": {
+   "bounds": [
+    9.0,
+    25.0,
+    91.0,
+    89.5
+   ],
+   "bytes": 17182,
+   "backBytes": 5314,
+   "theme": "permainan-tradisional"
+  },
+  "lompat-tali": {
+   "bounds": [
+    9.8,
+    15.6,
+    93.4,
+    88.7
+   ],
+   "bytes": 23932,
+   "backBytes": 7792,
+   "theme": "permainan-tradisional"
+  },
+  "cengkeh": {
+   "bounds": [
+    5.1,
+    23.8,
+    91.0,
+    89.5
+   ],
+   "bytes": 17260,
+   "backBytes": 4508,
+   "theme": "rempah-maluku"
+  },
+  "pala": {
+   "bounds": [
+    9.8,
+    12.9,
+    91.8,
+    89.5
+   ],
+   "bytes": 17796,
+   "backBytes": 3544,
+   "theme": "rempah-maluku"
+  },
+  "kayu-manis": {
+   "bounds": [
+    9.4,
+    15.2,
+    91.8,
+    89.5
+   ],
+   "bytes": 15630,
+   "backBytes": 3862,
+   "theme": "rempah-maluku"
+  },
+  "lada": {
+   "bounds": [
+    13.3,
+    5.1,
+    85.9,
+    89.8
+   ],
+   "bytes": 14982,
+   "backBytes": 5264,
+   "theme": "rempah-maluku"
+  },
+  "cobek": {
+   "bounds": [
+    9.4,
+    6.2,
+    90.6,
+    89.5
+   ],
+   "bytes": 16754,
+   "backBytes": 3560,
+   "theme": "rempah-maluku"
+  },
+  "karung-rempah": {
+   "bounds": [
+    9.4,
+    7.4,
+    95.3,
+    90.6
+   ],
+   "bytes": 20742,
+   "backBytes": 4256,
+   "theme": "rempah-maluku"
+  },
+  "padi": {
+   "bounds": [
+    8.6,
+    6.6,
+    91.0,
+    89.1
+   ],
+   "bytes": 25792,
+   "backBytes": 7936,
+   "theme": "sawah"
+  },
+  "cangkul": {
+   "bounds": [
+    14.8,
+    5.1,
+    85.2,
+    89.5
+   ],
+   "bytes": 11834,
+   "backBytes": 3646,
+   "theme": "sawah"
+  },
+  "orang-orangan": {
+   "bounds": [
+    12.1,
+    5.1,
+    91.0,
+    89.5
+   ],
+   "bytes": 20020,
+   "backBytes": 6774,
+   "theme": "sawah"
+  },
+  "kerbau": {
+   "bounds": [
+    5.9,
+    15.6,
+    91.4,
+    90.2
+   ],
+   "bytes": 16194,
+   "backBytes": 4724,
+   "theme": "sawah"
+  },
+  "bakul": {
+   "bounds": [
+    9.8,
+    12.5,
+    90.2,
+    89.1
+   ],
+   "bytes": 18136,
+   "backBytes": 3602,
+   "theme": "sawah"
+  },
+  "gubuk": {
+   "bounds": [
+    9.8,
+    4.7,
+    92.2,
+    89.8
+   ],
+   "bytes": 22826,
+   "backBytes": 6804,
+   "theme": "sawah"
+  },
+  "komodo": {
+   "bounds": [
+    4.7,
+    19.9,
+    91.0,
+    89.1
+   ],
+   "bytes": 19256,
+   "backBytes": 5282,
+   "theme": "fauna-nusantara"
+  },
+  "orangutan": {
+   "bounds": [
+    9.0,
+    4.7,
+    91.0,
+    89.1
+   ],
+   "bytes": 17158,
+   "backBytes": 4286,
+   "theme": "fauna-nusantara"
+  },
+  "rangkong": {
+   "bounds": [
+    14.8,
+    5.1,
+    87.5,
+    90.2
+   ],
+   "bytes": 14480,
+   "backBytes": 5118,
+   "theme": "fauna-nusantara"
+  },
+  "penyu": {
+   "bounds": [
+    8.6,
+    25.4,
+    91.4,
+    90.2
+   ],
+   "bytes": 16900,
+   "backBytes": 4196,
+   "theme": "fauna-nusantara"
+  },
+  "cendrawasih": {
+   "bounds": [
+    14.5,
+    4.3,
+    86.3,
+    92.2
+   ],
+   "bytes": 21942,
+   "backBytes": 8016,
+   "theme": "fauna-nusantara"
+  },
+  "tarsius": {
+   "bounds": [
+    17.6,
+    4.3,
+    83.2,
+    94.1
+   ],
+   "bytes": 17824,
+   "backBytes": 5610,
+   "theme": "fauna-nusantara"
   }
  },
  "shelf": {
