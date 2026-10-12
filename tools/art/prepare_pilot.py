@@ -29,8 +29,12 @@ SIZE = 256
 MARGIN = 10
 WEBP = dict(quality=82, method=6)
 
-# The sheet's six objects, left to right and top to bottom.
-OBJECTS = ['sate', 'es-teh-manis', 'rambutan', 'ketupat', 'bakso', 'klepon']
+# The sheets and their six objects, left to right and top to bottom. The second sheet (made with new rules: one
+# object per cell, more saturated colours, distinct silhouettes) redoes three kinds: they get a '-2'.
+SHEETS = {
+    'objects-sheet.png': ['sate', 'es-teh-manis', 'rambutan', 'ketupat', 'bakso', 'klepon'],
+    'objects-sheet-2.png': ['klepon-2', 'ketupat-2', 'rambutan-2', 'nasi-goreng', 'kerupuk-udang', 'onde-onde'],
+}
 
 # The game's shelf in slot units (see ui/boardLayout: SIDE_PAD, TOP_PAD, slot aspect 1.2, PLANK), with the art's
 # pieces made thinner: posts and dividers fit inside the side pads (the slots keep their centres at 0.55, 1.55
@@ -53,8 +57,8 @@ def save_webp(image: Image.Image, name: str) -> int:
     return path.stat().st_size
 
 
-def objects() -> dict:
-    sheet = Image.open(SRC / 'objects-sheet.png').convert('RGBA')
+def objects(file: str, names: list) -> dict:
+    sheet = Image.open(SRC / file).convert('RGBA')
     a = np.array(sheet)
     solid = a[..., 3] > 20
     labels, count = ndimage.label(solid)
@@ -65,7 +69,7 @@ def objects() -> dict:
     rows = sorted(boxes, key=lambda b: b[1][0].start)
     ordered = sorted(rows[:3], key=lambda b: b[1][1].start) + sorted(rows[3:], key=lambda b: b[1][1].start)
     info = {}
-    for name, (label, (ys, xs)) in zip(OBJECTS, ordered):
+    for name, (label, (ys, xs)) in zip(names, ordered):
         own = ndimage.binary_dilation(labels == label, iterations=6)
         # The soft shadow (faint alpha) under and around the object belongs to it too.
         shadow_zone = np.zeros_like(own)
@@ -114,8 +118,9 @@ def runs(profile: np.ndarray, bright: float) -> list:
     return list(zip(edges[::2], edges[1::2]))
 
 
-def shelf() -> dict:
-    image = Image.open(SRC / 'shelf-3.png').convert('RGBA')
+def shelf_pieces(file: str):
+    """The shelf cropped to itself, and its columns (posts, compartments, dividers) and rows (beam, back, plank)."""
+    image = Image.open(SRC / file).convert('RGBA')
     # The shelf itself (its faint glow around is left out).
     opaque = np.array(image)[..., 3] > 128
     ys, xs = np.nonzero(opaque)
@@ -133,8 +138,19 @@ def shelf() -> dict:
     # Down the first compartment: the bright top beam, the dark back wall, then the floor and the front plank.
     down = lum[:, (cols[1][0] + cols[1][1]) // 2 - 10 : (cols[1][0] + cols[1][1]) // 2 + 10].mean(axis=1)
     # The back wall is the longest dark stretch (the outline at the very bottom is dark too, but thin).
-    top_end, bottom_start = max(runs(-down, -60), key=lambda r: r[1] - r[0])
+    top_end, bottom_start = max(runs(-down, -DARK[file]), key=lambda r: r[1] - r[0])
     rows = [(0, top_end), (top_end, bottom_start), (bottom_start, h)]
+    return image, cols, rows
+
+
+# Below this brightness is a compartment's back wall (the second shelf's is lighter).
+DARK = {'shelf-3.png': 60, 'shelf-3-v2.png': 75}
+
+
+def shelf() -> dict:
+    """The first shelf (thick frame), rebuilt from its pieces at the game's geometry."""
+    image, cols, rows = shelf_pieces('shelf-3.png')
+    w, h = image.size
     # Target sizes (px) of each column and row of pieces.
     u = UNIT
     col_w = [SHELF['post'], SHELF['interior'], SHELF['divider'], SHELF['interior'], SHELF['divider'], SHELF['interior'], SHELF['post']]
@@ -155,11 +171,68 @@ def shelf() -> dict:
     out = out.resize((out_w, out_h))
     size = save_webp(out, 'shelf.webp')
     return {
+        'kind': 'rebuilt',
         'geometry': SHELF,
         'source': {'columns': [list(map(int, c)) for c in cols], 'rows': [list(map(int, r)) for r in rows], 'size': [w, h]},
         'image': [out_w, out_h],
         'bytes': size,
     }
+
+
+def shelf_as_is() -> dict:
+    """
+    The second shelf (thin frame) as it is: only cropped and scaled uniformly, so that one compartment plus one
+    divider is UNIT pixels. Its measures (in those units) say how it lines up with the game's slots.
+    """
+    image, cols, rows = shelf_pieces('shelf-3-v2.png')
+    w, h = image.size
+    pitch = (cols[5][0] - cols[1][0]) / 2  # from one compartment's start to the next one's
+    scale = UNIT / pitch
+    out = image.resize((round(w * scale), round(h * scale)), Image.LANCZOS)
+    size = save_webp(out, 'shelf-v2.webp')
+    unit = lambda px: round(px / pitch, 3)  # noqa: E731
+    centres = [unit((cols[i][0] + cols[i][1]) / 2) for i in (1, 3, 5)]
+    return {
+        'kind': 'asIs',
+        'image': list(out.size),
+        'bytes': size,
+        # In units of one compartment plus divider (the game's slot width): where things are in the picture.
+        'units': {
+            'width': unit(w),
+            'height': unit(h),
+            'post': [unit(cols[0][1] - cols[0][0]), unit(cols[6][1] - cols[6][0])],
+            'divider': [unit(cols[2][1] - cols[2][0]), unit(cols[4][1] - cols[4][0])],
+            'interior': [unit(cols[i][1] - cols[i][0]) for i in (1, 3, 5)],
+            'centres': centres,
+            'beam': unit(rows[0][1]),
+            'back': unit(rows[1][1] - rows[1][0]),
+            'floor': unit(rows[1][1]),
+            'plank': unit(h - rows[1][1]),
+        },
+    }
+
+
+def shelf_fitted() -> dict:
+    """
+    The second shelf with its width as it is and only its height fitted to the game's slots (which are 1.2 times
+    taller than wide, where its compartments are square): the back wall is stretched to the slot's height and the
+    beam and plank brought to the game's (beam a little over the shelf's box, as for the first shelf).
+    """
+    image, cols, rows = shelf_pieces('shelf-3-v2.png')
+    w, _ = image.size
+    pitch = (cols[5][0] - cols[1][0]) / 2
+    u = UNIT
+    row_h = [SHELF['beam'], SHELF['slot'], SHELF['plank']]
+    out_w = round(w / pitch * u)
+    out = Image.new('RGBA', (out_w, round(sum(row_h) * u)), (0, 0, 0, 0))
+    y = 0
+    for (r0, r1), rh in zip(rows, row_h):
+        th = round(rh * u)
+        out.alpha_composite(image.crop((0, r0, w, r1)).resize((out_w, th), Image.LANCZOS), (0, y))
+        y += th
+    size = save_webp(out, 'shelf-v2-fit.webp')
+    centre = ((cols[1][0] + cols[1][1]) / 2) / pitch
+    return {'kind': 'fitted', 'image': list(out.size), 'bytes': size, 'units': {'width': round(w / pitch, 3), 'firstCentre': round(centre, 3)}}
 
 
 def backgrounds() -> dict:
@@ -174,7 +247,7 @@ def backgrounds() -> dict:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    info = {'objects': objects(), 'shelf': shelf(), 'backgrounds': backgrounds()}
+    info = {'objects': {k: v for file, names in SHEETS.items() for k, v in objects(file, names).items()}, 'shelf': shelf(),  'shelfV2': shelf_as_is(), 'shelfV2Fit': shelf_fitted(), 'backgrounds': backgrounds()}
     (OUT / 'pilot.json').write_text(json.dumps(info, indent=1) + '\n')
     total = sum(p.stat().st_size for p in OUT.glob('*.webp'))
     print(json.dumps(info, indent=1))

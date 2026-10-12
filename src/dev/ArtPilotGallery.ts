@@ -12,8 +12,9 @@ import { PILOT_OBJECTS, pilotImage } from './artPilot';
 const SIZES = [36, 40, 52] as const;
 
 /**
- * Development only (?artpilot=gallery): the pilot's illustrated objects next to the game's current icons of the
- * same kinds, at the sizes items show at, in colour and in greyscale, each on the shelf's dark back wall.
+ * Development only (?artpilot=gallery): the pilot's illustrated objects (both sheets; the second sheet's redone
+ * kinds are marked "(2)") next to the game's current icons of the same kinds, at the sizes items show at, in
+ * colour and in greyscale, each on the shelf's dark back wall.
  */
 export class ArtPilotGallery extends Phaser.Scene {
   constructor() {
@@ -32,7 +33,7 @@ export class ArtPilotGallery extends Phaser.Scene {
     const jobs: Promise<void>[] = [];
     for (const kind of PILOT_OBJECTS) {
       for (const size of SIZES) {
-        const svg = renderItemSvg(kind);
+        const svg = renderItemSvg(kind.replace(/-2$/, ''));
         jobs.push(addSvgTexture(this.textures, `now:${kind}:${size}`, svg, size * ratio));
         jobs.push(addSvgTexture(this.textures, `nowgrey:${kind}:${size}`, simulateSvg(svg, 'grayscale'), size * ratio));
       }
@@ -63,7 +64,7 @@ export class ArtPilotGallery extends Phaser.Scene {
       });
       PILOT_OBJECTS.forEach((kind, ki) => {
         const cy = gy + 40 + ki * cell + cell / 2;
-        if (gi % perRow === 0) this.add.existing(kitText(this, 'caption', kind, SKIN.text.primary).setOrigin(1, 0.5).setPosition(gx - 8, cy));
+        if (gi % perRow === 0) this.add.existing(kitText(this, 'caption', kind.endsWith('-2') ? `${kind.slice(0, -2)} (2)` : kind, SKIN.text.primary).setOrigin(1, 0.5).setPosition(gx - 8, cy));
         SIZES.forEach((size, si) => {
           const cx = gx + si * cell + cell / 2;
           // The shelf's back wall behind each item, as in a level.

@@ -59,9 +59,70 @@
    ],
    "bytes": 19134,
    "backBytes": 4838
+  },
+  "klepon-2": {
+   "bounds": [
+    9.0,
+    16.4,
+    90.2,
+    88.7
+   ],
+   "bytes": 18226,
+   "backBytes": 4064
+  },
+  "ketupat-2": {
+   "bounds": [
+    14.8,
+    4.7,
+    84.8,
+    89.5
+   ],
+   "bytes": 12124,
+   "backBytes": 3928
+  },
+  "rambutan-2": {
+   "bounds": [
+    9.4,
+    7.4,
+    93.8,
+    87.9
+   ],
+   "bytes": 23838,
+   "backBytes": 6632
+  },
+  "nasi-goreng": {
+   "bounds": [
+    6.6,
+    22.7,
+    91.0,
+    89.5
+   ],
+   "bytes": 15628,
+   "backBytes": 3712
+  },
+  "kerupuk-udang": {
+   "bounds": [
+    9.4,
+    17.6,
+    89.5,
+    88.3
+   ],
+   "bytes": 13166,
+   "backBytes": 3482
+  },
+  "onde-onde": {
+   "bounds": [
+    11.3,
+    5.5,
+    92.2,
+    86.7
+   ],
+   "bytes": 19104,
+   "backBytes": 3986
   }
  },
  "shelf": {
+  "kind": "rebuilt",
   "geometry": {
    "post": 0.08,
    "divider": 0.06,
@@ -126,6 +187,52 @@
    334
   ],
   "bytes": 14404
+ },
+ "shelfV2": {
+  "kind": "asIs",
+  "image": [
+   688,
+   301
+  ],
+  "bytes": 18508,
+  "units": {
+   "width": 3.129,
+   "height": 1.367,
+   "post": [
+    0.102,
+    0.125
+   ],
+   "divider": [
+    0.07,
+    0.086
+   ],
+   "interior": [
+    0.925,
+    0.918,
+    0.902
+   ],
+   "centres": [
+    0.565,
+    1.557,
+    2.553
+   ],
+   "beam": 0.211,
+   "back": 0.905,
+   "floor": 1.116,
+   "plank": 0.252
+  }
+ },
+ "shelfV2Fit": {
+  "kind": "fitted",
+  "image": [
+   688,
+   334
+  ],
+  "bytes": 17038,
+  "units": {
+   "width": 3.129,
+   "firstCentre": 0.565
+  }
  },
  "backgrounds": {
   "background-portrait": {
