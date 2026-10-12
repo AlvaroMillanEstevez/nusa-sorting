@@ -13,7 +13,7 @@ describe('level map', () => {
       else expect(group.levels.length).toBeLessThanOrEqual(4);
     }
     expect(groups.flatMap((g) => g.levels)).toEqual(levels.map((_, i) => i));
-    expect(groups.filter((g) => g.theme).map((g) => g.theme)).toEqual(['budaya-jawa', '17-agustus', 'pasar-malam', 'laut-nusantara']);
+    expect(groups.filter((g) => g.theme).map((g) => g.theme)).toEqual(THEMES.map((theme) => theme.id));
   });
 
   it('climbs from level 1 at the bottom, each level above the one before', () => {

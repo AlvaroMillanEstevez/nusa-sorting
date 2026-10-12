@@ -79,6 +79,44 @@ describe.each(numbered.map(({ number, level }) => [number, level] as const))('le
   });
 });
 
+describe('the levels', () => {
+  it('are 50, with their own ids, none shared with the demo levels', () => {
+    expect(levels).toHaveLength(50);
+    const ids = numbered.map((entry) => entry.level.id);
+    expect(new Set(ids).size).toBe(50);
+    for (const demo of demoLevels) expect(ids).not.toContain(demo.id);
+  });
+
+  it('every fifth level is a themed level, bringing all its theme’s objects', () => {
+    expect(numbered.filter(({ level }) => isSpecialLevel(level)).map(({ number, level }) => [number, level.theme])).toEqual([
+      [5, 'budaya-jawa'],
+      [10, '17-agustus'],
+      [15, 'pasar-malam'],
+      [20, 'laut-nusantara'],
+      [25, 'olahraga'],
+      [30, 'permainan-tradisional'],
+      [35, 'rempah-maluku'],
+      [40, 'sawah'],
+      [45, 'fauna-nusantara'],
+      [50, 'festival-nusantara'],
+    ]);
+    for (const { level } of numbered.filter((e) => isSpecialLevel(e.level))) {
+      const kinds = kindsOf(level);
+      for (const kind of ITEM_KINDS.filter((k) => k.theme === level.theme)) expect(kinds, kind.id).toContain(kind.id);
+    }
+  });
+
+  it('the four levels after a themed level feature its objects, at least two in each', () => {
+    for (const theme of numbered.filter(({ level }) => isSpecialLevel(level))) {
+      const objects = ITEM_KINDS.filter((k) => k.theme === theme.level.theme).map((k) => k.id);
+      for (const { number, level } of numbered.filter((e) => e.number > theme.number && e.number <= theme.number + 4)) {
+        const featured = objects.filter((id) => kindsOf(level).has(id));
+        expect(featured.length, `level ${number}, ${theme.level.theme}`).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+});
+
 describe('the curve of levels 1-24', () => {
   const [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10] = levels as [LevelDefinition, ...LevelDefinition[]] & LevelDefinition[];
   const at = (n: number) => levels[n - 1]!;
@@ -86,13 +124,6 @@ describe('the curve of levels 1-24', () => {
   const has = (level: LevelDefinition, kind: string) => (level.mechanics ?? []).some((m) => m.kind === kind);
   const hasShelfTrack = (level: LevelDefinition) => level.layout?.columns.some((c) => c.kind === 'shelfTrack') ?? false;
   const hasStackTrack = (level: LevelDefinition) => createGame(level).tracks.some((t) => t.carriers.some((c) => c.kind === 'stack'));
-
-  it('has 24 levels with their own ids, none shared with the demo levels', () => {
-    expect(levels).toHaveLength(24);
-    const ids = numbered.map((entry) => entry.level.id);
-    expect(new Set(ids).size).toBe(24);
-    for (const demo of demoLevels) expect(ids).not.toContain(demo.id);
-  });
 
   it('1: very simple: 6-8 kinds, few empty slots, nothing hidden, no mechanics', () => {
     expect(columnsOf(l1!)).toEqual(['grid']);
@@ -120,20 +151,6 @@ describe('the curve of levels 1-24', () => {
   });
 
   const [l15, l20] = [at(15), at(20)];
-  const bringsItsObjects = (level: LevelDefinition) => {
-    const kinds = kindsOf(level);
-    for (const kind of ITEM_KINDS.filter((k) => k.theme === level.theme)) expect(kinds, kind.id).toContain(kind.id);
-  };
-
-  it('every fifth level is a themed level, bringing all its theme’s objects', () => {
-    expect(numbered.filter(({ level }) => isSpecialLevel(level)).map(({ number, level }) => [number, level.theme])).toEqual([
-      [5, 'budaya-jawa'],
-      [10, '17-agustus'],
-      [15, 'pasar-malam'],
-      [20, 'laut-nusantara'],
-    ]);
-    for (const level of [l5!, l10!, l15, l20]) bringsItsObjects(level);
-  });
 
   it('5, Budaya Jawa: calm, with more layers than 4 and 6 and comfortable time', () => {
     expect(backLayers(l5!)).toBeGreaterThan(backLayers(l4!));
@@ -150,16 +167,6 @@ describe('the curve of levels 1-24', () => {
     // The clock, more than space, is what beats the simulated player.
     const s = stats.get(l10!.id)!.casual;
     expect(s.timeUpRate).toBeGreaterThan(s.blockedRate + s.stuckRate);
-  });
-
-  it('the four levels after a themed level feature its objects, at least two in each', () => {
-    for (const theme of numbered.filter(({ level }) => isSpecialLevel(level))) {
-      const objects = ITEM_KINDS.filter((k) => k.theme === theme.level.theme).map((k) => k.id);
-      for (const { number, level } of numbered.filter((e) => e.number > theme.number && e.number <= theme.number + 4)) {
-        const featured = objects.filter((id) => kindsOf(level).has(id));
-        expect(featured.length, `level ${number}, ${theme.level.theme}`).toBeGreaterThanOrEqual(2);
-      }
-    }
   });
 
   it('7: more shelves and hidden layers than 6', () => {
@@ -195,7 +202,7 @@ describe('the curve of levels 1-24', () => {
   });
 
   it('gets fuller as it goes: more items over the levels, 60 or more on the biggest boards, few free slots from 3', () => {
-    const items = levels.map(itemCount);
+    const items = levels.slice(0, 24).map(itemCount);
     // Breathers, and levels whose tracks and locks already take space, hold fewer items than their neighbours;
     // on average every block of levels holds more than the first.
     const mean = (from: number, to: number) => items.slice(from - 1, to).reduce((a, b) => a + b, 0) / (to - from + 1);
@@ -203,7 +210,7 @@ describe('the curve of levels 1-24', () => {
     expect(mean(16, 24)).toBeGreaterThan(mean(6, 15));
     expect(Math.max(...items.slice(15))).toBeGreaterThanOrEqual(60);
     expect(Math.max(...items)).toBeLessThanOrEqual(80);
-    for (const [i, level] of levels.entries()) {
+    for (const [i, level] of levels.slice(0, 24).entries()) {
       // Levels with tracks start with more room: picking from a track fills a free slot.
       const most = createGame(level).tracks.length > 0 ? 10 : 7;
       if (i >= 2) expect(freeSlots(createGame(level)), `level ${i + 1}`).toBeLessThanOrEqual(most);
@@ -261,6 +268,122 @@ describe('the curve of levels 1-24', () => {
     for (const n of [11, 16, 21]) {
       expect(win(at(n)), `level ${n}`).toBeGreaterThan(win(at(n - 1)));
       expect(win(at(n)), `level ${n}`).toBeGreaterThan(win(at(n + 1)));
+    }
+  });
+});
+
+describe('the curve of levels 25-50', () => {
+  const at = (n: number) => levels[n - 1]!;
+  const win = (n: number) => stats.get(at(n).id)!.casual.winRate;
+  const has = (n: number, kind: string) => (at(n).mechanics ?? []).some((m) => m.kind === kind);
+  const tracks = (n: number) => createGame(at(n)).tracks;
+  const hasFixedStacks = (n: number) => tracks(n).some((t) => t.speed === 0 && t.carriers.some((c) => c.kind === 'stack'));
+  const hasMovingStacks = (n: number) => tracks(n).some((t) => t.speed !== 0 && t.carriers.some((c) => c.kind === 'stack'));
+  const hasShelfTrack = (n: number) => tracks(n).some((t) => t.carriers.some((c) => c.kind === 'shelf'));
+  const closing = (n: number) => {
+    const m = mechanic(at(n), 'closingShelves');
+    return m?.kind === 'closingShelves' ? m.shelves.length : 0;
+  };
+  /** How many of the mechanics a level mixes. */
+  const mix = (n: number) =>
+    [has(n, 'roamingBlocker'), has(n, 'lockedShelves'), closing(n) > 0, hasFixedStacks(n), hasMovingStacks(n), hasShelfTrack(n)].filter(Boolean).length;
+  const doubled = COMBO_DEFAULTS.multipliers.map((m) => m * 2);
+
+  it('25, Olahraga: a race on two fast belts of stacks, with combos doubled', () => {
+    const belts = tracks(25).filter((t) => t.carriers.some((c) => c.kind === 'stack'));
+    expect(belts).toHaveLength(2);
+    for (const belt of belts) expect(Math.abs(belt.speed)).toBeGreaterThanOrEqual(Math.abs(createGame(at(15)).tracks[0]!.speed));
+    const combo = mechanic(at(25), 'combo');
+    expect(combo?.kind === 'combo' && combo.multipliers).toEqual(doubled);
+  });
+
+  it('27: the first fixed stacks, simple: nothing else on the board', () => {
+    for (let n = 1; n < 27; n++) expect(hasFixedStacks(n), `level ${n}`).toBe(false);
+    expect(hasFixedStacks(27)).toBe(true);
+    expect(mix(27)).toBe(1);
+  });
+
+  it('28: fixed stacks with locked shelves; 30, Permainan tradisional: fixed stacks as piles of toys', () => {
+    expect(hasFixedStacks(28) && has(28, 'lockedShelves')).toBe(true);
+    expect(hasFixedStacks(30)).toBe(true);
+  });
+
+  it('32: the first shelves that close, few of them; 33: with a belt', () => {
+    for (let n = 1; n < 32; n++) expect(closing(n), `level ${n}`).toBe(0);
+    expect(closing(32)).toBe(2);
+    expect(at(32).shelves.length).toBeGreaterThanOrEqual(6);
+    expect(mix(32)).toBe(1);
+    expect(closing(33)).toBeGreaterThan(0);
+    expect(hasMovingStacks(33)).toBe(true);
+  });
+
+  it('35, Rempah Maluku: shelves that close with fixed stacks, like a store', () => {
+    expect(closing(35)).toBeGreaterThan(0);
+    expect(hasFixedStacks(35)).toBe(true);
+  });
+
+  it('37-39: a growing mix', () => {
+    expect(mix(37)).toBeGreaterThanOrEqual(2);
+    expect(mix(38)).toBeGreaterThan(mix(37));
+    expect(mix(39)).toBeGreaterThan(mix(38));
+  });
+
+  it('40, Sawah: tracks of shelves and nothing else, calm', () => {
+    expect(tracks(40).filter((t) => t.carriers.every((c) => c.kind === 'shelf'))).toHaveLength(2);
+    expect(mix(40)).toBe(1);
+    expect(win(40)).toBeGreaterThan(win(39));
+  });
+
+  it('42-44: mixes; 45, Fauna Nusantara: the roaming blocker with locked shelves; 47-49: advanced mixes', () => {
+    for (const n of [42, 43, 44]) expect(mix(n), `level ${n}`).toBeGreaterThanOrEqual(2);
+    expect(has(45, 'roamingBlocker') && has(45, 'lockedShelves')).toBe(true);
+    for (const n of [47, 48, 49]) expect(mix(n), `level ${n}`).toBeGreaterThanOrEqual(3);
+  });
+
+  it('49 is the hardest level so far', () => {
+    for (let n = 1; n < 49; n++) expect(win(49), `level ${n}`).toBeLessThanOrEqual(win(n));
+  });
+
+  it('50, Festival Nusantara: a little of every mechanic and an object from every island, of middling difficulty', () => {
+    expect(hasFixedStacks(50) && hasShelfTrack(50) && closing(50) > 0).toBe(true);
+    expect(has(50, 'lockedShelves') && has(50, 'roamingBlocker')).toBe(true);
+    const combo = mechanic(at(50), 'combo');
+    expect(combo?.kind === 'combo' && combo.multipliers).toEqual(doubled);
+    const kinds = kindsOf(at(50));
+    for (const { level } of numbered.filter((e) => e.number < 50 && isSpecialLevel(e.level))) {
+      expect(ITEM_KINDS.some((k) => k.theme === level.theme && kinds.has(k.id)), level.theme).toBe(true);
+    }
+    expect(win(50)).toBeGreaterThan(win(49));
+    expect(win(50)).toBeGreaterThan(win(48));
+  });
+
+  it('is a sawtooth: after something new or demanding comes an easier level', () => {
+    for (const n of [26, 31, 36, 41, 46]) expect(win(n), `level ${n}`).toBeGreaterThan(win(n - 1));
+    // 27 brings fixed stacks gently, so it can be as easy as the breather before it.
+    for (const n of [31, 36, 41, 46]) expect(win(n), `level ${n}`).toBeGreaterThan(win(n + 1));
+    // The demanding levels are harder than their neighbours.
+    for (const n of [29, 34]) {
+      expect(win(n), `level ${n}`).toBeLessThan(win(n - 1));
+      expect(win(n), `level ${n}`).toBeLessThan(win(n + 1));
+    }
+  });
+
+  it('holds more kinds of objects as it goes, with some long levels near the time cap, but not all', () => {
+    const kinds = (from: number, to: number) => numbered.slice(from - 1, to).map(({ level }) => kindsOf(level).size);
+    const mean = (list: number[]) => list.reduce((a, b) => a + b, 0) / list.length;
+    expect(mean(kinds(25, 50))).toBeGreaterThan(mean(kinds(13, 24)));
+    expect(mean(kinds(38, 50))).toBeGreaterThan(mean(kinds(25, 37)));
+    expect(Math.max(...kinds(25, 50))).toBeGreaterThanOrEqual(25);
+    const long = numbered.slice(24).filter(({ level }) => level.timeLimitSeconds! >= 220);
+    expect(long.length).toBeGreaterThanOrEqual(3);
+    expect(long.length).toBeLessThanOrEqual(13);
+  });
+
+  it('keeps boards readable: at most 80 items, and few free slots at the start', () => {
+    for (const { number, level } of numbered.slice(24)) {
+      expect(itemCount(level), `level ${number}`).toBeLessThanOrEqual(80);
+      const tracked = createGame(level).tracks.length > 0;
+      expect(freeSlots(createGame(level)), `level ${number}`).toBeLessThanOrEqual(tracked ? 10 : 9);
     }
   });
 });

@@ -1,4 +1,5 @@
 import { areConfusable, ITEM_KINDS, itemTypeId, STARTER_KINDS, unlockLevel } from '../../src/data/itemCatalog';
+import { THEMES } from '../../src/data/themes';
 
 /**
  * Tie-break order between kinds that are equally due: the starter set first, then the rest of the catalogue
@@ -48,6 +49,15 @@ export function chooseTypes(
   const cultural = (id: string) => ITEM_KINDS.find((k) => k.id === id)!.theme !== undefined;
   const sinceUnlock = (id: string) => level - unlockLevel(ITEM_KINDS.find((k) => k.id === id)!);
   const own = byRest.filter((id) => cultural(id) && sinceUnlock(id) === 0);
+  // A themed level with no objects of its own (the closing festival) brings one of every island instead: of
+  // each earlier theme, its most rested object.
+  const festival = THEMES.some((theme) => theme.level === level) && own.length === 0;
+  if (festival) {
+    for (const theme of THEMES) {
+      const pick = byRest.find((id) => ITEM_KINDS.find((k) => k.id === id)!.theme === theme.id);
+      if (pick) own.push(pick);
+    }
+  }
   const featured = byRest.filter((id) => cultural(id) && sinceUnlock(id) > 0 && sinceUnlock(id) <= params.featureLevels).slice(0, params.featureCount);
   const ranked = [...own, ...featured, ...byRest.filter((id) => !own.includes(id) && !featured.includes(id))];
   const picked: string[] = [];
