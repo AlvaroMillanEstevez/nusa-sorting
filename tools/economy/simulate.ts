@@ -16,7 +16,7 @@ import { BOOSTER_IDS, ECONOMY, type BoosterId, type Reward } from '../../src/dat
 import { levels } from '../../src/data/levels';
 
 /**
- * A balance check of the economy over the 24 levels (outside the game build). The player wins every level with
+ * A balance check of the economy over the game's levels (outside the game build). The player wins every level with
  * two stars on average, replays its weakest level every fourth level (earning one more star), and loses one
  * level in three once, continuing once, if it can afford it, out of time and out of space in turn: out of time it
  * buys more time with coins (the first continue's price); out of space it uses a booster that fits, one of its own,
@@ -165,8 +165,9 @@ export function main(): string {
   lines.push('');
   lines.push(`Out of time, the saver bought more time ${continued.timeContinues} times for ${continued.timeCoins} coins.`);
   lines.push(`Out of space, it continued ${continued.continues} times with a booster, buying the booster for ${continued.coins} coins when it had none.`);
-  lines.push(`By level 24 the saver has ${last.balance} coins (${affordable} boosters at the average price of ${Math.round(avgPrice)}) and got ${last.freeBoosters} boosters free.`);
-  lines.push(`Boosters within reach: ${total} over 24 levels, one every ${(24 / total).toFixed(1)} levels (from level 4, when the first unlocks: one every ${(21 / total).toFixed(1)}).`);
+  const count = levels.length;
+  lines.push(`By level ${count} the saver has ${last.balance} coins (${affordable} boosters at the average price of ${Math.round(avgPrice)}) and got ${last.freeBoosters} boosters free.`);
+  lines.push(`Boosters within reach: ${total} over ${count} levels, one every ${(count / total).toFixed(1)} levels (from level 4, when the first unlocks: one every ${((count - 3) / total).toFixed(1)}).`);
   lines.push(`The spender bought ${spender.at(-1)!.bought} and holds ${spender.at(-1)!.held} at the end (unused, as it never needs them in this model).`);
   return lines.join('\n');
 }

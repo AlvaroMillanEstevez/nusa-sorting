@@ -12,7 +12,7 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `npm test` — tests con Vitest
 - `npm run typecheck` — `tsc --noEmit`
 - `npm run levelgen -- all` — regenera los niveles desde sus recetas (`tools/levelgen/recipes.ts`); `npm run levelgen -- N` regenera solo el nivel N y `npm run levelgen -- N --seed S` lo prueba con otra semilla. Escribe en `src/data/levels`; revisar el diff antes de hacer commit.
-- `npm run economy` — simula la economía en los 24 niveles (monedas, nivel de jugador, cofres y potenciadores al alcance) con los valores de `src/data/economy.ts`.
+- `npm run economy` — simula la economía en todos los niveles (monedas, nivel de jugador, cofres y potenciadores al alcance) con los valores de `src/data/economy.ts`.
 - `npm run levelgen -- report` — informe de los niveles actuales sin regenerarlos: huecos libres al empezar, huecos libres medios, presión de espacio y resultados del jugador simulado.
 
 ## Probar en el móvil
