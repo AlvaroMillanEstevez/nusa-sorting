@@ -20,6 +20,11 @@ const url = (name: string) => URLS[`./artpilot/${name}.webp`]!;
 type PilotObject = keyof typeof pilot.objects;
 /** Every drawing, sheet by sheet (the gallery's order). Kinds drawn again carry '-2' or '-3'. */
 export const PILOT_SHEETS_ORDER = Object.keys(pilot.objects) as PilotObject[];
+/** The back walls tried for the fitted shelf (?artpilot&shelf=v2fit&wall=…; see tools/art/prepare_pilot.py). */
+export const PILOT_WALLS = ['dark', 'light', 'glow', 'both'] as const;
+/** The fitted shelf's image for a wall. */
+export const pilotShelfImage = (wall: string) => (wall === 'dark' ? 'shelf-v2-fit' : `shelf-v2-fit-${wall}`);
+
 /** The kind a drawing is of. */
 export const pilotKind = (object: string) => object.replace(/-\d$/, '');
 /** The theme a drawing belongs to, or null for food. */
@@ -64,12 +69,13 @@ function kindsOf(level: LevelDefinition): string[] {
 
 /** Loads the pilot art and dresses every level with it. */
 export async function installArtPilot(): Promise<void> {
-  const views = ['', '-back', '-grey', '-deut', '-prot'];
+  const views = ['', '-back', '-grey', '-deut', '-prot', '-halo'];
   const names = [
     ...PILOT_SHEETS_ORDER.flatMap((o) => views.map((view) => `${o}${view}`)),
     'shelf',
     'shelf-v2',
     'shelf-v2-fit',
+    ...PILOT_WALLS.filter((wall) => wall !== 'dark').map((wall) => `shelf-v2-fit-${wall}`),
     'background-portrait',
     'background-landscape',
   ];
@@ -80,10 +86,15 @@ export async function installArtPilot(): Promise<void> {
   setArtHooks({
     dressLevel(scene, level) {
       const bounds: Record<string, readonly [number, number, number, number]> = {};
+      // &objects=a,b,… picks the drawings (in that order, repeated as needed); else every food drawn, latest first.
+      const picked = new URLSearchParams(window.location.search).get('objects')?.split(',').filter((o) => o in pilot.objects) as PilotObject[] | undefined;
+      const order = picked?.length ? picked : PILOT_OBJECTS;
+      // &halo=1: each drawing with a warm soft light behind its outline (see tools/art/prepare_pilot.py).
+      const halo = new URLSearchParams(window.location.search).has('halo') ? '-halo' : '';
       kindsOf(level).forEach((type, i) => {
-        const object = PILOT_OBJECTS[i % PILOT_OBJECTS.length]!;
-        setTexture(scene.textures, itemTextureKey(type, false), object);
-        setTexture(scene.textures, itemTextureKey(type, true), object);
+        const object = order[i % order.length]!;
+        setTexture(scene.textures, itemTextureKey(type, false), `${object}${halo}`);
+        setTexture(scene.textures, itemTextureKey(type, true), `${object}${halo}`);
         setTexture(scene.textures, itemBackTextureKey(type), `${object}-back`);
         const kind = parseItemType(type)?.kind.id ?? type;
         bounds[kind] = pilot.objects[object].bounds as unknown as [number, number, number, number];
@@ -100,7 +111,8 @@ export async function installArtPilot(): Promise<void> {
         if (choice === 'v1') return { name: 'shelf', x, y: y - g.overhangTop * s, w: shelfWidth * s, h: shelfHeight * s };
         if (choice === 'v2fit') {
           const u = pilot.shelfV2Fit.units;
-          return { name: 'shelf-v2-fit', x: x + (0.55 - u.firstCentre) * s, y: y - g.overhangTop * s, w: u.width * s, h: shelfHeight * s };
+          const wall = new URLSearchParams(window.location.search).get('wall') ?? 'dark';
+          return { name: pilotShelfImage(wall), x: x + (0.55 - u.firstCentre) * s, y: y - g.overhangTop * s, w: u.width * s, h: shelfHeight * s };
         }
         const u = pilot.shelfV2.units;
         // The slots' base is the shelf's top pad and one slot height down (see ui/boardLayout).

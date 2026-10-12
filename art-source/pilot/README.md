@@ -26,4 +26,6 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 
 Capturas de la maqueta (`?artpilot`) en `mockup/`. `gallery-themes-1.jpg` a `-3.jpg` muestran los objetos de los temas igual que `gallery-3.jpg` muestra los 30 objetos de comida, a tamaño real, en color, en gris y con deuteranopía y protanopía. Las terminadas en `-2` comparan las dos primeras hojas y las tres estanterías: `v1`, la primera reconstruida por piezas; `v2`, la nueva tal cual; `v2fit`, la nueva ajustada solo en altura.
 
+`walls-compare.jpg` y `halo-before-after-*.jpg` prueban cómo hacer legibles los objetos oscuros sobre la pared oscura de la estantería (13 de octubre): aclarar la pared o poner luz en los compartimentos, frente a un halo cálido tras el contorno de los objetos oscuros.
+
 Las imágenes preparadas (`src/dev/artpilot/*.webp`) no van a git: se generan con `python3 tools/art/prepare_pilot.py` a partir de estos originales antes de abrir `?artpilot`.

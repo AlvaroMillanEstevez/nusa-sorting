@@ -165,8 +165,42 @@ def objects(file: str, names: list) -> dict:
         size_back = save_webp(sil, f'{name}-back.webp')
         for vision in ('grey', 'deut', 'prot'):
             save_webp(simulate(square, vision), f'{name}-{vision}.webp')
-        info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back, 'theme': SHEET_THEME.get(file)}
+        dark = edge_lightness(square) < HALO_BELOW
+        save_webp(halo(square) if dark else square, f'{name}-halo.webp')
+        info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back, 'theme': SHEET_THEME.get(file), 'halo': bool(dark)}
     return info
+
+
+# A warm, soft light just behind each object, following its silhouette: it separates dark objects from the dark
+# back wall without lightening the wall itself (which would take contrast from every mid-tone object).
+HALO_COLOUR = (0xFF, 0xD2, 0x94)
+HALO_RADIUS = 8  # px at 256, about 1.3 px where the item shows at 40 px
+HALO_ALPHA = 0.85
+# Only objects whose outline is darker than this (CIE L*) get the halo: lighter ones already stand out from the
+# dark wall, and a light halo next to a mid-tone outline would blur it.
+HALO_BELOW = 45
+
+
+def edge_lightness(square: Image.Image) -> float:
+    """Median CIE L* of an object's outline (its outer ring of pixels), seen at about 48 px."""
+    a = np.array(square.resize((48, 48), Image.LANCZOS)).astype(float)
+    body = a[..., 3] > 160
+    ring = body & ~ndimage.binary_erosion(body, iterations=2)
+    lin = to_linear(a[..., :3])
+    y = lin @ np.array([0.2126, 0.7152, 0.0722])
+    lightness = np.where(y > 216 / 24389, 116 * np.cbrt(y) - 16, 24389 / 27 * y)
+    return float(np.median(lightness[ring]))
+
+
+def halo(square: Image.Image) -> Image.Image:
+    alpha = np.array(square)[..., 3].astype(float) / 255
+    body = (alpha > 0.5).astype(float)
+    grown = ndimage.binary_dilation(body, iterations=HALO_RADIUS).astype(float)
+    glow = ndimage.gaussian_filter(grown, HALO_RADIUS * 0.35) * HALO_ALPHA
+    under = Image.new('RGBA', square.size, HALO_COLOUR + (0,))
+    under.putalpha(Image.fromarray((np.clip(glow, 0, 1) * 255).astype(np.uint8)))
+    under.alpha_composite(square)
+    return under
 
 
 def runs(profile: np.ndarray, bright: float) -> list:
@@ -290,7 +324,72 @@ def shelf_fitted() -> dict:
         y += th
     size = save_webp(out, 'shelf-v2-fit.webp')
     centre = ((cols[1][0] + cols[1][1]) / 2) / pitch
-    return {'kind': 'fitted', 'image': list(out.size), 'bytes': size, 'units': {'width': round(w / pitch, 3), 'firstCentre': round(centre, 3)}}
+    # The three compartments' insides in the fitted image, for the lit variants.
+    sx = out_w / w
+    top, bottom = round(SHELF['beam'] * u), round((SHELF['beam'] + SHELF['slot']) * u)
+    insides = [(round(cols[i][0] * sx), top, round(cols[i][1] * sx), bottom) for i in (1, 3, 5)]
+    variants = lit_variants(out, insides)
+    return {
+        'kind': 'fitted',
+        'image': list(out.size),
+        'bytes': size,
+        'units': {'width': round(w / pitch, 3), 'firstCentre': round(centre, 3)},
+        'variants': variants,
+    }
+
+
+# Lit variants of the fitted shelf, so dark objects keep their contrast against the compartments' back walls,
+# without losing the wood: 'light' lifts the back wall towards a light honey wood (a screen blend, so the grain
+# stays); 'glow' puts a warm, soft light inside each compartment, brightest behind where the item stands; 'both'
+# does a little of each.
+WARM_WOOD = np.array([0xC8, 0x8E, 0x58], dtype=float)
+WARM_LIGHT = np.array([0xFF, 0xC0, 0x78], dtype=float)
+LIT = {'light': (0.5, 0.0), 'glow': (0.0, 0.7), 'both': (0.3, 0.45)}
+
+
+def screen(base: np.ndarray, colour: np.ndarray, amount: np.ndarray) -> np.ndarray:
+    """Screen blend of `colour` over `base`, by `amount` (0-1 per pixel): lighter, keeping the base's texture."""
+    blended = 255 - (255 - base) * (255 - colour) / 255
+    return base + (blended - base) * amount[..., None]
+
+
+def wall_lightness(a: np.ndarray, insides: list) -> float:
+    """Mean CIE L* of the compartments' back walls (their middle, where items stand)."""
+    values = []
+    for x0, y0, x1, y1 in insides:
+        patch = a[y0 + (y1 - y0) // 4 : y1 - (y1 - y0) // 8, x0 + (x1 - x0) // 6 : x1 - (x1 - x0) // 6, :3] / 255
+        lin = np.where(patch <= 0.04045, patch / 12.92, ((patch + 0.055) / 1.055) ** 2.4)
+        y = lin @ np.array([0.2126, 0.7152, 0.0722])
+        values.append(np.where(y > 216 / 24389, 116 * np.cbrt(y) - 16, 24389 / 27 * y).mean())
+    return round(float(np.mean(values)), 1)
+
+
+def lit_variants(image: Image.Image, insides: list) -> dict:
+    a = np.array(image).astype(float)
+    h, w = a.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    info = {'dark': {'wallL': wall_lightness(a, insides)}}
+    for name, (lift, glow) in LIT.items():
+        out = a.copy()
+        for x0, y0, x1, y1 in insides:
+            inside = np.zeros((h, w))
+            inside[y0:y1, x0:x1] = 1
+            # Soft edges, so the lit wall meets the frame without a seam.
+            inside = ndimage.gaussian_filter(inside, 4) * (a[..., 3] > 0)
+            cx, cy = (x0 + x1) / 2, y0 + (y1 - y0) * 0.6
+            # Lighter in the middle, a little shade kept in the corners, so the compartment keeps its depth.
+            depth = 0.65 + 0.35 * np.exp(-(((xx - cx) / ((x1 - x0) * 0.55)) ** 2 + ((yy - cy) / ((y1 - y0) * 0.6)) ** 2))
+            if lift:
+                out[..., :3] = screen(out[..., :3], WARM_WOOD, inside * lift * depth)
+            if glow:
+                # A warm light behind the item: wide and soft, a little taller than wide, like a lamp's glow.
+                sx, sy = (x1 - x0) * 0.36, (y1 - y0) * 0.42
+                light = np.exp(-(((xx - cx) / sx) ** 2 + ((yy - cy) / sy) ** 2) / 2)
+                out[..., :3] = screen(out[..., :3], WARM_LIGHT, inside * light * glow)
+        lit = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+        size = save_webp(lit, f'shelf-v2-fit-{name}.webp')
+        info[name] = {'wallL': wall_lightness(np.array(lit).astype(float), insides), 'bytes': size}
+    return info
 
 
 def backgrounds() -> dict:

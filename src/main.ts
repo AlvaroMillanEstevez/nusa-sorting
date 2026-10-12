@@ -121,7 +121,10 @@ setKitFeedback({ press: () => sound.play('tap'), open: () => sound.play('open'),
 const gameScenes = () => [new BootScene(store), new HomeScene(sound, store, haptics), new GameScene(sound, store, haptics)];
 
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
-if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('artpilot') === 'gallery') {
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('artpilot') === 'walls') {
+  // Development only: ?artpilot=walls tries lighter back walls for the shelves with the objects that got lost.
+  void import('./dev/ArtPilotWalls').then(({ ArtPilotWalls }) => startGame([ArtPilotWalls]));
+} else if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('artpilot') === 'gallery') {
   // Development only: ?artpilot=gallery compares the pilot's objects with the current icons at real sizes.
   void import('./dev/ArtPilotGallery').then(({ ArtPilotGallery }) => startGame([ArtPilotGallery]));
 } else if (import.meta.env.DEV && wantsGallery(window.location.search)) {
