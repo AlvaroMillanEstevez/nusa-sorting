@@ -119,6 +119,186 @@
    ],
    "bytes": 19104,
    "backBytes": 3986
+  },
+  "mie-goreng": {
+   "bounds": [
+    5.1,
+    9.0,
+    91.0,
+    85.9
+   ],
+   "bytes": 18586,
+   "backBytes": 3888
+  },
+  "rendang": {
+   "bounds": [
+    9.4,
+    21.5,
+    91.4,
+    91.4
+   ],
+   "bytes": 16996,
+   "backBytes": 3640
+  },
+  "gado-gado": {
+   "bounds": [
+    9.8,
+    8.2,
+    94.9,
+    87.9
+   ],
+   "bytes": 19528,
+   "backBytes": 3828
+  },
+  "ayam-goreng": {
+   "bounds": [
+    6.6,
+    5.1,
+    89.8,
+    86.7
+   ],
+   "bytes": 17584,
+   "backBytes": 4384
+  },
+  "ikan-bakar": {
+   "bounds": [
+    9.0,
+    25.0,
+    91.0,
+    86.7
+   ],
+   "bytes": 15412,
+   "backBytes": 3506
+  },
+  "martabak-manis": {
+   "bounds": [
+    9.4,
+    14.5,
+    93.8,
+    89.5
+   ],
+   "bytes": 19462,
+   "backBytes": 3438
+  },
+  "tempe": {
+   "bounds": [
+    7.0,
+    17.6,
+    89.5,
+    88.3
+   ],
+   "bytes": 13856,
+   "backBytes": 3390
+  },
+  "tahu-goreng": {
+   "bounds": [
+    9.4,
+    15.6,
+    89.5,
+    88.7
+   ],
+   "bytes": 15362,
+   "backBytes": 3608
+  },
+  "pisang-goreng": {
+   "bounds": [
+    11.7,
+    4.7,
+    91.0,
+    87.5
+   ],
+   "bytes": 15496,
+   "backBytes": 4120
+  },
+  "dadar-gulung": {
+   "bounds": [
+    4.7,
+    10.9,
+    91.8,
+    87.9
+   ],
+   "bytes": 16634,
+   "backBytes": 3346
+  },
+  "es-cendol": {
+   "bounds": [
+    23.4,
+    4.7,
+    73.8,
+    89.1
+   ],
+   "bytes": 11836,
+   "backBytes": 2984
+  },
+  "es-kelapa-muda": {
+   "bounds": [
+    14.8,
+    5.1,
+    86.7,
+    89.8
+   ],
+   "bytes": 12982,
+   "backBytes": 3662
+  },
+  "jamu": {
+   "bounds": [
+    24.6,
+    5.1,
+    71.5,
+    88.3
+   ],
+   "bytes": 8906,
+   "backBytes": 2524
+  },
+  "durian": {
+   "bounds": [
+    9.8,
+    5.1,
+    90.6,
+    87.9
+   ],
+   "bytes": 18146,
+   "backBytes": 5474
+  },
+  "manggis": {
+   "bounds": [
+    14.1,
+    5.1,
+    87.1,
+    87.5
+   ],
+   "bytes": 14756,
+   "backBytes": 3472
+  },
+  "salak": {
+   "bounds": [
+    11.3,
+    5.1,
+    81.2,
+    89.5
+   ],
+   "bytes": 17092,
+   "backBytes": 3578
+  },
+  "cabai": {
+   "bounds": [
+    9.4,
+    9.4,
+    90.6,
+    88.7
+   ],
+   "bytes": 12804,
+   "backBytes": 4086
+  },
+  "klepon-3": {
+   "bounds": [
+    9.8,
+    10.5,
+    91.4,
+    88.7
+   ],
+   "bytes": 19344,
+   "backBytes": 4124
   }
  },
  "shelf": {

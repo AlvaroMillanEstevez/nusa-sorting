@@ -34,7 +34,40 @@ WEBP = dict(quality=82, method=6)
 SHEETS = {
     'objects-sheet.png': ['sate', 'es-teh-manis', 'rambutan', 'ketupat', 'bakso', 'klepon'],
     'objects-sheet-2.png': ['klepon-2', 'ketupat-2', 'rambutan-2', 'nasi-goreng', 'kerupuk-udang', 'onde-onde'],
+    # Sheets 3-5 (13 October, same rules): the other eighteen foods, and klepon once more.
+    'objects-sheet-3.png': ['mie-goreng', 'rendang', 'gado-gado', 'ayam-goreng', 'ikan-bakar', 'martabak-manis'],
+    'objects-sheet-4.png': ['tempe', 'tahu-goreng', 'pisang-goreng', 'dadar-gulung', 'es-cendol', 'es-kelapa-muda'],
+    'objects-sheet-5.png': ['jamu', 'durian', 'manggis', 'salak', 'cabai', 'klepon-3'],
 }
+
+# How colour-blind players see a colour: Viénot, Brettel & Mollon (1999) in linear RGB, as the game's own
+# simulation (src/ui/icons/color.ts).
+CVD = {
+    'deut': np.array([[0.29275, 0.70725, 0], [0.29275, 0.70725, 0], [-0.02234, 0.02234, 1]]),
+    'prot': np.array([[0.11238, 0.88762, 0], [0.11238, 0.88762, 0], [0.00401, -0.00401, 1]]),
+}
+
+
+def to_linear(c: np.ndarray) -> np.ndarray:
+    c = c / 255
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def to_srgb(v: np.ndarray) -> np.ndarray:
+    v = np.clip(v, 0, 1)
+    return 255 * np.where(v <= 0.0031308, v * 12.92, 1.055 * v ** (1 / 2.4) - 0.055)
+
+
+def simulate(image: Image.Image, vision: str) -> Image.Image:
+    """The image as seen with a colour vision deficiency ('deut', 'prot') or without colour ('grey')."""
+    a = np.array(image).astype(float)
+    lin = to_linear(a[..., :3])
+    if vision == 'grey':
+        y = lin @ np.array([0.2126, 0.7152, 0.0722])
+        out = np.repeat(to_srgb(y)[..., None], 3, axis=2)
+    else:
+        out = to_srgb(lin @ CVD[vision].T)
+    return Image.fromarray(np.dstack([out, a[..., 3]]).round().astype(np.uint8))
 
 # The game's shelf in slot units (see ui/boardLayout: SIDE_PAD, TOP_PAD, slot aspect 1.2, PLANK), with the art's
 # pieces made thinner: posts and dividers fit inside the side pads (the slots keep their centres at 0.55, 1.55
@@ -105,8 +138,8 @@ def objects(file: str, names: list) -> dict:
         sil.alpha_composite(fill)
         sil = sil.filter(ImageFilter.GaussianBlur(1.2))
         size_back = save_webp(sil, f'{name}-back.webp')
-        grey = square.convert('LA').convert('RGBA')
-        save_webp(grey, f'{name}-grey.webp')
+        for vision in ('grey', 'deut', 'prot'):
+            save_webp(simulate(square, vision), f'{name}-{vision}.webp')
         info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back}
     return info
 
