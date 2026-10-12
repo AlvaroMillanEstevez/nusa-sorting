@@ -355,8 +355,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Development only (?show=autoplay): plays the level with the solver, a move every 0.7 s, to review the effects
-   * and the whole way to the map without touching the screen. Shelf moves only (levels without tracks).
+   * Development only (?show=autoplay): plays the level with the solver, a move every 0.65 s, to review the effects
+   * and the whole way to the map without touching the screen. Belt picks go straight into their slot. With
+   * ?preview (the store video) the win panel stays a shorter while.
    */
   private async devAutoplay(): Promise<void> {
     // The condition lets production builds drop the solver altogether.
@@ -365,11 +366,13 @@ export class GameScene extends Phaser.Scene {
     const step = () => {
       if (this.state.status !== 'playing') {
         // Then on to the map, as the player would.
-        this.time.delayedCall(3200, () => this.overlay.visible && this.overlayNext?.());
+        const preview = new URLSearchParams(window.location.search).has('preview');
+        this.time.delayedCall(preview ? 2300 : 3200, () => this.overlay.visible && this.overlayNext?.());
         return;
       }
       const move = simulator.suggestedMove(this.state);
-      if (move && !('carrier' in move[0])) this.tryMove(move[0], move[1]);
+      if (move && simulator.isBeltSource(move[0])) this.belt.pickAndPlace(move[0], move[1]);
+      else if (move) this.tryMove(move[0] as Position, move[1]);
       this.time.delayedCall(650, step);
     };
     this.time.delayedCall(1200, step);

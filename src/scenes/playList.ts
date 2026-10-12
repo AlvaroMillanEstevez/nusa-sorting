@@ -22,3 +22,12 @@ export const DEMO_NUMBERS_FROM = 100;
 export function addDemoLevels(demos: readonly LevelDefinition[]): void {
   demos.forEach((level, i) => list.push({ number: DEMO_NUMBERS_FROM + i + 1, level }));
 }
+
+/**
+ * Development only (?preview, the store video): plays `level` in place of level `number`, keeping its number, so
+ * winning it goes on to the real map.
+ */
+export function replaceLevelForPreview(number: number, level: LevelDefinition): void {
+  const index = list.findIndex((entry) => entry.number === number);
+  if (index !== -1) list[index] = { number, level };
+}

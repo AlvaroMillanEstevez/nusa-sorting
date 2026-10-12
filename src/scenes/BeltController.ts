@@ -254,6 +254,25 @@ export class BeltController {
     return true;
   }
 
+  /**
+   * Takes the top item of a carrier and puts it straight into a front slot, like a quick tap on the belt and a
+   * tap on the slot. For the development autoplay (the preview video); players always go through the pointer.
+   */
+  pickAndPlace(from: CarrierRef, to: Position): boolean {
+    if (this.holding) return false;
+    const picked = pickFromTrack(this.host.getState(), from);
+    if (!picked.ok) return false;
+    const placed = dropHeld(picked.state, to);
+    if (!placed.ok) return false;
+    const next = stackOf(picked.state.tracks[from.track]!.carriers[from.carrier]!)[0];
+    if (next) this.promoting.set(next.id, this.host.scene.time.now);
+    this.host.onPick();
+    this.host.sfx.play('beltPick');
+    this.host.setState(placed.state);
+    this.host.onPlaced(placed.events);
+    return true;
+  }
+
   /** A tap elsewhere while an item is held from a tap: place it there or send it back. Returns true if handled. */
   onTapWhileHolding(x: number, y: number): boolean {
     if (this.tapHeldId === null || !this.holding) return false;

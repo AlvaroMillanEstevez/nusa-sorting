@@ -4,7 +4,7 @@ import { BootScene } from './scenes/BootScene';
 import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
 import { parseChestStarsParam, parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
-import { addDemoLevels, playList } from './scenes/playList';
+import { addDemoLevels, playList, replaceLevelForPreview } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
 import { HomeScene } from './scenes/HomeScene';
 import { setKitFeedback, setReducedMotion } from './scenes/kit';
@@ -16,6 +16,7 @@ import { preventPageGestures } from './ui/preventPageGestures';
 import { SKIN } from './ui/design/tokens';
 import { setSlotAspect } from './ui/boardLayout';
 import { forceSafeArea, RENDER_RATIO } from './scenes/view';
+import { useCuts } from './scenes/transitions';
 
 setLocale((import.meta.env.DEV ? parseLang(window.location.search) : null) ?? resolveLocale(navigator.languages));
 document.title = t('game.title');
@@ -112,6 +113,15 @@ const gameScenes = () => [new BootScene(store), new HomeScene(sound, store, hapt
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
 if (import.meta.env.DEV && wantsGallery(window.location.search)) {
   void import('./dev/GalleryScene').then(({ GalleryScene }) => startGame([GalleryScene]));
+} else if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview')) {
+  // Development only: ?preview=landscape|portrait plays the store video: the cover, then a short board solved by
+  // itself (triples, combos, the belt, shelves that close), then the map (tools/preview/record.mjs records it).
+  void Promise.all([import('./dev/CoverScene'), import('./dev/previewLevel')]).then(([{ CoverScene }, { previewLevel, PREVIEW_LEVEL_NUMBER }]) => {
+    replaceLevelForPreview(PREVIEW_LEVEL_NUMBER, previewLevel);
+    useCuts(true);
+    const shape = new URLSearchParams(window.location.search).get('preview') === 'portrait' ? 'portrait' : 'landscape';
+    startGame([new CoverScene(shape, { next: 'Boot', holdMs: 2200 }), ...gameScenes()]);
+  });
 } else if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('cover')) {
   // Development only: ?cover=landscape|portrait|square draws a store cover (tools/covers/render.sh saves them).
   void import('./dev/CoverScene').then(({ CoverScene, parseCoverParam }) => startGame([new CoverScene(parseCoverParam(window.location.search)!)]));

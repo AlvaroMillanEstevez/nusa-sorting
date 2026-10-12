@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { loadUiFonts } from '../scenes/kit';
 import { makeWoodArt } from '../scenes/art/woodArt';
 import { addSvgTexture } from '../scenes/svgTexture';
+import { fadeToScene } from '../scenes/transitions';
 import { fitCamera, RENDER_RATIO, viewSize } from '../scenes/view';
 import { shelfLayoutAt, type ShelfLayout } from '../ui/boardLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
@@ -74,7 +75,11 @@ const FLOATERS: Readonly<Record<CoverShape, readonly Floater[]>> = {
 const BUNTING = ['#e8443a', '#fff4e0', '#2fb5a8', '#ffc95a', '#7cc44a', '#f06aa0'];
 
 export class CoverScene extends Phaser.Scene {
-  constructor(private readonly shape: CoverShape) {
+  /** `then`: for the preview video, the scene the cover hands over to (with a fade) after `holdMs`. */
+  constructor(
+    private readonly shape: CoverShape,
+    private readonly then?: { readonly next: string; readonly holdMs: number },
+  ) {
     super('Cover');
   }
 
@@ -117,6 +122,8 @@ export class CoverScene extends Phaser.Scene {
     }
 
     this.title(TITLE[this.shape], width / 2, layout.titleY, layout.titleSize, width);
+    const then = this.then;
+    if (then) this.time.delayedCall(then.holdMs, () => fadeToScene(this, then.next));
   }
 
   /** Where the shelves and the title go for this shape, and the item cell size `s`. */
