@@ -17,6 +17,14 @@
         overscroll-behavior: none;
         touch-action: none;
       }
+      /* No text selection, magnifier or long-press menu anywhere on the page (CrazyGames asks for it on body). */
+      body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
       #game {
         width: 100%;
         height: 100%;

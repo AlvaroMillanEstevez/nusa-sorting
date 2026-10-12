@@ -51,6 +51,9 @@ if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo
 
 const sound = new WebAudioSoundService();
 sound.setMuted(store.muted);
+// Audio starts, and resumes after the page was hidden or interrupted (iOS: a call, switching apps), only inside
+// a user gesture: every touchend, click and key press tries (it does nothing while audio is running).
+for (const type of ['touchend', 'click', 'keydown']) document.addEventListener(type, () => sound.unlock(), { capture: true, passive: true });
 
 /** The page's size in CSS pixels; the canvas gets RENDER_RATIO device pixels for each (see scenes/view). */
 function pageSize(): { width: number; height: number } {
@@ -64,6 +67,8 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
     type: Phaser.AUTO,
     backgroundColor: SKIN.backdrop[1],
     disableContextMenu: true,
+    // A clean console in production (portals check it): no engine banner.
+    banner: import.meta.env.DEV,
     input: {
       // preventDefault on touch events so dragging never scrolls or zooms the page.
       touch: { capture: true },

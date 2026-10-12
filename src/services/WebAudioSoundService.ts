@@ -72,7 +72,9 @@ export class WebAudioSoundService implements SoundService {
         this.master.gain.value = this._muted ? 0 : 1;
         this.master.connect(this.context.destination);
       }
-      if (this.context.state === 'suspended') void this.context.resume();
+      // 'suspended' before the first gesture or after the page was hidden; 'interrupted' on iOS after a call or
+      // switching apps. Either way it only resumes inside a user gesture.
+      if (this.context.state !== 'running' && this.context.state !== 'closed') void this.context.resume();
     } catch {
       // No Web Audio support: the game stays silent.
       this.context = null;
