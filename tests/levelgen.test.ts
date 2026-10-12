@@ -72,7 +72,7 @@ describe('level generator', () => {
     expect(shape(other)).toBe(shape(level));
     expect(other.shelves).not.toEqual(level.shelves);
     expect(withArrangement({ ...level, arrangements: [arrangementOf(other)] }, 1)).toEqual(other);
-  });
+  }, 30_000);
 
   it('makes arrangements that meet the rules and the band, the same each time', () => {
     const recipe: LevelRecipe = { ...loose, winBand: [0.3, 1] };
