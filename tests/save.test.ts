@@ -86,7 +86,7 @@ describe('save format', () => {
     expect(parseSave(raw)).toEqual({
       version: SAVE_VERSION,
       progress: { completed: ['level001', 'level003'], bestScores: { level004: 900 }, bestStars: { level004: 3 } },
-      settings: { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null },
+      settings: { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null, music: true },
       themesSeen: ['budaya-jawa', '17-agustus'],
       lastArrangements: { 'nusa-001': 3 },
       tutorialsDone: [],
@@ -97,7 +97,7 @@ describe('save format', () => {
 
   it('reads saves from before colour-blind mode existed with the mode off', () => {
     const old = JSON.stringify({ version: SAVE_VERSION, progress: sample.progress, settings: { muted: true } });
-    expect(parseSave(old).settings).toEqual({ muted: true, colorBlindMode: false, vibration: true, reduceMotion: null });
+    expect(parseSave(old).settings).toEqual({ muted: true, colorBlindMode: false, vibration: true, reduceMotion: null, music: true });
   });
 
   it('still loads saves holding the mechanic notes once seen, dropping that field', () => {
