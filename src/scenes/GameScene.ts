@@ -55,7 +55,6 @@ import {
   shelfAt,
   slotAspect,
   slotRect,
-  boundsAround,
   type BoardLayout,
 } from '../ui/boardLayout';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
@@ -64,8 +63,7 @@ import { themeLook } from '../ui/themeLook';
 import { themeById, type ThemeId } from '../data/themes';
 import { placeItem, typeFit } from '../ui/itemFit';
 import { CRITICAL_TIME_MS, timeStage, type TimeStage } from '../ui/timeWarning';
-import { art, useShelfTrim } from './art/ArtSet';
-import { BakedLayer } from './art/BakedLayer';
+import { placeShelf, SHELF_TEXTURE } from './art/shelfArt';
 import { BeltController } from './BeltController';
 import { BlockerView, ClosingShelves, LockOverlays } from './BoardDecor';
 import { Hud } from './Hud';
@@ -90,7 +88,6 @@ import type { HapticsService } from '../services/HapticsService';
 import { PauseMenu } from './PauseMenu';
 import { kitText, reducedMotion, setReducedMotion } from './kit';
 import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
-import { artHooks } from './artHooks';
 
 const SELECTED_LIFT = 0.15;
 const SELECTED_SCALE = 1.12;
@@ -113,6 +110,8 @@ const RESULT_DELAY_MS = 550;
 const BLOCKED_WARNING_MS = 1100;
 const FADE_MS = 220;
 
+/** Fixed shelves; moving ones are just above (see MovingShelves), then the layers behind the front items. */
+const DEPTH_SHELF = 0;
 const DEPTH_BACK = 5;
 const DEPTH_FRONT = 10;
 const DEPTH_DRAG = 100;
@@ -163,7 +162,6 @@ export class GameScene extends Phaser.Scene {
   /** Same as live.layout: what drawing, hit tests and drop targets use. */
   private layout!: BoardLayout;
 
-  private board!: BakedLayer;
   private hud!: Hud;
   private overlay!: ResultOverlay;
   private decor!: ThemeDecor;
@@ -195,7 +193,7 @@ export class GameScene extends Phaser.Scene {
   private blocker!: BlockerView;
   private belt!: BeltController;
   /** What a mock-up's other art made (?artpilot in development), redrawn with the board. */
-  private artMade: Phaser.GameObjects.GameObject[] = [];
+  private readonly shelfImages: Phaser.GameObjects.Image[] = [];
   private movingShelves!: MovingShelves;
   private dropMark!: Phaser.GameObjects.Graphics;
   /** Last pointer position, for the drop-target outline while dragging. */
@@ -246,7 +244,6 @@ export class GameScene extends Phaser.Scene {
     // No music in levels: it fades out as the level opens.
     this.sfx.wantMusic(false);
     this.haptics.setEnabled(this.store.vibration);
-    this.board = new BakedLayer(this, 0);
     this.movingShelves = new MovingShelves(this);
     this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
     this.locks = new LockOverlays(this);
@@ -632,8 +629,6 @@ export class GameScene extends Phaser.Scene {
       this.level = playedLevel(index, this.arrangement);
       this.state = createGame(this.level);
     }
-    // A mock-up's other art (?artpilot in development) dresses the level before its items are made.
-    artHooks()?.dressLevel(this, this.level);
     this.continuesUsed = resume?.continuesUsed ?? 0;
     this.boostersUsed = { ...(resume?.boostersUsed ?? NO_BOOSTERS_USED) };
     for (const shelf of this.state.shelves) {
@@ -656,9 +651,8 @@ export class GameScene extends Phaser.Scene {
     });
     this.locks.reset(locked);
     this.closing.reset(this.state.closesWhenEmpty, this.state.closed);
-    // A themed level trims the shelves and the HUD in its colours (the background is drawn in relayout).
+    // A themed level trims the HUD in its colours (the background is drawn in relayout).
     const look = themeLook(this.levelTheme());
-    useShelfTrim(look?.trim ?? null);
     this.hud.setAccent(look?.accent ?? null);
     this.relayout();
     this.sync(0);
@@ -1115,23 +1109,14 @@ export class GameScene extends Phaser.Scene {
     this.blocker.place(at ? this.layout.shelves[at.shelf]!.slots[at.slot]! : null, this.layout.slotSize);
   }
 
-  /** Fixed shelves; shelves riding tracks are drawn and moved by MovingShelves. */
+  /** Fixed shelves, one picture each; shelves riding tracks are drawn and moved by MovingShelves. */
   private drawBoard(): void {
-    const fixed = this.base.shelves.filter((_, i) => !this.live.moving[i]).map((shelf) => shelf.rect);
-    for (const made of this.artMade) made.destroy();
-    const hooks = artHooks();
-    this.artMade = hooks ? hooks.drawShelves(this, this.base.shelves.filter((_, i) => !this.live.moving[i]), this.base.slotSize) : [];
-    if (hooks) {
-      const backdrop = hooks.backdrop(this, screenRect(this), Boolean(this.layout.side));
-      if (backdrop && !this.levelTheme()) this.artMade.push(backdrop);
-      else backdrop?.destroy();
-    }
-    // Room for the brackets under each board.
-    this.board.draw(boundsAround(fixed, this.base.slotSize * 0.3), (g) =>
-      this.base.shelves.forEach((shelf, i) => {
-        if (!this.live.moving[i]) art().drawShelf(g, shelf, this.base.slotSize);
-      }),
-    );
+    const fixed = this.base.shelves.filter((_, i) => !this.live.moving[i]);
+    while (this.shelfImages.length > fixed.length) this.shelfImages.pop()!.destroy();
+    fixed.forEach((shelf, i) => {
+      this.shelfImages[i] ??= this.add.image(0, 0, SHELF_TEXTURE).setDepth(DEPTH_SHELF);
+      placeShelf(this.shelfImages[i], shelf, this.base.slotSize);
+    });
   }
 
   private baseScale(): number {

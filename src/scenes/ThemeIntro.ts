@@ -4,9 +4,7 @@ import { THEMES, type ThemeId } from '../data/themes';
 import { getLocale, t, textIn } from '../i18n';
 import { hexNumber, SKIN, SPACE } from '../ui/design/tokens';
 import type { ThemeLook } from '../ui/themeLook';
-import { renderItemSvg } from '../ui/icons/icons';
-import { ITEM_TEXTURE_SIZE, itemTextureKey } from './itemTextures';
-import { addSvgTexture } from './svgTexture';
+import { itemTextureKey, prepareTypes } from './itemTextures';
 import { KitButton, KitModal, kitText } from './kit';
 import { screenRect, viewSize } from './view';
 
@@ -98,10 +96,10 @@ export class ThemeIntro {
       const textureKey = itemTextureKey(kind.id, shown.marks);
       const icon = this.scene.add.image(x, iy, this.scene.textures.exists(textureKey) ? textureKey : '__DEFAULT').setDisplaySize(ICON_PX, ICON_PX);
       panel.add(icon);
-      // Objects no level has used yet were not prepared at start: drawn now, and shown when ready.
+      // Objects the level does not use (the festival's, from earlier islands) may not be ready: shown when they are.
       if (!this.scene.textures.exists(textureKey)) {
         icon.setVisible(false);
-        void addSvgTexture(this.scene.textures, textureKey, renderItemSvg(kind.id, shown.marks), ITEM_TEXTURE_SIZE).then(() => {
+        void prepareTypes(this.scene, [kind.id]).then(() => {
           if (icon.scene) icon.setTexture(textureKey).setDisplaySize(ICON_PX, ICON_PX).setVisible(true);
         });
       }

@@ -1,8 +1,8 @@
 import * as Phaser from 'phaser';
 import { carrierOffset, carriesShelves, type GameState, stackOf } from '../core';
 import { boundsAround, trackPose, type BeltPose, type TrackLayout } from '../ui/boardLayout';
-import { art } from './art/ArtSet';
-import { fixedCubbyHeight } from './art/woodArt';
+import { makeEmptyStack, makePlate, makeShelfTrack, makeStackTrack } from './art/ArtSet';
+import { cubbyBoardY, cubbyFrame, cubbyInsideY, CUBBY_TEXTURE } from './art/shelfArt';
 import { kitText } from './kit';
 import { hexNumber, SKIN, TILE } from '../ui/design/tokens';
 import { BakedLayer } from './art/BakedLayer';
@@ -26,14 +26,15 @@ const PIPS_TEXTURE = (n: number) => `stack-pips-${n}`;
  * The conveyor tracks: a static rail per track, one plate per carrier moving with it (so motion shows even
  * where carriers are empty), rollers at both ends covering where carriers fade out and back in, and on each
  * carrier a few dots telling how many items are hidden below the top one.
- * Fixed stacks (tracks of speed 0) are wooden cubbies instead, with no plates or rollers: a tag on the cubby's
+ * Fixed stacks (tracks of speed 0) are cubbies of the shelves' wood instead, with no plates or rollers: a tag on the cubby's
  * bottom board (under the item, so it reads as the size of the pile, not a number of that item) with a little pile
  * and the items left, from COUNT_FROM, and a boarded-up cubby once a stack has run out.
  * Items are positioned by the controller with the same trackPose.
  */
 export class BeltView {
-  private readonly rails: BakedLayer;
   private readonly rollers: BakedLayer;
+  /** The tracks' wooden pieces (beds, rails, beams), rebuilt on relayout. */
+  private pieces: Phaser.GameObjects.GameObject[] = [];
   private plates: Phaser.GameObjects.Image[][] = [];
   private pips: Phaser.GameObjects.Image[][] = [];
   private layouts: readonly TrackLayout[] = [];
@@ -41,14 +42,13 @@ export class BeltView {
   private fixedTracks: readonly boolean[] = [];
   /** Per fixed stack: its count of items left, and its boarded-up look once empty. */
   private counts: ({ tag: Phaser.GameObjects.Container; label: Phaser.GameObjects.Text; chip: Phaser.GameObjects.Graphics } | null)[][] = [];
-  private emptied: (Phaser.GameObjects.Graphics | null)[][] = [];
+  private emptied: (Phaser.GameObjects.Container | null)[][] = [];
+  /** The cubbies of fixed stacks, one picture each. */
+  private cubbies: Phaser.GameObjects.Image[] = [];
   private readonly pose: BeltPose = { x: 0, y: 0, alpha: 0 };
-  private readonly plate: { key: string; size: number };
 
   constructor(private readonly scene: Phaser.Scene) {
-    this.rails = new BakedLayer(scene, DEPTH_RAIL);
     this.rollers = new BakedLayer(scene, DEPTH_ROLLER);
-    this.plate = art().plateTexture(scene);
     for (let n = 1; n <= MAX_PIPS; n++) {
       if (scene.textures.exists(PIPS_TEXTURE(n))) continue;
       // A short row of dots, 16 px per dot, drawn once and scaled with the slot.
@@ -69,7 +69,7 @@ export class BeltView {
     this.fixedTracks = state.tracks.map((track) => track.speed === 0);
     // Shelf tracks have no plates: the shelves themselves ride them (see MovingShelves); fixed stacks sit in cubbies.
     this.plates = state.tracks.map((track) =>
-      carriesShelves(track) || track.speed === 0 ? [] : track.carriers.map(() => this.scene.add.image(0, 0, this.plate.key).setDepth(DEPTH_PLATE)),
+      carriesShelves(track) || track.speed === 0 ? [] : track.carriers.map(() => makePlate(this.scene, 1).setDepth(DEPTH_PLATE)),
     );
     this.counts = state.tracks.map((track) =>
       track.carriers.map(() => {
@@ -80,7 +80,7 @@ export class BeltView {
         return { tag, label, chip };
       }),
     );
-    this.emptied = state.tracks.map((track) => track.carriers.map(() => (track.speed === 0 ? this.scene.add.graphics().setDepth(DEPTH_PLATE).setVisible(false) : null)));
+    this.emptied = state.tracks.map((track) => track.carriers.map(() => (track.speed === 0 ? this.scene.add.container(0, 0).setDepth(DEPTH_PLATE).setVisible(false) : null)));
     this.pips = state.tracks.map((track) =>
       carriesShelves(track)
         ? []
@@ -96,25 +96,36 @@ export class BeltView {
       layouts.map((layout) => layout.rect),
       Math.max(0, ...layouts.map((layout) => layout.slotSize * 0.6)),
     );
-    // Rails sit under the carriers and rollers over them, so they are two layers drawn together.
-    this.rails.draw(bounds, (rails) =>
-      this.rollers.draw(bounds, (rollers) =>
-        layouts.forEach((layout, t) => {
-          if (this.shelfTracks[t]) art().drawShelfTrack(rails, rollers, layout);
-          else if (this.fixedTracks[t]) art().drawFixedStacks(rails, layout);
-          else art().drawStackTrack(rails, rollers, layout);
-        }),
-      ),
+    // Wooden beds and rails sit under the carriers; beams and log ends over the loop's ends, above them.
+    for (const piece of this.pieces) piece.destroy();
+    this.pieces = [];
+    this.rollers.draw(bounds, (rollers) =>
+      layouts.forEach((layout, t) => {
+        if (this.fixedTracks[t]) return;
+        const made = this.shelfTracks[t] ? makeShelfTrack(this.scene, rollers, layout) : makeStackTrack(this.scene, rollers, layout);
+        for (const piece of made.under) this.pieces.push((piece as Phaser.GameObjects.Image).setDepth(DEPTH_RAIL));
+        for (const piece of made.over) this.pieces.push((piece as Phaser.GameObjects.Image).setDepth(DEPTH_ROLLER - 0.5));
+      }),
     );
+    for (const cubby of this.cubbies) cubby.destroy();
+    this.cubbies = [];
     layouts.forEach((layout, t) => {
-      const plateScale = (layout.slotSize * 0.9) / this.plate.size;
-      for (const plate of this.plates[t] ?? []) plate.setScale(plateScale);
+      if (!this.fixedTracks[t]) return;
+      for (let c = 0; c < layout.slots; c++) {
+        const along = layout.loopStart + (c + 0.5) * layout.pitch;
+        const [cx, cy] = layout.orientation === 'horizontal' ? [along, layout.cross] : [layout.cross, along];
+        const f = cubbyFrame(cx, cy, layout.slotSize);
+        // In a column the lower cubby's top beam covers the board of the one above it.
+        this.cubbies.push(this.scene.add.image(f.x, f.y, CUBBY_TEXTURE).setOrigin(0).setDisplaySize(f.width, f.height).setDepth(DEPTH_RAIL + c * 0.01));
+      }
+    });
+    layouts.forEach((layout, t) => {
+      for (const plate of this.plates[t] ?? []) plate.setDisplaySize(layout.slotSize * 0.9, layout.slotSize * 0.9);
       for (const pip of this.pips[t] ?? []) pip.setScale((layout.slotSize * 0.42) / (MAX_PIPS * 16));
       for (const count of this.counts[t] ?? []) if (count) drawStackTag(count.chip, count.label, layout.slotSize);
       (this.emptied[t] ?? []).forEach((mark) => {
         if (!mark) return;
-        mark.clear();
-        art().drawEmptyStack(mark, layout.slotSize);
+        mark.removeAll(true).add(makeEmptyStack(this.scene, layout.slotSize));
       });
     });
   }
@@ -140,12 +151,12 @@ export class BeltView {
           if (long) {
             if (count.label.text !== String(left)) count.label.setText(String(left));
             // Centred on the cubby's bottom board, under the item rather than over it.
-            count.tag.setPosition(pose.x, pose.y + fixedCubbyHeight(layout) / 2 - layout.slotSize * 0.02);
+            count.tag.setPosition(pose.x, cubbyBoardY(pose.y, layout.slotSize));
           }
           count.tag.setVisible(long === true);
         }
         const heldHere = state.held?.from.track === t && state.held.from.carrier === c;
-        this.emptied[t]?.[c]?.setPosition(pose.x, pose.y).setVisible(fixed === true && left === 0 && !heldHere);
+        this.emptied[t]?.[c]?.setPosition(pose.x, cubbyInsideY(pose.y, layout.slotSize)).setVisible(fixed === true && left === 0 && !heldHere);
         // Dots for items hidden below the top one: the stack's depth at a glance (fixed stacks have their tag).
         const hidden = fixed ? 0 : Math.min(MAX_PIPS, left - 1);
         const pip = pips[c]!;

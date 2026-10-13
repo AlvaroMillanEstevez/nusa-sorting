@@ -1,13 +1,12 @@
 import * as Phaser from 'phaser';
 import { loadUiFonts } from '../scenes/kit';
-import { makeWoodArt } from '../scenes/art/woodArt';
-import { addSvgTexture } from '../scenes/svgTexture';
 import { fadeToScene } from '../scenes/transitions';
 import { fitCamera, RENDER_RATIO, viewSize } from '../scenes/view';
 import { shelfLayoutAt, type ShelfLayout } from '../ui/boardLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
 import { WOOD } from '../ui/art/wood';
-import { renderItemSvg } from '../ui/icons/icons';
+import { itemTextureKey, prepareTypes } from '../scenes/itemTextures';
+import { loadShelfArt, placeShelf, SHELF_TEXTURE } from '../scenes/art/shelfArt';
 import { ITEM_FILL } from '../ui/levelLayout';
 
 /**
@@ -96,29 +95,28 @@ export class CoverScene extends Phaser.Scene {
     const itemPx = layout.s * ITEM_FILL;
     await Promise.all([
       loadUiFonts(),
-      ...[...types].map((type) => addSvgTexture(this.textures, `cover:${type}`, renderItemSvg(type), Math.ceil(itemPx * 1.4 * RENDER_RATIO))),
+      prepareTypes(this, types),
+      loadShelfArt(this.textures),
     ]);
 
     this.backdrop(width, height);
     this.bunting(width, unit);
 
     // The shelves, with the finished triple glowing.
-    const art = makeWoodArt();
     for (const { index, shelf } of layout.shelves) {
       if (index === TRIPLE) this.glow(shelf);
-      const g = this.add.graphics();
-      art.drawShelf(g, shelf, layout.s);
+      placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, layout.s);
       SHELVES[index]!.forEach((type, slot) => {
         const at = shelf.slots[slot]!;
-        this.add.image(at.x, at.y, `cover:${type}`).setDisplaySize(itemPx, itemPx);
+        this.add.image(at.x, at.y, itemTextureKey(type, false)).setDisplaySize(itemPx, itemPx);
       });
       if (index === TRIPLE) this.sparkles(shelf, layout.s);
     }
 
     for (const [type, fx, fy, size, angle] of FLOATERS[this.shape]) {
       const px = itemPx * size;
-      this.add.image(fx * width + px * 0.06, fy * height + px * 0.1, `cover:${type}`).setDisplaySize(px, px).setAngle(angle).setTint(0x000000).setAlpha(0.28);
-      this.add.image(fx * width, fy * height, `cover:${type}`).setDisplaySize(px, px).setAngle(angle);
+      this.add.image(fx * width + px * 0.06, fy * height + px * 0.1, itemTextureKey(type, false)).setDisplaySize(px, px).setAngle(angle).setTint(0x000000).setAlpha(0.28);
+      this.add.image(fx * width, fy * height, itemTextureKey(type, false)).setDisplaySize(px, px).setAngle(angle);
     }
 
     this.title(TITLE[this.shape], width / 2, layout.titleY, layout.titleSize, width);

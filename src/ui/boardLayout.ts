@@ -105,7 +105,7 @@ export function slotAspect(): number {
 export const shelfHeightUnits = (): number => TOP_PAD + aspect + PLANK;
 /**
  * The layer behind the front sits exactly under it, a little smaller so the front item covers it. Where the
- * front slot is empty it shows as a dark silhouette of its shape (renderSilhouette), so players can plan.
+ * front slot is empty it shows as a dark silhouette of its shape (ui/art/itemPixels), so players can plan.
  */
 export const BACK_SCALE = 0.94;
 export const SILHOUETTE_ALPHA = 0.9;

@@ -8,8 +8,6 @@ import { r1, type IconTemplate } from './template';
  * two crossing arrows. Boosters have no colour variants.
  */
 
-const none = { alt1: {}, alt2: {} };
-
 /** A four-pointed sparkle (an impact, a glint). */
 const sparkle = (cx: number, cy: number, r: number, fill: string, line: string) => {
   const k = r * 0.28;
@@ -32,7 +30,6 @@ export const BOOSTER_TEMPLATES: Readonly<Record<BoosterId, IconTemplate>> = {
   // A brass stopwatch frozen over: ice crusted on its rim, icicles hanging from it, the hands stopped.
   freeze: {
     palette: { brass: '#d9a640', face: '#d6f1fd', ice: '#8fd3f4', hand: '#2b3d5c', frost: '#ffffff' },
-    variants: none,
     draw: (p) => {
       const ticks = Array.from({ length: 12 }, (_, i) => {
         const a = (i * Math.PI) / 6;
@@ -60,7 +57,6 @@ export const BOOSTER_TEMPLATES: Readonly<Record<BoosterId, IconTemplate>> = {
   // A chunky wooden mallet with brass bands, swung down: the impact sparkles where it lands.
   removeTriple: {
     palette: { head: '#b06a2f', handle: '#e2b878', brass: '#e0b04a', grip: '#8a3b2a', spark: '#ffd84a' },
-    variants: none,
     draw: (p) => `
       ${sparkle(20, 74, 9, p.flat('spark'), p.line('spark'))}
       ${sparkle(12, 56, 5.5, p.flat('spark'), p.line('spark'))}
@@ -80,7 +76,6 @@ export const BOOSTER_TEMPLATES: Readonly<Record<BoosterId, IconTemplate>> = {
   // Two thick arrows crossing over each other, warm orange and teal: everything changes places.
   shuffle: {
     palette: { warm: '#f08a34', cool: '#2fb3a3' },
-    variants: none,
     draw: (p) => {
       const arrow = (m: string, path: string, head: string) =>
         `<path d="${path}" fill="none" stroke="${p.line(m)}" stroke-width="15" stroke-linecap="round"/>` +

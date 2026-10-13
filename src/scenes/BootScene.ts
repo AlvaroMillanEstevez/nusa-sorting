@@ -3,8 +3,9 @@ import { playerLevel, rewardWin } from '../core/economy';
 import { ECONOMY } from '../data/economy';
 import { SKIN } from '../ui/design/tokens';
 import type { UiIconName } from '../ui/design/uiIcons';
-import { prepareAllInBackground, prepareLevelTextures, settle } from './itemTextures';
+import { prepareAheadInBackground, settle } from './itemTextures';
 import { prepareBoosterTextures } from './boosterTextures';
+import { prepareBoard } from './art/prepareBoard';
 import { loadUiFonts, prepareUiIcon } from './kit';
 import { prepareTutorialTextures } from './TutorialHint';
 import { parseLevelParam } from '../dev/levelParam';
@@ -33,7 +34,7 @@ const ICONS: readonly (readonly [UiIconName, string])[] = [
 ];
 
 /**
- * Prepares shared resources (item icons, interface fonts and icons), then opens the game where it should start:
+ * Prepares shared resources (the shelves' pictures, interface fonts and icons), then opens the game where it should start:
  * level 1 on a first visit, the home screen after that (see startScreen).
  */
 export class BootScene extends Phaser.Scene {
@@ -92,17 +93,16 @@ export class BootScene extends Phaser.Scene {
     const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
     performance.mark('nusa:playable');
     this.scene.start('Home', data);
-    void prepareAllInBackground(this, this.store.firstIncomplete(playList.map((entry) => entry.level.id)) ?? 0, this.store.colorBlindMode);
   }
 
-  /** Opens a level once its own item icons are ready; the other levels' are drawn afterwards, in the background. */
+  /** Opens a level once its own items are ready; the next levels' are prepared afterwards, in the background. */
   private openLevel(levelIndex: number, data: GameData): void {
-    void prepareLevelTextures(this, levelIndex)
+    void prepareBoard(this, levelIndex)
       .then(settle)
       .then(() => {
         performance.mark('nusa:playable');
         this.scene.start('Game', data);
-        void prepareAllInBackground(this, levelIndex + 1, this.store.colorBlindMode);
+        void prepareAheadInBackground(this, levelIndex + 1, this.store.colorBlindMode);
       });
   }
 }

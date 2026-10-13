@@ -4,15 +4,15 @@ import type { BoardLayout } from '../ui/boardLayout';
 import type { LiveBoard } from '../ui/levelLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
 import { pixelRatio } from './view';
-import { art } from './art/ArtSet';
+import { drawClosingMark, makeBlocker, makeClosedPlanks, makeLockVeil } from './art/ArtSet';
 
 /** Above the dimmed back layer (depth < 5), below front items (10). */
 const DEPTH_BLOCKER = 7;
 const DEPTH_LOCK = 20;
 
-/** Dark veil, padlock and "N more" counter over each locked shelf. */
+/** A shutter of boards, padlock and "N more" counter over each locked shelf. */
 export class LockOverlays {
-  private readonly veils = new Map<number, Phaser.GameObjects.Graphics>();
+  private readonly veils = new Map<number, Phaser.GameObjects.Container>();
   private readonly labels = new Map<number, Phaser.GameObjects.Text>();
   private layout: BoardLayout | null = null;
 
@@ -23,7 +23,7 @@ export class LockOverlays {
     this.clear();
     const resolution = pixelRatio();
     for (const [shelf, count] of remaining) {
-      this.veils.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
+      this.veils.set(shelf, this.scene.add.container(0, 0).setDepth(DEPTH_LOCK));
       const label = this.scene.add
         .text(0, 0, '', { fontFamily: FONTS.text, fontStyle: '700', color: SKIN.text.primary })
         .setOrigin(0, 0.5)
@@ -46,8 +46,7 @@ export class LockOverlays {
       const { rect } = layout.shelves[shelf]!;
       const cx = rect.x + rect.width / 2;
       const cy = rect.y + rect.height / 2;
-      veil.clear().setPosition(cx, cy);
-      art().drawLockVeil(veil, rect.width, rect.height, s);
+      veil.removeAll(true).setPosition(cx, cy).add(makeLockVeil(this.scene, rect.width, rect.height, s));
       this.labels.get(shelf)?.setFontSize(Math.round(s * 0.3)).setPosition(cx - s * 0.12, cy);
     }
   }
@@ -94,13 +93,13 @@ export class LockOverlays {
   }
 }
 
-/** The roaming blocker: a striped plate sitting in the slot it blocks. */
+/** The roaming blocker: a wooden crate sitting in the slot it blocks. */
 export class BlockerView {
-  private readonly plate: Phaser.GameObjects.Graphics;
+  private readonly plate: Phaser.GameObjects.Container;
   private size = 0;
 
   constructor(private readonly scene: Phaser.Scene) {
-    this.plate = scene.add.graphics().setDepth(DEPTH_BLOCKER).setVisible(false);
+    this.plate = scene.add.container(0, 0).setDepth(DEPTH_BLOCKER).setVisible(false);
   }
 
   /** Shows the blocker at a point (or hides it with null), without animation. */
@@ -171,7 +170,7 @@ export class BlockerView {
 
   private draw(slotSize: number): void {
     this.size = slotSize;
-    art().drawBlocker(this.plate.clear(), slotSize);
+    this.plate.removeAll(true).add(makeBlocker(this.scene, slotSize));
   }
 }
 
@@ -182,7 +181,7 @@ export class BlockerView {
  */
 export class ClosingShelves {
   private readonly marks = new Map<number, Phaser.GameObjects.Graphics>();
-  private readonly planks = new Map<number, Phaser.GameObjects.Graphics>();
+  private readonly planks = new Map<number, Phaser.GameObjects.Container>();
   private layout: BoardLayout | null = null;
 
   constructor(private readonly scene: Phaser.Scene) {}
@@ -192,7 +191,7 @@ export class ClosingShelves {
     this.clear();
     closesWhenEmpty.forEach((closes, shelf) => {
       if (!closes) return;
-      if (closed[shelf]) this.planks.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
+      if (closed[shelf]) this.planks.set(shelf, this.scene.add.container(0, 0).setDepth(DEPTH_LOCK));
       else this.marks.set(shelf, this.scene.add.graphics().setDepth(DEPTH_LOCK));
     });
     if (this.layout) this.relayout(this.layout);
@@ -204,12 +203,11 @@ export class ClosingShelves {
     for (const [shelf, mark] of this.marks) {
       const { rect } = layout.shelves[shelf]!;
       mark.clear().setPosition(rect.x + rect.width - s * 0.16, rect.y + s * 0.14);
-      art().drawClosingMark(mark, s);
+      drawClosingMark(mark, s);
     }
     for (const [shelf, plank] of this.planks) {
       const { rect } = layout.shelves[shelf]!;
-      plank.clear().setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2);
-      art().drawClosedPlanks(plank, rect.width, rect.height, s);
+      plank.removeAll(true).setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2).add(makeClosedPlanks(this.scene, rect.width, rect.height, s));
     }
   }
 
@@ -218,7 +216,7 @@ export class ClosingShelves {
     const mark = this.marks.get(shelf);
     this.marks.delete(shelf);
     mark?.destroy();
-    const plank = this.scene.add.graphics().setDepth(DEPTH_LOCK);
+    const plank = this.scene.add.container(0, 0).setDepth(DEPTH_LOCK);
     this.planks.set(shelf, plank);
     if (this.layout) this.relayout(this.layout);
     plank.setAlpha(0);

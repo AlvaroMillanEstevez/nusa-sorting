@@ -31,6 +31,10 @@ export const WOOD = {
   shutterDark: '#4f331b',
   brass: '#e0b040',
   brassDark: '#8c6518',
+  /** Log ends (conveyor rollers, the caps of shelf tracks), in the illustrated shelf's warm wood. */
+  log: '#b97a40',
+  logLight: '#dda468',
+  logDark: '#6f4019',
   /** The roaming blocker: a wooden crate. */
   crate: '#c48a4c',
   crateLight: '#dfaa6c',

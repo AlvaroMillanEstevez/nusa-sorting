@@ -16,7 +16,8 @@ import { wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
-import { prepareLevelTextures } from './itemTextures';
+import { prepareAheadInBackground } from './itemTextures';
+import { prepareBoard } from './art/prepareBoard';
 import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
 import { settingsRowCount, settingsRows, SETTINGS_ROW } from './SettingsRows';
@@ -119,6 +120,8 @@ export class HomeScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(MAP.seaBottom);
     // Music plays on the home screen and map, never in a level (it fades back in on return).
     this.sfx.wantMusic(true);
+    // The items, wood and background of the level the player is heading for, while they look at the map.
+    void prepareAheadInBackground(this, this.nextLevel(), this.store.colorBlindMode).then(() => prepareBoard(this, this.nextLevel()));
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.sfx.unlock();
       if (this.modal) return;
@@ -478,8 +481,11 @@ export class HomeScene extends Phaser.Scene {
       return;
     }
     this.sfx.play('pick');
-    // Its icons are usually ready (drawn in the background since the game opened); if not, a moment's wait.
-    void prepareLevelTextures(this, level).then(() => fadeToScene(this, 'Game', { levelIndex: level }));
+    // Its items are usually ready (prepared in the background while the map was open); if not, a moment's wait.
+    void prepareBoard(this, level).then(() => {
+      fadeToScene(this, 'Game', { levelIndex: level });
+      void prepareAheadInBackground(this, level + 1, this.store.colorBlindMode);
+    });
   }
 
   /**

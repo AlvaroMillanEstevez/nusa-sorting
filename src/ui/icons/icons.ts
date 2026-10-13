@@ -1,55 +1,16 @@
-import { parseItemType, type Variant } from '../../data/itemCatalog';
-import { darken, lighten } from './color';
 import type { BoosterId } from '../../data/economy';
+import { darken, lighten } from './color';
 import { BOOSTER_TEMPLATES } from './boosterIcons';
-import { CULTURAL_TEMPLATES } from './culturalIcons';
-import { ISLAND_TEMPLATES } from './islandIcons';
-import { MORE_TEMPLATES } from './moreIcons';
-import { STARTER_TEMPLATES } from './starterIcons';
-import { OUTLINE, r1, type IconTemplate, type Paint, type Palette } from './template';
+import { OUTLINE, r1, type Paint, type Palette } from './template';
 
 /**
- * Item icons as SVG templates (viewBox 0 0 100 100). Each template paints named MATERIALS (e.g. 'meat',
- * 'stick'); a palette gives each material a base colour and the template derives three shading tones, a fine
- * outline in a dark tone of the material itself and a specular highlight from it.
- *
- * Colour variants are hand-picked alternative colours for a few materials, chosen to differ above all in
- * lightness and along the blue-yellow axis (what colour-blind players still see), plus a corner badge that
- * does not rely on colour at all.
+ * Booster icons as SVG templates (viewBox 0 0 100 100). Each template paints named MATERIALS (e.g. 'brass',
+ * 'ice'); a palette gives each material a base colour and the template derives three shading tones, a fine
+ * outline in a dark tone of the material itself and a specular highlight from it. (Items are illustrated
+ * pictures, see src/assets/art; their drawn icons were retired in October 2026 and stay in git.)
  */
 
 export type { IconTemplate, Paint, Palette } from './template';
-
-/** Every kind's icon. */
-export const ICON_TEMPLATES: Readonly<Record<string, IconTemplate>> = { ...STARTER_TEMPLATES, ...MORE_TEMPLATES, ...CULTURAL_TEMPLATES, ...ISLAND_TEMPLATES };
-
-
-// ---------------------------------------------------------------- variants
-
-export function variantPalette(template: IconTemplate, variant: Variant): Palette {
-  return variant === 'original' ? template.palette : { ...template.palette, ...template.variants[variant] };
-}
-
-/** Materials whose colour changes between variants. */
-export function tintedMaterials(template: IconTemplate): string[] {
-  return [...new Set([...Object.keys(template.variants.alt1), ...Object.keys(template.variants.alt2)])];
-}
-
-/**
- * Colour-free badge in the bottom-right corner, shown only in colour-blind mode (`marks`): none for the
- * original, a dot for alt1, a triangle for alt2. Dark with a white ring and a white mark, so it stands out on
- * light and on dark icons alike. Without it, variants are told apart by colour and lightness alone.
- */
-function variantBadge(variant: Variant, marks: boolean): string {
-  if (!marks || variant === 'original') return '';
-  const mark =
-    variant === 'alt1'
-      ? '<circle cx="81" cy="81" r="6.5" fill="#ffffff"/>'
-      : '<polygon points="81,71.5 89.5,86.5 72.5,86.5" fill="#ffffff"/>';
-  return `<circle cx="81" cy="81" r="15.5" fill="#1d2630" stroke="#ffffff" stroke-width="3"/>${mark}`;
-}
-
-// ---------------------------------------------------------------- rendering
 
 /** Shading tones derived from a material's base colour. */
 export const tones = (base: string) => ({
@@ -105,51 +66,10 @@ function svgDocument(defs: string[], body: string): string {
   );
 }
 
-/** SVG for a drawn kind in a variant; `marks` adds the colour-blind variant badge. */
-export function renderIcon(kindId: string, variant: Variant, marks = false): string {
-  const template = ICON_TEMPLATES[kindId];
-  if (!template) throw new Error(`no icon for ${kindId}`);
-  const defs: string[] = [];
-  const paint = paintFor(variantPalette(template, variant), defs);
-  const body = template.draw(paint).replace(/\s*\n\s*/g, '');
-  // Drawn a little larger than the 100-unit grid so icons fill their slot; the badge stays in its corner.
-  return svgDocument(defs, `<g transform="translate(50 52) scale(1.07) translate(-50 -52)">${body}</g>` + variantBadge(variant, marks));
-}
-
-/** SVG for a booster's icon (see boosterIcons.ts), drawn like the item icons. */
+/** SVG for a booster's icon (see boosterIcons.ts). */
 export function renderBoosterSvg(booster: BoosterId): string {
   const template = BOOSTER_TEMPLATES[booster];
   const defs: string[] = [];
   const body = template.draw(paintFor(template.palette, defs)).replace(/\s*\n\s*/g, '');
   return svgDocument(defs, body);
-}
-
-/** SVG for any item type id (`marks`: see renderIcon). */
-export function renderItemSvg(type: string, marks = false): string {
-  const parsed = parseItemType(type);
-  if (!parsed) throw new Error(`unknown item type ${type}`);
-  return renderIcon(parsed.kind.id, parsed.variant, marks);
-}
-
-/** Flat colour of a silhouette, and of the thin rim that lifts it off the dark wood. */
-export const SILHOUETTE_FILL = '#1e130b';
-export const SILHOUETTE_RIM = '#8c6a48';
-
-/**
- * What an item looks like from behind another one: its exact shape in one flat dark tone, without colour or
- * inner detail, with a thin lighter rim so it stands out on the shelf's dark wood. The shape is shown on
- * purpose, so players can plan; the item's soft shadow is left out.
- */
-export function renderSilhouette(type: string): string {
-  const svg = renderItemSvg(type).replace('<ellipse cx="50" cy="91" rx="34" ry="6" fill="url(#shadow)"/>', '');
-  const open = svg.indexOf('</defs>') + '</defs>'.length;
-  const filter =
-    '<filter id="silhouette" x="-10%" y="-10%" width="120%" height="120%">' +
-    // Semi-transparent parts (glass) count as solid: the shape is all that matters.
-    '<feComponentTransfer in="SourceAlpha" result="solid"><feFuncA type="linear" slope="4"/></feComponentTransfer>' +
-    '<feMorphology in="solid" operator="dilate" radius="2.4" result="grown"/>' +
-    `<feFlood flood-color="${SILHOUETTE_RIM}"/><feComposite in2="grown" operator="in" result="rim"/>` +
-    `<feFlood flood-color="${SILHOUETTE_FILL}"/><feComposite in2="solid" operator="in" result="shape"/>` +
-    '<feMerge><feMergeNode in="rim"/><feMergeNode in="shape"/></feMerge></filter>';
-  return svg.slice(0, open - '</defs>'.length) + filter + '</defs><g filter="url(#silhouette)">' + svg.slice(open, -'</svg>'.length) + '</g></svg>';
 }

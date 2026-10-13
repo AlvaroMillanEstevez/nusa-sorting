@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { createGame } from '../core';
 import { getLocale, t, type MessageKey } from '../i18n';
-import { art } from '../scenes/art/ArtSet';
+import { loadShelfArt, placeShelf, SHELF_TEXTURE } from '../scenes/art/shelfArt';
 import { itemTextureKey, prepareItemTextures } from '../scenes/itemTextures';
 import {
   KitButton,
@@ -93,7 +93,7 @@ export class UikitScene extends Phaser.Scene {
 
   /** Fonts, the board's item textures and the item icons in both styles at the sizes shown. */
   private async prepare(): Promise<void> {
-    const jobs: Promise<void>[] = [loadUiFonts(), prepareItemTextures(this)];
+    const jobs: Promise<void>[] = [loadUiFonts(), prepareItemTextures(this), loadShelfArt(this.textures)];
     await Promise.all(jobs);
     this.ready = true;
     this.rebuild();
@@ -341,9 +341,7 @@ export class UikitScene extends Phaser.Scene {
         f.add(sample.rect.width, sample.rect.height + s * 0.15, (cx, cy) => {
           setSlotAspect(placedAspect);
           const shelf = shelfLayoutAt(cx - sample.rect.width / 2, cy - sample.rect.height / 2, s);
-          const g = this.add.graphics();
-          art().drawShelf(g, shelf, s);
-          this.content.add(g);
+          this.content.add(placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, s));
           kinds.forEach((kind, j) => {
             const slot = shelf.slots[j]!;
             const fit = itemFit(kind, placedAspect);

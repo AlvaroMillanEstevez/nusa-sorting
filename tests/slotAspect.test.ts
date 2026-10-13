@@ -43,7 +43,7 @@ describe('slot aspect', () => {
 });
 
 describe('items in tall slots', () => {
-  it('knows where every icon of the catalogue is drawn', () => {
+  it('knows where every item of the catalogue is drawn', () => {
     for (const kind of ITEM_KINDS) expect(ITEM_BOUNDS[kind.id], kind.id).toBeDefined();
   });
 
@@ -66,8 +66,7 @@ describe('items in tall slots', () => {
       const at = placeItem(0, s, 1, itemFit(kind, 1.2));
       return at.y - at.size / 2 + (ITEM_BOUNDS[kind]![3] / 100) * at.size;
     };
-    // Square slots: the peci cap floats well above the bowl of bakso; in tall slots their feet line up.
-    expect(Math.abs(ITEM_BOUNDS.peci![3] - ITEM_BOUNDS.bakso![3])).toBeGreaterThan(10);
+    // The pictures nearly rest on their box's bottom already; in tall slots their feet line up exactly.
     const line = foot('bakso');
     for (const kind of ['peci', 'kendang', 'sate', 'rambutan']) expect(foot(kind), kind).toBeCloseTo(line, 5);
     // A tall item that grew stands within a few px of the same line (the base line is a share of its size).

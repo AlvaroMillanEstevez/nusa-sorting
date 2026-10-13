@@ -2,23 +2,26 @@ import * as Phaser from 'phaser';
 import { ITEM_KINDS, itemTypeId, VARIANTS, type ItemKind } from '../data/itemCatalog';
 import { THEMES } from '../data/themes';
 import { getLocale, t, type MessageKey } from '../i18n';
-import { shelfHeightUnits, shelfLayoutAt } from '../ui/boardLayout';
-import { mapWood } from '../ui/art/wood';
-import { simulateSvg, simulateVision, type Vision } from '../ui/icons/color';
-import { renderBoosterSvg, renderItemSvg } from '../ui/icons/icons';
+import { shelfHeightUnits, shelfLayoutAt, slotAspect } from '../ui/boardLayout';
+import { placeItem, typeFit } from '../ui/itemFit';
+import { simulateSvg, type Vision } from '../ui/icons/color';
+import { renderBoosterSvg } from '../ui/icons/icons';
+import { simulatePixels } from '../ui/art/itemPixels';
+import { canvasOf, frontPixels, picture } from '../scenes/itemTextures';
+import { loadShelfArt, placeShelf, SHELF_TEXTURE } from '../scenes/art/shelfArt';
 import { BOOSTER_IDS, type BoosterId } from '../data/economy';
 import { KitBoosterButton } from '../scenes/kit';
 import { ITEM_FILL } from '../ui/levelLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
-import { makeWoodArt } from '../scenes/art/woodArt';
-import type { ArtSet } from '../scenes/art/ArtSet';
+import { ART_KEYS, loadArtPieces, makeBlocker, makeLockVeil, type ArtKeys } from '../scenes/art/ArtSet';
 import { addSvgTexture } from '../scenes/svgTexture';
 import { fitCamera, pointerAt, RENDER_RATIO, viewSize } from '../scenes/view';
 
 /**
- * Development only (`?gallery`): every item kind in its three variants at real in-game sizes, on the wooden
- * shelves, with colour-blindness and greyscale simulations applied to icons and shelves alike, and the kinds
- * most likely to be mixed up side by side.
+ * Development only (`?gallery`): every item kind in its three variants (the original and the two colour variants
+ * the game makes from its picture, see ui/art/itemPixels) at real in-game sizes, on the illustrated shelves, with
+ * colour-blindness and greyscale simulations applied to items and shelves alike, and the kinds most likely to be
+ * mixed up side by side.
  */
 
 /** Kinds to compare side by side: confusable groups of the catalogue and other pairs that might look alike. */
@@ -102,7 +105,8 @@ export class GalleryScene extends Phaser.Scene {
   private vision: Vision = 'normal';
   /** Colour-blind mode: variant badges on. */
   private marks = false;
-  private art!: ArtSet;
+  /** The board's wood, seen with the current vision. */
+  private keys: ArtKeys = ART_KEYS;
   private scroll = 0;
   private headerHeight = 0;
   private contentHeight = 0;
@@ -110,6 +114,7 @@ export class GalleryScene extends Phaser.Scene {
   private content!: Phaser.GameObjects.Container;
   private header!: Phaser.GameObjects.Container;
   private drawing = 0;
+  private ready = false;
 
   constructor() {
     super('Gallery');
@@ -213,32 +218,58 @@ export class GalleryScene extends Phaser.Scene {
     return y;
   }
 
-  private textureKey(type: string, px: number): string {
-    return `gallery:${this.vision}:${this.marks ? 'marked' : 'plain'}:${px}:${type}`;
+  private textureKey(type: string): string {
+    return `gallery:${this.vision}:${this.marks ? 'marked' : 'plain'}:${type}`;
   }
 
-  /** Rasterizes every icon the gallery shows, for the current vision, then draws the page. */
+  /** Prepares every item the gallery shows, for the current vision, then draws the page. */
   private async setVision(vision: Vision): Promise<void> {
     this.vision = vision;
-    this.art = makeWoodArt(mapWood((color) => simulateVision(color, vision)));
     const run = ++this.drawing;
     this.drawHeader(true);
+    const see = (pixels: Uint8ClampedArray) => (vision === 'normal' ? pixels : simulatePixels(pixels, vision));
+    await Promise.all([loadShelfArt(this.textures), loadArtPieces(this.textures)]);
+    // The board's wood through the same simulation as the items.
+    const simulated = (key: string) => {
+      const seen = `gallery:${vision}:${key}`;
+      if (!this.textures.exists(seen)) {
+        const source = this.textures.get(key).getSourceImage() as HTMLImageElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = source.width;
+        canvas.height = source.height;
+        const context = canvas.getContext('2d', { willReadFrequently: true })!;
+        context.drawImage(source, 0, 0);
+        const pixels = see(context.getImageData(0, 0, source.width, source.height).data);
+        context.putImageData(new ImageData(pixels as Uint8ClampedArray<ArrayBuffer>, source.width, source.height), 0, 0);
+        this.textures.addImage(seen, canvas as unknown as HTMLImageElement);
+      }
+      return seen;
+    };
+    this.keys = Object.fromEntries(Object.entries(ART_KEYS).map(([name, key]) => [name, simulated(key)])) as unknown as ArtKeys;
     const jobs: Promise<void>[] = [];
     for (const section of this.sections())
       for (const kind of section.cards)
         for (const variant of VARIANTS) {
           const type = itemTypeId(kind.id, variant);
-          const svg = simulateSvg(renderItemSvg(type, this.marks), vision);
-          // Rasterized at exactly the size they show at, in device pixels.
-          for (const px of SIZES) jobs.push(addSvgTexture(this.textures, this.textureKey(type, px), svg, px * RENDER_RATIO));
+          const key = this.textureKey(type);
+          if (this.textures.exists(key)) continue;
+          jobs.push(
+            picture(kind.id).then((image) => {
+              if (!this.textures.exists(key)) this.textures.addImage(key, canvasOf(see(frontPixels(type, image)), this.marks ? variant : null) as unknown as HTMLImageElement);
+            }),
+          );
         }
+
     // Boosters' icons, once per vision, big enough for the largest tile.
     for (const id of BOOSTER_IDS) jobs.push(addSvgTexture(this.textures, this.boosterKey(id), simulateSvg(renderBoosterSvg(id), vision), 128 * RENDER_RATIO));
     await Promise.all(jobs);
+    this.ready = true;
     if (run === this.drawing) this.redraw();
   }
 
   private redraw(): void {
+    // A resize before the first vision is ready waits for it (it draws the page itself).
+    if (!this.ready) return;
     fitCamera(this);
     const { width } = viewSize(this);
     this.drawHeader(false);
@@ -276,18 +307,13 @@ export class GalleryScene extends Phaser.Scene {
     let bottom = top;
     groups.forEach((group, i) => {
       const shelf = shelfLayoutAt(PAD + (i % columns) * (shelfW + GAP), top + Math.floor(i / columns) * (s * shelfHeightUnits() + GAP * 1.5), s);
-      const g = this.add.graphics();
-      this.art.drawShelf(g, shelf, s);
-      this.content.add(g);
+      this.content.add(placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, s).setTexture(this.keys.shelf));
       group.forEach((type, slot) => {
         const at = shelf.slots[slot]!;
         if (type === 'blocker') {
-          const crate = this.add.graphics().setPosition(at.x, at.y);
-          this.art.drawBlocker(crate, s);
-          this.content.add(crate);
+          this.content.add(makeBlocker(this, s, this.keys).setPosition(at.x, at.y));
         } else if (type === 'locked') {
-          const veil = this.add.graphics().setPosition(shelf.rect.x + shelf.rect.width / 2, shelf.rect.y + shelf.rect.height / 2);
-          this.art.drawLockVeil(veil, shelf.rect.width, shelf.rect.height, s);
+          const veil = makeLockVeil(this, shelf.rect.width, shelf.rect.height, s, this.keys).setPosition(shelf.rect.x + shelf.rect.width / 2, shelf.rect.y + shelf.rect.height / 2);
           this.content.add(veil);
           this.content.add(
             this.label(veil.x - s * 0.12, veil.y, t('shelf.locked', { n: 2 }), Math.round(s * 0.3), SKIN.text.primary).setOrigin(0, 0.5),
@@ -307,9 +333,7 @@ export class GalleryScene extends Phaser.Scene {
     for (const px of SIZES) {
       const s = px / ITEM_FILL;
       const shelf = shelfLayoutAt(x + LABEL_W, y, s);
-      const g = this.add.graphics();
-      this.art.drawShelf(g, shelf, s);
-      this.content.add(g);
+      this.content.add(placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, s).setTexture(this.keys.shelf));
       this.content.add(this.label(x, shelf.slots[0]!.y - 8, t('gallery.px', { n: px }), 12, SKIN.text.primary));
       VARIANTS.forEach((variant, i) => {
         const slot = shelf.slots[i]!;
@@ -320,8 +344,10 @@ export class GalleryScene extends Phaser.Scene {
     return y;
   }
 
-  private icon(type: string, px: number, x: number, y: number): Phaser.GameObjects.Image {
-    return this.add.image(Math.round(x), Math.round(y), this.textureKey(type, px)).setDisplaySize(px, px);
+  /** An item in a slot whose square-item centre is (x, slotY), `px` its plain size: resting on the base, as in a level. */
+  private icon(type: string, px: number, x: number, slotY: number): Phaser.GameObjects.Image {
+    const at = placeItem(slotY, px / ITEM_FILL, ITEM_FILL, typeFit(type, slotAspect()));
+    return this.add.image(Math.round(x), Math.round(at.y), this.textureKey(type)).setDisplaySize(at.size, at.size);
   }
 
   private label(x: number, y: number, text: string, size: number, color: string): Phaser.GameObjects.Text {
