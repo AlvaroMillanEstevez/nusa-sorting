@@ -37,7 +37,9 @@ export class ArtPilotGallery extends Phaser.Scene {
     // &set=food,budaya-jawa,… shows only those sections (food, or themes by id); all of them by default.
     const set = new URLSearchParams(window.location.search).get('set')?.split(',') ?? null;
     const section = (object: string) => pilotTheme(object) ?? 'food';
-    const shown = PILOT_SHEETS_ORDER.filter((object) => !set || set.includes(section(object)));
+    // Food first, then each theme, in the order sections first appear (fixed drawings come on later sheets).
+    const sections = [...new Set(['food', ...PILOT_SHEETS_ORDER.map(section)])];
+    const shown = PILOT_SHEETS_ORDER.filter((object) => !set || set.includes(section(object))).sort((a, b) => sections.indexOf(section(a)) - sections.indexOf(section(b)));
     const jobs: Promise<void>[] = [];
     // Drawings of kinds the catalogue does not have (the 17 Agustus bunting) get no current icon.
     const known = (object: string) => parseItemType(pilotKind(object)) !== null;

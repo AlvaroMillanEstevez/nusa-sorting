@@ -16,6 +16,7 @@ Writes src/dev/artpilot/:
 - pilot.json: each object's bounds in its 100-unit box (for the game's item fit), the shelf's geometry, sizes.
 """
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -29,30 +30,42 @@ SIZE = 256
 MARGIN = 10
 WEBP = dict(quality=82, method=6)
 
-# The sheets and their six objects, left to right and top to bottom. The second sheet (made with new rules: one
-# object per cell, more saturated colours, distinct silhouettes) redoes three kinds: they get a '-2'.
+# The sheets and their six objects, left to right and top to bottom, by catalogue id. Each kind keeps only its
+# latest drawing: cells drawn again on a later sheet are skipped (None) here, and the earlier drawings stay in
+# the git history and in the sheets themselves.
 SHEETS = {
-    'objects-sheet.png': ['sate', 'es-teh-manis', 'rambutan', 'ketupat', 'bakso', 'klepon'],
-    'objects-sheet-2.png': ['klepon-2', 'ketupat-2', 'rambutan-2', 'nasi-goreng', 'kerupuk-udang', 'onde-onde'],
-    # Sheets 3-5 (13 October, same rules): the other eighteen foods, and klepon once more.
-    'objects-sheet-3.png': ['mie-goreng', 'rendang', 'gado-gado', 'ayam-goreng', 'ikan-bakar', 'martabak-manis'],
-    'objects-sheet-4.png': ['tempe', 'tahu-goreng', 'pisang-goreng', 'dadar-gulung', 'es-cendol', 'es-kelapa-muda'],
-    'objects-sheet-5.png': ['jamu', 'durian', 'manggis', 'salak', 'cabai', 'klepon-3'],
-    # The themes' cultural objects (13 October, rules: a silhouette that names the object even in black and
-    # white, one piece per cell, no pale colours), by catalogue id. 'bunting' is not in the catalogue: the
-    # 17 Agustus sheet drew red and white bunting where the catalogue has the paper trumpet (terompet).
-    'objects-budaya-jawa.png': ['blangkon', 'batik', 'wayang-kulit', 'kendang', 'gong', 'caping'],
-    'objects-17-agustus.png': ['bendera', 'karung', 'kelereng', 'panjat-pinang', 'peci', 'bunting'],
-    'objects-pasar-malam.png': ['lampion', 'arum-manis', 'balon', 'topeng', 'kembang-api', 'bianglala'],
-    'objects-laut-nusantara.png': ['pinisi', 'kerang', 'bintang-laut', 'jaring', 'layangan', 'kelapa'],
-    'objects-olahraga.png': ['kok', 'raket', 'sepak-takraw', 'sepatu', 'piala', 'peluit'],
-    'objects-permainan-tradisional.png': ['gasing', 'congklak', 'egrang', 'yoyo', 'bekel', 'lompat-tali'],
-    'objects-rempah-maluku.png': ['cengkeh', 'pala', 'kayu-manis', 'lada', 'cobek', 'karung-rempah'],
-    'objects-sawah.png': ['padi', 'cangkul', 'orang-orangan', 'kerbau', 'bakul', 'gubuk'],
-    'objects-fauna-nusantara.png': ['komodo', 'orangutan', 'rangkong', 'penyu', 'cendrawasih', 'tarsius'],
+    # The first two food sheets (12 October).
+    'objects-sheet.png': ['sate', 'es-teh-manis', None, None, None, None],
+    'objects-sheet-2.png': [None, 'ketupat', 'rambutan', 'nasi-goreng', 'kerupuk-udang', None],
+    # Sheets 3-5 (13 October): the other foods.
+    'objects-sheet-3.png': ['mie-goreng', None, 'gado-gado', None, None, None],
+    'objects-sheet-4.png': ['tempe', None, None, 'dadar-gulung', 'es-cendol', None],
+    'objects-sheet-5.png': ['jamu', 'durian', None, None, 'cabai', None],
+    # The themes' cultural objects (13 October). The 17 Agustus sheet's last cell drew bunting, which is not in
+    # the catalogue (the paper trumpet came on sheet C).
+    'objects-budaya-jawa.png': ['blangkon', None, None, 'kendang', 'gong', 'caping'],
+    'objects-17-agustus.png': ['bendera', None, 'kelereng', None, None, None],
+    'objects-pasar-malam.png': ['lampion', 'arum-manis', 'balon', None, 'kembang-api', None],
+    'objects-laut-nusantara.png': [None, 'kerang', 'bintang-laut', 'jaring', 'layangan', None],
+    'objects-olahraga.png': ['kok', None, None, None, 'piala', 'peluit'],
+    'objects-permainan-tradisional.png': ['gasing', None, None, None, None, 'lompat-tali'],
+    'objects-rempah-maluku.png': [None, None, 'kayu-manis', 'lada', None, 'karung-rempah'],
+    'objects-sawah.png': ['padi', None, 'orang-orangan', None, 'bakul', 'gubuk'],
+    'objects-fauna-nusantara.png': [None, 'orangutan', 'rangkong', 'penyu', 'cendrawasih', 'tarsius'],
+    # Correction sheets A-F (13 October): the 36 objects of the review's table, kipas and terompet included.
+    'objects-fix-a.png': ['klepon', 'es-kelapa-muda', 'onde-onde', 'tahu-goreng', 'pisang-goreng', 'ayam-goreng'],
+    'objects-fix-b.png': ['martabak-manis', 'ikan-bakar', 'rendang', 'bakso', 'manggis', 'salak'],
+    'objects-fix-c.png': ['kipas', 'terompet', 'peci', 'wayang-kulit', 'batik', 'panjat-pinang'],
+    'objects-fix-d.png': ['topeng', 'bianglala', 'pinisi', 'kelapa', 'raket', 'sepak-takraw'],
+    'objects-fix-e.png': ['yoyo', 'bekel', 'congklak', 'egrang', 'karung', 'sepatu'],
+    'objects-fix-f.png': ['cengkeh', 'pala', 'cobek', 'cangkul', 'kerbau', 'komodo'],
 }
-# Each sheet's theme, for the gallery's sections (food sheets have none).
-SHEET_THEME = {name: name[len('objects-') : -len('.png')] for name in SHEETS if not name.startswith('objects-sheet')}
+# Each kind's theme, for the gallery's sections (None for food), as the catalogue gives it.
+KIND_THEME = {
+    kind.group(1): theme.group(1) if (theme := re.search(r"theme: '([a-z0-9-]+)'", line)) else None
+    for line in (ROOT / 'src/data/itemCatalog.ts').read_text().splitlines()
+    if (kind := re.search(r"\{ id: '([a-z0-9-]+)'", line))
+}
 
 # How colour-blind players see a colour: Viénot, Brettel & Mollon (1999) in linear RGB, as the game's own
 # simulation (src/ui/icons/color.ts).
@@ -124,6 +137,8 @@ def objects(file: str, names: list) -> dict:
     others_all = np.isin(labels, [i for cell in cells for i in members[cell]])
     info = {}
     for name, cell in zip(names, cells):
+        if name is None:
+            continue
         mine = np.isin(labels, members[cell])
         own = ndimage.binary_dilation(mine, iterations=8)
         ys, xs = np.nonzero(mine)
@@ -167,7 +182,7 @@ def objects(file: str, names: list) -> dict:
             save_webp(simulate(square, vision), f'{name}-{vision}.webp')
         dark = edge_lightness(square) < HALO_BELOW
         save_webp(halo(square) if dark else square, f'{name}-halo.webp')
-        info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back, 'theme': SHEET_THEME.get(file), 'halo': bool(dark)}
+        info[name] = {'bounds': bounds, 'bytes': size, 'backBytes': size_back, 'theme': KIND_THEME.get(name), 'halo': bool(dark)}
     return info
 
 
@@ -404,6 +419,9 @@ def backgrounds() -> dict:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
+    # Start clean, so drawings no longer used do not linger.
+    for old in OUT.glob('*.webp'):
+        old.unlink()
     info = {'objects': {k: v for file, names in SHEETS.items() for k, v in objects(file, names).items()}, 'shelf': shelf(),  'shelfV2': shelf_as_is(), 'shelfV2Fit': shelf_fitted(), 'backgrounds': backgrounds()}
     (OUT / 'pilot.json').write_text(json.dumps(info, indent=1) + '\n')
     total = sum(p.stat().st_size for p in OUT.glob('*.webp'))

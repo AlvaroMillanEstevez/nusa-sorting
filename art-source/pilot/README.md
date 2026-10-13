@@ -19,6 +19,12 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 | `objects-rempah-maluku.png` | `Especias exóticas en composición 3D.png` | Objetos del tema (13 de octubre; reglas: silueta reconocible en blanco y negro, una pieza por casilla, sin colores pálidos). Rempah Maluku: cengkeh, pala, kayu manis, lada, cobek, karung rempah |
 | `objects-sawah.png` | `Iconos agrícolas de arroz en 3D.png` | Objetos del tema (13 de octubre; reglas: silueta reconocible en blanco y negro, una pieza por casilla, sin colores pálidos). Sawah: padi, cangkul, orang-orangan, kerbau, bakul, gubuk |
 | `objects-fauna-nusantara.png` | `Lámina de seis animales exóticos.png` | Objetos del tema (13 de octubre; reglas: silueta reconocible en blanco y negro, una pieza por casilla, sin colores pálidos). Fauna Nusantara: komodo, orangután, rangkong, penyu, cendrawasih, tarsius |
+| `objects-fix-a.png` | `Iconos de comida indonesia en cuadrícula (1).png` | Hoja de correcciones A (13 de octubre, tras la revisión de las 79 primeras): klepon, es kelapa muda, onde-onde, tahu goreng, pisang goreng, ayam goreng |
+| `objects-fix-b.png` | `Iconos de comida indonesia en cuadrícula (2).png` | Correcciones B: martabak manis, ikan bakar, rendang, bakso, manggis, salak |
+| `objects-fix-c.png` | `Iconos culturales indonesios en cuadrícula.png` | Correcciones C: kipas y terompet (nuevos), peci, wayang kulit, batik, panjat pinang |
+| `objects-fix-d.png` | `Colección de iconos culturales indonesios.png` | Correcciones D: topeng, bianglala, pinisi, kelapa, raket, sepak takraw |
+| `objects-fix-e.png` | `Pegatinas de juegos tradicionales indonesios.png` | Correcciones E: yoyo, bekel, congklak, egrang, karung, sepatu |
+| `objects-fix-f.png` | `Hoja de iconos 3D de naturaleza y herramientas.png` | Correcciones F: cengkeh, pala, cobek, cangkul, kerbau, komodo |
 | `shelf-3-v2.png` | `Estantería de madera con tres compartimentos.png` | Estantería regenerada: marco fino, compartimentos cuadrados, interior menos oscuro |
 | `warung-sunset.png` | `Warung acogedor al atardecer.png` | Warung al atardecer (1024×1536), para la portada y la pantalla de inicio; aún sin usar |
 | `background-portrait.png` | `Imagen de ChatGPT 12 oct 2026, 21_40_01.png` | Fondo de juego vertical (2:3), 1024×1536: calle de warungs al anochecer |
@@ -27,5 +33,7 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 Capturas de la maqueta (`?artpilot`) en `mockup/`. `gallery-themes-1.jpg` a `-3.jpg` muestran los objetos de los temas igual que `gallery-3.jpg` muestra los 30 objetos de comida, a tamaño real, en color, en gris y con deuteranopía y protanopía. Las terminadas en `-2` comparan las dos primeras hojas y las tres estanterías: `v1`, la primera reconstruida por piezas; `v2`, la nueva tal cual; `v2fit`, la nueva ajustada solo en altura.
 
 `walls-compare.jpg` y `halo-before-after-*.jpg` prueban cómo hacer legibles los objetos oscuros sobre la pared oscura de la estantería (13 de octubre): aclarar la pared o poner luz en los compartimentos, frente a un halo cálido tras el contorno de los objetos oscuros.
+
+Cada objeto usa su dibujo más reciente: las versiones anteriores de los 36 corregidos siguen en sus hojas y en el historial de git, pero la herramienta ya no las prepara. `gallery-fix-*.jpg` muestran la galería con las correcciones (13 de octubre).
 
 Las imágenes preparadas (`src/dev/artpilot/*.webp`) no van a git: se generan con `python3 tools/art/prepare_pilot.py` a partir de estos originales antes de abrir `?artpilot`.
