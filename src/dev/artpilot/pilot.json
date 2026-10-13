@@ -504,18 +504,6 @@
    "theme": "fauna-nusantara",
    "halo": false
   },
-  "penyu": {
-   "bounds": [
-    8.6,
-    25.4,
-    91.4,
-    90.2
-   ],
-   "bytes": 16900,
-   "backBytes": 4196,
-   "theme": "fauna-nusantara",
-   "halo": false
-  },
   "cendrawasih": {
    "bounds": [
     14.5,
@@ -538,18 +526,6 @@
    "bytes": 17824,
    "backBytes": 5610,
    "theme": "fauna-nusantara",
-   "halo": false
-  },
-  "klepon": {
-   "bounds": [
-    6.6,
-    18.8,
-    91.4,
-    90.2
-   ],
-   "bytes": 16994,
-   "backBytes": 3834,
-   "theme": null,
    "halo": false
   },
   "es-kelapa-muda": {
@@ -585,18 +561,6 @@
    ],
    "bytes": 17534,
    "backBytes": 3822,
-   "theme": null,
-   "halo": false
-  },
-  "pisang-goreng": {
-   "bounds": [
-    9.4,
-    11.7,
-    90.6,
-    89.5
-   ],
-   "bytes": 16944,
-   "backBytes": 4030,
    "theme": null,
    "halo": false
   },
@@ -804,18 +768,6 @@
    "theme": "laut-nusantara",
    "halo": false
   },
-  "raket": {
-   "bounds": [
-    8.6,
-    11.7,
-    91.4,
-    90.2
-   ],
-   "bytes": 17074,
-   "backBytes": 3948,
-   "theme": "olahraga",
-   "halo": false
-  },
   "sepak-takraw": {
    "bounds": [
     11.7,
@@ -900,18 +852,6 @@
    "theme": "olahraga",
    "halo": false
   },
-  "cengkeh": {
-   "bounds": [
-    9.4,
-    13.3,
-    90.2,
-    88.7
-   ],
-   "bytes": 18400,
-   "backBytes": 5512,
-   "theme": "rempah-maluku",
-   "halo": false
-  },
   "pala": {
    "bounds": [
     10.9,
@@ -960,17 +900,77 @@
    "theme": "sawah",
    "halo": false
   },
-  "komodo": {
+  "pisang-goreng": {
+   "bounds": [
+    8.2,
+    15.2,
+    91.0,
+    89.8
+   ],
+   "bytes": 19978,
+   "backBytes": 4156,
+   "theme": null,
+   "halo": false
+  },
+  "klepon": {
    "bounds": [
     9.4,
-    21.5,
-    94.1,
+    18.4,
+    90.6,
+    89.1
+   ],
+   "bytes": 20470,
+   "backBytes": 4826,
+   "theme": null,
+   "halo": false
+  },
+  "cengkeh": {
+   "bounds": [
+    10.9,
+    4.7,
+    93.4,
     88.7
    ],
-   "bytes": 17768,
-   "backBytes": 5258,
+   "bytes": 17666,
+   "backBytes": 3922,
+   "theme": "rempah-maluku",
+   "halo": true
+  },
+  "raket": {
+   "bounds": [
+    11.3,
+    5.1,
+    88.3,
+    89.5
+   ],
+   "bytes": 29638,
+   "backBytes": 9760,
+   "theme": "olahraga",
+   "halo": true
+  },
+  "komodo": {
+   "bounds": [
+    8.6,
+    26.6,
+    91.4,
+    89.8
+   ],
+   "bytes": 17136,
+   "backBytes": 4462,
    "theme": "fauna-nusantara",
    "halo": true
+  },
+  "penyu": {
+   "bounds": [
+    12.1,
+    5.1,
+    91.0,
+    89.1
+   ],
+   "bytes": 23594,
+   "backBytes": 5076,
+   "theme": "fauna-nusantara",
+   "halo": false
   }
  },
  "shelf": {

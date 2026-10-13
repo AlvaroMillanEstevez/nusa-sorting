@@ -25,6 +25,7 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 | `objects-fix-d.png` | `Colección de iconos culturales indonesios.png` | Correcciones D: topeng, bianglala, pinisi, kelapa, raket, sepak takraw |
 | `objects-fix-e.png` | `Pegatinas de juegos tradicionales indonesios.png` | Correcciones E: yoyo, bekel, congklak, egrang, karung, sepatu |
 | `objects-fix-f.png` | `Hoja de iconos 3D de naturaleza y herramientas.png` | Correcciones F: cengkeh, pala, cobek, cangkul, kerbau, komodo |
+| `objects-fix-g.png` | `Iconos gastronómicos y naturales en 3D.png` | Correcciones G (14 de octubre): pisang goreng en abanico, klepon partido, un clavo grande (cengkeh), raket de cerca, komodo alargado, penyu desde arriba |
 | `shelf-3-v2.png` | `Estantería de madera con tres compartimentos.png` | Estantería regenerada: marco fino, compartimentos cuadrados, interior menos oscuro |
 | `warung-sunset.png` | `Warung acogedor al atardecer.png` | Warung al atardecer (1024×1536), para la portada y la pantalla de inicio; aún sin usar |
 | `background-portrait.png` | `Imagen de ChatGPT 12 oct 2026, 21_40_01.png` | Fondo de juego vertical (2:3), 1024×1536: calle de warungs al anochecer |
@@ -34,6 +35,6 @@ Capturas de la maqueta (`?artpilot`) en `mockup/`. `gallery-themes-1.jpg` a `-3.
 
 `walls-compare.jpg` y `halo-before-after-*.jpg` prueban cómo hacer legibles los objetos oscuros sobre la pared oscura de la estantería (13 de octubre): aclarar la pared o poner luz en los compartimentos, frente a un halo cálido tras el contorno de los objetos oscuros.
 
-Cada objeto usa su dibujo más reciente: las versiones anteriores de los 36 corregidos siguen en sus hojas y en el historial de git, pero la herramienta ya no las prepara. `gallery-fix-*.jpg` muestran la galería con las correcciones (13 de octubre).
+Cada objeto usa su dibujo más reciente: las versiones anteriores de los 36 corregidos siguen en sus hojas y en el historial de git, pero la herramienta ya no las prepara. `gallery-fix-*.jpg` muestran la galería con las correcciones A-F (13 de octubre); `fix-g-compare.png` compara los seis objetos de la hoja G con su versión A-F y con los objetos con que se confundían, a 36 y 40 px, con y sin halo, en gris y con deuteranopía y protanopía.
 
 Las imágenes preparadas (`src/dev/artpilot/*.webp`) no van a git: se generan con `python3 tools/art/prepare_pilot.py` a partir de estos originales antes de abrir `?artpilot`.

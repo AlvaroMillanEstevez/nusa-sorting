@@ -51,14 +51,16 @@ SHEETS = {
     'objects-permainan-tradisional.png': ['gasing', None, None, None, None, 'lompat-tali'],
     'objects-rempah-maluku.png': [None, None, 'kayu-manis', 'lada', None, 'karung-rempah'],
     'objects-sawah.png': ['padi', None, 'orang-orangan', None, 'bakul', 'gubuk'],
-    'objects-fauna-nusantara.png': [None, 'orangutan', 'rangkong', 'penyu', 'cendrawasih', 'tarsius'],
+    'objects-fauna-nusantara.png': [None, 'orangutan', 'rangkong', None, 'cendrawasih', 'tarsius'],
     # Correction sheets A-F (13 October): the 36 objects of the review's table, kipas and terompet included.
-    'objects-fix-a.png': ['klepon', 'es-kelapa-muda', 'onde-onde', 'tahu-goreng', 'pisang-goreng', 'ayam-goreng'],
+    'objects-fix-a.png': [None, 'es-kelapa-muda', 'onde-onde', 'tahu-goreng', None, 'ayam-goreng'],
     'objects-fix-b.png': ['martabak-manis', 'ikan-bakar', 'rendang', 'bakso', 'manggis', 'salak'],
     'objects-fix-c.png': ['kipas', 'terompet', 'peci', 'wayang-kulit', 'batik', 'panjat-pinang'],
-    'objects-fix-d.png': ['topeng', 'bianglala', 'pinisi', 'kelapa', 'raket', 'sepak-takraw'],
+    'objects-fix-d.png': ['topeng', 'bianglala', 'pinisi', 'kelapa', None, 'sepak-takraw'],
     'objects-fix-e.png': ['yoyo', 'bekel', 'congklak', 'egrang', 'karung', 'sepatu'],
-    'objects-fix-f.png': ['cengkeh', 'pala', 'cobek', 'cangkul', 'kerbau', 'komodo'],
+    'objects-fix-f.png': [None, 'pala', 'cobek', 'cangkul', 'kerbau', None],
+    # Correction sheet G (14 October): the six still confused or hard to read after A-F.
+    'objects-fix-g.png': ['pisang-goreng', 'klepon', 'cengkeh', 'raket', 'komodo', 'penyu'],
 }
 # Each kind's theme, for the gallery's sections (None for food), as the catalogue gives it.
 KIND_THEME = {
