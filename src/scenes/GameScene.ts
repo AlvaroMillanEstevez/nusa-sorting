@@ -153,6 +153,11 @@ interface SpriteTarget {
  */
 export class GameScene extends Phaser.Scene {
   private levelIndex = 0;
+
+  /** The number of the level open (development tools follow the game by it). */
+  get levelNumber(): number {
+    return playList[this.levelIndex]!.number;
+  }
   private level!: LevelDefinition;
   private state!: GameState;
   /** The board as laid out for the screen; shelves riding tracks at their time-0 place. */
@@ -193,7 +198,8 @@ export class GameScene extends Phaser.Scene {
   private blocker!: BlockerView;
   private belt!: BeltController;
   /** What a mock-up's other art made (?artpilot in development), redrawn with the board. */
-  private readonly shelfImages: Phaser.GameObjects.Image[] = [];
+  /** The fixed shelves' pictures (made again each time the scene starts: the old ones go with it). */
+  private shelfImages: Phaser.GameObjects.Image[] = [];
   private movingShelves!: MovingShelves;
   private dropMark!: Phaser.GameObjects.Graphics;
   /** Last pointer position, for the drop-target outline while dragging. */
@@ -244,6 +250,7 @@ export class GameScene extends Phaser.Scene {
     // No music in levels: it fades out as the level opens.
     this.sfx.wantMusic(false);
     this.haptics.setEnabled(this.store.vibration);
+    this.shelfImages = [];
     this.movingShelves = new MovingShelves(this);
     this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
     this.locks = new LockOverlays(this);

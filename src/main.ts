@@ -96,6 +96,13 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
     },
     scene,
   });
+  // Development only: what tools/check/flow.mjs follows the game by (the active scenes and the level open).
+  if (import.meta.env.DEV) {
+    (window as unknown as { __nusa: unknown }).__nusa = {
+      scenes: () => game.scene.getScenes(true).map((s) => s.scene.key),
+      level: () => (game.scene.isActive('Game') ? (game.scene.getScene('Game') as GameScene).levelNumber : null),
+    };
+  }
   const resize = () => {
     const size = pageSize();
     updateUiScale(size.width, size.height);

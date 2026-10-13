@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "levelgen": "node tools/levelgen/run.mjs",
     "economy": "node tools/economy/run.mjs",
-    "package": "bash tools/launch/package.sh"
+    "package": "bash tools/launch/package.sh",
+    "check:flow": "node tools/check/flow.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"
