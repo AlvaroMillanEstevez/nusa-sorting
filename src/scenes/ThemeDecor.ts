@@ -5,6 +5,7 @@ import { BakedLayer, type BakedPicture } from './art/BakedLayer';
 import { SKIN } from '../ui/design/tokens';
 import { drawStall } from './StallDecor';
 import { backdropKey, backdropShape, loadBackdrop } from './art/backdrops';
+import { themeArtTrial } from './art/themeArtTrial';
 
 /** Under everything: the board, the tracks and the HUD are drawn over it. */
 const DEPTH_DECOR = -100;
@@ -28,10 +29,13 @@ export class ThemeDecor {
    * Draws the background over the whole screen (`screen`, in world coordinates: it starts above and left of the
    * safe area).
    */
-  draw(look: ThemeLook | null, screen: Rect, layout: BoardLayout, boosters = false): void {
-    this.last = [look, screen, layout, boosters];
+  draw(look: ThemeLook | null, screen: Rect, layout: BoardLayout, boosters = false, theme: string | null = null): void {
+    this.last = [look, screen, layout, boosters, theme];
     const { width, height } = screen;
-    const picture = look ? null : this.picture(screen);
+    // Development only (?themeArt): a themed level's background being tried, in place of its drawn sky and motif.
+    const trialKey = look && theme ? themeArtTrial()?.backdrop(this.scene.textures, theme, backdropShape(width, height)) ?? null : null;
+    if (trialKey) look = null;
+    const picture = trialKey ? this.cover(trialKey, screen) : look ? null : this.picture(screen);
     // Drawn in screen coordinates: the layer sits at the screen's corner, and the board is moved to match.
     this.layer.setPosition(screen.x, screen.y);
     const local = (r: Rect): Rect => ({ ...r, x: r.x - screen.x, y: r.y - screen.y });
@@ -74,6 +78,11 @@ export class ThemeDecor {
       });
       return null;
     }
+    return this.cover(key, screen);
+  }
+
+  /** A picture centred and scaled to cover the screen, in the layer's coordinates. */
+  private cover(key: string, screen: Rect): BakedPicture {
     const frame = this.scene.textures.getFrame(key);
     return { key, x: screen.width / 2, y: screen.height / 2, scale: Math.max(screen.width / frame.width, screen.height / frame.height) };
   }

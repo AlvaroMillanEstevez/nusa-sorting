@@ -44,6 +44,12 @@ if (import.meta.env.DEV) {
   if (chestStars !== null) store.addChestStars(chestStars - store.wallet.chestStars);
 }
 
+// Development only: ?themeArt tries the themed art being prepared (tools/art/try_theme_art.py) in levels and the map.
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('themeArt')) {
+  const { installThemeArtTrial } = await import('./dev/themeArtTrial');
+  await installThemeArtTrial();
+}
+
 // Development only: ?demo=N adds the demo levels of the test fixtures (as levels 101 and up) and opens demo N.
 if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo')) {
   const { demoLevels } = await import('../tests/fixtures/demo-levels');

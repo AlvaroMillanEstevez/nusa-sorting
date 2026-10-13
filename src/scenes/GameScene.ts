@@ -1001,6 +1001,12 @@ export class GameScene extends Phaser.Scene {
     this.selectedId = null;
     this.hud.setCombo(0, 0, 0);
     this.pauseMenu.close();
+    // Development only: a board declared stuck is logged whole, to reproduce it (paste it into a test with
+    // restoreSnapshot, or check it with tools/check/stuckHunt.ts).
+    if (import.meta.env.DEV && loseReason === 'stuck') {
+      const snapshot = takeSnapshot(this.level, this.arrangement, { ...this.state, status: 'playing', loseReason: null }, { continuesUsed: this.continuesUsed, boostersUsed: this.boostersUsed });
+      console.warn(`[stuck] ${this.level.id} arrangement ${this.arrangement}:`, JSON.stringify(snapshot));
+    }
     // Saved right away, when the level ends, not when the panel appears.
     const stars = starsFor(score, starThresholds(this.level));
     const totalBefore = this.store.totalStars;
@@ -1099,7 +1105,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.layout(width, this.layout);
     this.overlay.layout();
     this.pauseMenu.relayout();
-    this.decor.draw(themeLook(this.levelTheme()), screenRect(this), this.layout, this.unlockedBoosters().length > 0);
+    this.decor.draw(themeLook(this.levelTheme()), screenRect(this), this.layout, this.unlockedBoosters().length > 0, this.levelTheme());
     this.themeIntro.layout();
     this.tutorial.layout(width, height, this.layout, this.baseScale());
     this.buildBoosterBar();

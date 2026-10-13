@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../.."
 npm run build
 
 # Nothing from development may reach the build: no dev scenes, no demo levels, no tools.
-for marker in GalleryScene UikitScene CoverScene previewLevel preview-showcase demo-levels resetSave; do
+for marker in GalleryScene UikitScene CoverScene previewLevel preview-showcase demo-levels resetSave installThemeArtTrial themeart; do
   if grep -q -- "$marker" dist/assets/*.js; then echo "✗ the build contains '$marker'" >&2; exit 1; fi
 done
 # Relative paths only (the portal serves the game from a subfolder in an iframe).

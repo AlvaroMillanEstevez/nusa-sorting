@@ -4,6 +4,7 @@ import { MAP } from '../../ui/art/map';
 import { WOOD } from '../../ui/art/wood';
 import { DURATION, EASE, hexNumber, SKIN } from '../../ui/design/tokens';
 import type { MapIsland, MapLayout, MapNode } from '../../ui/mapLayout';
+import { themeArtTrial } from '../art/themeArtTrial';
 import { themeLook } from '../../ui/themeLook';
 import { KitStars, kitText, reducedMotion, uiIcon } from '../kit';
 
@@ -101,8 +102,21 @@ export class MapView {
     const ground = this.scene.add.graphics();
     this.container.add(ground);
     for (const island of islands) this.drawIsland(ground, island);
-    this.drawPath(ground);
-    this.drawBoats(ground, islands);
+    // Development only (?themeArt): a themed island's picture being tried, over its drawn shape.
+    const trial = themeArtTrial();
+    if (trial) {
+      for (const island of islands) {
+        const key = island.theme ? trial.island(this.scene.textures, island.theme) : null;
+        if (!key) continue;
+        const frame = this.scene.textures.getFrame(key);
+        const scale = Math.max((island.rx * 2.3) / frame.width, (island.ry * 2.3) / frame.height);
+        this.container.add(this.scene.add.image(island.cx, island.cy, key).setScale(scale));
+      }
+    }
+    const path = this.scene.add.graphics();
+    this.container.add(path);
+    this.drawPath(path);
+    this.drawBoats(path, islands);
 
     for (const island of islands) if (island.theme) this.drawSign(island);
     for (const node of this.layout.nodes) if (this.levels[node.level]!.revealed) this.drawNode(node);
