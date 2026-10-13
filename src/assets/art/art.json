@@ -1,0 +1,967 @@
+{
+ "itemSize": 192,
+ "items": {
+  "nasi-goreng": {
+   "bounds": [
+    6.6,
+    23.4,
+    92.2,
+    91.4
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.611
+  },
+  "sate": {
+   "bounds": [
+    8.6,
+    9.0,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.931
+  },
+  "bakso": {
+   "bounds": [
+    7.4,
+    14.8,
+    91.0,
+    90.2
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.397
+  },
+  "mie-goreng": {
+   "bounds": [
+    5.1,
+    14.1,
+    91.0,
+    91.0
+   ],
+   "halo": true,
+   "hue": 25,
+   "share": 0.692
+  },
+  "rendang": {
+   "bounds": [
+    9.4,
+    20.3,
+    95.3,
+    89.8
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.559
+  },
+  "gado-gado": {
+   "bounds": [
+    9.4,
+    10.9,
+    94.9,
+    91.0
+   ],
+   "halo": true,
+   "hue": 25,
+   "share": 0.487
+  },
+  "ayam-goreng": {
+   "bounds": [
+    9.8,
+    5.1,
+    92.6,
+    89.8
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.976
+  },
+  "ikan-bakar": {
+   "bounds": [
+    8.6,
+    18.4,
+    91.4,
+    90.2
+   ],
+   "halo": true,
+   "hue": 25,
+   "share": 0.559
+  },
+  "ketupat": {
+   "bounds": [
+    14.8,
+    4.7,
+    85.2,
+    89.5
+   ],
+   "halo": false,
+   "hue": 65,
+   "share": 0.907
+  },
+  "martabak-manis": {
+   "bounds": [
+    8.6,
+    13.3,
+    90.6,
+    96.1
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.916
+  },
+  "tempe": {
+   "bounds": [
+    7.0,
+    18.0,
+    90.6,
+    89.5
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.897
+  },
+  "tahu-goreng": {
+   "bounds": [
+    5.1,
+    15.2,
+    90.6,
+    89.5
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.846
+  },
+  "pisang-goreng": {
+   "bounds": [
+    8.2,
+    15.2,
+    91.0,
+    89.8
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.982
+  },
+  "kerupuk-udang": {
+   "bounds": [
+    9.4,
+    19.1,
+    91.4,
+    91.4
+   ],
+   "halo": false,
+   "hue": 5,
+   "share": 0.796
+  },
+  "klepon": {
+   "bounds": [
+    9.4,
+    18.4,
+    90.6,
+    89.1
+   ],
+   "halo": false,
+   "hue": 85,
+   "share": 0.329
+  },
+  "onde-onde": {
+   "bounds": [
+    8.6,
+    21.5,
+    90.6,
+    89.8
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.921
+  },
+  "dadar-gulung": {
+   "bounds": [
+    4.7,
+    12.9,
+    91.8,
+    89.5
+   ],
+   "halo": false,
+   "hue": 85,
+   "share": 0.753
+  },
+  "es-teh-manis": {
+   "bounds": [
+    26.6,
+    5.1,
+    73.4,
+    89.8
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.883
+  },
+  "es-cendol": {
+   "bounds": [
+    23.4,
+    5.1,
+    76.2,
+    92.6
+   ],
+   "halo": false,
+   "hue": 85,
+   "share": 0.246
+  },
+  "es-kelapa-muda": {
+   "bounds": [
+    17.2,
+    5.1,
+    80.5,
+    90.2
+   ],
+   "halo": false,
+   "hue": 65,
+   "share": 0.713
+  },
+  "jamu": {
+   "bounds": [
+    27.0,
+    5.1,
+    74.6,
+    89.8
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.952
+  },
+  "durian": {
+   "bounds": [
+    9.4,
+    5.9,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 45,
+   "share": 0.872
+  },
+  "rambutan": {
+   "bounds": [
+    9.4,
+    9.0,
+    93.8,
+    89.5
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.458
+  },
+  "manggis": {
+   "bounds": [
+    9.4,
+    7.4,
+    90.6,
+    89.8
+   ],
+   "halo": true,
+   "hue": 355,
+   "share": 0.368
+  },
+  "salak": {
+   "bounds": [
+    10.5,
+    5.5,
+    93.8,
+    89.8
+   ],
+   "halo": true,
+   "hue": 15,
+   "share": 0.818
+  },
+  "cabai": {
+   "bounds": [
+    9.0,
+    9.8,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.807
+  },
+  "blangkon": {
+   "bounds": [
+    5.1,
+    17.2,
+    91.0,
+    89.5
+   ],
+   "halo": true,
+   "hue": 25,
+   "share": 0.763
+  },
+  "batik": {
+   "bounds": [
+    9.0,
+    19.1,
+    91.4,
+    90.6
+   ],
+   "halo": true,
+   "hue": 225,
+   "share": 0.352
+  },
+  "wayang-kulit": {
+   "bounds": [
+    15.2,
+    5.1,
+    82.0,
+    91.4
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.881
+  },
+  "kendang": {
+   "bounds": [
+    6.6,
+    20.7,
+    91.8,
+    89.5
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.835
+  },
+  "gong": {
+   "bounds": [
+    12.1,
+    4.7,
+    87.9,
+    89.5
+   ],
+   "halo": true,
+   "hue": 35,
+   "share": 0.843
+  },
+  "caping": {
+   "bounds": [
+    9.0,
+    23.8,
+    95.3,
+    89.5
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.859
+  },
+  "kipas": {
+   "bounds": [
+    4.7,
+    26.6,
+    91.4,
+    89.5
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.701
+  },
+  "bendera": {
+   "bounds": [
+    5.5,
+    5.5,
+    90.6,
+    88.7
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.426
+  },
+  "karung": {
+   "bounds": [
+    14.5,
+    5.5,
+    86.7,
+    89.8
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.861
+  },
+  "kelereng": {
+   "bounds": [
+    9.8,
+    17.2,
+    94.9,
+    89.1
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.596
+  },
+  "panjat-pinang": {
+   "bounds": [
+    13.7,
+    5.1,
+    89.8,
+    94.1
+   ],
+   "halo": true,
+   "hue": 5,
+   "share": 0.657
+  },
+  "peci": {
+   "bounds": [
+    3.9,
+    21.5,
+    93.4,
+    88.7
+   ],
+   "halo": true,
+   "hue": 35,
+   "share": 0.216
+  },
+  "terompet": {
+   "bounds": [
+    8.2,
+    11.7,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 5,
+   "share": 0.666
+  },
+  "lampion": {
+   "bounds": [
+    15.2,
+    4.3,
+    84.8,
+    89.5
+   ],
+   "halo": false,
+   "hue": 5,
+   "share": 0.814
+  },
+  "arum-manis": {
+   "bounds": [
+    14.5,
+    5.1,
+    85.5,
+    89.5
+   ],
+   "halo": false,
+   "hue": 345,
+   "share": 0.699
+  },
+  "balon": {
+   "bounds": [
+    23.8,
+    5.1,
+    76.2,
+    89.5
+   ],
+   "halo": false,
+   "hue": 215,
+   "share": 0.935
+  },
+  "topeng": {
+   "bounds": [
+    12.9,
+    5.1,
+    85.9,
+    89.8
+   ],
+   "halo": false,
+   "hue": 5,
+   "share": 0.466
+  },
+  "kembang-api": {
+   "bounds": [
+    9.4,
+    5.1,
+    90.6,
+    89.1
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.48
+  },
+  "bianglala": {
+   "bounds": [
+    16.0,
+    4.7,
+    84.0,
+    89.8
+   ],
+   "halo": false,
+   "hue": 5,
+   "share": 0.623
+  },
+  "pinisi": {
+   "bounds": [
+    10.9,
+    5.1,
+    92.6,
+    89.8
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.373
+  },
+  "kerang": {
+   "bounds": [
+    9.4,
+    19.1,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.806
+  },
+  "bintang-laut": {
+   "bounds": [
+    9.4,
+    5.9,
+    94.5,
+    89.5
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.912
+  },
+  "jaring": {
+   "bounds": [
+    7.8,
+    15.6,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.421
+  },
+  "layangan": {
+   "bounds": [
+    9.0,
+    4.3,
+    95.3,
+    89.1
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.357
+  },
+  "kelapa": {
+   "bounds": [
+    6.6,
+    13.7,
+    93.4,
+    89.8
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.447
+  },
+  "kok": {
+   "bounds": [
+    11.7,
+    4.7,
+    88.3,
+    89.5
+   ],
+   "halo": false,
+   "hue": 135,
+   "share": 0.029
+  },
+  "raket": {
+   "bounds": [
+    11.3,
+    5.1,
+    88.3,
+    89.5
+   ],
+   "halo": true,
+   "hue": 5,
+   "share": 0.434
+  },
+  "sepak-takraw": {
+   "bounds": [
+    11.7,
+    5.5,
+    91.0,
+    89.1
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.94
+  },
+  "sepatu": {
+   "bounds": [
+    9.4,
+    11.3,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.497
+  },
+  "piala": {
+   "bounds": [
+    7.0,
+    4.7,
+    87.5,
+    89.5
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.751
+  },
+  "peluit": {
+   "bounds": [
+    8.6,
+    8.2,
+    93.0,
+    88.7
+   ],
+   "halo": true,
+   "hue": 355,
+   "share": 0.315
+  },
+  "gasing": {
+   "bounds": [
+    12.5,
+    4.7,
+    87.5,
+    88.3
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.811
+  },
+  "congklak": {
+   "bounds": [
+    9.4,
+    11.3,
+    92.2,
+    90.2
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.879
+  },
+  "egrang": {
+   "bounds": [
+    18.4,
+    4.7,
+    81.2,
+    92.6
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.733
+  },
+  "yoyo": {
+   "bounds": [
+    16.8,
+    5.5,
+    83.2,
+    89.1
+   ],
+   "halo": true,
+   "hue": 215,
+   "share": 0.479
+  },
+  "bekel": {
+   "bounds": [
+    9.8,
+    10.2,
+    90.2,
+    88.7
+   ],
+   "halo": false,
+   "hue": 355,
+   "share": 0.551
+  },
+  "lompat-tali": {
+   "bounds": [
+    9.8,
+    15.6,
+    93.4,
+    88.7
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.345
+  },
+  "cengkeh": {
+   "bounds": [
+    10.9,
+    4.7,
+    93.4,
+    88.7
+   ],
+   "halo": true,
+   "hue": 15,
+   "share": 0.837
+  },
+  "pala": {
+   "bounds": [
+    10.9,
+    5.1,
+    89.1,
+    89.1
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.613
+  },
+  "kayu-manis": {
+   "bounds": [
+    9.4,
+    15.2,
+    91.8,
+    89.5
+   ],
+   "halo": true,
+   "hue": 15,
+   "share": 0.942
+  },
+  "lada": {
+   "bounds": [
+    13.3,
+    5.1,
+    85.9,
+    89.8
+   ],
+   "halo": true,
+   "hue": 75,
+   "share": 0.849
+  },
+  "cobek": {
+   "bounds": [
+    10.9,
+    4.7,
+    91.0,
+    89.1
+   ],
+   "halo": false,
+   "hue": 5,
+   "share": 0.378
+  },
+  "karung-rempah": {
+   "bounds": [
+    9.4,
+    7.4,
+    95.3,
+    90.6
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.877
+  },
+  "padi": {
+   "bounds": [
+    8.6,
+    6.6,
+    91.0,
+    89.1
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.885
+  },
+  "cangkul": {
+   "bounds": [
+    9.4,
+    4.7,
+    87.5,
+    89.1
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.291
+  },
+  "orang-orangan": {
+   "bounds": [
+    12.1,
+    5.1,
+    91.0,
+    89.5
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.941
+  },
+  "kerbau": {
+   "bounds": [
+    8.6,
+    26.2,
+    91.4,
+    89.8
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.296
+  },
+  "bakul": {
+   "bounds": [
+    9.8,
+    12.5,
+    90.2,
+    89.1
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.717
+  },
+  "gubuk": {
+   "bounds": [
+    9.8,
+    4.7,
+    92.2,
+    89.8
+   ],
+   "halo": true,
+   "hue": 25,
+   "share": 0.957
+  },
+  "komodo": {
+   "bounds": [
+    8.6,
+    26.6,
+    91.4,
+    89.8
+   ],
+   "halo": true,
+   "hue": 35,
+   "share": 0.892
+  },
+  "orangutan": {
+   "bounds": [
+    9.0,
+    4.7,
+    91.0,
+    89.1
+   ],
+   "halo": false,
+   "hue": 15,
+   "share": 0.918
+  },
+  "rangkong": {
+   "bounds": [
+    14.8,
+    5.1,
+    87.5,
+    90.2
+   ],
+   "halo": false,
+   "hue": 35,
+   "share": 0.356
+  },
+  "penyu": {
+   "bounds": [
+    12.1,
+    5.1,
+    91.0,
+    89.1
+   ],
+   "halo": false,
+   "hue": 165,
+   "share": 0.353
+  },
+  "cendrawasih": {
+   "bounds": [
+    14.5,
+    4.3,
+    86.3,
+    92.2
+   ],
+   "halo": false,
+   "hue": 45,
+   "share": 0.567
+  },
+  "tarsius": {
+   "bounds": [
+    17.6,
+    4.3,
+    83.2,
+    94.1
+   ],
+   "halo": false,
+   "hue": 25,
+   "share": 0.874
+  }
+ },
+ "shelf": {
+  "bytes": 25276,
+  "image": [
+   876,
+   425
+  ],
+  "width": 3.1293,
+  "firstCentre": 0.5646,
+  "beam": 0.14,
+  "slot": 1.2,
+  "plank": 0.18,
+  "overhangTop": 0.06
+ },
+ "cubby": {
+  "bytes": 11392,
+  "image": [
+   316,
+   425
+  ],
+  "width": 1.1293,
+  "beam": 0.14,
+  "slot": 1.2,
+  "plank": 0.18,
+  "overhangTop": 0.06
+ },
+ "pieces": {
+  "beam": {
+   "bytes": 5692,
+   "image": [
+    732,
+    59
+   ]
+  },
+  "boards": {
+   "bytes": 9326,
+   "image": [
+    256,
+    255
+   ]
+  },
+  "crate": {
+   "bytes": 11542,
+   "image": [
+    256,
+    256
+   ]
+  },
+  "wall": {
+   "bytes": 1918,
+   "image": [
+    245,
+    241
+   ]
+  }
+ },
+ "backgrounds": {
+  "background-portrait": {
+   "size": [
+    1024,
+    1536
+   ],
+   "bytes": 137704
+  },
+  "background-landscape": {
+   "size": [
+    1672,
+    941
+   ],
+   "bytes": 172656
+  }
+ }
+}
