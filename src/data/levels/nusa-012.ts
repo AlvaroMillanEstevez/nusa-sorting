@@ -12,7 +12,7 @@ import type { LevelDefinition } from '../../core';
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 45% to 70%, the expert 18% to 86%; pressure 10% to 42%.
+ * Across them the casual player wins 45% to 66%, the expert 18% to 86%; pressure 12% to 42%.
  * Stars (formula in src/core/stars.ts): two from 2520 points, three from 3760.
  */
 export const nusa012: LevelDefinition = {
@@ -82,23 +82,6 @@ export const nusa012: LevelDefinition = {
     {
       shelves: [
         [[null, null, null]],
-        [['blangkon', 'kendang', 'peci'], ['cabai', 'nasi-goreng', 'nasi-goreng']],
-        [['panjat-pinang', 'peci', 'rendang'], ['terompet', 'nasi-goreng', 'peci']],
-        [[null, 'wayang-kulit', 'batik'], ['wayang-kulit', 'kendang', 'manggis']],
-        [['mie-goreng', 'sate', 'blangkon'], ['durian', 'sate', 'cabai']],
-        [['mie-goreng', null, 'manggis'], ['manggis', 'durian', 'panjat-pinang']],
-        [
-          ['gado-gado', 'blangkon', 'terompet'],
-          ['ketupat', 'gado-gado', 'rendang'],
-          ['ketupat', 'wayang-kulit', 'panjat-pinang'],
-        ],
-        [['batik', 'ketupat', 'rendang'], ['terompet', 'durian', 'kendang']],
-        [['gado-gado', null, 'batik'], ['mie-goreng', 'sate', 'cabai']],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
         [['kendang', 'mie-goreng', 'ketupat'], ['terompet', 'gado-gado', 'nasi-goreng']],
         [['nasi-goreng', 'ketupat', 'durian'], ['cabai', 'wayang-kulit', 'sate']],
         [[null, 'batik', 'blangkon'], ['manggis', 'batik', 'blangkon']],
@@ -162,6 +145,23 @@ export const nusa012: LevelDefinition = {
         ],
         [['rendang', 'sate', 'ketupat'], ['cabai', 'ketupat', 'mie-goreng']],
         [['terompet', null, 'cabai'], ['rendang', 'panjat-pinang', 'wayang-kulit']],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [['nasi-goreng', 'batik', 'cabai'], ['panjat-pinang', 'mie-goreng', 'blangkon']],
+        [['batik', 'panjat-pinang', 'blangkon'], ['cabai', 'nasi-goreng', 'rendang']],
+        [[null, 'mie-goreng', 'gado-gado'], ['durian', 'batik', 'durian']],
+        [['panjat-pinang', 'wayang-kulit', 'rendang'], ['rendang', 'ketupat', 'terompet']],
+        [['ketupat', null, 'sate'], ['wayang-kulit', 'sate', 'manggis']],
+        [
+          ['wayang-kulit', 'kendang', 'gado-gado'],
+          ['peci', 'nasi-goreng', 'terompet'],
+          ['durian', 'cabai', 'ketupat'],
+        ],
+        [['peci', 'manggis', 'terompet'], ['gado-gado', 'kendang', 'sate']],
+        [['manggis', null, 'blangkon'], ['peci', 'kendang', 'mie-goreng']],
       ],
     },
   ],

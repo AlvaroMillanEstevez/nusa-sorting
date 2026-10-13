@@ -8,11 +8,11 @@ import type { LevelDefinition } from '../../core';
  * Change the recipe rather than this file.
  *
  * Simulated players, 200 games each. Casual: wins 56%, out of space 44%,
- * out of time 0%, space pressure 17%. Expert: wins 35%.
+ * out of time 0%, space pressure 18%. Expert: wins 35%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 35% to 59%, the expert 14% to 89%; pressure 8% to 29%.
+ * Across them the casual player wins 36% to 60%, the expert 14% to 86%; pressure 9% to 23%.
  * Stars (formula in src/core/stars.ts): two from 3840 points, three from 5830.
  */
 export const nusa045: LevelDefinition = {
@@ -226,65 +226,65 @@ export const nusa045: LevelDefinition = {
     },
     {
       shelves: [
-        [['batik', 'cabai', 'komodo'], ['cabai', 'tarsius', 'tarsius']],
-        [[null, 'sepatu', 'batik'], ['es-cendol', 'salak', 'penyu']],
+        [['sepak-takraw', 'cabai', 'blangkon'], ['orangutan', 'komodo', 'tarsius']],
+        [[null, 'sepatu', 'layangan'], ['penyu', 'sepatu', 'dadar-gulung']],
         [
-          ['salak', 'bakso', 'kok'],
-          ['penyu', 'nasi-goreng', 'sepak-takraw'],
-          ['sepatu', 'dadar-gulung', 'raket'],
+          ['jamu', 'nasi-goreng', 'raket'],
+          ['salak', 'komodo', 'cendrawasih'],
+          ['bakso', 'tahu-goreng', 'kok'],
         ],
         [
-          ['pisang-goreng', 'salak', 'rangkong'],
-          ['orangutan', 'jamu', 'orangutan'],
-          ['orangutan', 'dadar-gulung', 'tahu-goreng'],
+          ['tahu-goreng', 'salak', 'dadar-gulung'],
+          ['dadar-gulung', 'rangkong', 'pisang-goreng'],
+          ['cabai', 'layangan', 'blangkon'],
         ],
         [
-          ['dadar-gulung', 'bakso', 'es-cendol'],
-          ['layangan', 'batik', 'cendrawasih'],
-          ['jamu', 'wayang-kulit', 'nasi-goreng'],
+          ['layangan', 'rangkong', 'batik'],
+          ['batik', 'es-cendol', 'batik'],
+          ['tarsius', 'raket', 'es-cendol'],
         ],
-        [['nasi-goreng', 'wayang-kulit', null], ['wayang-kulit', 'sepak-takraw', 'blangkon']],
-        [['kok', null, 'raket'], ['blangkon', 'cendrawasih', 'pisang-goreng']],
-        [['tahu-goreng', 'cendrawasih', 'jamu']],
-        [['layangan', 'blangkon', null], ['pisang-goreng', 'bakso', 'rangkong']],
-        [[null, 'komodo', null], ['tahu-goreng', 'komodo', 'raket']],
+        [['sepak-takraw', 'pisang-goreng', null], ['nasi-goreng', 'jamu', 'wayang-kulit']],
+        [['jamu', null, 'cendrawasih'], ['raket', 'sepak-takraw', 'es-cendol']],
+        [['orangutan', 'komodo', 'cendrawasih']],
+        [['nasi-goreng', 'tarsius', null], ['wayang-kulit', 'kok', 'cabai']],
+        [[null, 'sepatu', null], ['kok', 'penyu', 'orangutan']],
         [[null, null, null]],
         [
-          ['rangkong', 'es-cendol', 'penyu'],
-          ['tarsius', 'cabai', 'layangan'],
-          ['kok', 'sepatu', 'sepak-takraw'],
+          ['penyu', 'blangkon', 'bakso'],
+          ['tahu-goreng', 'salak', 'rangkong'],
+          ['wayang-kulit', 'pisang-goreng', 'bakso'],
         ],
       ],
     },
     {
       shelves: [
-        [['jamu', 'jamu', 'dadar-gulung'], ['tahu-goreng', 'bakso', 'dadar-gulung']],
-        [[null, 'sepak-takraw', 'bakso'], ['kok', 'batik', 'orangutan']],
+        [['layangan', 'sepak-takraw', 'cendrawasih'], ['batik', 'cabai', 'layangan']],
+        [[null, 'bakso', 'kok'], ['raket', 'dadar-gulung', 'tahu-goreng']],
         [
-          ['tarsius', 'cabai', 'rangkong'],
-          ['wayang-kulit', 'tahu-goreng', 'jamu'],
-          ['sepatu', 'tahu-goreng', 'cendrawasih'],
+          ['layangan', 'es-cendol', 'tahu-goreng'],
+          ['tarsius', 'penyu', 'wayang-kulit'],
+          ['cabai', 'pisang-goreng', 'pisang-goreng'],
         ],
         [
-          ['blangkon', 'komodo', 'raket'],
-          ['bakso', 'layangan', 'sepatu'],
-          ['salak', 'cabai', 'dadar-gulung'],
+          ['tahu-goreng', 'tarsius', 'sepatu'],
+          ['penyu', 'bakso', 'rangkong'],
+          ['pisang-goreng', 'salak', 'kok'],
         ],
         [
-          ['pisang-goreng', 'wayang-kulit', 'wayang-kulit'],
-          ['nasi-goreng', 'kok', 'pisang-goreng'],
-          ['salak', 'es-cendol', 'salak'],
+          ['wayang-kulit', 'nasi-goreng', 'jamu'],
+          ['wayang-kulit', 'salak', 'batik'],
+          ['nasi-goreng', 'jamu', 'rangkong'],
         ],
-        [['kok', 'layangan', null], ['raket', 'penyu', 'layangan']],
-        [['penyu', null, 'batik'], ['nasi-goreng', 'es-cendol', 'komodo']],
-        [['sepak-takraw', 'cabai', 'raket']],
-        [['tarsius', 'orangutan', null], ['blangkon', 'sepatu', 'pisang-goreng']],
-        [[null, 'cendrawasih', null], ['rangkong', 'tarsius', 'batik']],
+        [['raket', 'cabai', null], ['orangutan', 'sepak-takraw', 'orangutan']],
+        [['cendrawasih', null, 'orangutan'], ['tarsius', 'blangkon', 'cendrawasih']],
+        [['blangkon', 'sepatu', 'komodo']],
+        [['komodo', 'bakso', null], ['es-cendol', 'jamu', 'sepatu']],
+        [[null, 'rangkong', null], ['raket', 'sepak-takraw', 'es-cendol']],
         [[null, null, null]],
         [
-          ['penyu', 'sepak-takraw', 'blangkon'],
-          ['orangutan', 'es-cendol', 'komodo'],
-          ['cendrawasih', 'nasi-goreng', 'rangkong'],
+          ['blangkon', 'salak', 'dadar-gulung'],
+          ['dadar-gulung', 'penyu', 'batik'],
+          ['komodo', 'nasi-goreng', 'kok'],
         ],
       ],
     },
