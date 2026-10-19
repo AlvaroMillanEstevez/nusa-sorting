@@ -78,10 +78,11 @@ export function searchProgress(state: GameState): boolean {
       if (item) counts.set(item.type, (counts.get(item.type) ?? 0) + 1);
       else free++;
     });
-    if (blocked === null) holdShelf = true;
-    // The blocker, left alone in a front with layers behind when nothing else can progress, jumps away
-    // (game.ts releaseBlocker).
-    if (shelf.layers.length > 1) emptyable = true;
+    // Where the blocker stands a triple never fits and the layer behind waits (it only moves after a triple).
+    if (blocked === null) {
+      holdShelf = true;
+      if (shelf.layers.length > 1) emptyable = true;
+    }
   });
   if (free === 0) return false;
   if (emptyable && free >= 3) return true;

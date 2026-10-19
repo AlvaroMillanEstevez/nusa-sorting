@@ -156,11 +156,8 @@ export function isBlocked(state: GameState): boolean {
  * exactly, without searching, because once a usable slot is free the player can arrange the front items in any
  * way at all (any item can go to the free slot, so free slots wander and every arrangement can be reached):
  *
- * - A layer can come forward iff some unlocked shelf with layers behind could have its front emptied: its items need
- *   that many free slots elsewhere, which comes to 3 free slots in all. The same holds with the roaming blocker
- *   on it: once nothing else can make progress and its two other slots are emptied, the blocker jumps to a free
- *   slot elsewhere and the layer comes forward (releaseBlocker); its items and the blocker need one free slot each
- *   elsewhere: 3 in all again.
+ * - A layer can come forward iff some unlocked shelf with layers behind and no blocker on it could have its front
+ *   emptied: its items need that many free slots elsewhere, which comes to 3 free slots in all.
  * - A triple of a kind can be cleared iff 3 of it can be gathered on an unlocked shelf without the blocker (where
  *   the blocker stands a triple never fits): enough of it in the fronts and on track stacks, taking an item from
  *   a stack costing a free slot for good for every item above it and for itself. The cheapest way to reach the
@@ -176,14 +173,6 @@ export function isBlocked(state: GameState): boolean {
  * board stuck that has one. Not meaningful once the level is over, or with no usable slot free (see isBlocked).
  */
 export function canProgress(state: GameState): boolean {
-  return progressPossible(state, true);
-}
-
-/**
- * canProgress, and with `blockerMayLeave` false the same question as if the roaming blocker never left a shelf
- * without a triple (as it does unless nothing else is left: see releaseBlocker).
- */
-function progressPossible(state: GameState, blockerMayLeave: boolean): boolean {
   let free = 0;
   let canEmpty = false;
   let canHoldTriple = false;
@@ -196,10 +185,10 @@ function progressPossible(state: GameState, blockerMayLeave: boolean): boolean {
       if (item) inFronts.set(item.type, (inFronts.get(item.type) ?? 0) + 1);
       else free++;
     });
-    if (blocked === null) canHoldTriple = true;
-    // With the blocker there too, when nothing else can make progress: emptied around it, the blocker jumps away
-    // (see releaseBlocker).
-    if (shelf.layers.length > 1 && (blocked === null || blockerMayLeave)) canEmpty = true;
+    if (blocked === null) {
+      canHoldTriple = true;
+      if (shelf.layers.length > 1) canEmpty = true;
+    }
   });
   if (free === 0) return false;
   if (canEmpty && free >= 3) return true;
@@ -344,16 +333,7 @@ function checkTargetSlot(state: GameState, to: Position): InvalidMoveReason | nu
  * every action that places or removes items.
  */
 export function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
-  let next = applyTriples(state, events);
-  // The roaming blocker never leaves a board stuck by keeping a layer waiting on its own: alone in a front with
-  // items behind when nothing else can make progress, it jumps.
-  for (;;) {
-    const seen = events.length;
-    const released = releaseBlocker(next, events);
-    if (!released) break;
-    next = applyTriples(released, events, seen);
-  }
-  next = closeEmptied(next, events);
+  let next = closeEmptied(applyTriples(state, events), events);
   if (isWon(next)) {
     next = addTimeBonus({ ...next, status: 'won' }, events);
     events.push({ kind: 'won' });
@@ -365,27 +345,6 @@ export function finishMove(state: GameState, events: GameEvent[]): { state: Game
     events.push({ kind: 'lost', reason: 'stuck' });
   }
   return { state: next, events };
-}
-
-/**
- * When the roaming blocker is all that is left in the front of a shelf with layers behind, and nothing else on
- * the board can make progress, it jumps to an empty slot of another shelf (with its seeded generator) and the
- * layer comes forward. Without this a board whose last items wait behind the blocker would be stuck for good,
- * however much room it had: the blocker only jumps after a triple. Otherwise the layer waits, as it always has.
- * Null if it stays (it is not alone there, something else can make progress, or there is nowhere else to go).
- */
-function releaseBlocker(state: GameState, events: GameEvent[]): GameState | null {
-  const blocker = state.blocker;
-  if (!blocker || state.status !== 'playing') return null;
-  const shelf = state.shelves[blocker.at.shelf]!;
-  if (shelf.layers.length < 2 || shelf.layers[0]!.some((slot) => slot !== null)) return null;
-  if (progressPossible(state, false)) return null;
-  const candidates = emptyUnlockedSlots(state).filter((ref) => ref.shelf !== blocker.at.shelf);
-  if (candidates.length === 0) return null;
-  const { value, state: rngState } = nextRandom(blocker.rngState);
-  const moved = { ...blocker, at: candidates[Math.floor(value * candidates.length)]!, rngState };
-  events.push({ kind: 'blockerMoved', from: blocker.at, to: moved.at });
-  return settleAt({ ...state, blocker: moved }, blocker.at.shelf, events);
 }
 
 /**
@@ -525,9 +484,9 @@ export function settleShelf(shelf: Shelf, index: number, blockedSlot: number | n
  * When the blocker leaves a shelf (jumping or removed), that shelf settles: an empty front lets the layer behind
  * come forward, which may clear more triples, handled in the same way.
  */
-function applyTriples(state: GameState, events: GameEvent[], from = 0): GameState {
+function applyTriples(state: GameState, events: GameEvent[]): GameState {
   let next = state;
-  for (let seen = from; ; ) {
+  for (let seen = 0; ; ) {
     const triples = events.slice(seen).filter((e) => e.kind === 'tripleCleared');
     if (triples.length === 0) return next;
 

@@ -266,42 +266,6 @@ describe('stuck boards', () => {
     expect(outcomes.some((o) => o.loseReason === 'stuck')).toBe(true);
   });
 
-  it('never keeps the last way on behind the roaming blocker: alone in a front with layers behind, with nothing else to do, it jumps away', () => {
-    // As Koke met it in the last levels: room everywhere, every kind's third copy behind the blocker.
-    const level: LevelDefinition = {
-      id: 'blocker-alone',
-      shelves: [
-        [['x', null, null], ['k', 'g', 'p'], ['x', 'x', null]],
-        [['k', 'k', null]],
-        [['g', 'g', null]],
-        [['p', 'p', null]],
-      ],
-      mechanics: [{ kind: 'roamingBlocker', start: { shelf: 0, slot: 1 }, seed: 11, removeAtCombo: 9 }],
-    };
-    const state = createGame(level);
-    expect(canProgress(state)).toBe(true);
-    expect(bruteForce(state)).toBe(true);
-    // Taking the last item from around the blocker: it jumps to another shelf and the layer behind comes forward.
-    const moved = moveItem(state, { shelf: 0, layer: 0, slot: 0 }, { shelf: 1, layer: 0, slot: 2 });
-    expect(moved.ok).toBe(true);
-    if (!moved.ok) return;
-    expect(moved.events.some((e) => e.kind === 'blockerMoved')).toBe(true);
-    expect(moved.events.some((e) => e.kind === 'layerAdvanced' && e.shelf === 0)).toBe(true);
-    expect(moved.state.blocker?.at.shelf).not.toBe(0);
-    expect(moved.state.status).toBe('playing');
-    expect(moved.state.shelves[0]!.layers[0]!.map((item) => item?.type)).toEqual(['k', 'g', 'p']);
-
-    // While something else can still make progress (three 'y' to gather), the blocker holds its slot and the
-    // layer waits, as always.
-    const busy = createGame({ ...level, id: 'blocker-busy', shelves: [...level.shelves, [['y', 'y', null]], [['y', null, null]]] });
-    const waited = moveItem(busy, { shelf: 0, layer: 0, slot: 0 }, { shelf: 1, layer: 0, slot: 2 });
-    expect(waited.ok).toBe(true);
-    if (!waited.ok) return;
-    expect(waited.events.some((e) => e.kind === 'blockerMoved' || e.kind === 'layerAdvanced')).toBe(false);
-    expect(waited.state.blocker?.at.shelf).toBe(0);
-    expect(waited.state.status).toBe('playing');
-  });
-
   it('in simulated games on every level and arrangement, never ends a board as stuck that has a way on', () => {
     // A sensible player and a random one, with boosters and continues now and then: at every state the rules'
     // verdict matches an independent search of the same reasoning (a search of every move sequence, as in the

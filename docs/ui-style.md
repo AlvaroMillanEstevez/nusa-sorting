@@ -159,7 +159,6 @@ La primera vez en un tema sale su presentación: el nombre en los dos idiomas, u
 - Combo: «Combo ×N!» más grande y más cálido con cada paso; desde ×5, una sacudida suave de la pantalla y vibración desde ×4.
 - Estantería desbloqueada: destello y chispas a lo largo de ella, además de la persiana que se levanta.
 - Hueco errante eliminado: la caja estalla en astillas.
-- Hueco errante solo en una estantería con capas detrás (el jugador ha sacado lo que tenía al lado): la caja salta a un hueco libre de otra estantería y la capa de detrás avanza. Así nunca deja mercancía atrapada (octubre de 2026: Koke vio «No quedan movimientos» con sitio de sobra por eso).
 - Eliminar un trío (potenciador o continuar sin espacio): los tres objetos vuelan juntos, en primer plano, desde donde estén (incluidos los ocultos en capas traseras o en pilas de cintas) y se colocan uno al lado del otro junto al tocado; después estallan con el efecto de trío. Lo que queda detrás avanza cuando estallan.
 - Tablero lleno o sin movimientos posibles: todas las estanterías se enmarcan en rojo, la pantalla se sacude, suena un golpe sordo y el motivo aparece grande sobre el tablero durante 1,1 s antes del panel.
 - Victoria: confeti desde las esquinas, panel con rebote, estrellas una a una con su campanada, la puntuación contando y los botones al final.

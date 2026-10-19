@@ -12,7 +12,7 @@ import type { LevelDefinition } from '../../core';
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 26% to 50%, the expert 5% to 72%; pressure 12% to 43%.
+ * Across them the casual player wins 26% to 48%, the expert 5% to 85%; pressure 12% to 22%.
  * Stars (formula in src/core/stars.ts): two from 3710 points, three from 5660.
  */
 export const nusa034: LevelDefinition = {
@@ -156,6 +156,64 @@ export const nusa034: LevelDefinition = {
     },
     {
       shelves: [
+        [['lompat-tali', 'ketupat', 'kendang'], ['durian', 'sate', 'kembang-api']],
+        [
+          ['es-cendol', 'jamu', 'wayang-kulit'],
+          ['gado-gado', 'mie-goreng', 'kelapa'],
+          ['sate', 'kendang', 'yoyo'],
+        ],
+        [['gado-gado', 'topeng', 'batik'], ['pisang-goreng', 'tahu-goreng', 'es-cendol']],
+        [[null, 'lompat-tali', 'kembang-api'], ['gado-gado', 'kendang', null]],
+        [[null, null, null]],
+        [
+          ['sate', 'kelapa', 'rendang'],
+          ['lompat-tali', 'bekel', 'dadar-gulung'],
+          ['yoyo', 'kembang-api', 'jamu'],
+        ],
+        [['ketupat', 'bekel', 'jamu'], ['topeng', 'dadar-gulung', 'batik']],
+        [['rendang', 'es-cendol', 'blangkon'], ['bekel', 'dadar-gulung', 'durian']],
+        [['yoyo', 'pisang-goreng', null], ['tahu-goreng', 'blangkon', 'batik']],
+        [[null, null, null]],
+        [['rendang', 'wayang-kulit', 'pisang-goreng'], ['tahu-goreng', 'wayang-kulit', 'topeng']],
+        [
+          ['kelapa', 'mie-goreng', 'ayam-goreng'],
+          ['durian', 'ayam-goreng', 'blangkon'],
+          ['mie-goreng', 'ketupat', 'ayam-goreng'],
+        ],
+      ],
+      stacks: [null],
+    },
+    {
+      shelves: [
+        [['dadar-gulung', 'yoyo', 'kelapa'], ['lompat-tali', 'ayam-goreng', 'kendang']],
+        [
+          ['yoyo', 'mie-goreng', 'mie-goreng'],
+          ['batik', 'tahu-goreng', 'durian'],
+          ['jamu', 'tahu-goreng', 'gado-gado'],
+        ],
+        [['mie-goreng', 'ketupat', 'wayang-kulit'], ['rendang', 'bekel', 'jamu']],
+        [[null, 'batik', 'bekel'], ['blangkon', 'kendang', null]],
+        [[null, null, null]],
+        [
+          ['sate', 'durian', 'topeng'],
+          ['yoyo', 'pisang-goreng', 'lompat-tali'],
+          ['rendang', 'sate', 'es-cendol'],
+        ],
+        [['kendang', 'bekel', 'rendang'], ['es-cendol', 'batik', 'gado-gado']],
+        [['ayam-goreng', 'dadar-gulung', 'kembang-api'], ['sate', 'blangkon', 'wayang-kulit']],
+        [['dadar-gulung', 'ketupat', null], ['jamu', 'wayang-kulit', 'topeng']],
+        [[null, null, null]],
+        [['kelapa', 'pisang-goreng', 'ayam-goreng'], ['pisang-goreng', 'topeng', 'durian']],
+        [
+          ['gado-gado', 'kembang-api', 'lompat-tali'],
+          ['kelapa', 'kembang-api', 'tahu-goreng'],
+          ['es-cendol', 'blangkon', 'ketupat'],
+        ],
+      ],
+      stacks: [null],
+    },
+    {
+      shelves: [
         [['lompat-tali', 'yoyo', 'sate'], ['kendang', 'kendang', 'kelapa']],
         [
           ['ayam-goreng', 'rendang', 'sate'],
@@ -208,67 +266,6 @@ export const nusa034: LevelDefinition = {
           ['durian', 'tahu-goreng', 'es-cendol'],
           ['mie-goreng', 'lompat-tali', 'topeng'],
           ['lompat-tali', 'durian', 'batik'],
-        ],
-      ],
-      stacks: [null],
-    },
-    {
-      shelves: [
-        [
-          ['dadar-gulung', 'pisang-goreng', 'lompat-tali'],
-          ['kembang-api', 'tahu-goreng', 'rendang'],
-        ],
-        [
-          ['gado-gado', 'gado-gado', 'dadar-gulung'],
-          ['tahu-goreng', 'jamu', 'batik'],
-          ['bekel', 'es-cendol', 'kelapa'],
-        ],
-        [['ayam-goreng', 'jamu', 'jamu'], ['wayang-kulit', 'dadar-gulung', 'bekel']],
-        [[null, 'kembang-api', 'topeng'], ['kelapa', 'ketupat', null]],
-        [[null, null, null]],
-        [
-          ['kembang-api', 'durian', 'mie-goreng'],
-          ['blangkon', 'kendang', 'blangkon'],
-          ['sate', 'durian', 'mie-goreng'],
-        ],
-        [['pisang-goreng', 'kendang', 'ayam-goreng'], ['ayam-goreng', 'bekel', 'mie-goreng']],
-        [['lompat-tali', 'wayang-kulit', 'batik'], ['yoyo', 'lompat-tali', 'es-cendol']],
-        [['blangkon', 'batik', null], ['gado-gado', 'es-cendol', 'ketupat']],
-        [[null, null, null]],
-        [['yoyo', 'ketupat', 'rendang'], ['tahu-goreng', 'topeng', 'sate']],
-        [
-          ['durian', 'topeng', 'sate'],
-          ['kendang', 'yoyo', 'wayang-kulit'],
-          ['kelapa', 'pisang-goreng', 'rendang'],
-        ],
-      ],
-      stacks: [null],
-    },
-    {
-      shelves: [
-        [['es-cendol', 'batik', 'pisang-goreng'], ['topeng', 'kendang', 'sate']],
-        [
-          ['pisang-goreng', 'kembang-api', 'topeng'],
-          ['rendang', 'sate', 'wayang-kulit'],
-          ['wayang-kulit', 'bekel', 'batik'],
-        ],
-        [['tahu-goreng', 'es-cendol', 'ayam-goreng'], ['kendang', 'bekel', 'blangkon']],
-        [[null, 'jamu', 'dadar-gulung'], ['gado-gado', 'jamu', null]],
-        [[null, null, null]],
-        [
-          ['tahu-goreng', 'lompat-tali', 'tahu-goreng'],
-          ['yoyo', 'kelapa', 'sate'],
-          ['blangkon', 'mie-goreng', 'ketupat'],
-        ],
-        [['ketupat', 'bekel', 'ayam-goreng'], ['mie-goreng', 'mie-goreng', 'kembang-api']],
-        [['jamu', 'gado-gado', 'kelapa'], ['lompat-tali', 'es-cendol', 'kembang-api']],
-        [['lompat-tali', 'dadar-gulung', null], ['durian', 'gado-gado', 'yoyo']],
-        [[null, null, null]],
-        [['durian', 'ketupat', 'durian'], ['yoyo', 'kendang', 'blangkon']],
-        [
-          ['pisang-goreng', 'topeng', 'rendang'],
-          ['dadar-gulung', 'rendang', 'batik'],
-          ['kelapa', 'wayang-kulit', 'ayam-goreng'],
         ],
       ],
       stacks: [null],

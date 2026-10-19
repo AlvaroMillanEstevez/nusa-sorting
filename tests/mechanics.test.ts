@@ -232,6 +232,18 @@ describe('roaming blocker', () => {
     expect(destinations.size).toBeGreaterThan(1);
   });
 
+  it('lets the level be won with the blocker still on the board: the win is when no items are left', () => {
+    // The last triple clears the board; the combo never reaches the blocker's threshold, so it stays.
+    const last = createGame({
+      id: 'blocker-to-the-end',
+      mechanics: [COMBO, { kind: 'roamingBlocker', start: { shelf: 2, slot: 0 }, seed: 3, removeAtCombo: 99 }],
+      shelves: [[['A', 'A', null]], [['A', null, null]], [[null, null, null]]],
+    });
+    const state = apply(last, front(1, 0), front(0, 2)).state;
+    expect(state.status).toBe('won');
+    expect(state.blocker).not.toBeNull();
+  });
+
   it('does not move without a triple', () => {
     const result = apply(createGame(level(1)), front(2, 0), front(3, 1));
     expect(result.state.blocker?.at).toEqual({ shelf: 3, slot: 0 });

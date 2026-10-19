@@ -7,17 +7,17 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 37`, or try another seed with `npm run levelgen -- 37 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 54%, out of space 46%,
- * out of time 1%, space pressure 14%. Expert: wins 87%.
+ * Simulated players, 200 games each. Casual: wins 55%, out of space 45%,
+ * out of time 0%, space pressure 14%. Expert: wins 87%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 36% to 59%, the expert 28% to 89%; pressure 13% to 24%.
- * Stars (formula in src/core/stars.ts): two from 3200 points, three from 4800.
+ * Across them the casual player wins 36% to 58%, the expert 34% to 89%; pressure 12% to 25%.
+ * Stars (formula in src/core/stars.ts): two from 3220 points, three from 4840.
  */
 export const nusa037: LevelDefinition = {
   id: 'nusa-037',
-  timeLimitSeconds: 175,
+  timeLimitSeconds: 180,
   shelves: [
     [['rendang', 'sate', 'rendang'], ['congklak', null, 'karung-rempah'], ['egrang', 'sate', null]],
     [['layangan', null, null], ['dadar-gulung', 'egrang', 'congklak']],
@@ -146,6 +146,43 @@ export const nusa037: LevelDefinition = {
           ['durian', 'durian', 'piala'],
           ['cobek', 'es-cendol'],
           ['peluit', 'durian', 'ayam-goreng'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['layangan', 'tahu-goreng', 'karung-rempah'],
+          ['ayam-goreng', null, 'sate'],
+          ['mie-goreng', 'sate', null],
+        ],
+        [['sepatu', null, null], ['gado-gado', 'piala', 'cobek']],
+        [[null, 'layangan', 'sate'], ['dadar-gulung', 'durian', null], ['lada', 'cobek', 'sepatu']],
+        [[null, null, 'rendang'], ['layangan', 'cobek', 'tahu-goreng']],
+        [[null, null, null]],
+        [
+          ['tahu-goreng', null, 'es-cendol'],
+          ['ayam-goreng', 'karung-rempah', 'karung-rempah'],
+          ['piala', null, 'pisang-goreng'],
+        ],
+        [
+          ['gasing', 'piala', 'congklak'],
+          ['congklak', 'durian', 'dadar-gulung'],
+          ['congklak', 'peluit', 'egrang'],
+        ],
+        [
+          ['peluit', 'lada', 'mie-goreng'],
+          ['rendang', 'es-cendol', 'gado-gado'],
+          ['gasing', 'es-cendol', 'rendang'],
+        ],
+      ],
+      stacks: [
+        [
+          ['dadar-gulung', 'egrang', 'durian'],
+          ['sepatu', 'peluit'],
+          ['pisang-goreng', 'mie-goreng', 'gado-gado'],
+          ['gasing', 'pisang-goreng'],
+          ['ayam-goreng', 'egrang', 'lada'],
         ],
       ],
     },
@@ -306,47 +343,6 @@ export const nusa037: LevelDefinition = {
           ['pisang-goreng', 'dadar-gulung', 'mie-goreng'],
           ['lada', 'congklak'],
           ['sepatu', 'cobek', 'es-cendol'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['egrang', 'gasing', 'dadar-gulung'],
-          ['layangan', null, 'pisang-goreng'],
-          ['cobek', 'rendang', null],
-        ],
-        [['karung-rempah', null, null], ['lada', 'sepatu', 'egrang']],
-        [
-          [null, 'egrang', 'gasing'],
-          ['ayam-goreng', 'dadar-gulung', null],
-          ['piala', 'tahu-goreng', 'durian'],
-        ],
-        [[null, null, 'mie-goreng'], ['pisang-goreng', 'sate', 'layangan']],
-        [[null, null, null]],
-        [
-          ['lada', null, 'ayam-goreng'],
-          ['gado-gado', 'congklak', 'es-cendol'],
-          ['congklak', null, 'layangan'],
-        ],
-        [
-          ['sate', 'es-cendol', 'piala'],
-          ['piala', 'peluit', 'peluit'],
-          ['tahu-goreng', 'durian', 'mie-goreng'],
-        ],
-        [
-          ['peluit', 'cobek', 'pisang-goreng'],
-          ['durian', 'es-cendol', 'rendang'],
-          ['congklak', 'rendang', 'gado-gado'],
-        ],
-      ],
-      stacks: [
-        [
-          ['ayam-goreng', 'gado-gado', 'tahu-goreng'],
-          ['karung-rempah', 'lada'],
-          ['dadar-gulung', 'karung-rempah', 'cobek'],
-          ['sate', 'gasing'],
-          ['sepatu', 'mie-goreng', 'sepatu'],
         ],
       ],
     },

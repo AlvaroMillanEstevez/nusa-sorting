@@ -12,12 +12,12 @@ import type { LevelDefinition } from '../../core';
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 25% to 50%, the expert 5% to 86%; pressure 15% to 42%.
- * Stars (formula in src/core/stars.ts): two from 2650 points, three from 3930.
+ * Across them the casual player wins 25% to 48%, the expert 5% to 86%; pressure 15% to 43%.
+ * Stars (formula in src/core/stars.ts): two from 2630 points, three from 3890.
  */
 export const nusa039: LevelDefinition = {
   id: 'nusa-039',
-  timeLimitSeconds: 130,
+  timeLimitSeconds: 125,
   shelves: [
     [
       ['rambutan', null, 'lada'],
