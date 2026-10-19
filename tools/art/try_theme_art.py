@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Prepares themed art being tried (not yet part of the game) for the development trial ?themeArt: the themed
-level's backgrounds and its map island, from the originals in art-source/pilot. Writes src/dev/themeart/ (not in
+Prepares map islands being tried (not yet part of the game) for the development trial ?themeArt, from the
+originals in art-source/pilot. (Themed backgrounds are part of the game: tools/art/build_game_art.py.) Writes src/dev/themeart/ (not in
 git: generate it before opening ?themeArt).
 
     python3 tools/art/try_theme_art.py
@@ -15,8 +15,6 @@ SRC = ROOT / 'art-source/pilot'
 OUT = ROOT / 'src/dev/themeart'
 TRIALS = {
     'budaya-jawa': {
-        'portrait': 'budaya-jawa-portrait.png',
-        'landscape': 'budaya-jawa-landscape.png',
         'island': 'budaya-jawa-island.png',
     },
 }

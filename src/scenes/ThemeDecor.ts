@@ -4,8 +4,7 @@ import type { ThemeLook } from '../ui/themeLook';
 import { BakedLayer, type BakedPicture } from './art/BakedLayer';
 import { SKIN } from '../ui/design/tokens';
 import { drawStall } from './StallDecor';
-import { backdropKey, backdropShape, loadBackdrop } from './art/backdrops';
-import { themeArtTrial } from './art/themeArtTrial';
+import { backdropKey, backdropShape, hasBackdrop, loadBackdrop } from './art/backdrops';
 
 /** Under everything: the board, the tracks and the HUD are drawn over it. */
 const DEPTH_DECOR = -100;
@@ -32,10 +31,11 @@ export class ThemeDecor {
   draw(look: ThemeLook | null, screen: Rect, layout: BoardLayout, boosters = false, theme: string | null = null): void {
     this.last = [look, screen, layout, boosters, theme];
     const { width, height } = screen;
-    // Development only (?themeArt): a themed level's background being tried, in place of its drawn sky and motif.
-    const trialKey = look && theme ? themeArtTrial()?.backdrop(this.scene.textures, theme, backdropShape(width, height)) ?? null : null;
-    if (trialKey) look = null;
-    const picture = trialKey ? this.cover(trialKey, screen) : look ? null : this.picture(screen);
+    // A themed level with its own picture shows it like the warung street, without its drawn sky and motif.
+    const shape = backdropShape(width, height);
+    const pictureTheme = look && theme && hasBackdrop(shape, theme) ? theme : null;
+    if (pictureTheme) look = null;
+    const picture = look ? null : this.picture(screen, pictureTheme);
     // Drawn in screen coordinates: the layer sits at the screen's corner, and the board is moved to match.
     this.layer.setPosition(screen.x, screen.y);
     const local = (r: Rect): Rect => ({ ...r, x: r.x - screen.x, y: r.y - screen.y });
@@ -68,11 +68,11 @@ export class ThemeDecor {
    * The picture backdrop, centred and scaled to cover the screen (in the layer's coordinates), or null while it is
    * not ready: it is fetched then, and the background drawn again with it once it arrives.
    */
-  private picture(screen: Rect): BakedPicture | null {
+  private picture(screen: Rect, theme: string | null): BakedPicture | null {
     const shape = backdropShape(screen.width, screen.height);
-    const key = backdropKey(shape);
+    const key = backdropKey(shape, theme);
     if (!this.scene.textures.exists(key)) {
-      void loadBackdrop(this.scene.textures, shape).then(() => {
+      void loadBackdrop(this.scene.textures, shape, theme).then(() => {
         if (!this.scene.sys.isActive() || !this.last || !this.scene.textures.exists(key)) return;
         this.draw(...this.last);
       });

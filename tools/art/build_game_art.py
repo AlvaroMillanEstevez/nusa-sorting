@@ -14,7 +14,8 @@ Writes src/assets/art/:
 - cubby.webp: one compartment of the same shelf between two posts, for fixed stacks.
 - beam.webp, boards.webp, crate.webp, wall.webp: wood cut from the same shelf for the rest of the board (rails,
   plates, lock shutters, nailed planks, the roaming crate, conveyor beds).
-- background-portrait.webp, background-landscape.webp: the backgrounds of levels without a theme.
+- background-portrait.webp, background-landscape.webp: the backgrounds of levels without a theme; themes/<theme>-
+  portrait.webp and -landscape.webp for the themes whose pictures are ready (the others keep their drawn ones).
 - art.json: each kind's bounds in its 100-unit box (for the item fit), whether it needs the halo, its main hue
   (for the colour variants), and the shelf's and cubby's measures in slot units.
 """
@@ -298,14 +299,30 @@ def pieces() -> dict:
     return info
 
 
+LONGEST = {'portrait': 1536, 'landscape': 1920}
+
+THEMES = re.findall(r"\{ id: '([a-z0-9-]+)', level: \d+ \}", (ROOT / 'src/data/themes.ts').read_text())
+
+
+def background(source: Path, shape: str, out: Path) -> dict:
+    image = Image.open(source).convert('RGB')
+    scale = min(1, LONGEST[shape] / max(image.size))
+    image = image.resize((round(image.width * scale), round(image.height * scale)), Image.LANCZOS)
+    return {'size': list(image.size), 'bytes': save_webp(image, out)}
+
+
 def backgrounds() -> dict:
-    sizes = {}
-    for name, longest in (('background-portrait', 1536), ('background-landscape', 1920)):
-        image = Image.open(SRC / f'{name}.png').convert('RGB')
-        scale = min(1, longest / max(image.size))
-        image = image.resize((round(image.width * scale), round(image.height * scale)), Image.LANCZOS)
-        sizes[name] = {'size': list(image.size), 'bytes': save_webp(image, OUT / f'{name}.webp')}
-    return sizes
+    """The backgrounds of levels without a theme, and of every theme whose pictures are there (<theme>-portrait.png and
+    <theme>-landscape.png in art-source/pilot): themes without them keep their drawn backdrop."""
+    for old in (OUT / 'themes').glob('*.webp'):
+        old.unlink()
+    sizes = {name: background(SRC / f'{name}.png', name.split('-')[1], OUT / f'{name}.webp') for name in ('background-portrait', 'background-landscape')}
+    themes = {}
+    for theme in THEMES:
+        files = {shape: SRC / f'{theme}-{shape}.png' for shape in LONGEST}
+        if all(f.exists() for f in files.values()):
+            themes[theme] = {shape: background(f, shape, OUT / 'themes' / f'{theme}-{shape}.webp') for shape, f in files.items()}
+    return {**sizes, 'themes': themes}
 
 
 def main() -> None:
@@ -336,7 +353,9 @@ def main() -> None:
     (OUT / 'art.json').write_text(json.dumps(info, indent=1) + '\n')
     halo = [k for k, v in items.items() if v['halo']]
     print(f'{len(items)} items at {args.size} px: {total / 1024:.0f} KB; halo on {len(halo)}: {", ".join(halo)}')
-    print(f'shelf {info["shelf"]["bytes"] / 1024:.0f} KB, cubby {info["cubby"]["bytes"] / 1024:.0f} KB, backgrounds', {k: f'{v["bytes"] / 1024:.0f} KB' for k, v in info['backgrounds'].items()})
+    print(f'shelf {info["shelf"]["bytes"] / 1024:.0f} KB, cubby {info["cubby"]["bytes"] / 1024:.0f} KB, backgrounds', {k: f'{v["bytes"] / 1024:.0f} KB' for k, v in info['backgrounds'].items() if k != 'themes'})
+    for theme, shapes in info['backgrounds']['themes'].items():
+        print(f'theme {theme}:', {k: f'{v["size"][0]}x{v["size"][1]} {v["bytes"] / 1024:.0f} KB' for k, v in shapes.items()})
 
 
 if __name__ == '__main__':

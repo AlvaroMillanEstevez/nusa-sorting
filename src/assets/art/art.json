@@ -962,6 +962,24 @@
     941
    ],
    "bytes": 172656
+  },
+  "themes": {
+   "budaya-jawa": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 174750
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 213128
+    }
+   }
   }
  }
 }
