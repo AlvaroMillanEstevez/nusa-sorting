@@ -10,3 +10,4 @@ export * from './stars';
 export * from './boosters';
 export * from './economy';
 export * from './snapshot';
+export * from './stuck';

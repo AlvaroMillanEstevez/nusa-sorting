@@ -1,3 +1,4 @@
+import { stuckCause } from '../../src/core/stuck';
 import { arrangementCount, bestTripleTarget, canProgress, continueAfterBlocked, continueByShuffling, createGame, removeTriple, shuffleBoard, freeFrontSlots, isShelfLocked, moveItem, pickFromTrack, dropHeld, stackOf, withArrangement, type GameEvent, type GameState, type MoveResult } from '../../src/core';
 import { levels } from '../../src/data/levels';
 import { applyMove, rng, validMoves, type Move } from '../simulator';
@@ -122,13 +123,14 @@ export interface Found {
 }
 
 /** Hunts false stucks; returns them, with how many stuck endings were checked and how many searches gave up. */
-export function hunt(runsPerArrangement = 6, limit = 60_000, only?: string, verbose = false): { found: Found[]; disagree: Found[]; checked: number; gaveUp: number; games: number } {
+export function hunt(runsPerArrangement = 6, limit = 60_000, only?: string, verbose = false): { found: Found[]; disagree: Found[]; checked: number; gaveUp: number; games: number; causes: Record<string, number> } {
   const found: Found[] = [];
   let checked = 0;
   let gaveUp = 0;
   let games = 0;
   let moveCount = 0;
   let compared = 0;
+  const causes: Record<string, number> = {};
   const disagree: Found[] = [];
   const endings: Record<string, number> = {};
   for (const written of levels) {
@@ -186,6 +188,8 @@ export function hunt(runsPerArrangement = 6, limit = 60_000, only?: string, verb
           }
           if (state.status === 'lost' && state.loseReason === 'stuck') {
             checked++;
+            const cause = stuckCause(state).kind;
+            causes[cause] = (causes[cause] ?? 0) + 1;
             const truth = bruteForce(state, limit);
             if (truth === null) gaveUp++;
             if (truth === true) found.push({ level: written.id, arrangement: a, run, state });
@@ -201,7 +205,7 @@ export function hunt(runsPerArrangement = 6, limit = 60_000, only?: string, verb
     console.log(endings, 'moves', moveCount, 'states compared', compared, 'disagreements', disagree.length);
     for (const d of disagree.slice(0, 3)) console.log('DISAGREE', d.level, d.arrangement, d.run, canProgress(d.state), searchProgress(d.state), JSON.stringify(summary(d.state)));
   }
-  return { found, disagree, checked, gaveUp, games };
+  return { found, disagree, checked, gaveUp, games, causes };
 }
 
 /** Why a stuck board is stuck: free slots, and for each kind with copies in view where the missing ones are. */
@@ -232,8 +236,8 @@ function freeOf(s: GameState): number {
 }
 
 export function main(args: readonly string[]): string {
-  const { found, disagree, checked, gaveUp, games } = hunt(Number(args[0] ?? 6), Number(args[1] ?? 60_000), args[2] || undefined, args.includes('--explain'));
-  const lines = [`${games} games, ${checked} stuck endings searched, ${gaveUp} searches gave up, ${found.length} false stucks, ${disagree.length} states where the rules and the search disagree`];
+  const { found, disagree, checked, gaveUp, games, causes } = hunt(Number(args[0] ?? 6), Number(args[1] ?? 60_000), args[2] || undefined, args.includes('--explain'));
+  const lines = [`${games} games, ${checked} stuck endings searched, ${gaveUp} searches gave up, ${found.length} false stucks, ${disagree.length} states where the rules and the search disagree`, `stuck causes: ${JSON.stringify(causes)}`];
   for (const f of found.slice(0, 5)) lines.push(`${f.level} arrangement ${f.arrangement} run ${f.run}: ${JSON.stringify(summary(f.state))}`);
   return lines.join('\n');
 }

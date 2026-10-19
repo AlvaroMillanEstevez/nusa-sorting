@@ -10,6 +10,7 @@ import {
   isSpecialLevel,
   isSlotBlocked,
   itemAt,
+  stuckCause,
   moveItem,
   addTime,
   boosterPrice,
@@ -56,6 +57,7 @@ import {
   slotAspect,
   slotRect,
   type BoardLayout,
+  type Rect,
 } from '../ui/boardLayout';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
 import { DURATION, hexNumber, SKIN } from '../ui/design/tokens';
@@ -406,9 +408,21 @@ export class GameScene extends Phaser.Scene {
     } else if (show === 'continue' || show === 'stuck') {
       const loseReason = show === 'stuck' ? 'stuck' : this.state.timeLeftMs === null ? 'blocked' : 'timeUp';
       this.state = { ...this.state, status: 'lost', loseReason };
-      this.offerContinue(() =>
-        this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason]), hint: t('result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() }),
-      );
+      const offer = () =>
+        this.offerContinue(() =>
+          this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason]), hint: t(loseReason === 'stuck' ? this.stuckMessage() : 'result.lost.hint'), retry: () => this.transitionTo(this.levelIndex), home: () => this.goHome() }),
+        );
+      if (show === 'continue') {
+        offer();
+        return;
+      }
+      // Stuck: first the warning on the board, pointing at the cause (the board is not really stuck, so the cause
+      // is what stuckCause makes of it: on a level with the blocker, its shelf), then the panel.
+      this.time.delayedCall(2500, () => {
+        this.sfx.play('blocked');
+        this.effects.blockedWarning(this.stuckRects(), BLOCKED_WARNING_MS, t(LOSE_TITLES.stuck), this.layout.shelves.map((shelf) => shelf.rect));
+      });
+      this.time.delayedCall(2500 + BLOCKED_WARNING_MS, offer);
     } else if (show === 'pause' || show === 'confirm') {
       this.state = startClock(this.state);
       this.openPause();
@@ -925,7 +939,7 @@ export class GameScene extends Phaser.Scene {
     }
     showContinue(this, {
       title: t(LOSE_TITLES[reason]),
-      body: t(reason === 'timeUp' ? 'continue.time.body' : reason === 'blocked' ? 'continue.space.body' : 'continue.stuck.body'),
+      body: reason === 'stuck' ? `${t(this.stuckMessage())}\n${t('continue.stuck.body')}` : t(reason === 'timeUp' ? 'continue.time.body' : 'continue.space.body'),
       coins: wallet.coins,
       choices,
       onGiveUp: showLost,
@@ -1062,10 +1076,34 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.sfx.play('lose');
         this.offerContinue(() =>
-          this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t('result.lost.hint'), retry, home: () => this.goHome() }),
+          this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t(loseReason === 'stuck' ? this.stuckMessage() : 'result.lost.hint'), retry, home: () => this.goHome() }),
         );
       }
     });
+  }
+
+  /** Why the board is stuck, as the player is told (see stuckCause). */
+  private stuckMessage(): MessageKey {
+    const cause = stuckCause(this.state);
+    if (cause.kind === 'blocker') return cause.behind ? 'stuck.cause.blocker' : 'stuck.cause.blockerInWay';
+    return `stuck.cause.${cause.kind}`;
+  }
+
+  /** What a stuck board points at: the shelves or tracks that cause it (every shelf when nothing in particular). */
+  private stuckRects(): Rect[] {
+    const cause = stuckCause(this.state);
+    const shelf = (s: number) => this.layout.shelves[s]!.rect;
+    switch (cause.kind) {
+      case 'blocker':
+        return [shelf(cause.shelf)];
+      case 'locked':
+      case 'space':
+        return cause.shelves.map(shelf);
+      case 'buried':
+        return cause.tracks.map((t) => this.layout.tracks[t]!.rect);
+      case 'none':
+        return this.layout.shelves.map((s) => s.rect);
+    }
   }
 
   /** The level's whole time, in ms (0 for an untimed level). */
@@ -1504,12 +1542,13 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(CLEAR_DELAY_MS + CLEAR_MS, () => this.effects.celebrate(width, height));
       this.endLevel(RESULT_DELAY_MS);
     } else if (this.state.status === 'lost') {
-      // No space left, or no move that can lead anywhere: the shelves flash red and the board shakes before the
-      // panel says so, with the reason.
+      // No space left, or no move that can lead anywhere: the shelves flash red (only those that cause it when the
+      // board is stuck) and the board shakes before the panel says so, with the reason.
       const reason = t(LOSE_TITLES[this.state.loseReason ?? 'blocked']);
+      const flashed = this.state.loseReason === 'stuck' ? this.stuckRects() : this.layout.shelves.map((shelf) => shelf.rect);
       this.time.delayedCall(SNAP_MS, () => {
         this.sfx.play('blocked');
-        this.effects.blockedWarning(this.layout.shelves.map((shelf) => shelf.rect), BLOCKED_WARNING_MS, reason);
+        this.effects.blockedWarning(flashed, BLOCKED_WARNING_MS, reason, this.layout.shelves.map((shelf) => shelf.rect));
       });
       this.endLevel(SNAP_MS + BLOCKED_WARNING_MS);
     } else {

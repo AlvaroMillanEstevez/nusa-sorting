@@ -12,6 +12,7 @@ import {
   moveItem,
   pickFromTrack,
   stackOf,
+  stuckCause,
   type GameEvent,
   type GameState,
   type LevelDefinition,
@@ -264,6 +265,44 @@ describe('stuck boards', () => {
     const random = rng(12);
     const outcomes = Array.from({ length: 60 }, () => playGreedy(createGame(level), random, CASUAL));
     expect(outcomes.some((o) => o.loseReason === 'stuck')).toBe(true);
+  });
+
+  it('says why a board is stuck, in the terms the player sees, and what to point at', () => {
+    const stuck = (level: LevelDefinition) => {
+      const state = createGame(level);
+      expect(isBlocked(state), level.id).toBe(false);
+      expect(canProgress(state), level.id).toBe(false);
+      return stuckCause(state);
+    };
+    // Room everywhere, but every kind's third copy waits behind the crate (Koke's level 49): the last item beside
+    // it is moved away, and the layers behind wait for good.
+    const crate = createGame({
+      id: 'behind-crate',
+      shelves: [[['x', null, null], ['k', 'g', 'p'], ['x', 'x', null]], [['k', 'k', null]], [['g', 'g', null]], [['p', 'p', null]]],
+      mechanics: [{ kind: 'roamingBlocker', start: { shelf: 0, slot: 1 }, seed: 1, removeAtCombo: 9 }],
+    });
+    const moved = moveItem(crate, { shelf: 0, layer: 0, slot: 0 }, { shelf: 1, layer: 0, slot: 2 });
+    expect(moved.ok && moved.state.loseReason).toBe('stuck');
+    expect(moved.ok && stuckCause(moved.state)).toEqual({ kind: 'blocker', shelf: 0, behind: true });
+    // The third copies are on a shelf that opens after one more triple, and none can be made.
+    expect(
+      stuck({
+        id: 'locked',
+        shelves: [[['a', 'a', null]], [['a', 'b', 'b']], [['b', null, null]]],
+        mechanics: [{ kind: 'lockedShelves', shelves: [{ shelf: 1, triplesRequired: 1 }] }],
+      }),
+    ).toEqual({ kind: 'locked', shelves: [1] });
+    // The copies needed are in a stack, deeper than two free slots can dig.
+    expect(
+      stuck({
+        id: 'buried',
+        shelves: [[['a', 'a', null]], [['b', 'b', null]]],
+        mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'horizontal', speed: 1, carriers: [['c', 'c', 'b', 'c', 'a']] }] }],
+      }),
+    ).toEqual({ kind: 'buried', tracks: [0] });
+    // Level 12 as Koke left it: layers behind and only two free slots (the blocker holds no layer there).
+    const level12 = stuckCause(createGame(level12Stuck));
+    expect(level12.kind).toBe('space');
   });
 
   it('in simulated games on every level and arrangement, never ends a board as stuck that has a way on', () => {

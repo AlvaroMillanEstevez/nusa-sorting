@@ -180,13 +180,13 @@ export class Effects {
    * No space left: every shelf pulses with a red frame and the board gives a dull shake, so it is clear the
    * shelves are full before the panel says so. Lasts `duration` ms.
    */
-  blockedWarning(shelves: readonly Rect[], duration: number, message: string): void {
+  blockedWarning(shelves: readonly Rect[], duration: number, message: string, board: readonly Rect[] = shelves): void {
     const g = this.scene.add.graphics().setDepth(this.depth);
-    // The reason, big over the middle of the board.
-    const x0 = Math.min(...shelves.map((r) => r.x));
-    const x1 = Math.max(...shelves.map((r) => r.x + r.width));
-    const y0 = Math.min(...shelves.map((r) => r.y));
-    const y1 = Math.max(...shelves.map((r) => r.y + r.height));
+    // The reason, big over the middle of the board (`board`), whichever shelves are framed.
+    const x0 = Math.min(...board.map((r) => r.x));
+    const x1 = Math.max(...board.map((r) => r.x + r.width));
+    const y0 = Math.min(...board.map((r) => r.y));
+    const y1 = Math.max(...board.map((r) => r.y + r.height));
     const label = kitText(this.scene, 'title', message, SKIN.text.primary, 30)
       .setStroke(SKIN.fills.danger.lip, 8)
       .setPosition((x0 + x1) / 2, (y0 + y1) / 2)
