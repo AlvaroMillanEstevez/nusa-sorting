@@ -3,6 +3,7 @@ import { isBlocked } from './game';
 import {
   COMBO_DEFAULTS,
   CONVEYOR_LIMITS,
+  FRESH_LIMITS,
   ROAMING_BLOCKER_DEFAULTS,
   type MechanicDefinition,
   type TrackDefinition,
@@ -11,6 +12,7 @@ import {
   SLOTS_PER_LAYER,
   type BlockerState,
   type ComboState,
+  type FreshState,
   type GameState,
   type Item,
   type ItemType,
@@ -149,7 +151,7 @@ export function createGame(level: LevelDefinition): GameState {
   return state;
 }
 
-type MechanicState = Pick<GameState, 'unlockAt' | 'combo' | 'blocker' | 'tracks' | 'closesWhenEmpty'>;
+type MechanicState = Pick<GameState, 'unlockAt' | 'combo' | 'blocker' | 'tracks' | 'closesWhenEmpty' | 'fresh'>;
 
 /** Tracks as declared: the legacy single 'conveyor' becomes one horizontal track of one-item stacks. */
 function trackDefinitions(level: LevelDefinition): readonly TrackDefinition[] {
@@ -188,6 +190,7 @@ function parseMechanics(
   let blocker: BlockerState | null = null;
   const tracks: TrackState[] = [];
   const closesWhenEmpty: boolean[] = shelves.map(() => false);
+  const fresh: FreshState[] = [];
   const checkSpeed = (speed: number, what: string, fixedAllowed = false) => {
     if (!Number.isFinite(speed) || (speed === 0 && !fixedAllowed) || Math.abs(speed) > CONVEYOR_LIMITS.maxSpeed) {
       fail(`${what} speed must be ${fixedAllowed ? 'at most' : 'non-zero and at most'} ${CONVEYOR_LIMITS.maxSpeed} slots per second`);
@@ -281,6 +284,19 @@ function parseMechanics(
         if (!useful) fail('tracks need at least one item');
         break;
       }
+      case 'fresh': {
+        if (mechanic.foods.length === 0) fail('fresh needs at least one food');
+        const present = new Set<string>();
+        shelves.forEach((shelf) => shelf.layers.forEach((layer) => layer.forEach((item) => item && present.add(item.type))));
+        trackItems.forEach((track) => track.forEach((carrier) => Array.isArray(carrier) && carrier.forEach((item) => present.add(item.type))));
+        for (const { type, moves } of mechanic.foods) {
+          if (!present.has(type)) fail(`fresh food "${type}" is not in the level`);
+          if (fresh.some((f) => f.type === type)) fail(`fresh food "${type}" is listed twice`);
+          if (!Number.isInteger(moves) || moves < FRESH_LIMITS.minMoves || moves > FRESH_LIMITS.maxMoves) fail(`fresh food "${type}" needs ${FRESH_LIMITS.minMoves}-${FRESH_LIMITS.maxMoves} moves`);
+          fresh.push({ type, movesLeft: moves, spoiled: false });
+        }
+        break;
+      }
       case 'closingShelves': {
         if (mechanic.shelves.length === 0) fail('closingShelves needs at least one shelf');
         for (const shelf of mechanic.shelves) {
@@ -301,7 +317,7 @@ function parseMechanics(
 
   if (blocker && unlockAt[blocker.at.shelf] !== null) fail('blocker cannot start on a locked shelf');
   if (unlockAt.every((value) => value !== null)) fail('at least one shelf must start unlocked');
-  return { unlockAt, combo, blocker, tracks, closesWhenEmpty };
+  return { unlockAt, combo, blocker, tracks, closesWhenEmpty, fresh };
 }
 
 function newCombo(windowSeconds: number, pointsPerTriple: number, multipliers: readonly number[]): ComboState {

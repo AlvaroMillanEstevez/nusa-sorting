@@ -102,6 +102,18 @@ export interface HeldTrackItem {
   readonly from: CarrierRef;
 }
 
+/**
+ * A food type on a countdown (the 'fresh' mechanic, "basi" when it spoils): every player move takes one off, and
+ * at 0 every item of the type, wherever it is, spoils. Its triples still clear, but score nothing and break the
+ * combo; cleared while fresh they score a small bonus.
+ */
+export interface FreshState {
+  readonly type: ItemType;
+  /** Player moves left before it spoils; it stops counting once the type is gone from the board. */
+  readonly movesLeft: number;
+  readonly spoiled: boolean;
+}
+
 export interface GameState {
   readonly shelves: readonly Shelf[];
   readonly status: GameStatus;
@@ -136,6 +148,8 @@ export interface GameState {
   readonly closesWhenEmpty: readonly boolean[];
   /** Per shelf: true once it has closed. A closed shelf is empty and takes nothing any more. */
   readonly closed: readonly boolean[];
+  /** Food types on a countdown (see FreshState); empty without the 'fresh' mechanic. */
+  readonly fresh: readonly FreshState[];
 }
 
 export interface Position {
@@ -174,7 +188,11 @@ export type GameEvent =
       readonly itemIds: readonly number[];
       /** Taken away by the "remove a triple" booster: it counts as a triple but scores nothing. */
       readonly byBooster?: true;
+      /** Its type was on a countdown: still fresh (bonus points) or spoiled (no points, combo broken). */
+      readonly freshness?: 'fresh' | 'spoiled';
     }
+  /** A fresh food type ran out of moves: every item of it is spoiled now. */
+  | { readonly kind: 'spoiled'; readonly itemType: ItemType }
   | { readonly kind: 'layerAdvanced'; readonly shelf: number; readonly remainingLayers: number }
   | { readonly kind: 'won' }
   | { readonly kind: 'clockFrozen'; readonly ms: number }

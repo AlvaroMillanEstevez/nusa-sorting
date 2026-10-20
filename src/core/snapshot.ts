@@ -1,7 +1,7 @@
 import { BOOSTER_IDS, type BoosterId } from '../data/economy';
 import { returnHeld, stackOf } from './game';
 import { createGame, type LevelDefinition } from './level';
-import { SLOTS_PER_LAYER, type BlockerState, type Carrier, type ComboState, type GameState, type Item, type Layer, type Shelf, type TrackState } from './types';
+import { SLOTS_PER_LAYER, type BlockerState, type Carrier, type ComboState, type FreshState, type GameState, type Item, type Layer, type Shelf, type TrackState } from './types';
 
 /**
  * A level in progress, saved so the game can pick it up where it was after the page is reloaded or the browser
@@ -10,9 +10,9 @@ import { SLOTS_PER_LAYER, type BlockerState, type Carrier, type ComboState, type
  */
 
 /**
- * Bumped whenever GameState or the snapshot changes shape: older snapshots are then dropped. 2: closed shelves.
+ * Bumped whenever GameState or the snapshot changes shape: older snapshots are then dropped. 2: closed shelves. 3: fresh foods' countdowns.
  */
-export const SNAPSHOT_FORMAT = 2;
+export const SNAPSHOT_FORMAT = 3;
 
 export interface GameSnapshot {
   readonly format: number;
@@ -180,6 +180,17 @@ function restoreState(raw: unknown, initial: GameState): GameState | null {
     if (value && (!initial.closesWhenEmpty[s] || shelves[s]!.layers.length > 1 || shelves[s]!.layers[0]!.some((slot) => slot !== null))) return null;
     closed.push(value);
   }
+  // Fresh foods: the level's, in its order, each with no more moves left than it started with.
+  if (!Array.isArray(raw.fresh) || raw.fresh.length !== initial.fresh.length) return null;
+  const fresh: FreshState[] = [];
+  for (let f = 0; f < initial.fresh.length; f++) {
+    const value = raw.fresh[f] as unknown;
+    const start = initial.fresh[f]!;
+    if (!isRecord(value) || value.type !== start.type || typeof value.spoiled !== 'boolean') return null;
+    const movesLeft = count(value.movesLeft);
+    if (movesLeft === null || movesLeft > start.movesLeft || (value.spoiled && movesLeft !== 0)) return null;
+    fresh.push({ type: start.type, movesLeft, spoiled: value.spoiled });
+  }
 
   return {
     ...initial,
@@ -193,6 +204,7 @@ function restoreState(raw: unknown, initial: GameState): GameState | null {
     blocker,
     clockStarted: raw.clockStarted,
     closed,
+    fresh,
   };
 }
 

@@ -1,10 +1,11 @@
-import { TIME_BONUS_PER_SECOND } from './mechanics';
+import { FRESH_BONUS_SHARE, TIME_BONUS_PER_SECOND } from './mechanics';
 import { nextRandom } from './random';
 import type {
   BlockerState,
   Carrier,
   CarrierRef,
   ComboState,
+  FreshState,
   GameEvent,
   GameState,
   InvalidMoveReason,
@@ -316,7 +317,7 @@ export function moveItem(state: GameState, from: Position, to: Position): MoveRe
   // Destination first: that is where a triple can form.
   shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, blockedSlotOf(state, to.shelf), events);
   shelves[from.shelf] = settleShelf(shelves[from.shelf]!, from.shelf, blockedSlotOf(state, from.shelf), events);
-  return { ok: true, ...finishMove({ ...state, shelves }, events) };
+  return { ok: true, ...finishMove({ ...state, shelves }, events, true) };
 }
 
 /** Why an item cannot be placed in the (valid, front, unlocked) slot `to`, or null if it can. */
@@ -329,11 +330,14 @@ function checkTargetSlot(state: GameState, to: Position): InvalidMoveReason | nu
 }
 
 /**
- * Triples' consequences, then shelves that close once emptied, then the win, blocked or stuck check, shared by
- * every action that places or removes items.
+ * Triples' consequences, then (after a player's move: `playerMove`) the fresh foods' countdown, then shelves that
+ * close once emptied, then the win, blocked or stuck check, shared by every action that places or removes items.
+ * Boosters do not count as moves.
  */
-export function finishMove(state: GameState, events: GameEvent[]): { state: GameState; events: GameEvent[] } {
-  let next = closeEmptied(applyTriples(state, events), events);
+export function finishMove(state: GameState, events: GameEvent[], playerMove = false): { state: GameState; events: GameEvent[] } {
+  let next = applyTriples(state, events);
+  if (playerMove) next = countDownFresh(next, events);
+  next = closeEmptied(next, events);
   if (isWon(next)) {
     next = addTimeBonus({ ...next, status: 'won' }, events);
     events.push({ kind: 'won' });
@@ -361,6 +365,35 @@ function closeEmptied(state: GameState, events: GameEvent[]): GameState {
     events.push({ kind: 'shelfClosed', shelf: s });
   });
   return closed ? { ...state, closed } : state;
+}
+
+/** The countdown state of a fresh food type, or undefined for a type without one. */
+export function freshOf(state: GameState, type: string): FreshState | undefined {
+  return state.fresh.find((f) => f.type === type);
+}
+
+/** Whether any item of a type is still on the board, in a stack or in the player's hand. */
+function typeLeft(state: GameState, type: string): boolean {
+  if (state.held?.item.type === type) return true;
+  for (const shelf of state.shelves) for (const layer of shelf.layers) for (const item of layer) if (item?.type === type) return true;
+  for (const track of state.tracks) for (const carrier of track.carriers) if (stackOf(carrier).some((item) => item.type === type)) return true;
+  return false;
+}
+
+/**
+ * One player move off every fresh food still on the board; at 0 it spoils, every item of it at once. Types already
+ * cleared stop counting. Triples are applied first, so a triple made on the very last move is still fresh.
+ */
+function countDownFresh(state: GameState, events: GameEvent[]): GameState {
+  if (state.fresh.length === 0) return state;
+  const fresh = state.fresh.map((f) => {
+    if (f.spoiled || f.movesLeft === 0 || !typeLeft(state, f.type)) return f;
+    const movesLeft = f.movesLeft - 1;
+    if (movesLeft > 0) return { ...f, movesLeft };
+    events.push({ kind: 'spoiled', itemType: f.type });
+    return { ...f, movesLeft, spoiled: true };
+  });
+  return { ...state, fresh };
 }
 
 /** On a win with time left: TIME_BONUS_PER_SECOND points for each whole second, added to the score. */
@@ -427,7 +460,7 @@ export function dropHeld(state: GameState, to: Position): MoveResult {
   shelves[to.shelf] = setFrontSlot(shelves[to.shelf]!, to.slot, held.item);
   const events: GameEvent[] = [{ kind: 'beltItemPlaced', itemId: held.item.id, from: held.from, to }];
   shelves[to.shelf] = settleShelf(shelves[to.shelf]!, to.shelf, blockedSlotOf(state, to.shelf), events);
-  return { ok: true, ...finishMove({ ...state, shelves, held: null }, events) };
+  return { ok: true, ...finishMove({ ...state, shelves, held: null }, events, true) };
 }
 
 function setStack(state: GameState, ref: CarrierRef, stack: readonly Item[]): GameState {
@@ -487,6 +520,12 @@ export function settleShelf(shelf: Shelf, index: number, blockedSlot: number | n
 function applyTriples(state: GameState, events: GameEvent[]): GameState {
   let next = state;
   for (let seen = 0; ; ) {
+    // Triples of fresh foods say so on their event (for the scene and the simulators).
+    for (let i = seen; i < events.length; i++) {
+      const event = events[i]!;
+      const fresh = event.kind === 'tripleCleared' && !event.freshness ? freshOf(next, event.itemType) : undefined;
+      if (fresh && event.kind === 'tripleCleared') events[i] = { ...event, freshness: fresh.spoiled ? 'spoiled' : 'fresh' };
+    }
     const triples = events.slice(seen).filter((e) => e.kind === 'tripleCleared');
     if (triples.length === 0) return next;
 
@@ -494,10 +533,18 @@ function applyTriples(state: GameState, events: GameEvent[]): GameState {
     const removedFrom = blocker?.at.shelf ?? null;
     for (const triple of triples) {
       triplesCleared++;
-      // A triple a booster took away counts (for locks and the blocker) but scores nothing.
-      if (combo && !(triple.kind === 'tripleCleared' && triple.byBooster)) {
+      const freshness = triple.kind === 'tripleCleared' ? freshOf(next, triple.itemType) : undefined;
+      // A spoiled triple is thrown away: no points, and the combo breaks (a booster's removal leaves it alone).
+      if (freshness?.spoiled && !(triple.kind === 'tripleCleared' && triple.byBooster)) {
+        if (combo.combo > 0 || combo.windowLeftMs > 0) {
+          combo = { ...combo, combo: 0, windowLeftMs: 0 };
+          events.push({ kind: 'comboChanged', combo: 0, windowMs: 0 });
+        }
+      } else if (combo && !(triple.kind === 'tripleCleared' && triple.byBooster)) {
+        // A triple a booster took away counts (for locks and the blocker) but scores nothing.
         combo = extendCombo(combo);
-        const delta = Math.round(combo.pointsPerTriple * multiplierFor(combo));
+        const bonus = freshness ? Math.round(combo.pointsPerTriple * FRESH_BONUS_SHARE) : 0;
+        const delta = Math.round(combo.pointsPerTriple * multiplierFor(combo)) + bonus;
         combo = { ...combo, score: combo.score + delta };
         events.push({ kind: 'comboChanged', combo: combo.combo, windowMs: combo.windowMs });
         events.push({ kind: 'scoreChanged', score: combo.score, delta, shelf: triple.shelf });

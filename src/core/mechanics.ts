@@ -10,7 +10,8 @@ export type MechanicDefinition =
   | RoamingBlockerMechanic
   | ConveyorMechanic
   | TracksMechanic
-  | ClosingShelvesMechanic;
+  | ClosingShelvesMechanic
+  | FreshMechanic;
 
 /**
  * Tunes the combo, which every level has: each triple scores, and triples cleared within the window of the
@@ -88,6 +89,23 @@ export interface ClosingShelvesMechanic {
   readonly kind: 'closingShelves';
   readonly shelves: readonly number[];
 }
+
+/**
+ * Food types on a countdown in player moves ("basi"): see FreshState. Only food (the level data checks it); each
+ * type at most once.
+ */
+export interface FreshMechanic {
+  readonly kind: 'fresh';
+  readonly foods: readonly { readonly type: string; readonly moves: number }[];
+}
+
+export const FRESH_LIMITS = { minMoves: 3, maxMoves: 99 } as const;
+
+/**
+ * A triple of a fresh type cleared before it spoils adds this share of the points per triple on top of its usual
+ * points (50 with the default 100): enough to be worth chasing, not enough to decide the stars alone.
+ */
+export const FRESH_BONUS_SHARE = 0.5;
 
 export const CONVEYOR_LIMITS = {
   maxSlots: 12,
