@@ -16,6 +16,8 @@ Writes src/assets/art/:
   plates, lock shutters, nailed planks, the roaming crate, conveyor beds).
 - background-portrait.webp, background-landscape.webp: the backgrounds of levels without a theme; themes/<theme>-
   portrait.webp and -landscape.webp for the themes whose pictures are ready (the others keep their drawn ones).
+- islands/<name>.webp: the map's islands (island-<theme or levels-NN-NN>.png), with where each jetty ends.
+- loading.webp: the warung at sunset, small, shown by the page (index.html) while the game loads.
 - art.json: each kind's bounds in its 100-unit box (for the item fit), whether it needs the halo, its main hue
   (for the colour variants), and the shelf's and cubby's measures in slot units.
 """
@@ -325,6 +327,46 @@ def backgrounds() -> dict:
     return {**sizes, 'themes': themes}
 
 
+# The map's islands: themed ones are square, the plain ones (four levels each) upright. Sized for a phone at
+# density 3, where they show largest in device pixels (a themed island about 190 CSS px, a plain one 235 x 350).
+ISLAND_SIZE = {'themed': 576, 'plain': (640, 960)}
+ISLAND_WEBP = dict(quality=70, method=6)
+
+
+def islands() -> dict:
+    """
+    Each island-<name>.png as islands/<name>.webp, and where its jetty ends (the opaque point furthest right in
+    its top third, as a share of the picture), so the rope to the next island can start there.
+    """
+    for old in (OUT / 'islands').glob('*.webp'):
+        old.unlink()
+    info = {}
+    for source in sorted(SRC.glob('island-*.png')):
+        name = source.stem[len('island-') :]
+        image = Image.open(source).convert('RGBA')
+        size = (ISLAND_SIZE['themed'],) * 2 if image.width == image.height else ISLAND_SIZE['plain']
+        image = image.resize(size, Image.LANCZOS)
+        alpha = np.array(image)[..., 3] > 128
+        top = alpha[: size[1] // 3]
+        cols = np.nonzero(top.any(axis=0))[0]
+        x = int(cols.max())
+        y = int(np.nonzero(top[:, x])[0].mean())
+        path = OUT / 'islands' / f'{name}.webp'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        image.save(path, 'WEBP', **ISLAND_WEBP)
+        info[name] = {'size': list(size), 'dock': [round(x / size[0], 3), round(y / size[1], 3)], 'bytes': path.stat().st_size}
+    return info
+
+
+def loading() -> dict:
+    """The warung at sunset, small, for the page while the game itself loads (index.html)."""
+    image = Image.open(SRC / 'warung-sunset.png').convert('RGB')
+    image = image.resize((480, round(480 * image.height / image.width)), Image.LANCZOS)
+    path = OUT / 'loading.webp'
+    image.save(path, 'WEBP', quality=70, method=6)
+    return {'size': list(image.size), 'bytes': path.stat().st_size}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--size', type=int, default=192, help='side of the item pictures, in px')
@@ -349,11 +391,12 @@ def main() -> None:
         size = save_webp(square.resize((args.size, args.size), Image.LANCZOS), OUT / 'items' / f'{kind}.webp')
         total += size
         items[kind] = {'bounds': bounds, 'halo': bool(edge_lightness(square) < HALO_BELOW), **main_hue(square)}
-    info = {'itemSize': args.size, 'items': items, 'shelf': shelf(), 'cubby': cubby(), 'pieces': pieces(), 'backgrounds': backgrounds()}
+    info = {'itemSize': args.size, 'items': items, 'shelf': shelf(), 'cubby': cubby(), 'pieces': pieces(), 'backgrounds': backgrounds(), 'islands': islands(), 'loading': loading()}
     (OUT / 'art.json').write_text(json.dumps(info, indent=1) + '\n')
     halo = [k for k, v in items.items() if v['halo']]
     print(f'{len(items)} items at {args.size} px: {total / 1024:.0f} KB; halo on {len(halo)}: {", ".join(halo)}')
     print(f'shelf {info["shelf"]["bytes"] / 1024:.0f} KB, cubby {info["cubby"]["bytes"] / 1024:.0f} KB, backgrounds', {k: f'{v["bytes"] / 1024:.0f} KB' for k, v in info['backgrounds'].items() if k != 'themes'})
+    print(f'islands: {len(info["islands"])}, {sum(v["bytes"] for v in info["islands"].values()) / 1024:.0f} KB; loading screen {info["loading"]["bytes"] / 1024:.0f} KB')
     for theme, shapes in info['backgrounds']['themes'].items():
         print(f'theme {theme}:', {k: f'{v["size"][0]}x{v["size"][1]} {v["bytes"] / 1024:.0f} KB' for k, v in shapes.items()})
 

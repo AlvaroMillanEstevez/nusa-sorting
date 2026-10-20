@@ -29,6 +29,17 @@
         width: 100%;
         height: 100%;
       }
+      /* The warung at sunset while the game loads (the bundle, then its first resources); the game removes it. */
+      #loading {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 1;
+        pointer-events: none;
+        transition: opacity 0.22s ease-out;
+      }
       canvas {
         display: block;
         touch-action: none;
@@ -40,6 +51,7 @@
     </style>
   </head>
   <body>
+    <img id="loading" src="/src/assets/art/loading.webp" alt="" />
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

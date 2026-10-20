@@ -6,11 +6,13 @@ import type { UiIconName } from '../ui/design/uiIcons';
 import { prepareAheadInBackground, settle } from './itemTextures';
 import { prepareBoosterTextures } from './boosterTextures';
 import { prepareBoard } from './art/prepareBoard';
+import { prefetchIslandsAround } from './art/islandArt';
 import { loadUiFonts, prepareUiIcon } from './kit';
 import { prepareTutorialTextures } from './TutorialHint';
 import { parseLevelParam } from '../dev/levelParam';
 import { parseArrivalParam, wantsHome } from '../dev/uiParams';
 import type { ProgressStore } from '../services/ProgressStore';
+import { hideLoadingScreen } from '../ui/loadingScreen';
 import { startScreen } from '../ui/startScreen';
 import type { GameData } from './GameScene';
 import type { HomeData } from './HomeScene';
@@ -83,6 +85,8 @@ export class BootScene extends Phaser.Scene {
       this.store.clearSnapshot();
     }
     const start = startScreen(this.store.progress.completed.length, dev);
+    // Opening on the map: the islands around the player's level start downloading now.
+    if (start.scene !== 'Game') prefetchIslandsAround(this.textures, playList.map((entry) => entry.level), playList.map((entry) => entry.number), this.store.firstIncomplete(playList.map((entry) => entry.level.id)) ?? playList.length - 1);
     if (start.scene === 'Game') {
       this.openLevel(start.levelIndex, { levelIndex: start.levelIndex });
       return;
@@ -92,6 +96,7 @@ export class BootScene extends Phaser.Scene {
     const arrived = import.meta.env.DEV ? parseArrivalParam(search, playList.length) : null;
     const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
     performance.mark('nusa:playable');
+    hideLoadingScreen();
     this.scene.start('Home', data);
   }
 
@@ -101,6 +106,7 @@ export class BootScene extends Phaser.Scene {
       .then(settle)
       .then(() => {
         performance.mark('nusa:playable');
+        hideLoadingScreen();
         this.scene.start('Game', data);
         void prepareAheadInBackground(this, levelIndex + 1, this.store.colorBlindMode);
       });

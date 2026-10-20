@@ -4,7 +4,7 @@ import { MAP } from '../../ui/art/map';
 import { WOOD } from '../../ui/art/wood';
 import { DURATION, EASE, hexNumber, SKIN } from '../../ui/design/tokens';
 import type { MapIsland, MapLayout, MapNode } from '../../ui/mapLayout';
-import { themeArtTrial } from '../art/themeArtTrial';
+import { islandInfo, islandKey, islandName, loadIsland } from '../art/islandArt';
 import { themeLook } from '../../ui/themeLook';
 import { KitStars, kitText, reducedMotion, uiIcon } from '../kit';
 
@@ -34,15 +34,31 @@ function blob(cx: number, cy: number, rx: number, ry: number, seed: number, wobb
   });
 }
 
+/** Where an island's picture goes, flipped or not, and where its jetty ends (container coordinates). */
+interface IslandPicture {
+  readonly name: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly flip: boolean;
+  readonly dock: { readonly x: number; readonly y: number };
+}
+
 /**
- * The level map drawn in the warung style: a sea with waves, sandy islands with green hearts and palms, docks
- * and ropes between them, a few boats, signs on the themed islands, and a wooden plaque for each level. Levels
- * beyond the revealed ones are not drawn: clouds cover the sea above them. Everything lives in one container
- * that the home scene scrolls.
+ * The level map: a sea with waves, the illustrated islands (each downloaded when the map scrolls near it; islands
+ * without a picture are drawn: sand, grass, palms and a jetty), ropes from each jetty to the next island, signs on
+ * the themed islands, and a wooden plaque for each level. Levels beyond the revealed ones are not drawn: clouds
+ * cover the sea above them. Everything lives in one container that the home scene scrolls.
  */
 export class MapView {
   readonly container: Phaser.GameObjects.Container;
   private readonly nodeViews = new Map<number, Phaser.GameObjects.Container>();
+  /** The islands' pictures, by island index, and their images once loaded. */
+  private readonly pictures = new Map<number, IslandPicture>();
+  private readonly shown = new Map<number, Phaser.GameObjects.Image>();
+  /** Above the sea and halos, under the path, signs and plaques. */
+  private islandLayer!: Phaser.GameObjects.Container;
   private marker: Phaser.GameObjects.Container | null = null;
 
   constructor(
@@ -101,22 +117,20 @@ export class MapView {
 
     const ground = this.scene.add.graphics();
     this.container.add(ground);
-    for (const island of islands) this.drawIsland(ground, island);
-    // Development only (?themeArt): a themed island's picture being tried, over its drawn shape.
-    const trial = themeArtTrial();
-    if (trial) {
-      for (const island of islands) {
-        const key = island.theme ? trial.island(this.scene.textures, island.theme) : null;
-        if (!key) continue;
-        const frame = this.scene.textures.getFrame(key);
-        const scale = Math.max((island.rx * 2.3) / frame.width, (island.ry * 2.3) / frame.height);
-        this.container.add(this.scene.add.image(island.cx, island.cy, key).setScale(scale));
+    for (const island of islands) {
+      const picture = this.pictureOf(island);
+      if (picture) {
+        this.pictures.set(island.index, picture);
+        this.drawShallows(ground, island);
+      } else {
+        this.drawIsland(ground, island);
       }
     }
+    this.islandLayer = this.scene.add.container(0, 0);
+    this.container.add(this.islandLayer);
     const path = this.scene.add.graphics();
     this.container.add(path);
     this.drawPath(path);
-    this.drawBoats(path, islands);
 
     for (const island of islands) if (island.theme) this.drawSign(island);
     for (const node of this.layout.nodes) if (this.levels[node.level]!.revealed) this.drawNode(node);
@@ -142,6 +156,66 @@ export class MapView {
     g.fillStyle(hexNumber(MAP.rope), 0.9);
     for (let k = 1; k <= 4; k++) g.fillCircle(cx, y - 18 - k * u * 0.38, 2.4);
     this.container.add([g, label.setPosition(cx, y - 1)]);
+  }
+
+  /**
+   * Where an island's picture goes: centred on the island, a themed (square) one a little larger than its shape's
+   * height, a plain (upright) one as tall as its shape. Flipped when the next island lies to the left, so its jetty
+   * (drawn top right) always faces the way on.
+   */
+  private pictureOf(island: MapIsland): IslandPicture | null {
+    const name = islandName(island.theme, island.levels.map((level) => this.levels[level]!.number));
+    const info = islandInfo(name);
+    if (!info) return null;
+    const [w, h] = info.size;
+    const height = island.ry * 2 * (island.theme ? 1.35 : 1.04);
+    const width = (height * w) / h;
+    const x = island.cx - width / 2;
+    const y = island.cy - height / 2;
+    const next = this.layout.islands[island.index + 1];
+    const flip = next !== undefined && next.cx < island.cx;
+    const dx = flip ? 1 - info.dock[0] : info.dock[0];
+    return { name, x, y, width, height, flip, dock: { x: x + dx * width, y: y + info.dock[1] * height } };
+  }
+
+  /** The lighter water and foam around an island, under its picture. */
+  private drawShallows(g: Phaser.GameObjects.Graphics, island: MapIsland): void {
+    const { cx, cy, rx, ry, index } = island;
+    g.fillStyle(hexNumber(MAP.shallow), 0.5).fillPoints(blob(cx, cy, rx * 1.12, ry * 1.12, index, 0.08), true);
+    g.fillStyle(hexNumber(MAP.foam), 0.18).fillPoints(blob(cx, cy, rx * 1.02, ry * 1.04, index + 0.3, 0.08), true);
+  }
+
+  /**
+   * Shows the island pictures between map y `top` and `bottom` (with a screen's margin either side), downloading
+   * those not loaded yet. The home scene calls it whenever the map scrolls; it allocates nothing when all is shown.
+   */
+  reveal(top: number, bottom: number): void {
+    const margin = bottom - top;
+    const middle = (top + bottom) / 2;
+    const wanted: [number, IslandPicture][] = [];
+    for (const entry of this.pictures) {
+      const [index, picture] = entry;
+      if (!this.shown.has(index) && picture.y <= bottom + margin && picture.y + picture.height >= top - margin) wanted.push(entry);
+    }
+    // The island in the middle of the screen first, then outwards.
+    wanted.sort(([, a], [, b]) => Math.abs(a.y + a.height / 2 - middle) - Math.abs(b.y + b.height / 2 - middle));
+    for (const [index, picture] of wanted) {
+      const key = islandKey(picture.name);
+      if (this.scene.textures.exists(key)) {
+        this.showIsland(index, picture, false);
+        continue;
+      }
+      void loadIsland(this.scene.textures, picture.name).then(() => {
+        if (this.container.active && !this.shown.has(index) && this.scene.textures.exists(key)) this.showIsland(index, picture, true);
+      });
+    }
+  }
+
+  private showIsland(index: number, picture: IslandPicture, fade: boolean): void {
+    const image = this.scene.add.image(picture.x, picture.y, islandKey(picture.name)).setOrigin(0).setDisplaySize(picture.width, picture.height).setFlipX(picture.flip);
+    this.islandLayer.add(image);
+    this.shown.set(index, image);
+    if (fade && !reducedMotion()) this.scene.tweens.add({ targets: image, alpha: { from: 0, to: 1 }, duration: DURATION.base, ease: EASE.enter });
   }
 
   private drawIsland(g: Phaser.GameObjects.Graphics, island: MapIsland): void {
@@ -195,19 +269,42 @@ export class MapView {
     for (const px of [x0 - w / 2 - 2, x0 + w / 2 - 2]) g.fillRect(px, y0 - h - 4, 4, u * 0.35);
   }
 
-  /** The path: sandy dots on the islands, a rope across the water between them. */
+  /**
+   * The path: footsteps on the islands, and a rope across the water between them, from the jetty of an illustrated
+   * island (its footsteps lead there) to the shore of the next one.
+   */
   private drawPath(g: Phaser.GameObjects.Graphics): void {
     const nodes = this.layout.nodes.filter((n) => this.levels[n.level]!.revealed);
+    const steps = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+      const count = Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / 12);
+      for (let s = 1; s < count; s++) {
+        const x = from.x + ((to.x - from.x) * s) / count;
+        const y = from.y + ((to.y - from.y) * s) / count;
+        g.fillStyle(hexNumber(MAP.step), 0.35).fillCircle(x + 1, y + 1.5, 3.4);
+        g.fillStyle(hexNumber(MAP.sand), 0.95).fillCircle(x, y, 3);
+      }
+    };
     for (let i = 1; i < nodes.length; i++) {
-      const [a, b] = [nodes[i - 1]!, nodes[i]!];
-      if (a.island === b.island) {
-        g.fillStyle(hexNumber(MAP.sandShade), 1);
-        const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 12);
-        for (let s = 1; s < steps; s++) g.fillCircle(a.x + ((b.x - a.x) * s) / steps, a.y + ((b.y - a.y) * s) / steps, 3);
+      let [a, b]: { x: number; y: number }[] = [nodes[i - 1]!, nodes[i]!];
+      if (nodes[i - 1]!.island === nodes[i]!.island) {
+        steps(a!, b!);
       } else {
+        const from = this.pictures.get(nodes[i - 1]!.island);
+        const to = this.pictures.get(nodes[i]!.island);
+        if (from) {
+          steps(a!, from.dock);
+          a = from.dock;
+        }
+        if (to) {
+          // Ashore at the bottom of the next island, on the side the rope comes from, then on foot.
+          const side = a!.x < to.x + to.width / 2 ? -1 : 1;
+          const shore = { x: to.x + to.width * (0.5 + side * 0.18), y: to.y + to.height * 0.93 };
+          steps(shore, b!);
+          b = shore;
+        }
         // A rope sagging between the two shores, with a buoy halfway.
-        const mid = { x: (a.x + b.x) / 2 + (b.x > a.x ? -1 : 1) * this.layout.unit * 0.6, y: (a.y + b.y) / 2 };
-        const curve = new Phaser.Curves.QuadraticBezier(new Phaser.Math.Vector2(a.x, a.y), new Phaser.Math.Vector2(mid.x, mid.y), new Phaser.Math.Vector2(b.x, b.y));
+        const mid = { x: (a!.x + b!.x) / 2 + (b!.x > a!.x ? -1 : 1) * this.layout.unit * 0.6, y: (a!.y + b!.y) / 2 };
+        const curve = new Phaser.Curves.QuadraticBezier(new Phaser.Math.Vector2(a!.x, a!.y), new Phaser.Math.Vector2(mid.x, mid.y), new Phaser.Math.Vector2(b!.x, b!.y));
         const points = curve.getPoints(24);
         g.lineStyle(5, hexNumber(MAP.rope), 1).strokePoints(points);
         g.lineStyle(2, hexNumber(MAP.ropeLight), 1).strokePoints(points);
@@ -218,30 +315,17 @@ export class MapView {
     }
   }
 
-  /** A couple of small sailing boats on the open water. */
-  private drawBoats(g: Phaser.GameObjects.Graphics, islands: readonly MapIsland[]): void {
-    const u = this.layout.unit;
-    islands.forEach((island, i) => {
-      if (i % 2 === 1) return;
-      const x = island.cx > this.layout.width / 2 ? island.cx - island.rx - u * 1.2 : island.cx + island.rx + u * 1.2;
-      const y = island.cy + island.ry * 0.3;
-      const s = u * 0.55;
-      g.fillStyle(hexNumber(WOOD.frame), 1).fillTriangle(x - s, y, x + s, y, x + s * 0.6, y + s * 0.4).fillTriangle(x - s, y, x - s * 0.6, y + s * 0.4, x + s * 0.6, y + s * 0.4);
-      g.fillStyle(hexNumber(MAP.sail), 1).fillTriangle(x, y - s * 1.4, x, y - s * 0.1, x + s * 0.8, y - s * 0.1);
-      g.fillStyle(hexNumber(i % 4 === 0 ? '#d2452f' : SKIN.fills.primary.face), 1).fillTriangle(x, y - s * 1.2, x, y - s * 0.1, x - s * 0.6, y - s * 0.1);
-      g.lineStyle(2, hexNumber(MAP.foam), 0.6).lineBetween(x - s * 1.4, y + s * 0.55, x + s * 1.2, y + s * 0.55);
-    });
-  }
-
   /** A themed island's wooden sign with its name, under a string of flags in its colours. */
   private drawSign(island: MapIsland): void {
     const u = this.layout.unit;
     const look = themeLook(island.theme!);
-    // Beside the path, on the side away from the next island (the rope leaves the other way).
+    // Drawn islands: beside the path, on the side away from the next island (the rope leaves the other way).
+    // Illustrated ones: in the clearing below the level, clear of the buildings that make the island.
     const next = this.layout.islands[island.index + 1];
     const side = next && next.cx > island.cx ? -1 : 1;
-    const y = island.cy - island.ry * 0.55;
-    const sx = island.cx + side * island.rx * 0.38;
+    const picture = this.pictures.get(island.index);
+    const y = picture ? picture.y + picture.height * 0.86 : island.cy - island.ry * 0.55;
+    const sx = picture ? island.cx : island.cx + side * island.rx * 0.38;
     const label = kitText(this.scene, 'label', t(`theme.${island.theme}` as Parameters<typeof t>[0]), SKIN.text.primary);
     const w = Math.min(label.width + 24, island.rx * 2.1);
     if (label.width > w - 16) label.setScale((w - 16) / label.width);

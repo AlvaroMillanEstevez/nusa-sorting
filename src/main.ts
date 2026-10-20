@@ -6,6 +6,7 @@ import { wantsSaveReset } from './dev/saveParams';
 import { parseChestStarsParam, parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
 import { addDemoLevels, playList, replaceLevelForPreview } from './scenes/playList';
 import { GameScene } from './scenes/GameScene';
+import { hideLoadingScreen } from './ui/loadingScreen';
 import { HomeScene } from './scenes/HomeScene';
 import { setKitFeedback, setReducedMotion } from './scenes/kit';
 import { WebHapticsService } from './services/HapticsService';
@@ -44,12 +45,6 @@ if (import.meta.env.DEV) {
   if (chestStars !== null) store.addChestStars(chestStars - store.wallet.chestStars);
 }
 
-// Development only: ?themeArt tries the themed art being prepared (tools/art/try_theme_art.py) in levels and the map.
-if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('themeArt')) {
-  const { installThemeArtTrial } = await import('./dev/themeArtTrial');
-  await installThemeArtTrial();
-}
-
 // Development only: ?demo=N adds the demo levels of the test fixtures (as levels 101 and up) and opens demo N.
 if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo')) {
   const { demoLevels } = await import('../tests/fixtures/demo-levels');
@@ -69,7 +64,12 @@ function pageSize(): { width: number; height: number } {
   return { width: parent.clientWidth || window.innerWidth, height: parent.clientHeight || window.innerHeight };
 }
 
-function startGame(scene: Phaser.Types.Scenes.SceneType[]): void {
+/**
+ * Starts Phaser with these scenes. The page's loading picture stays until the game's first screen is ready
+ * (`loading`, the game itself: Boot removes it); development pages drop it at once.
+ */
+function startGame(scene: Phaser.Types.Scenes.SceneType[], loading = false): void {
+  if (!loading) hideLoadingScreen();
   const { width, height } = pageSize();
   updateUiScale(width, height);
   const game = new Phaser.Game({
@@ -144,5 +144,5 @@ if (import.meta.env.DEV && wantsGallery(window.location.search)) {
 } else if (import.meta.env.DEV && wantsUikit(window.location.search)) {
   void import('./dev/UikitScene').then(({ UikitScene }) => startGame([UikitScene]));
 } else {
-  startGame(gameScenes());
+  startGame(gameScenes(), true);
 }

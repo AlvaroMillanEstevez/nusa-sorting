@@ -4,9 +4,9 @@
  */
 export const MAP = {
   /** Sea, top to bottom of the screen, and the lighter water around the islands. */
-  seaTop: '#0f4c5c',
-  seaBottom: '#0a3344',
-  shallow: '#2f8f8f',
+  seaTop: '#12586b',
+  seaBottom: '#0b3a4d',
+  shallow: '#3a9ea0',
   wave: '#5fb3b0',
   foam: '#cfeee6',
   sand: '#e6c98d',
@@ -16,6 +16,8 @@ export const MAP = {
   palmTrunk: '#8a6038',
   palmLeaf: '#4f8a35',
   palmLeafLight: '#76b24c',
+  /** The footsteps' shadow on the islands' path. */
+  step: '#5a3a1e',
   rope: '#b98a4e',
   ropeLight: '#e0bd84',
   sail: '#f2ead8',

@@ -47,6 +47,10 @@ export const MAX_MAP_WIDTH = 560;
 /** Locked levels shown ahead of the first one not completed; the rest of the sea stays unexplored. */
 export const LOCKED_AHEAD = 2;
 
+/** How far (in map units) the levels of a plain island step left and right of its middle: the illustrated islands
+ * keep a sandy strip clear there. */
+export const ZIGZAG = 0.55;
+
 /** Groups levels into islands: a themed level alone, plain levels in runs of up to LEVELS_PER_ISLAND. */
 export function groupIslands(levels: readonly MapLevel[]): { theme: string | null; levels: number[] }[] {
   const groups: { theme: string | null; levels: number[] }[] = [];
@@ -62,9 +66,15 @@ export function groupIslands(levels: readonly MapLevel[]): { theme: string | nul
   return groups;
 }
 
-/** Lays the map out for a screen `screenWidth` wide. */
-export function computeMapLayout(levels: readonly MapLevel[], screenWidth: number): MapLayout {
-  const width = Math.min(screenWidth, MAX_MAP_WIDTH);
+/**
+ * On a short screen the map narrows too, so an island of four levels (about 0.9 of the map's width tall) still fits
+ * between the top bar and the buttons.
+ */
+export const MAX_MAP_WIDTH_PER_HEIGHT = 0.72;
+
+/** Lays the map out for a screen `screenWidth` wide and `screenHeight` tall. */
+export function computeMapLayout(levels: readonly MapLevel[], screenWidth: number, screenHeight = Infinity): MapLayout {
+  const width = Math.min(screenWidth, MAX_MAP_WIDTH, screenHeight * MAX_MAP_WIDTH_PER_HEIGHT);
   const u = width / 10;
   const groups = groupIslands(levels);
   const step = 1.9 * u;
@@ -86,9 +96,9 @@ export function computeMapLayout(levels: readonly MapLevel[], screenWidth: numbe
     const cy = bottom - ry;
     islands.push({ index, theme: group.theme, cx, cy, rx, ry, levels: group.levels });
     group.levels.forEach((level, k) => {
-      // Up the island in a gentle zigzag; a themed island's level sits a little low, under its sign.
+      // Up the island's sandy strip in a gentle zigzag; a themed island's level sits a little low, in its clearing.
       const y = themed ? cy + 0.35 * u : cy + ry - 1.5 * u - k * step;
-      const x = themed ? cx : cx + (k % 2 === 0 ? -1 : 1) * 1.2 * u;
+      const x = themed ? cx : cx + (k % 2 === 0 ? -1 : 1) * ZIGZAG * u;
       nodes.push({ level, island: index, x, y });
     });
     bottom = cy - ry - gap;

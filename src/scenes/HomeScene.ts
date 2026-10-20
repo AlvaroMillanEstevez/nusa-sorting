@@ -197,7 +197,7 @@ export class HomeScene extends Phaser.Scene {
     const [top, bottom] = [hexNumber(MAP.seaTop), hexNumber(MAP.seaBottom)];
     sea.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(screen.x, screen.y, screen.width, screen.height);
 
-    this.layout = computeMapLayout(playList.map((entry) => entry.level), width);
+    this.layout = computeMapLayout(playList.map((entry) => entry.level), width, height);
     this.map = new MapView(this, this.layout, levels, (width - this.layout.width) / 2);
     this.map.highlight(this.current);
     this.map.placeMarker(this.data_.arrival?.level ?? this.current);
@@ -232,6 +232,8 @@ export class HomeScene extends Phaser.Scene {
   private setScroll(scroll: number): void {
     this.scroll = Math.max(this.minScroll, Math.min(this.maxScroll, scroll));
     this.map.container.setY(-this.scroll);
+    // The islands in view (and a screen around them) are shown, downloading the ones not loaded yet.
+    this.map.reveal(this.scroll, this.scroll + viewSize(this).height);
   }
 
   /**

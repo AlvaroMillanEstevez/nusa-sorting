@@ -26,7 +26,6 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 | `objects-fix-e.png` | `Pegatinas de juegos tradicionales indonesios.png` | Correcciones E: yoyo, bekel, congklak, egrang, karung, sepatu |
 | `objects-fix-f.png` | `Hoja de iconos 3D de naturaleza y herramientas.png` | Correcciones F: cengkeh, pala, cobek, cangkul, kerbau, komodo |
 | `objects-fix-g.png` | `Iconos gastronómicos y naturales en 3D.png` | Correcciones G (14 de octubre): pisang goreng en abanico, klepon partido, un clavo grande (cengkeh), raket de cerca, komodo alargado, penyu desde arriba |
-| `budaya-jawa-island.png` | `Isla tropical javanesa con pabellón y gongs.png` | Prueba de isla del mapa para Budaya Jawa (1254×1254, fondo transparente): pendopo, gamelan, candi |
 | `budaya-jawa-portrait.png` | `Pabellón javanés bajo la noche tropical.png` | Prueba de fondo vertical del nivel 5 (1024×1536): pendopo de noche con gongs y wayang |
 | `budaya-jawa-landscape.png` | `Pabellón javanés iluminado bajo la noche tropical.png` | Prueba de fondo horizontal del nivel 5 (1672×941) |
 | `17-agustus-landscape.png` | `17 Agustus (1).png` | Fondo horizontal del nivel temático (1672×941) |
@@ -47,6 +46,26 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 | `rempah-maluku-landscape.png` | `rempahMaluku (2).png` | Fondo horizontal del nivel temático (1672×941) |
 | `sawah-landscape.png` | `sawah (1).png` | Fondo horizontal del nivel temático (1672×941) |
 | `sawah-portrait.png` | `sawah (2).png` | Fondo vertical del nivel temático (1024×1536) |
+| `island-budaya-jawa.png` | `Budaya Jawa island.png` | Isla del mapa de su tema |
+| `island-17-agustus.png` | `17 agustus island.png` | Isla del mapa de su tema |
+| `island-pasar-malam.png` | `pasar malam island.png` | Isla del mapa de su tema |
+| `island-laut-nusantara.png` | `Laut Nusantara island.png` | Isla del mapa de su tema |
+| `island-olahraga.png` | `olahraga island.png` | Isla del mapa de su tema |
+| `island-permainan-tradisional.png` | `Permainan tradisional island.png` | Isla del mapa de su tema |
+| `island-rempah-maluku.png` | `Rempah Maluku island.png` | Isla del mapa de su tema |
+| `island-sawah.png` | `sawah island.png` | Isla del mapa de su tema |
+| `island-fauna-nusantara.png` | `Fauna Nusantara island.png` | Isla del mapa de su tema |
+| `island-festival-nusantara.png` | `Festival Nusantara island.png` | Isla del mapa de su tema |
+| `island-levels-01-04.png` | `1-4 islands.png` | Isla del mapa: playa con warungs y barcas |
+| `island-levels-06-09.png` | `6 - 9 islands.png` | Isla del mapa: kampung con casas sobre pilotes |
+| `island-levels-11-14.png` | `11 - 14 islands.png` | Isla del mapa: cocotal con mercadillo |
+| `island-levels-16-19.png` | `16 - 19 islands.png` | Isla del mapa: manglar con pasarelas |
+| `island-levels-21-24.png` | `21 - 24 islands.png` | Isla del mapa: colinas de té |
+| `island-levels-26-29.png` | `26 - 29 islands.png` | Isla del mapa: volcán con lava y arena negra |
+| `island-levels-31-34.png` | `31 - 34 islands.png` | Isla del mapa: islotes kársticos con lagunas |
+| `island-levels-36-39.png` | `36 - 39 islands.png` | Isla del mapa: aldea bajau con pescado secándose |
+| `island-levels-41-44.png` | `41 - 44 islands.png` | Isla del mapa: cascadas en la selva |
+| `island-levels-46-49.png` | `46 - 49 islands.png` | Isla del mapa: puerto con faro |
 | `shelf-3-v2.png` | `Estantería de madera con tres compartimentos.png` | Estantería regenerada: marco fino, compartimentos cuadrados, interior menos oscuro |
 | `warung-sunset.png` | `Warung acogedor al atardecer.png` | Warung al atardecer (1024×1536), para la portada y la pantalla de inicio; aún sin usar |
 | `background-portrait.png` | `Imagen de ChatGPT 12 oct 2026, 21_40_01.png` | Fondo de juego vertical (2:3), 1024×1536: calle de warungs al anochecer |
