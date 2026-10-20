@@ -543,14 +543,18 @@ export class GameScene extends Phaser.Scene {
     this.refreshFreshLooks();
   }
 
-  /** Every item in front takes the look its fresh food has now; old badge textures go. */
+  /**
+   * Every item in front takes the look its fresh food has now; old badge textures go, but only once nothing on
+   * screen shows them: a cleared triple's items have left the board's sprites while they still fly and pop with
+   * their badge, and removing a texture still being drawn takes the whole renderer down (a black screen).
+   */
   private refreshFreshLooks(): void {
-    const inUse = new Set<string>();
     for (const sprite of this.sprites.values()) {
       const type = sprite.getData('type') as string;
       if (sprite.texture.key !== itemBackTextureKey(type)) this.setLook(sprite, true);
-      inUse.add(sprite.texture.key);
     }
+    const inUse = new Set<string>();
+    for (const child of this.children.list) if (child instanceof Phaser.GameObjects.Image) inUse.add(child.texture.key);
     this.freshLooks.purge(inUse);
   }
 
