@@ -31,7 +31,9 @@ export type SoundEffect =
   /** A star chest opens. */
   | 'chest'
   /** A fresh food spoils (basi): its countdown ran out. */
-  | 'spoil';
+  | 'spoil'
+  /** A fresh food enters its last moves: a soft heads-up, unlike the spoiling. */
+  | 'freshWarn';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {

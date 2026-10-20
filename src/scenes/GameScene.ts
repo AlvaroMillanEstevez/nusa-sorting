@@ -210,6 +210,8 @@ export class GameScene extends Phaser.Scene {
   /** How fresh foods look (their countdown badge, or spoiled), and the warning pulse's phase now. */
   private freshLooks!: FreshLooks;
   private freshPulse: 0 | 1 = 0;
+  /** Fresh foods whose last moves have been announced (once each per attempt). */
+  private readonly freshWarned = new Set<string>();
   private dropMark!: Phaser.GameObjects.Graphics;
   /** Last pointer position, for the drop-target outline while dragging. */
   private pointerPos: { x: number; y: number } | null = null;
@@ -665,6 +667,7 @@ export class GameScene extends Phaser.Scene {
     this.draggingId = null;
     this.shelfPress = null;
     this.flights.clear();
+    this.freshWarned.clear();
     this.dropMark.clear();
     this.lastWarningSecond = null;
     this.overlay.hide();
@@ -1597,8 +1600,14 @@ export class GameScene extends Phaser.Scene {
     this.sync(ADVANCE_MS, (pos) => (advancedShelves.has(pos.shelf) ? ADVANCE_DELAY_MS + lead : 0), moved?.itemId);
     this.playMechanics(events, lead, gathered);
     this.advanceTutorial(events);
-    // Fresh foods counted a move down (or spoiled): every item in front shows its countdown as it is now.
-    if (this.state.fresh.length > 0) this.refreshFreshLooks();
+    // Fresh foods counted a move down (or spoiled): every item in front shows its countdown as it is now, and one
+    // entering its last moves gives a soft heads-up.
+    if (this.state.fresh.length > 0) {
+      this.refreshFreshLooks();
+      const warned = this.state.fresh.filter((f) => !f.spoiled && f.movesLeft <= FRESH.warnFrom && !this.freshWarned.has(f.type));
+      for (const f of warned) this.freshWarned.add(f.type);
+      if (warned.length > 0) this.sfx.play('freshWarn');
+    }
 
     if (this.state.status === 'won') {
       const { width, height } = viewSize(this);

@@ -55,6 +55,8 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   chest: [note(0, 1319, 0.08, 'sine', 0.12), note(0.06, 1568, 0.08, 'sine', 0.12), note(0.12, 2093, 0.14, 'sine', 0.1)],
   // Food going off: a short soft sag downwards with a little wobble, more "oh no" than alarm.
   spoil: [{ at: 0, duration: 0.24, freq: 440, freqEnd: 196, wave: 'triangle', gain: 0.16 }, { at: 0.12, duration: 0.16, freq: 230, freqEnd: 170, wave: 'sine', gain: 0.08 }],
+  // A fresh food's last moves: two soft rising wooden taps, a nudge rather than an alarm (the spoiling sags down).
+  freshWarn: [note(0, 784, 0.07, 'triangle', 0.1), note(0.1, 988, 0.09, 'triangle', 0.1)],
 };
 
 /** The recorded effects, by file name (the effect's name, or 'star' for the three stars). */
