@@ -4,10 +4,12 @@
 //
 //   npm run dev                          (in another terminal)
 //   node tools/check/flow.mjs            → the dev server: level 1 won by the simulated expert, the map, level 2
-//                                          from Play, restart, back to the map and level 2 again
+//                                          from Play, restart, back to the map and level 2 again; then fresh
+//                                          foods' demo 19: a fresh triple, a spoiled one and the win
 //   npm run build && npm run preview     (in another terminal)
 //   node tools/check/flow.mjs --prod     → the production build: the map, a level from Play, back to the map
-//                                          and the level again, restart (no development parameters there)
+//                                          and the level again, restart, and F5 picking the level up (no
+//                                          development parameters there)
 //
 // Environment: URL (default http://localhost:5180, or http://localhost:4173 with --prod), CHROME (default: the
 // Playwright headless shell). Exits 0 when every step passes.
@@ -100,6 +102,24 @@ async function variety() {
   })()`);
 }
 
+/** What the middle of the screen shows: the pause menu's wooden panel (warm), or the map's sea (cool). */
+async function centre() {
+  const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: 60, clip: { x: W / 2 - 40, y: H / 2 - 40, width: 80, height: 80, scale: 1 } });
+  return evaluate(`(async () => {
+    const image = new Image();
+    image.src = 'data:image/jpeg;base64,${data}';
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 16;
+    const c = canvas.getContext('2d');
+    c.drawImage(image, 0, 0, 16, 16);
+    const px = c.getImageData(0, 0, 16, 16).data;
+    let r = 0, b = 0;
+    for (let i = 0; i < px.length; i += 4) { r += px[i]; b += px[i + 2]; }
+    return r > b * 1.2 ? 'panel' : 'sea';
+  })()`);
+}
+
 let failed = false;
 async function step(name, check) {
   const ok = await check();
@@ -153,6 +173,38 @@ if (!PROD) {
     await step('Home goes back to the map', () => until(onMap, 8000));
     await step('Play opens level 2 again', toLevel2);
   }
+
+  // Fresh foods (basi), demo 19: a fresh triple, a spoiled one, then the expert plays on to the win. Each triple's
+  // items fly off with their tag or spoiled look: the black screen came from there.
+  await evaluate(`(() => { const save = JSON.parse(localStorage.getItem('nusa-sorting.save')); save.tutorialsDone = [...new Set([...save.tutorialsDone, 'first-triple', 'fresh-food'])]; save.snapshot = null; localStorage.setItem('nusa-sorting.save', JSON.stringify(save)); })()`);
+  await send('Page.navigate', { url: `${URL}/?demo=19&boosters=1` });
+  await step('demo 19 (fresh foods) opens', () => until(inGame(119), 20000));
+  const move = async (from, to) => {
+    const ok = await evaluate(`window.__nusa.move(${JSON.stringify(from)}, ${JSON.stringify(to)})`);
+    await sleep(700);
+    return ok;
+  };
+  const fresh = async (type) => (await evaluate(`window.__nusa.state().fresh.find((f) => f.type === '${type}')`)) ?? null;
+  const score = async () => (await evaluate('window.__nusa.state().score')) ?? 0;
+  // Sate first (not fresh), then dig out the third rambutan and finish its triple: 5 moves of its 8.
+  for (const [from, to] of [
+    [[1, 0], [2, 1]],
+    [[2, 0], [1, 0]],
+    [[0, 0], [2, 0]],
+    [[0, 1], [4, 0]],
+  ])
+    await move(from, to);
+  const before = await score();
+  await step('a fresh triple clears with its bonus', async () => (await move([0, 1], [1, 2])) && (await score()) - before >= 150 && !(await fresh('rambutan')).spoiled);
+  // The manggis runs out of moves: the ketupat goes back and forth on the last shelf.
+  for (let i = 0; i < 10 && !(await fresh('manggis')).spoiled; i++) await move(i % 2 ? [4, 2] : [4, 1], i % 2 ? [4, 1] : [4, 2]);
+  await step('the manggis spoils', async () => (await fresh('manggis')).spoiled === true);
+  await move([1, 0], [0, 1]);
+  await move([0, 2], [2, 0]);
+  const spoiledBefore = await score();
+  await step('a spoiled triple clears for no points and breaks the combo', async () => (await move([3, 0], [0, 2])) && (await score()) === spoiledBefore && (await evaluate('window.__nusa.state().combo')) === 0);
+  await evaluate('window.__nusa.autoplay()');
+  await step('the expert plays on and wins it', () => until(`window.__nusa.state?.().status === 'won' || ${onMap}`, 90000));
 } else {
   // Production: a returning player (two levels done), so the game opens on the map.
   const save = JSON.stringify({ version: 3, progress: { completed: ['nusa-001', 'nusa-002'], bestStars: { 'nusa-001': 3, 'nusa-002': 2 }, bestScores: {} }, settings: {}, themesSeen: [], lastArrangements: {}, tutorialsDone: ['first-triple'], wallet: {}, snapshot: null });
@@ -177,6 +229,13 @@ if (!PROD) {
   await click(MENU_RESTART);
   await sleep(3000);
   await step('restart keeps the level playable', async () => true);
+  // F5 picks the level up where it was: it reopens with the pause menu over it, not on the map.
+  await send('Page.reload');
+  await sleep(5000);
+  await step('F5 resumes the level', async () => {
+    const save = JSON.parse((await evaluate("localStorage.getItem('nusa-sorting.save')")) ?? 'null');
+    return save?.snapshot !== null && save?.snapshot !== undefined && (await centre()) === 'panel';
+  });
 }
 
 chrome.kill('SIGKILL');

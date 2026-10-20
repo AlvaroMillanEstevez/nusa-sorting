@@ -107,6 +107,10 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[], loading = false): voi
     (window as unknown as { __nusa: unknown }).__nusa = {
       scenes: () => game.scene.getScenes(true).map((s) => s.scene.key),
       level: () => (game.scene.isActive('Game') ? (game.scene.getScene('Game') as GameScene).levelNumber : null),
+      // A move as the player makes it (with its animations and effects), the board's state, and the expert's autoplay.
+      move: (from: [number, number], to: [number, number]) => (game.scene.getScene('Game') as GameScene).devMove(from, to),
+      state: () => (game.scene.getScene('Game') as GameScene).devState(),
+      autoplay: () => (game.scene.getScene('Game') as GameScene).devPlay(),
     };
   }
   const resize = () => {

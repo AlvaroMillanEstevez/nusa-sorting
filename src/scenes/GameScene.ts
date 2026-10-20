@@ -402,6 +402,21 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1200, step);
   }
 
+  /** Development only (tools/check/flow.mjs): a move from a shelf's front slot to another, as the player makes it. */
+  devMove([fromShelf, fromSlot]: [number, number], [toShelf, toSlot]: [number, number]): boolean {
+    return this.tryMove({ shelf: fromShelf, layer: 0, slot: fromSlot }, { shelf: toShelf, layer: 0, slot: toSlot });
+  }
+
+  /** Development only: what tools/check/flow.mjs checks of the board. */
+  devState(): { status: string; score: number; combo: number; fresh: readonly { type: string; movesLeft: number; spoiled: boolean }[] } {
+    return { status: this.state.status, score: this.state.combo.score, combo: this.state.combo.combo, fresh: this.state.fresh };
+  }
+
+  /** Development only: the expert plays on from here (as ?show=autoplay). */
+  devPlay(): void {
+    void this.devAutoplay();
+  }
+
   /** Back to the home screen (with the sequence that follows a win, when there is one). */
   private goHome(arrival?: Arrival): void {
     this.store.clearSnapshot();
@@ -555,9 +570,16 @@ export class GameScene extends Phaser.Scene {
       const type = sprite.getData('type') as string;
       if (sprite.texture.key !== itemBackTextureKey(type)) this.setLook(sprite, true);
     }
+    // Everything on screen, inside containers too (a gathered triple, the tutorial's hand, popups...).
     const inUse = new Set<string>();
-    for (const child of this.children.list) if (child instanceof Phaser.GameObjects.Image) inUse.add(child.texture.key);
-    this.freshLooks.purge(inUse);
+    const scan = (list: readonly Phaser.GameObjects.GameObject[]) => {
+      for (const child of list) {
+        if (child instanceof Phaser.GameObjects.Image) inUse.add(child.texture.key);
+        else if (child instanceof Phaser.GameObjects.Container) scan(child.list);
+      }
+    };
+    scan(this.children.list);
+    this.freshLooks.purge(inUse, this.time.now);
   }
 
   /** Recomputes where shelves riding tracks are now; everything else reads this.layout. */

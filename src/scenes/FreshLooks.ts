@@ -4,6 +4,9 @@ import { FONTS, FRESH } from '../ui/design/tokens';
 import { spoil, type Pixels } from '../ui/art/itemPixels';
 import { ITEM_TEXTURE_SIZE, itemTextureKey } from './itemTextures';
 
+/** A texture is dropped once nothing has shown it for this long (ms). */
+const PURGE_AFTER_MS = 3000;
+
 /** What a countdown shows: the moves left, the warning, and the warning's swollen half. */
 export interface Countdown {
   readonly moves: number;
@@ -111,8 +114,9 @@ export function freshCanvas(source: CanvasImageSource, size: number, look: { spo
  * and dropped once nothing shows it.
  */
 export class FreshLooks {
-  /** Textures made, by key, and the type each one belongs to. */
+  /** Textures made, by key, and the type each one belongs to; when each was last on screen. */
   private readonly made = new Map<string, string>();
+  private readonly seen = new Map<string, number>();
 
   constructor(private readonly textures: Phaser.Textures.TextureManager) {}
 
@@ -134,11 +138,23 @@ export class FreshLooks {
     );
   }
 
-  /** Drops the textures nothing shows any more (`inUse`: the keys on screen now). */
-  purge(inUse: ReadonlySet<string>): void {
+  /**
+   * Drops the textures nothing has shown for PURGE_AFTER_MS (`inUse`: the keys on screen now, `now` the scene's
+   * time): long enough for any animation still drawing one off the board's books (a triple flying off) to end.
+   * Removing a texture something still draws takes the whole renderer down.
+   */
+  purge(inUse: ReadonlySet<string>, now: number): void {
     for (const key of [...this.made.keys()]) {
-      if (inUse.has(key)) continue;
+      if (inUse.has(key)) {
+        this.seen.set(key, now);
+        continue;
+      }
+      if (now - (this.seen.get(key) ?? now) < PURGE_AFTER_MS) {
+        if (!this.seen.has(key)) this.seen.set(key, now);
+        continue;
+      }
       this.made.delete(key);
+      this.seen.delete(key);
       if (this.textures.exists(key)) this.textures.remove(key);
     }
   }
