@@ -168,5 +168,6 @@ export const id: Record<MessageKey, string> = {
   'uikit.slots.screen': '{w} × {h}',
   'uikit.sample': 'Kumpulkan 3 barang yang sama di satu rak',
   'tutorial.skip': 'Lewati',
+  'tutorial.fresh': 'Label menghitung sisa langkahnya: buat trionya sebelum basi!',
   'tutorial.firstTriple': 'Kumpulkan 3 barang yang sama di satu rak',
 };

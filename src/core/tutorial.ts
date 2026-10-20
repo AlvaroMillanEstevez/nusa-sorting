@@ -23,14 +23,15 @@ export function tripleMoves(state: GameState): ShelfMove[] {
 }
 
 /**
- * The move the first-triple tutorial points at: one that completes a triple, preferring the shortest hop between
- * shelves (fewest shelves apart, then board order). Null if the board has none.
+ * The move the first-triple tutorial points at: one that completes a triple, of a food that is not fresh if it can
+ * (the fresh one is the tutorial's second step), preferring the shortest hop between shelves (fewest shelves apart,
+ * then board order). Null if the board has none.
  */
 export function tutorialMove(state: GameState): ShelfMove | null {
+  const fresh = (move: ShelfMove) => state.fresh.some((f) => f.type === state.shelves[move.from.shelf]!.layers[0]![move.from.slot]?.type);
+  const cost = (move: ShelfMove) => (fresh(move) ? 100 : 0) + Math.abs(move.to.shelf - move.from.shelf);
   let best: ShelfMove | null = null;
-  for (const move of tripleMoves(state)) {
-    if (!best || Math.abs(move.to.shelf - move.from.shelf) < Math.abs(best.to.shelf - best.from.shelf)) best = move;
-  }
+  for (const move of tripleMoves(state)) if (!best || cost(move) < cost(best)) best = move;
   return best;
 }
 

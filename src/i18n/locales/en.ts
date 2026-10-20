@@ -166,6 +166,7 @@ export const en = {
   'uikit.slots.screen': '{w} × {h}',
   'uikit.sample': 'Gather 3 matching items on one shelf',
   'tutorial.skip': 'Skip',
+  'tutorial.fresh': 'The tag counts its moves left: make its triple before it spoils!',
   'tutorial.firstTriple': 'Put 3 matching items on the same shelf',
 } as const;
 

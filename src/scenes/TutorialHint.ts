@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import type { ShelfMove } from '../core';
+import type { Position, ShelfMove } from '../core';
 import { slotRect, type BoardLayout } from '../ui/boardLayout';
 import { FONTS, hexNumber, SKIN, TYPE } from '../ui/design/tokens';
 import { t } from '../i18n';
@@ -52,12 +52,14 @@ export interface TutorialShow {
   readonly move: ShelfMove | null;
   /** Texture of the item the move carries. */
   readonly itemTexture: string | null;
+  /** With no move: a slot to outline on its own (the fresh food of the tutorial's second step). */
+  readonly highlight?: Position | null;
 }
 
 /**
- * The first-triple tutorial over the board: a short line of text, outlines on the item to move and on the slot
- * it goes to, and a hand dragging a faded copy of the item there, again and again. It takes no input: presses go
- * through to the board as usual.
+ * The first level's tutorial over the board: a short line of text, outlines on the item to move and on the slot
+ * it goes to, and a hand dragging a faded copy of the item there, again and again; or (its second step) the text
+ * and an outline on one item alone. It takes no input: presses go through to the board as usual.
  */
 export class TutorialHint {
   private shown: TutorialShow | null = null;
@@ -182,11 +184,12 @@ export class TutorialHint {
     const g = this.marks.clear().setVisible(true).setAlpha(1);
     const slots = this.slots();
     const move = shown.move;
-    if (slots && move) {
+    const outlined = slots && move ? [move.from, move.to] : shown.highlight ? [shown.highlight] : [];
+    if (outlined.length > 0) {
       const color = hexNumber(SKIN.status.combo);
       g.lineStyle(Math.max(3, s * 0.08), color, 1);
       // Each outline takes the whole slot, as tall as it is.
-      for (const at of [move.from, move.to]) {
+      for (const at of outlined) {
         const cell = slotRect(board.shelves[at.shelf]!, at.slot, s);
         const inset = s * 0.01;
         g.strokeRoundedRect(cell.x + inset, cell.y + inset, cell.width - inset * 2, cell.height - inset * 2, s * 0.16);
@@ -215,7 +218,8 @@ export class TutorialHint {
     else if (boardTop - hudBottom >= rowH + 8) y = (hudBottom + boardTop) / 2;
     else if (this.height - boardBottom >= rowH + 8) y = (boardBottom + this.height) / 2;
     else {
-      const moveY = slots ? (slots.from.y + slots.to.y) / 2 : this.height / 2;
+      const lit = shown.highlight ? board.shelves[shown.highlight.shelf]?.slots[shown.highlight.slot] : undefined;
+      const moveY = slots ? (slots.from.y + slots.to.y) / 2 : lit ? lit.y : this.height / 2;
       y = moveY > (hudBottom + this.height) / 2 ? hudBottom + 8 + rowH / 2 : this.height - 8 - rowH / 2;
     }
     // The sign, then the button: side by side, or one above the other.

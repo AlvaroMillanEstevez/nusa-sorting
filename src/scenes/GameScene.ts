@@ -6,6 +6,7 @@ import {
   FIRST_TRIPLE_TUTORIAL,
   findItem,
   freeFrontSlots,
+  freshOf,
   isShelfLocked,
   isSpecialLevel,
   isSlotBlocked,
@@ -192,6 +193,8 @@ export class GameScene extends Phaser.Scene {
    * meanwhile.
    */
   private tutorialActive = false;
+  /** The tutorial's second step: a fresh food pointed at (the clock runs meanwhile). */
+  private freshHintActive = false;
   private pauseMenu!: PauseMenu;
   /** The pause menu (or the level list over it) is open: nothing timed moves and the board takes no input. */
   private paused = false;
@@ -754,6 +757,7 @@ export class GameScene extends Phaser.Scene {
     }
     // The first time in level 1: how to make a triple, until the player makes one.
     this.tutorial.clear();
+    this.freshHintActive = false;
     this.tutorialActive = index === 0 && !this.store.isTutorialDone(FIRST_TRIPLE_TUTORIAL);
     this.showTutorial();
     // Picked up from the save: everything stays still until the player chooses to go on, and any booster intro
@@ -824,7 +828,8 @@ export class GameScene extends Phaser.Scene {
   /** The first level with fresh foods: a one-line explanation, with a fresh item and its badge as the picture. */
   private introduceFreshFoods(): void {
     const first = this.state.fresh[0];
-    if (!first || this.store.isTutorialDone(FRESH_FOOD_INTRO)) return;
+    // Level 1's tutorial teaches it in its second step instead.
+    if (!first || this.store.isTutorialDone(FRESH_FOOD_INTRO) || this.tutorialActive) return;
     this.paused = true;
     showOffer(this, {
       title: t('fresh.intro.title'),
@@ -1043,24 +1048,60 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** The player chose to skip the tutorial: done for good, as if completed. */
+  /** The player chose to skip the tutorial: done for good, both its steps, as if completed. */
   private skipTutorial(): void {
-    if (!this.tutorialActive) return;
+    if (!this.tutorialActive && !this.freshHintActive) return;
     this.tutorialActive = false;
+    this.freshHintActive = false;
     this.store.markTutorialDone(FIRST_TRIPLE_TUTORIAL);
+    if (this.state.fresh.length > 0) this.store.markTutorialDone(FRESH_FOOD_INTRO);
     this.tutorial.finish();
   }
 
-  /** After a move during the tutorial: done for good with a triple, else it points at the board's new state. */
+  /**
+   * After a move during the tutorial. Its first step is done for good with a triple; then, on a level with fresh
+   * foods, its second step points at one: the tag counts its moves down, make its triple before it spoils. That
+   * step ends with any fresh food's triple, fresh or spoiled, or once none is left fresh; meanwhile the clock runs.
+   */
   private advanceTutorial(events: readonly GameEvent[]): void {
-    if (!this.tutorialActive) return;
-    if (completesFirstTriple(events)) {
+    if (this.tutorialActive) {
+      if (!completesFirstTriple(events)) {
+        this.showTutorial();
+        return;
+      }
       this.tutorialActive = false;
       this.store.markTutorialDone(FIRST_TRIPLE_TUTORIAL);
-      this.tutorial.finish();
-    } else {
-      this.showTutorial();
+      this.freshHintActive = this.state.fresh.length > 0 && !this.store.isTutorialDone(FRESH_FOOD_INTRO);
+      if (!this.freshHintActive) {
+        this.tutorial.finish();
+        return;
+      }
+    } else if (!this.freshHintActive) {
+      return;
     }
+    const target = this.freshTarget();
+    const done = events.some((e) => e.kind === 'tripleCleared' && e.freshness !== undefined) || !target;
+    if (done) {
+      this.freshHintActive = false;
+      this.store.markTutorialDone(FRESH_FOOD_INTRO);
+      this.tutorial.finish();
+      return;
+    }
+    const item = itemAt(this.state, target);
+    this.tutorial.show({ text: t('tutorial.fresh'), move: null, highlight: target, itemTexture: item ? itemTextureKey(item.type, this.store.colorBlindMode) : null });
+  }
+
+  /** A fresh food in view for the tutorial's second step: the one with fewest moves left, in a front. */
+  private freshTarget(): Position | null {
+    let best: { at: Position; moves: number } | null = null;
+    this.state.shelves.forEach((shelf, s) => {
+      if (isShelfLocked(this.state, s)) return;
+      shelf.layers[0]!.forEach((item, slot) => {
+        const fresh = item && freshOf(this.state, item.type);
+        if (fresh && !fresh.spoiled && (!best || fresh.movesLeft < best.moves)) best = { at: { shelf: s, layer: 0, slot }, moves: fresh.movesLeft };
+      });
+    });
+    return best === null ? null : (best as { at: Position }).at;
   }
 
   private createSprite(item: Item): void {

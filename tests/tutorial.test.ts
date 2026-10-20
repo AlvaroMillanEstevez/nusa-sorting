@@ -24,6 +24,13 @@ describe('first-triple tutorial', () => {
     expect(tutorialMove(createGame(none))).toBeNull();
   });
 
+  it('points at a food that is not fresh when it can: the fresh one is its second step', () => {
+    const fresh: LevelDefinition = { ...level, mechanics: [{ kind: 'fresh', foods: [{ type: 'A', moves: 20 }] }] };
+    expect(tutorialMove(createGame(fresh))).toEqual({ from: front(3, 0), to: front(1, 2) });
+    const onlyFresh: LevelDefinition = { ...level, mechanics: [{ kind: 'fresh', foods: [{ type: 'A', moves: 20 }, { type: 'B', moves: 20 }] }] };
+    expect(tutorialMove(createGame(onlyFresh))).toEqual({ from: front(2, 2), to: front(0, 2) });
+  });
+
   it('is completed by any move that clears a triple, and not by others', () => {
     const state = createGame(level);
     const plain = moveItem(state, front(2, 0), front(0, 2));
