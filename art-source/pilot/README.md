@@ -29,6 +29,24 @@ Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un
 | `budaya-jawa-island.png` | `Isla tropical javanesa con pabellón y gongs.png` | Prueba de isla del mapa para Budaya Jawa (1254×1254, fondo transparente): pendopo, gamelan, candi |
 | `budaya-jawa-portrait.png` | `Pabellón javanés bajo la noche tropical.png` | Prueba de fondo vertical del nivel 5 (1024×1536): pendopo de noche con gongs y wayang |
 | `budaya-jawa-landscape.png` | `Pabellón javanés iluminado bajo la noche tropical.png` | Prueba de fondo horizontal del nivel 5 (1672×941) |
+| `17-agustus-landscape.png` | `17 Agustus (1).png` | Fondo horizontal del nivel temático (1672×941) |
+| `17-agustus-portrait.png` | `17 Agustus (2).png` | Fondo vertical del nivel temático (1024×1536) |
+| `laut-nusantara-portrait.png` | `Laut Nusantara (1).png` | Fondo vertical del nivel temático (1024×1536) |
+| `laut-nusantara-landscape.png` | `Laut Nusantara (2).png` | Fondo horizontal del nivel temático (1672×941) |
+| `olahraga-landscape.png` | `Olahraga (1).png` | Fondo horizontal del nivel temático (1672×941) |
+| `olahraga-portrait.png` | `Olahraga (2).png` | Fondo vertical del nivel temático (1024×1536) |
+| `pasar-malam-portrait.png` | `Pasar malam (1).png` | Fondo vertical del nivel temático (1024×1536) |
+| `pasar-malam-landscape.png` | `Pasar malam (2).png` | Fondo horizontal del nivel temático (1672×941) |
+| `permainan-tradisional-portrait.png` | `Permainan tradisional (1).png` | Fondo vertical del nivel temático (1024×1536) |
+| `permainan-tradisional-landscape.png` | `Permainan tradisional (2).png` | Fondo horizontal del nivel temático (1672×941) |
+| `fauna-nusantara-portrait.png` | `faunaNusantara (1).png` | Fondo vertical del nivel temático (1024×1536) |
+| `fauna-nusantara-landscape.png` | `faunaNusantara (2).png` | Fondo horizontal del nivel temático (1672×941) |
+| `festival-nusantara-landscape.png` | `festivalNusantara (1).png` | Fondo horizontal del nivel temático (1672×941) |
+| `festival-nusantara-portrait.png` | `festivalNusantara (2).png` | Fondo vertical del nivel temático (1024×1536) |
+| `rempah-maluku-portrait.png` | `rempahMaluku (1).png` | Fondo vertical del nivel temático (1024×1536) |
+| `rempah-maluku-landscape.png` | `rempahMaluku (2).png` | Fondo horizontal del nivel temático (1672×941) |
+| `sawah-landscape.png` | `sawah (1).png` | Fondo horizontal del nivel temático (1672×941) |
+| `sawah-portrait.png` | `sawah (2).png` | Fondo vertical del nivel temático (1024×1536) |
 | `shelf-3-v2.png` | `Estantería de madera con tres compartimentos.png` | Estantería regenerada: marco fino, compartimentos cuadrados, interior menos oscuro |
 | `warung-sunset.png` | `Warung acogedor al atardecer.png` | Warung al atardecer (1024×1536), para la portada y la pantalla de inicio; aún sin usar |
 | `background-portrait.png` | `Imagen de ChatGPT 12 oct 2026, 21_40_01.png` | Fondo de juego vertical (2:3), 1024×1536: calle de warungs al anochecer |

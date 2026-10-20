@@ -979,6 +979,150 @@
      ],
      "bytes": 213128
     }
+   },
+   "17-agustus": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 109530
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 158978
+    }
+   },
+   "pasar-malam": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 98376
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 91358
+    }
+   },
+   "laut-nusantara": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 82232
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 129714
+    }
+   },
+   "olahraga": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 59182
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 119362
+    }
+   },
+   "permainan-tradisional": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 136732
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 110964
+    }
+   },
+   "rempah-maluku": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 131612
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 133574
+    }
+   },
+   "sawah": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 62800
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 110666
+    }
+   },
+   "fauna-nusantara": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 131094
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 158582
+    }
+   },
+   "festival-nusantara": {
+    "portrait": {
+     "size": [
+      1024,
+      1536
+     ],
+     "bytes": 125558
+    },
+    "landscape": {
+     "size": [
+      1672,
+      941
+     ],
+     "bytes": 183320
+    }
    }
   }
  }
