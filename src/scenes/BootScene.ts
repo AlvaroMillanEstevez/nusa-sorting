@@ -74,9 +74,10 @@ export class BootScene extends Phaser.Scene {
     const numbers = playList.map((entry) => entry.number);
     const dev = import.meta.env.DEV ? { level: parseLevelParam(search, numbers), home: wantsHome(search) } : undefined;
     // A level left half played (the page was reloaded or the browser dropped it) opens as it was. In development
-    // ?level= and ?home win over it, and keep it for later.
-    if (!dev || (dev.level === null && !dev.home)) {
-      const resume = resumeFromSnapshot(this.store.snapshot);
+    // ?level= (or ?demo=) for the same level picks it up too, so F5 behaves as in the game; for another level, or
+    // with ?home, they win over it and keep it for later.
+    const resume = !dev || !dev.home ? resumeFromSnapshot(this.store.snapshot) : null;
+    if (!dev || (!dev.home && (dev.level === null || dev.level === resume?.levelIndex))) {
       if (resume) {
         this.openLevel(resume.levelIndex, { resume });
         return;
