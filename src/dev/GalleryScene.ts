@@ -8,6 +8,7 @@ import { simulateSvg, type Vision } from '../ui/icons/color';
 import { renderBoosterSvg } from '../ui/icons/icons';
 import { simulatePixels } from '../ui/art/itemPixels';
 import { canvasOf, frontPixels, picture } from '../scenes/itemTextures';
+import { freshCanvas } from '../scenes/FreshLooks';
 import { loadShelfArt, placeShelf, SHELF_TEXTURE } from '../scenes/art/shelfArt';
 import { BOOSTER_IDS, type BoosterId } from '../data/economy';
 import { KitBoosterButton } from '../scenes/kit';
@@ -82,6 +83,14 @@ const LOOK_ALIKES: readonly (readonly string[])[] = [
 ];
 
 const SIZES = [36, 40, 52] as const;
+/** Foods the fresh countdown is tried on: light, mid and dark ones. */
+const FRESH_SAMPLES = ['rambutan', 'kerupuk-udang', 'sate'] as const;
+/** The countdown's states, left to right: fresh, in its last moves (swollen), spoiled. */
+const FRESH_STATES: readonly (readonly [string, Parameters<typeof freshCanvas>[2]])[] = [
+  ['fresh', { spoiled: false, moves: 12, warn: false, big: false }],
+  ['warn', { spoiled: false, moves: 2, warn: true, big: true }],
+  ['spoiled', { spoiled: true }],
+];
 /** Sizes a booster's icon shows at: the shop's tile, the game's bar, an offer. */
 const BOOSTER_SIZES = [28, 40, 64] as const;
 const TILE = 56;
@@ -262,9 +271,63 @@ export class GalleryScene extends Phaser.Scene {
 
     // Boosters' icons, once per vision, big enough for the largest tile.
     for (const id of BOOSTER_IDS) jobs.push(addSvgTexture(this.textures, this.boosterKey(id), simulateSvg(renderBoosterSvg(id), vision), 128 * RENDER_RATIO));
+    // Fresh foods' countdown, in both styles and every state, through the same simulation.
+    for (const type of FRESH_SAMPLES)
+      jobs.push(
+        picture(type).then((image) => {
+          const plain = canvasOf(frontPixels(type, image), null);
+          for (const [state, look] of FRESH_STATES) {
+              const key = this.freshKey(state, type);
+              if (this.textures.exists(key)) continue;
+              const canvas = freshCanvas(plain, plain.width, look);
+              const context = canvas.getContext('2d', { willReadFrequently: true })!;
+              const pixels = see(context.getImageData(0, 0, canvas.width, canvas.height).data);
+              context.putImageData(new ImageData(pixels as Uint8ClampedArray<ArrayBuffer>, canvas.width, canvas.height), 0, 0);
+              this.textures.addImage(key, canvas as unknown as HTMLImageElement);
+            }
+        }),
+      );
     await Promise.all(jobs);
     this.ready = true;
     if (run === this.drawing) this.redraw();
+  }
+
+  private freshKey(state: string, type: string): string {
+    return `gallery:${this.vision}:fresh:${state}:${type}`;
+  }
+
+  /**
+   * Fresh foods' countdown: a shelf per size with one food fresh, in its last moves (as it swells) and spoiled.
+   * Returns the bottom.
+   */
+  private drawFresh(top: number, width: number): number {
+    this.content.add(this.label(PAD, top, t('gallery.fresh'), 20, SKIN.text.accent));
+    let y = top + 34;
+    const s = SIZES[SIZES.length - 1]! / ITEM_FILL;
+    const blockW = LABEL_W + shelfLayoutAt(0, 0, s).rect.width;
+    const columns = Math.max(1, Math.floor((width - 2 * PAD + GAP) / (blockW + GAP)));
+    let rowBottom = y;
+    FRESH_SAMPLES.forEach((type, i) => {
+        const col = i % columns;
+        if (col === 0) y = rowBottom;
+        const x = PAD + col * (blockW + GAP);
+        this.content.add(this.label(x, y, ITEM_KINDS.find((k) => k.id === type)!.name[getLocale()], 15, SKIN.text.primary));
+        let sy = y + 22;
+        for (const px of SIZES) {
+          const ss = px / ITEM_FILL;
+          const shelf = shelfLayoutAt(x + LABEL_W, sy, ss);
+          this.content.add(placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, ss).setTexture(this.keys.shelf));
+          this.content.add(this.label(x, shelf.slots[0]!.y - 8, t('gallery.px', { n: px }), 12, SKIN.text.primary));
+          FRESH_STATES.forEach(([state], j) => {
+            const slot = shelf.slots[j]!;
+            const at = placeItem(slot.y, ss, ITEM_FILL, typeFit(type, slotAspect()));
+            this.content.add(this.add.image(Math.round(slot.x), Math.round(at.y), this.freshKey(state, type)).setDisplaySize(at.size, at.size));
+          });
+          sy = shelf.rect.y + shelf.rect.height + ss * 0.25;
+        }
+        rowBottom = Math.max(rowBottom, sy + GAP);
+    });
+    return rowBottom + GAP;
   }
 
   private redraw(): void {
@@ -275,7 +338,8 @@ export class GalleryScene extends Phaser.Scene {
     this.drawHeader(false);
     this.content.removeAll(true);
 
-    let y = this.drawBoosters(PAD, width) + GAP;
+    let y = this.drawFresh(PAD, width) + GAP;
+    y = this.drawBoosters(y, width) + GAP;
     for (const section of this.sections()) {
       this.content.add(this.label(PAD, y, section.title, 20, SKIN.text.accent));
       y += 34;

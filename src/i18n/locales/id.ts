@@ -112,6 +112,7 @@ export const id: Record<MessageKey, string> = {
   'gallery.vision.grayscale': 'Skala abu-abu',
   'gallery.icons': 'Makanan',
   'gallery.boosters': 'Bantuan',
+  'gallery.fresh': 'Hitung mundur makanan segar: segar, langkah terakhir, basi',
   'gallery.tile.ready': 'Tersedia',
   'gallery.tile.empty': 'Habis',
   'gallery.tile.locked': 'Terkunci',

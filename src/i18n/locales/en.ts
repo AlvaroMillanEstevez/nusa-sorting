@@ -110,6 +110,7 @@ export const en = {
   'gallery.vision.grayscale': 'Grayscale',
   'gallery.icons': 'Food',
   'gallery.boosters': 'Boosters',
+  'gallery.fresh': 'Fresh food countdown: fresh, last moves, spoiled',
   'gallery.tile.ready': 'Available',
   'gallery.tile.empty': 'None left',
   'gallery.tile.locked': 'Locked',

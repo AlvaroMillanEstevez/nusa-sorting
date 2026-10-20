@@ -4,12 +4,111 @@ import { FONTS, FRESH } from '../ui/design/tokens';
 import { spoil, type Pixels } from '../ui/art/itemPixels';
 import { ITEM_TEXTURE_SIZE, itemTextureKey } from './itemTextures';
 
+/** What a countdown shows: the moves left, the warning, and the warning's swollen half. */
+export interface Countdown {
+  readonly moves: number;
+  readonly warn: boolean;
+  readonly big: boolean;
+}
+
 /**
- * How fresh foods look (the 'fresh' mechanic, "basi"): made in the game from each item's own texture. A fresh one
- * carries a round badge top left with the moves it has left (light with a dark number; in its last FRESH.warnFrom
- * moves dark with a light number and a brass ring, swelling and shrinking unless motion is reduced). A spoiled one
- * loses most of its colour to a dull olive and has two small flies over it. The colour-blind badge (bottom right)
- * stays on both. Textures are made when first needed and dropped once no item shows them.
+ * A fresh food's countdown, drawn on its picture (`size` px square): a paper price tag hung by a thread from near
+ * the top left corner, the moves left written on it, tilted down to the right like a tag on a market stall. In its
+ * last moves the card turns dark kraft with a light number and a brass edge (and swells and shrinks, see FreshLooks);
+ * the states differ in lightness and shape, never by colour alone. The whole tag stays inside the picture, swollen
+ * too, so nothing is cut off wherever the item shows.
+ */
+export function drawCounter(context: CanvasRenderingContext2D, size: number, { moves, warn, big }: Countdown): void {
+  const u = size / 100;
+  const digits = String(moves);
+  const hole = { x: 9 * u, y: 19 * u };
+  context.save();
+  // The thread, from a pin near the top edge to the tag's hole.
+  context.strokeStyle = FRESH.thread;
+  context.lineWidth = 1.6 * u;
+  context.beginPath();
+  context.moveTo(15 * u, 2 * u);
+  context.quadraticCurveTo(9 * u, 7 * u, hole.x, hole.y);
+  context.stroke();
+  context.translate(hole.x, hole.y);
+  context.rotate(0.12);
+  if (big) context.scale(1.1, 1.1);
+  const w = 40 * u;
+  const h = 26 * u;
+  // The card: a point at the hole's end, a square end.
+  context.beginPath();
+  context.moveTo(-3 * u, 0);
+  context.lineTo(7 * u, -h / 2);
+  context.lineTo(w, -h / 2);
+  context.lineTo(w, h / 2);
+  context.lineTo(7 * u, h / 2);
+  context.closePath();
+  context.fillStyle = warn ? FRESH.tagWarn : FRESH.tag;
+  context.fill();
+  context.lineJoin = 'round';
+  context.lineWidth = (warn ? 3.6 : 2.2) * u;
+  context.strokeStyle = warn ? FRESH.warnRing : FRESH.tagEdge;
+  context.stroke();
+  // The hole, punched through.
+  context.beginPath();
+  context.arc(2.6 * u, 0, 2.2 * u, 0, Math.PI * 2);
+  context.fillStyle = FRESH.thread;
+  context.fill();
+  context.fillStyle = warn ? FRESH.warnNumber : FRESH.number;
+  context.font = `600 ${Math.round((digits.length > 1 ? 20 : 23) * u)}px ${FONTS.display}`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  // Written by hand: a touch askew against the card.
+  context.rotate(-0.08);
+  context.fillText(digits, 24 * u, 1.5 * u);
+  context.restore();
+}
+
+/** Two small flies over a spoiled item's top: a dark body and two pale wings each. */
+export function drawFlies(context: CanvasRenderingContext2D, size: number): void {
+  const u = size / 100;
+  for (const [x, y, tilt] of [
+    [30, 14, -0.4],
+    [62, 8, 0.5],
+  ] as const) {
+    context.save();
+    context.translate(x * u, y * u);
+    context.rotate(tilt);
+    context.fillStyle = FRESH.wing;
+    context.globalAlpha = 0.85;
+    for (const side of [-1, 1]) {
+      context.beginPath();
+      context.ellipse(side * 3.4 * u, -2.6 * u, 3.6 * u, 2.2 * u, side * 0.5, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.globalAlpha = 1;
+    context.fillStyle = FRESH.fly;
+    context.beginPath();
+    context.ellipse(0, 0, 2.6 * u, 3.6 * u, 0, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+}
+
+/** A canvas with an item's picture (any drawable) at `size`, spoiled or with its countdown. */
+export function freshCanvas(source: CanvasImageSource, size: number, look: { spoiled: true } | ({ spoiled: false } & Countdown)): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  context.drawImage(source, 0, 0, size, size);
+  if (look.spoiled) {
+    const pixels = context.getImageData(0, 0, size, size);
+    context.putImageData(new ImageData(spoil(pixels.data as Pixels) as Uint8ClampedArray<ArrayBuffer>, size, size), 0, 0);
+    drawFlies(context, size);
+  } else {
+    drawCounter(context, size, look);
+  }
+  return canvas;
+}
+
+/**
+ * How fresh foods look in a level: each item's own texture with its countdown (or spoiled), made when first needed
+ * and dropped once nothing shows it.
  */
 export class FreshLooks {
   /** Textures made, by key, and the type each one belongs to. */
@@ -26,13 +125,16 @@ export class FreshLooks {
     if (!fresh) return null;
     const base = itemTextureKey(type, marks);
     if (!this.textures.exists(base)) return null;
-    if (fresh.spoiled) return this.ensure(`${base}:spoiled`, type, () => this.spoiled(base));
+    const source = () => this.textures.get(base).getSourceImage() as CanvasImageSource;
+    if (fresh.spoiled) return this.ensure(`${base}:spoiled`, type, () => freshCanvas(source(), ITEM_TEXTURE_SIZE, { spoiled: true }));
     const warn = fresh.movesLeft <= FRESH.warnFrom;
     const big = warn && pulse === 1;
-    return this.ensure(`${base}:fresh:${fresh.movesLeft}${warn ? (big ? ':w1' : ':w0') : ''}`, type, () => this.badged(base, fresh.movesLeft, warn, big));
+    return this.ensure(`${base}:fresh:${fresh.movesLeft}${warn ? (big ? ':w1' : ':w0') : ''}`, type, () =>
+      freshCanvas(source(), ITEM_TEXTURE_SIZE, { spoiled: false, moves: fresh.movesLeft, warn, big }),
+    );
   }
 
-  /** Drops the textures no item shows any more (`inUse`: the keys sprites show now). */
+  /** Drops the textures nothing shows any more (`inUse`: the keys on screen now). */
   purge(inUse: ReadonlySet<string>): void {
     for (const key of [...this.made.keys()]) {
       if (inUse.has(key)) continue;
@@ -47,75 +149,5 @@ export class FreshLooks {
       this.made.set(key, type);
     }
     return key;
-  }
-
-  /** A canvas holding the item's usual front texture. */
-  private copy(base: string): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = ITEM_TEXTURE_SIZE;
-    const context = canvas.getContext('2d', { willReadFrequently: true })!;
-    context.drawImage(this.textures.get(base).getSourceImage() as CanvasImageSource, 0, 0, ITEM_TEXTURE_SIZE, ITEM_TEXTURE_SIZE);
-    return { canvas, context };
-  }
-
-  private badged(base: string, moves: number, warn: boolean, big: boolean): HTMLCanvasElement {
-    const { canvas, context } = this.copy(base);
-    const u = ITEM_TEXTURE_SIZE / 100;
-    // Big enough to read at 36 px (about 15 px across there), clear of the colour-blind badge bottom right.
-    const r = (big ? 23 : 20.5) * u;
-    const cx = 22 * u;
-    const cy = 22 * u;
-    context.beginPath();
-    context.arc(cx, cy, r, 0, Math.PI * 2);
-    context.fillStyle = warn ? FRESH.warnFill : FRESH.fill;
-    context.fill();
-    context.lineWidth = 4.5 * u;
-    context.strokeStyle = warn ? FRESH.warnRing : FRESH.ring;
-    context.stroke();
-    if (warn) {
-      context.beginPath();
-      context.arc(cx, cy, r + 3.2 * u, 0, Math.PI * 2);
-      context.lineWidth = 2 * u;
-      context.strokeStyle = FRESH.ring;
-      context.stroke();
-    }
-    const digits = String(moves);
-    context.fillStyle = warn ? FRESH.warnNumber : FRESH.number;
-    context.font = `600 ${Math.round((digits.length > 1 ? 24 : 30) * u * (big ? 1.1 : 1))}px ${FONTS.display}`;
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText(digits, cx, cy + 1.5 * u);
-    return canvas;
-  }
-
-  private spoiled(base: string): HTMLCanvasElement {
-    const { canvas, context } = this.copy(base);
-    const size = ITEM_TEXTURE_SIZE;
-    const pixels = context.getImageData(0, 0, size, size);
-    context.putImageData(new ImageData(spoil(pixels.data as Pixels) as Uint8ClampedArray<ArrayBuffer>, size, size), 0, 0);
-    // Two small flies over the top: a dark body and two pale wings.
-    const u = size / 100;
-    for (const [x, y, tilt] of [
-      [30, 14, -0.4],
-      [62, 8, 0.5],
-    ] as const) {
-      context.save();
-      context.translate(x * u, y * u);
-      context.rotate(tilt);
-      context.fillStyle = FRESH.wing;
-      context.globalAlpha = 0.85;
-      for (const side of [-1, 1]) {
-        context.beginPath();
-        context.ellipse(side * 3.4 * u, -2.6 * u, 3.6 * u, 2.2 * u, side * 0.5, 0, Math.PI * 2);
-        context.fill();
-      }
-      context.globalAlpha = 1;
-      context.fillStyle = FRESH.fly;
-      context.beginPath();
-      context.ellipse(0, 0, 2.6 * u, 3.6 * u, 0, 0, Math.PI * 2);
-      context.fill();
-      context.restore();
-    }
-    return canvas;
   }
 }

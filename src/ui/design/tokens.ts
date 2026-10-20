@@ -148,9 +148,9 @@ export const TILE = {
 } as const;
 
 /**
- * Fresh foods (the 'fresh' mechanic, "basi"): the countdown badge on a fresh item, which turns dark with a brass
- * ring and pulses in its last moves, and the flies on a spoiled one. Light and dark swap, so the warning never
- * relies on colour.
+ * Fresh foods (the 'fresh' mechanic, "basi"): the countdown's price tag on a fresh item, which turns dark with a
+ * brass edge and pulses in its last moves, and the flies on a spoiled one. Light and dark swap, so the warning
+ * never relies on colour.
  */
 export const FRESH = {
   fill: '#fffaf0',
@@ -161,6 +161,11 @@ export const FRESH = {
   warnNumber: '#fffaf0',
   fly: '#1b1610',
   wing: '#e9f1f1',
+  /** The countdown, a paper price tag on a thread: card, its edge and thread; dark kraft card while warning. */
+  tag: '#f3e6c4',
+  tagEdge: '#8a6a42',
+  thread: '#6b4f2e',
+  tagWarn: '#4a2e1b',
   /** The badge warns from this many moves left. */
   warnFrom: 3,
   /** Each half of the warning's pulse, in ms. */
