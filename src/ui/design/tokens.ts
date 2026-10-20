@@ -147,6 +147,26 @@ export const TILE = {
   glint: '#fff1b8',
 } as const;
 
+/**
+ * Fresh foods (the 'fresh' mechanic, "basi"): the countdown badge on a fresh item, which turns dark with a brass
+ * ring and pulses in its last moves, and the flies on a spoiled one. Light and dark swap, so the warning never
+ * relies on colour.
+ */
+export const FRESH = {
+  fill: '#fffaf0',
+  ring: '#2e1b0d',
+  number: '#2e1b0d',
+  warnFill: '#2e1b0d',
+  warnRing: '#e0b040',
+  warnNumber: '#fffaf0',
+  fly: '#1b1610',
+  wing: '#e9f1f1',
+  /** The badge warns from this many moves left. */
+  warnFrom: 3,
+  /** Each half of the warning's pulse, in ms. */
+  pulseMs: 420,
+} as const;
+
 /** How components react when pressed. */
 export const PRESS = {
   /** Scale while held. */

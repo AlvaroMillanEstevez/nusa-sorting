@@ -53,6 +53,8 @@ export const en = {
   'continue.time.name': '+{s} seconds',
   'continue.time.note': 'Dearer each time',
   'continue.space.body': 'Use a booster to make room and keep going.',
+  'fresh.intro.title': 'Fresh food!',
+  'fresh.intro.body': 'The number on a fresh food is the moves it has left: make its triple before it spoils, or it scores nothing.',
   'continue.stuck.body': 'Use a booster to get moving again.',
   'stuck.cause.blocker': 'The items you need are stuck behind the crate.',
   'stuck.cause.blockerInWay': 'The crate is in the way of the triple you need.',

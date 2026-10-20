@@ -29,7 +29,9 @@ export type SoundEffect =
   /** A shelf that closes once emptied is boarded up. */
   | 'shelfClosed'
   /** A star chest opens. */
-  | 'chest';
+  | 'chest'
+  /** A fresh food spoils (basi): its countdown ran out. */
+  | 'spoil';
 
 /** Sound boundary. Scenes ask for effects by name and never touch audio APIs directly. */
 export interface SoundService {

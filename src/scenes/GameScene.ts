@@ -60,7 +60,7 @@ import {
   type Rect,
 } from '../ui/boardLayout';
 import { ITEM_FILL, layoutForLevel, liveBoard, type LiveBoard } from '../ui/levelLayout';
-import { DURATION, hexNumber, SKIN } from '../ui/design/tokens';
+import { DURATION, FRESH, hexNumber, SKIN } from '../ui/design/tokens';
 import { themeLook } from '../ui/themeLook';
 import { themeById, type ThemeId } from '../data/themes';
 import { placeItem, typeFit } from '../ui/itemFit';
@@ -71,6 +71,10 @@ import { BlockerView, ClosingShelves, LockOverlays } from './BoardDecor';
 import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import { MovingShelves } from './MovingShelves';
+import { FreshLooks } from './FreshLooks';
+
+/** Done once the player has read what fresh foods are (see introduceFreshFoods). */
+const FRESH_FOOD_INTRO = 'fresh-food';
 import { playList } from './playList';
 import { playedLevel, type ResumedLevel } from './playedLevel';
 import { ResultOverlay } from './ResultOverlay';
@@ -203,6 +207,9 @@ export class GameScene extends Phaser.Scene {
   /** The fixed shelves' pictures (made again each time the scene starts: the old ones go with it). */
   private shelfImages: Phaser.GameObjects.Image[] = [];
   private movingShelves!: MovingShelves;
+  /** How fresh foods look (their countdown badge, or spoiled), and the warning pulse's phase now. */
+  private freshLooks!: FreshLooks;
+  private freshPulse: 0 | 1 = 0;
   private dropMark!: Phaser.GameObjects.Graphics;
   /** Last pointer position, for the drop-target outline while dragging. */
   private pointerPos: { x: number; y: number } | null = null;
@@ -254,6 +261,7 @@ export class GameScene extends Phaser.Scene {
     this.haptics.setEnabled(this.store.vibration);
     this.shelfImages = [];
     this.movingShelves = new MovingShelves(this);
+    this.freshLooks = new FreshLooks(this.textures);
     this.dropMark = this.add.graphics().setDepth(DEPTH_DROP_MARK);
     this.locks = new LockOverlays(this);
     this.closing = new ClosingShelves(this);
@@ -519,6 +527,31 @@ export class GameScene extends Phaser.Scene {
     this.followMovingItems();
     this.updateDropMark();
     this.belt.update();
+    this.pulseFresh();
+  }
+
+  /**
+   * Fresh foods in their last moves: their badge swells and shrinks (still with reduced motion: the badge's dark
+   * look says it all). Textures no item shows any more are dropped.
+   */
+  private pulseFresh(): void {
+    if (this.state.fresh.length === 0) return;
+    const warning = this.state.fresh.some((f) => !f.spoiled && f.movesLeft > 0 && f.movesLeft <= FRESH.warnFrom);
+    const pulse: 0 | 1 = warning && !reducedMotion() ? ((Math.floor(this.time.now / FRESH.pulseMs) % 2) as 0 | 1) : 0;
+    if (pulse === this.freshPulse) return;
+    this.freshPulse = pulse;
+    this.refreshFreshLooks();
+  }
+
+  /** Every item in front takes the look its fresh food has now; old badge textures go. */
+  private refreshFreshLooks(): void {
+    const inUse = new Set<string>();
+    for (const sprite of this.sprites.values()) {
+      const type = sprite.getData('type') as string;
+      if (sprite.texture.key !== itemBackTextureKey(type)) this.setLook(sprite, true);
+      inUse.add(sprite.texture.key);
+    }
+    this.freshLooks.purge(inUse);
   }
 
   /** Recomputes where shelves riding tracks are now; everything else reads this.layout. */
@@ -737,7 +770,10 @@ export class GameScene extends Phaser.Scene {
   /** A booster's first appearance: a one-line intro and its gift units (one at a time, if several are new). */
   private introduceBoosters(): void {
     const fresh = this.unlockedBoosters().find((id) => !this.store.wallet.introduced.includes(id));
-    if (!fresh) return;
+    if (!fresh) {
+      this.introduceFreshFoods();
+      return;
+    }
     this.store.introduceBooster(fresh);
     this.buildBoosterBar();
     this.paused = true;
@@ -751,6 +787,26 @@ export class GameScene extends Phaser.Scene {
         onPress: () => {
           this.paused = false;
           this.introduceBoosters();
+        },
+      },
+    });
+  }
+
+  /** The first level with fresh foods: a one-line explanation, with a fresh item and its badge as the picture. */
+  private introduceFreshFoods(): void {
+    const first = this.state.fresh[0];
+    if (!first || this.store.isTutorialDone(FRESH_FOOD_INTRO)) return;
+    this.paused = true;
+    showOffer(this, {
+      title: t('fresh.intro.title'),
+      image: this.freshLooks.frontKey(this.state, first.type, this.store.colorBlindMode, 0) ?? itemTextureKey(first.type, this.store.colorBlindMode),
+      body: t('fresh.intro.body'),
+      accept: null,
+      decline: {
+        label: t('offer.ok'),
+        onPress: () => {
+          this.store.markTutorialDone(FRESH_FOOD_INTRO);
+          this.paused = false;
         },
       },
     });
@@ -990,7 +1046,8 @@ export class GameScene extends Phaser.Scene {
    */
   private setLook(sprite: Phaser.GameObjects.Image, front: boolean): void {
     const type = sprite.getData('type') as string;
-    const key = front ? itemTextureKey(type, this.store.colorBlindMode) : itemBackTextureKey(type);
+    const marks = this.store.colorBlindMode;
+    const key = front ? (this.freshLooks.frontKey(this.state, type, marks, this.freshPulse) ?? itemTextureKey(type, marks)) : itemBackTextureKey(type);
     // Called every frame for items on belts: nothing to do when the look is already right.
     if (sprite.texture.key === key) return;
     sprite.setTexture(key);
@@ -1536,6 +1593,8 @@ export class GameScene extends Phaser.Scene {
     this.sync(ADVANCE_MS, (pos) => (advancedShelves.has(pos.shelf) ? ADVANCE_DELAY_MS + lead : 0), moved?.itemId);
     this.playMechanics(events, lead, gathered);
     this.advanceTutorial(events);
+    // Fresh foods counted a move down (or spoiled): every item in front shows its countdown as it is now.
+    if (this.state.fresh.length > 0) this.refreshFreshLooks();
 
     if (this.state.status === 'won') {
       const { width, height } = viewSize(this);
@@ -1660,6 +1719,10 @@ export class GameScene extends Phaser.Scene {
         }
         case 'blockerMoved':
           blockerTo = event.to;
+          break;
+        case 'spoiled':
+          // A fresh food went off: its items change look (refreshed after the move) with a short sad sound.
+          this.time.delayedCall(popAt, () => this.sfx.play('spoil'));
           break;
         case 'blockerRemoved': {
           const slot = this.layout.shelves[event.at.shelf]!.slots[event.at.slot]!;

@@ -53,6 +53,8 @@ const EFFECTS: Record<SoundEffect, readonly Tone[]> = {
   blocked: [{ at: 0, duration: 0.25, freq: 140, freqEnd: 70, wave: 'triangle', gain: 0.3 }, note(0.08, 98, 0.3, 'square', 0.05)],
   shelfClosed: [{ at: 0, duration: 0.2, freq: 200, freqEnd: 110, wave: 'triangle', gain: 0.25 }],
   chest: [note(0, 1319, 0.08, 'sine', 0.12), note(0.06, 1568, 0.08, 'sine', 0.12), note(0.12, 2093, 0.14, 'sine', 0.1)],
+  // Food going off: a short soft sag downwards with a little wobble, more "oh no" than alarm.
+  spoil: [{ at: 0, duration: 0.24, freq: 440, freqEnd: 196, wave: 'triangle', gain: 0.16 }, { at: 0.12, duration: 0.16, freq: 230, freqEnd: 170, wave: 'sine', gain: 0.08 }],
 };
 
 /** The recorded effects, by file name (the effect's name, or 'star' for the three stars). */

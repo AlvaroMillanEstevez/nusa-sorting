@@ -192,6 +192,26 @@ export function recolour(px: Pixels, hue: number, share: number, shift: VariantS
   return out;
 }
 
+// ---------------------------------------------------------------- spoiled food (the 'fresh' mechanic)
+
+/** Spoiled food: most of its colour gone, a dull olive cast and a little darker (flies are drawn on top). */
+export const SPOILED = { keep: 0.3, tint: [0x6f, 0x7a, 0x3c] as const, tintShare: 0.3, darken: 0.12 };
+
+/** An item as spoiled food: desaturated towards grey, tinted olive, a little darker; its shape and alpha stay. */
+export function spoil(px: Pixels): Pixels {
+  const out = new Uint8ClampedArray(px);
+  for (let i = 0; i < out.length; i += 4) {
+    if (out[i + 3] === 0) continue;
+    const grey = 0.299 * out[i]! + 0.587 * out[i + 1]! + 0.114 * out[i + 2]!;
+    for (let c = 0; c < 3; c++) {
+      const kept = grey + (out[i + c]! - grey) * SPOILED.keep;
+      const tinted = kept + (SPOILED.tint[c]! - kept) * SPOILED.tintShare;
+      out[i + c] = tinted * (1 - SPOILED.darken);
+    }
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- vision simulation (gallery)
 
 // Viénot, Brettel & Mollon (1999), applied in linear RGB, as ui/icons/color.ts.

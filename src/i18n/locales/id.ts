@@ -55,6 +55,8 @@ export const id: Record<MessageKey, string> = {
   'continue.time.name': '+{s} detik',
   'continue.time.note': 'Makin mahal tiap kali',
   'continue.space.body': 'Pakai bantuan untuk memberi ruang dan lanjutkan.',
+  'fresh.intro.title': 'Makanan segar!',
+  'fresh.intro.body': 'Angka pada makanan segar adalah sisa langkahnya: buat trionya sebelum basi, atau tidak dapat poin.',
   'continue.stuck.body': 'Pakai bantuan agar bisa bergerak lagi.',
   'stuck.cause.blocker': 'Barang yang kamu perlukan tertahan di balik kotak kayu.',
   'stuck.cause.blockerInWay': 'Kotak kayu menghalangi trio yang kamu perlukan.',
