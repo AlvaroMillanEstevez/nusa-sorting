@@ -130,22 +130,35 @@ export class HomeScene extends Phaser.Scene {
         return;
       }
       this.press = { y: pointerAt(pointer).y, scroll: this.scroll, moved: false };
+      // A level's plaque sinks a little under the finger.
+      this.map.press(this.levelUnder(pointer));
     });
-    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      // With a mouse: the plaque under the pointer lifts and glows, and the pointer becomes a hand.
+      if (!pointer.isDown) {
+        const level = this.modal || this.sequence?.running || over.length > 0 ? null : this.levelUnder(pointer);
+        this.map.hover(level);
+        this.input.manager.canvas.style.cursor = level === null ? '' : 'pointer';
+      }
       if (!this.press || !pointer.isDown) return;
       const dy = pointerAt(pointer).y - this.press.y;
       if (Math.abs(dy) > TAP_SLOP) this.press.moved = true;
-      if (this.press.moved) this.setScroll(this.press.scroll - dy);
+      if (this.press.moved) {
+        this.map.press(null);
+        this.setScroll(this.press.scroll - dy);
+      }
     });
     this.input.on(Phaser.Input.Events.POINTER_UP, (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       const press = this.press;
       this.press = null;
+      this.map.press(null);
       // Not when the tap was on a button or counter over the map.
       if (!press || press.moved || this.modal || over.length > 0) return;
-      const at = pointerAt(pointer);
-      const level = this.map.levelAt(at.x - this.map.container.x, at.y - this.map.container.y);
+      const level = this.levelUnder(pointer);
       if (level !== null) this.chooseLevel(level);
     });
+    // The hand pointer is the map's alone: it goes with it.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => (this.input.manager.canvas.style.cursor = ''));
     this.input.on(Phaser.Input.Events.POINTER_WHEEL, (_p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => this.setScroll(this.scroll + dy));
     this.scale.on(Phaser.Scale.Events.RESIZE, this.build, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off(Phaser.Scale.Events.RESIZE, this.build, this));
@@ -163,6 +176,12 @@ export class HomeScene extends Phaser.Scene {
     } else if (import.meta.env.DEV && wantsCoinsHelp(window.location.search)) {
       this.openCoinsHelp();
     }
+  }
+
+  /** The revealed level whose plaque is under the pointer, if any. */
+  private levelUnder(pointer: Phaser.Input.Pointer): number | null {
+    const at = pointerAt(pointer);
+    return this.map.levelAt(at.x - this.map.container.x, at.y - this.map.container.y);
   }
 
   private ids(): string[] {

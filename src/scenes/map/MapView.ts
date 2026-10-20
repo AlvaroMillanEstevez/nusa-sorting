@@ -54,6 +54,11 @@ interface IslandPicture {
 export class MapView {
   readonly container: Phaser.GameObjects.Container;
   private readonly nodeViews = new Map<number, Phaser.GameObjects.Container>();
+  /** The current level, and the plaques under the pointer and under a press, with their lights. */
+  private current: number | null = null;
+  private hovered: number | null = null;
+  private pressed: number | null = null;
+  private readonly glows = new Map<number, Phaser.GameObjects.Graphics>();
   /** The islands' pictures, by island index, and their images once loaded. */
   private readonly pictures = new Map<number, IslandPicture>();
   private readonly shown = new Map<number, Phaser.GameObjects.Image>();
@@ -381,16 +386,72 @@ export class MapView {
     this.container.add(g);
   }
 
-  /** The current level: a larger plaque in a light ring, bobbing gently. */
+  /**
+   * The current level: a larger plaque in a light ring with a warm light behind it that breathes, bobbing gently
+   * (both still with reduced motion), so it asks to be tapped.
+   */
   highlight(level: number): void {
     const view = this.nodeViews.get(level);
     if (!view) return;
-    const ring = this.scene.add.graphics();
+    this.current = level;
     const r = this.plaqueRadius();
+    const light = this.scene.add.graphics();
+    for (let k = 4; k >= 1; k--) light.fillStyle(hexNumber(SKIN.status.combo), 0.09).fillCircle(0, 0, r + 6 + k * 6);
+    const ring = this.scene.add.graphics();
     ring.lineStyle(4, hexNumber(SKIN.status.combo), 1).strokeCircle(0, 0, r + 6);
     view.addAt(ring, 0);
+    view.addAt(light, 0);
     view.setScale(1.15);
-    if (!reducedMotion()) this.scene.tweens.add({ targets: view, scale: 1.22, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
+    if (!reducedMotion()) {
+      this.scene.tweens.add({ targets: view, scale: 1.22, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
+      this.scene.tweens.add({ targets: light, alpha: { from: 0.55, to: 1 }, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
+    }
+  }
+
+  /** With a mouse: the plaque under the pointer lifts a little and glows (null: none). */
+  hover(level: number | null): void {
+    if (level === this.hovered) return;
+    const was = this.hovered;
+    this.hovered = level;
+    this.restyle(was);
+    this.restyle(level);
+  }
+
+  /** The plaque under a finger or a held mouse button sinks a little (null: none). */
+  press(level: number | null): void {
+    if (level === this.pressed) return;
+    const was = this.pressed;
+    this.pressed = level;
+    this.restyle(was);
+    this.restyle(level);
+  }
+
+  /**
+   * A plaque's look for its hover and press: lifted (×1.1) with a soft light behind when hovered, sunk (×0.92)
+   * when pressed; with reduced motion it changes at once instead of easing. The current level keeps its own bob,
+   * so it only takes the light.
+   */
+  private restyle(level: number | null): void {
+    if (level === null) return;
+    const view = this.nodeViews.get(level);
+    if (!view) return;
+    const lit = level === this.hovered || level === this.pressed;
+    let glow = this.glows.get(level);
+    if (lit && !glow) {
+      glow = this.scene.add.graphics();
+      const r = this.plaqueRadius();
+      for (let k = 3; k >= 1; k--) glow.fillStyle(hexNumber(SKIN.surface.highlight), 0.14).fillCircle(0, 0, r + k * 5);
+      view.addAt(glow, 0);
+      this.glows.set(level, glow);
+    } else if (!lit && glow) {
+      glow.destroy();
+      this.glows.delete(level);
+    }
+    if (level === this.current) return;
+    const scale = level === this.pressed ? 0.92 : level === this.hovered ? 1.1 : 1;
+    this.scene.tweens.killTweensOf(view);
+    if (reducedMotion()) view.setScale(scale);
+    else this.scene.tweens.add({ targets: view, scale, duration: DURATION.press, ease: EASE.enter });
   }
 
   /** The player's pin, over a level's plaque. */
