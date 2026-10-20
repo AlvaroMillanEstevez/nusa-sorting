@@ -48,6 +48,11 @@ export interface LevelRecipe {
   readonly fixedStacks?: StackRecipe;
   /** Fixed shelves (not locked, not riding a track) that close for good once emptied. */
   readonly closing?: number;
+  /**
+   * Fresh foods ("basi", the 'fresh' mechanic): one countdown (in player moves) per food, picked at random among
+   * the level's foods (never cultural objects).
+   */
+  readonly fresh?: { readonly moves: readonly number[] };
 
   /**
    * Item types in the level, one triple each: the first `types` of the generator's type order (types.ts), so

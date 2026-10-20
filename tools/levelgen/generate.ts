@@ -17,6 +17,7 @@ import {
 import { CHECKED_SCREENS, itemSize, layoutForLevel, validateLevelLayout } from '../../src/ui/levelLayout';
 import { CASUAL, EXPERT, playMany, rng, simulate, solve, type SimulationStats } from '../simulator';
 import { typesFor } from './plan';
+import { parseItemType } from '../../src/data/itemCatalog';
 import type { LevelRecipe } from './recipe';
 
 /** Simulated games while searching, and for the final figures. */
@@ -245,6 +246,13 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
     );
     if (eligible.length < recipe.closing) return null;
     mechanics.push({ kind: 'closingShelves', shelves: choose(random, eligible.length, recipe.closing).map((i) => eligible[i]!).sort((a, b) => a - b) });
+  }
+  if (recipe.fresh) {
+    // Foods only: cultural objects never spoil.
+    const foods = [...new Set(items)].filter((type) => parseItemType(type)?.kind.category !== 'cultural');
+    if (foods.length < recipe.fresh.moves.length) return null;
+    const picked = choose(random, foods.length, recipe.fresh.moves.length).map((i) => foods[i]!);
+    mechanics.push({ kind: 'fresh', foods: picked.map((type, i) => ({ type, moves: recipe.fresh!.moves[i]! })) });
   }
   if (tracks.length > 0) {
     mechanics.push({

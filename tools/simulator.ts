@@ -243,6 +243,9 @@ export interface GameOutcome {
   readonly tightShare: number;
   /** Ended by STUCK_MOVES moves without a triple (or by the move limit), not won and not lost by the rules. */
   readonly stuck: boolean;
+  /** Triples of fresh foods (the 'fresh' mechanic) cleared while still fresh, and once spoiled. */
+  readonly freshTriples: number;
+  readonly spoiledTriples: number;
 }
 
 /**
@@ -261,6 +264,8 @@ export interface PlayerProfile {
    * that would close (unless that clears a triple).
    */
   readonly looksBehind: boolean;
+  /** Share of moves where it minds the fresh foods' countdowns and gathers the most urgent one it can save first. */
+  readonly mindsFresh: number;
 }
 
 /**
@@ -268,10 +273,10 @@ export interface PlayerProfile {
  * see and, when it sees none, empties some shelf to see what is behind; but misses three moves in ten (then
  * sometimes splitting a pair), places without looking at the layers behind and does not check it has room.
  */
-export const CASUAL: PlayerProfile = { name: 'casual', missRate: 0.3, splitRate: 0.3, looksBehind: false };
+export const CASUAL: PlayerProfile = { name: 'casual', missRate: 0.3, splitRate: 0.3, looksBehind: false, mindsFresh: 0.5 };
 
 /** A careful player, the one the bands make sure is still challenged: rarely misses, and looks behind. */
-export const EXPERT: PlayerProfile = { name: 'expert', missRate: 0.08, splitRate: 0, looksBehind: true };
+export const EXPERT: PlayerProfile = { name: 'expert', missRate: 0.08, splitRate: 0, looksBehind: true, mindsFresh: 1 };
 
 /** The planning player avoids moving an item out of the way again within this many moves. */
 const RECENT_MOVES = 6;
@@ -312,6 +317,8 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
   const recentIds: number[] = [];
   let lastClear = 0;
   let stuck = false;
+  let freshTriples = 0;
+  let spoiledTriples = 0;
   const basePerMove = secondsPerMove(typeCount(start));
   for (; moves < maxMoves && state.status === 'playing'; moves++) {
     if (moves - lastClear >= STUCK_MOVES) {
@@ -349,7 +356,8 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
     if (options.length === 0) break;
     const best = Math.max(...options.map((o) => o.score));
     const missed = random() < profile.missRate;
-    const planned = missed ? null : plannedMove(state, new Set(recentIds), profile.looksBehind);
+    const planned = missed ? null : plannedMove(state, new Set(recentIds), profile.looksBehind, state.fresh.length > 0 && random() < profile.mindsFresh);
+    // (Levels without fresh foods draw no number for it, so their simulations stay as they were.)
     const plannedOption = planned && options.find((o) => sameMove(o.move, planned));
     let pool: typeof options;
     if (plannedOption) {
@@ -368,6 +376,10 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
       if (recentIds.length > RECENT_MOVES) recentIds.shift();
     }
     if (choice.result.events.some((e) => e.kind === 'tripleCleared')) lastClear = moves + 1;
+    for (const e of choice.result.events) {
+      if (e.kind === 'tripleCleared' && e.freshness === 'fresh') freshTriples++;
+      if (e.kind === 'tripleCleared' && e.freshness === 'spoiled') spoiledTriples++;
+    }
     state = tick(choice.result.state, choice.seconds * 1000).state;
     seconds += choice.seconds;
   }
@@ -381,6 +393,8 @@ export function playGreedy(start: GameState, random: () => number, profile: Play
     meanFree: moves > 0 ? freeTotal / moves : freeSlots(start),
     tightShare: moves > 0 ? tight / moves : 0,
     stuck: stuck || (state.status === 'playing' && moves >= maxMoves),
+    freshTriples,
+    spoiledTriples,
   };
 }
 
@@ -435,9 +449,10 @@ function parkingSlot(state: GameState, type: string, avoid: number | null, looks
  * avoids moving out of the way again an item it has just moved (`recent`, item ids), which would only shuffle
  * it back and forth. A player that looks behind also digs first where it has room to finish, keeps the items
  * it moves aside off shelves still hiding layers, and never fills the last free slot unless that completes a
- * triple. Null when it sees nothing to do (the player then moves as it would on a miss).
+ * triple. One minding the fresh foods (`mindsFresh`) gathers first a fresh one it can still save, the most
+ * urgent first. Null when it sees nothing to do (the player then moves as it would on a miss).
  */
-function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind: boolean): Move | null {
+function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind: boolean, mindsFresh = false): Move | null {
   const reach = reachableItems(state);
   const free = freeSlots(state);
   const byType = new Map<string, Reachable[]>();
@@ -458,7 +473,11 @@ function plannedMove(state: GameState, recent: ReadonlySet<number>, looksBehind:
       // Moving the others off needs that many free slots elsewhere.
       if (others.length > free - room.length) continue;
       const shuffles = others.filter((i) => recent.has(frontItems[i]!.id)).length;
-      const cost = others.length + needed + 3 * shuffles + (looksBehind && shelf.layers.length > 1 ? -0.3 : 0);
+      // Minding the countdowns: a fresh food it can still save in time goes first, the most urgent first.
+      const fresh = mindsFresh ? state.fresh.find((f) => f.type === type && !f.spoiled) : undefined;
+      const steps = others.length + needed;
+      const urgency = fresh && fresh.movesLeft >= steps ? 6 + 1 / fresh.movesLeft : 0;
+      const cost = steps + 3 * shuffles + (looksBehind && shelf.layers.length > 1 ? -0.3 : 0) - urgency;
       if (plan && cost >= plan.cost) continue;
       let move: Move | null = null;
       if (others.length > 0) {
@@ -517,6 +536,8 @@ export interface SimulationStats {
   readonly avgFree: number;
   /** Space pressure: share of moves made with TIGHT_FREE_SLOTS free slots or fewer, averaged over games. */
   readonly pressure: number;
+  /** Of the fresh foods' triples cleared, the share cleared spoiled (0 without fresh foods). */
+  readonly spoiledShare: number;
 }
 
 /** Plays `runs` simulated games with a fixed seed so the outcomes are reproducible. */
@@ -540,6 +561,10 @@ export function simulate(start: GameState, runs = 200, seed = 1, profile: Player
     avgScore: mean((o) => o.score),
     avgFree: mean((o) => o.meanFree),
     pressure: mean((o) => o.tightShare),
+    spoiledShare: (() => {
+      const all = outcomes.reduce((sum, o) => sum + o.freshTriples + o.spoiledTriples, 0);
+      return all === 0 ? 0 : outcomes.reduce((sum, o) => sum + o.spoiledTriples, 0) / all;
+    })(),
   };
 }
 

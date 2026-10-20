@@ -16,11 +16,15 @@ import { level014 } from './level014';
 import { level015 } from './level015';
 import { level016 } from './level016';
 import { level017 } from './level017';
+import { level018 } from './level018';
+import { level019 } from './level019';
+import { level020 } from './level020';
 
 /**
  * The demo levels the game used while its mechanics were built: three base levels, one demo per mechanic
  * (combo, locked shelves, roaming blocker), both obstacles combined, the conveyor prototype, column layouts with
- * vertical conveyors, and vertical tracks of shelves. The game no longer uses them; the golden recordings and
+ * vertical conveyors, vertical tracks of shelves, fixed stacks and closing shelves, and fresh foods (18-20, a
+ * prototype not in the game yet). The game no longer uses them; the golden recordings and
  * many mechanic tests still play them.
  */
 export const demoLevels: readonly LevelDefinition[] = [
@@ -41,6 +45,9 @@ export const demoLevels: readonly LevelDefinition[] = [
   level015,
   level016,
   level017,
+  level018,
+  level019,
+  level020,
 ];
 
 /** Number of leading demo levels that use no mechanics. */

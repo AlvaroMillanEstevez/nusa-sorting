@@ -17,6 +17,11 @@ import {
   type MoveResult,
 } from '../src/core';
 import { front } from './helpers';
+import { demoLevels } from './fixtures/demo-levels';
+import { parseItemType } from '../src/data/itemCatalog';
+import { buildCandidate } from '../tools/levelgen/generate';
+import { recipeFor } from '../tools/levelgen/recipes';
+import { rng } from '../tools/simulator';
 
 const ok = (result: MoveResult): { state: GameState; events: readonly GameEvent[] } => {
   if (!result.ok) throw new Error(`unexpected invalid move: ${result.reason}`);
@@ -150,5 +155,28 @@ describe('fresh foods ("basi")', () => {
         ],
       }),
     ).toThrow(/twice/);
+  });
+});
+
+describe('fresh foods in level data', () => {
+  it('are always food in the demos, never cultural objects', () => {
+    for (const level of demoLevels) {
+      for (const mechanic of level.mechanics ?? []) {
+        if (mechanic.kind !== 'fresh') continue;
+        for (const { type } of mechanic.foods) expect(parseItemType(type)?.kind.category, `${level.id} ${type}`).not.toBe('cultural');
+      }
+    }
+  });
+
+  it('come from recipes: one countdown per food, picked among the level’s foods only', () => {
+    // A themed level's recipe (it has cultural objects), with three fresh foods.
+    const recipe = { ...recipeFor(10), fresh: { moves: [8, 14, 22] } };
+    const random = rng(4);
+    let level: LevelDefinition | null = null;
+    for (let i = 0; i < 200 && !level; i++) level = buildCandidate(recipe, random);
+    const fresh = level!.mechanics!.find((m) => m.kind === 'fresh');
+    expect(fresh && fresh.kind === 'fresh' && fresh.foods.map((f) => f.moves)).toEqual([8, 14, 22]);
+    for (const { type } of fresh && fresh.kind === 'fresh' ? fresh.foods : []) expect(parseItemType(type)?.kind.category).not.toBe('cultural');
+    expect(() => createGame(level!)).not.toThrow();
   });
 });
