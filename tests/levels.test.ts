@@ -125,13 +125,13 @@ describe('the curve of levels 1-24', () => {
   const hasShelfTrack = (level: LevelDefinition) => level.layout?.columns.some((c) => c.kind === 'shelfTrack') ?? false;
   const hasStackTrack = (level: LevelDefinition) => createGame(level).tracks.some((t) => t.carriers.some((c) => c.kind === 'stack'));
 
-  it('1: very simple: 6-8 kinds, few empty slots, nothing hidden, no mechanics', () => {
+  it('1: very simple: 6-8 kinds, few empty slots, nothing hidden, no mechanics but one fresh food in view', () => {
     expect(columnsOf(l1!)).toEqual(['grid']);
     expect(kindsOf(l1!).size).toBeGreaterThanOrEqual(6);
     expect(kindsOf(l1!).size).toBeLessThanOrEqual(8);
     expect(l1!.shelves.flat(2).filter((slot) => slot === null).length).toBeLessThanOrEqual(3);
     expect(backLayers(l1!)).toBe(0);
-    expect(l1!.mechanics ?? []).toEqual([]);
+    expect((l1!.mechanics ?? []).map((m) => m.kind)).toEqual(['fresh']);
   });
 
   it('2: more items, two columns, and back layers appear', () => {

@@ -49,10 +49,15 @@ export interface LevelRecipe {
   /** Fixed shelves (not locked, not riding a track) that close for good once emptied. */
   readonly closing?: number;
   /**
-   * Fresh foods ("basi", the 'fresh' mechanic): one countdown (in player moves) per food, picked at random among
-   * the level's foods (never cultural objects).
+   * Fresh foods ("basi", the 'fresh' mechanic), among the level's foods (never cultural objects): one countdown per
+   * food, as a share of a typical game's moves (TYPICAL_MOVES_PER_ITEM × items). With `inFront`, they are foods with
+   * at least that many copies in a front from the start (3: all in view); without it, any foods, which may start
+   * behind other items or in stacks (and maybe spoil unseen). They are added to the board and time found without
+   * them, which they never change; `pick` pins which pick of them (see withFresh) the pinned candidate keeps.
    */
-  readonly fresh?: { readonly moves: readonly number[] };
+  readonly fresh?: { readonly shares: readonly number[]; readonly inFront?: 2 | 3; readonly pick?: number };
+  /** Band for the share of fresh triples the casual player clears spoiled. */
+  readonly spoiled?: readonly [number, number];
 
   /**
    * Item types in the level, one triple each: the first `types` of the generator's type order (types.ts), so

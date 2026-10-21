@@ -22,7 +22,7 @@ import type { LevelRecipe } from './recipe';
 /** Combo multipliers doubled (themed level 10). */
 const DOUBLE_COMBO = [2, 3, 4, 5, 6, 8, 10];
 
-export const RECIPES: readonly LevelRecipe[] = [
+const BASE_RECIPES: readonly LevelRecipe[] = [
   {
     number: 1,
     id: 'nusa-001',
@@ -1146,6 +1146,86 @@ export const RECIPES: readonly LevelRecipe[] = [
     time: { slack: 1.3, timeUp: [0, 0.15], typical: true },
   },
 ];
+
+/**
+ * Fresh foods ("basi") across levels 1-50: how many, their countdowns as shares of a typical game's moves, and
+ * whether they may start out of view. They go on each level's board as it was, which they never change (so its
+ * wins stay; the stars move a little). The game's own mechanic, from the first level:
+ * - Levels 1-4: one fresh food, every copy in a front from the start; level 1 teaches it in its tutorial's second
+ *   step. Levels 5-12: one or two, with at least two copies in a front and the third behind (their boards have no
+ *   food with all three in front, and moving one would change who wins). All generous (0.6-1 of a typical game,
+ *   stretched while the casual player spoils too many), so the idea is learnt before any pressure.
+ * - From level 13 they may start behind other items or in stacks, and now and then spoil unseen.
+ * - Breathers after a themed level bring one more fresh food than the levels around them (three from level 21):
+ *   the calm board leaves room to juggle countdowns.
+ * - Levels that bring a new mechanic or are the hardest so far keep a single generous one, so the new idea leads;
+ *   none where even one would change who wins (9, the faster vertical belt with deeper stacks; 32, the first
+ *   shelves that close; 39, the mix of fixed stacks, closing and locked shelves and the blocker, at the low end of
+ *   its band).
+ * - Countdowns tighten slowly, from 1 of a typical game at level 1 to about 0.4 at level 50.
+ */
+export const FRESH_CURVE: Readonly<Record<number, NonNullable<LevelRecipe['fresh']>>> = {
+  1: { shares: [1], inFront: 3, pick: 0 },
+  2: { shares: [0.9], inFront: 3, pick: 0 },
+  3: { shares: [0.85], inFront: 3, pick: 0 },
+  4: { shares: [0.8], inFront: 3, pick: 0 },
+  5: { shares: [0.8], inFront: 2, pick: 6 },
+  6: { shares: [0.7, 1], inFront: 2, pick: 0 },
+  7: { shares: [0.7], inFront: 2, pick: 2 },
+  8: { shares: [0.8], inFront: 2, pick: 0 },
+  10: { shares: [0.7], inFront: 2, pick: 12 },
+  11: { shares: [0.6, 0.9], inFront: 2, pick: 1 },
+  12: { shares: [0.8], inFront: 2, pick: 3 },
+  13: { shares: [0.6, 0.85], pick: 2 },
+  14: { shares: [0.65], pick: 12 },
+  15: { shares: [0.7], pick: 0 },
+  16: { shares: [0.55, 0.85], pick: 5 },
+  17: { shares: [0.55, 0.8], pick: 5 },
+  18: { shares: [0.5, 0.75], pick: 5 },
+  19: { shares: [0.6], pick: 0 },
+  20: { shares: [0.6, 0.85], pick: 9 },
+  21: { shares: [0.5, 0.7, 0.95], pick: 0 },
+  22: { shares: [0.55, 0.8], pick: 0 },
+  23: { shares: [0.5, 0.75], pick: 0 },
+  24: { shares: [0.6], pick: 4 },
+  25: { shares: [0.6, 0.85], pick: 6 },
+  26: { shares: [0.45, 0.65, 0.9], pick: 14 },
+  27: { shares: [0.6], pick: 4 },
+  28: { shares: [0.5, 0.75], pick: 2 },
+  29: { shares: [0.55], pick: 6 },
+  30: { shares: [0.55, 0.8], pick: 7 },
+  31: { shares: [0.4, 0.6, 0.85], pick: 3 },
+  33: { shares: [0.5, 0.75], pick: 0 },
+  34: { shares: [0.55], pick: 7 },
+  35: { shares: [0.5, 0.75], pick: 8 },
+  36: { shares: [0.4, 0.6, 0.8], pick: 9 },
+  37: { shares: [0.45, 0.7], pick: 2 },
+  38: { shares: [0.45, 0.7], pick: 9 },
+  40: { shares: [0.45, 0.65, 0.85], pick: 0 },
+  41: { shares: [0.4, 0.55, 0.75], pick: 12 },
+  42: { shares: [0.45, 0.65], pick: 18 },
+  43: { shares: [0.45, 0.65], pick: 0 },
+  44: { shares: [0.5], pick: 2 },
+  45: { shares: [0.45, 0.7], pick: 0 },
+  46: { shares: [0.35, 0.5, 0.7], pick: 5 },
+  47: { shares: [0.4, 0.6], pick: 2 },
+  48: { shares: [0.4, 0.6], pick: 0 },
+  49: { shares: [0.5], pick: 4 },
+  50: { shares: [0.4, 0.55, 0.75], pick: 1 },
+};
+
+/** Band for the casual player's fresh triples cleared spoiled: little while learning, more once they may hide. */
+function spoiledBand(level: number): readonly [number, number] {
+  if (level <= 5) return [0, 0.25];
+  if (level <= 12) return [0, 0.35];
+  if (level <= 30) return [0, 0.5];
+  return [0, 0.6];
+}
+
+export const RECIPES: readonly LevelRecipe[] = BASE_RECIPES.map((recipe) => {
+  const fresh = FRESH_CURVE[recipe.number];
+  return fresh ? { ...recipe, fresh, spoiled: spoiledBand(recipe.number) } : recipe;
+});
 
 export function recipeFor(numberOrId: number | string): LevelRecipe {
   const recipe = RECIPES.find((r) => r.number === numberOrId || r.id === numberOrId);

@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 15`, or try another seed with `npm run levelgen -- 15 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 56%, out of space 45%,
- * out of time 0%, space pressure 22%. Expert: wins 91%.
+ * Simulated players, 200 games each. Casual: wins 52%, out of space 47%,
+ * out of time 1%, space pressure 25%. Expert: wins 85%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 31% to 56%, the expert 6% to 91%; pressure 19% to 42%.
+ * Across them the casual player wins 36% to 52%, the expert 6% to 85%; pressure 19% to 31%.
  * Stars (formula in src/core/stars.ts): two from 1820 points, three from 2680.
  */
 export const nusa015: LevelDefinition = {
@@ -50,6 +50,7 @@ export const nusa015: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'mie-goreng', moves: 25 }] },
   ],
   layout: {
     columns: [
@@ -91,31 +92,6 @@ export const nusa015: LevelDefinition = {
     {
       shelves: [
         [
-          ['durian', null, null],
-          ['durian', 'topeng', 'arum-manis'],
-          ['cabai', 'manggis', 'gado-gado'],
-        ],
-        [
-          [null, 'gado-gado', null],
-          ['arum-manis', 'mie-goreng', 'mie-goreng'],
-          ['bianglala', 'bianglala', 'cabai'],
-        ],
-        [[null, 'balon', 'rendang'], ['kembang-api', 'cabai', 'lampion'], ['durian', null, null]],
-        [[null, null, null]],
-        [
-          [null, 'lampion', 'rendang'],
-          ['arum-manis', 'lampion', 'manggis'],
-          ['balon', 'kembang-api', 'balon'],
-        ],
-      ],
-      stacks: [
-        [['topeng', 'mie-goreng'], [], ['gado-gado', 'topeng'], [], []],
-        [[], ['rendang', 'kembang-api'], [], [], ['bianglala', 'manggis']],
-      ],
-    },
-    {
-      shelves: [
-        [
           ['cabai', null, null],
           ['lampion', 'kembang-api', 'lampion'],
           ['manggis', 'manggis', 'rendang'],
@@ -140,60 +116,6 @@ export const nusa015: LevelDefinition = {
       stacks: [
         [['balon', 'gado-gado'], [], ['balon', 'lampion'], [], []],
         [[], ['arum-manis', 'rendang'], [], [], ['arum-manis', 'durian']],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['kembang-api', null, null],
-          ['durian', 'kembang-api', 'gado-gado'],
-          ['manggis', 'mie-goreng', 'bianglala'],
-        ],
-        [
-          [null, 'lampion', null],
-          ['cabai', 'arum-manis', 'durian'],
-          ['balon', 'gado-gado', 'bianglala'],
-        ],
-        [[null, 'topeng', 'durian'], ['arum-manis', 'bianglala', 'cabai'], ['manggis', null, null]],
-        [[null, null, null]],
-        [
-          [null, 'rendang', 'arum-manis'],
-          ['cabai', 'rendang', 'lampion'],
-          ['manggis', 'mie-goreng', 'rendang'],
-        ],
-      ],
-      stacks: [
-        [['kembang-api', 'balon'], [], ['gado-gado', 'lampion'], [], []],
-        [[], ['topeng', 'mie-goreng'], [], [], ['topeng', 'balon']],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['manggis', null, null],
-          ['gado-gado', 'balon', 'bianglala'],
-          ['lampion', 'arum-manis', 'manggis'],
-        ],
-        [
-          [null, 'gado-gado', null],
-          ['topeng', 'balon', 'balon'],
-          ['gado-gado', 'manggis', 'mie-goreng'],
-        ],
-        [
-          [null, 'bianglala', 'arum-manis'],
-          ['mie-goreng', 'durian', 'rendang'],
-          ['kembang-api', null, null],
-        ],
-        [[null, null, null]],
-        [
-          [null, 'kembang-api', 'lampion'],
-          ['bianglala', 'topeng', 'cabai'],
-          ['durian', 'durian', 'mie-goreng'],
-        ],
-      ],
-      stacks: [
-        [['arum-manis', 'rendang'], [], ['kembang-api', 'topeng'], [], []],
-        [[], ['cabai', 'cabai'], [], [], ['rendang', 'lampion']],
       ],
     },
     {
@@ -228,26 +150,105 @@ export const nusa015: LevelDefinition = {
     {
       shelves: [
         [
-          ['gado-gado', null, null],
-          ['bianglala', 'kembang-api', 'gado-gado'],
-          ['bianglala', 'mie-goreng', 'rendang'],
+          ['mie-goreng', null, null],
+          ['lampion', 'mie-goreng', 'gado-gado'],
+          ['balon', 'durian', 'kembang-api'],
         ],
-        [[null, 'lampion', null], ['durian', 'cabai', 'cabai'], ['gado-gado', 'bianglala', 'balon']],
+        [[null, 'lampion', null], ['manggis', 'balon', 'cabai'], ['balon', 'cabai', 'topeng']],
         [
-          [null, 'topeng', 'kembang-api'],
-          ['rendang', 'kembang-api', 'mie-goreng'],
-          ['arum-manis', null, null],
+          [null, 'bianglala', 'topeng'],
+          ['manggis', 'durian', 'lampion'],
+          ['kembang-api', null, null],
         ],
         [[null, null, null]],
         [
-          [null, 'manggis', 'arum-manis'],
+          [null, 'bianglala', 'cabai'],
           ['manggis', 'arum-manis', 'topeng'],
-          ['mie-goreng', 'lampion', 'lampion'],
+          ['arum-manis', 'gado-gado', 'arum-manis'],
         ],
       ],
       stacks: [
-        [['cabai', 'balon'], [], ['durian', 'rendang'], [], []],
-        [[], ['balon', 'manggis'], [], [], ['topeng', 'durian']],
+        [['rendang', 'durian'], [], ['bianglala', 'gado-gado'], [], []],
+        [[], ['rendang', 'kembang-api'], [], [], ['mie-goreng', 'rendang']],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['lampion', null, null],
+          ['bianglala', 'topeng', 'cabai'],
+          ['topeng', 'balon', 'mie-goreng'],
+        ],
+        [
+          [null, 'mie-goreng', null],
+          ['topeng', 'manggis', 'lampion'],
+          ['balon', 'rendang', 'manggis'],
+        ],
+        [
+          [null, 'lampion', 'mie-goreng'],
+          ['manggis', 'durian', 'arum-manis'],
+          ['balon', null, null],
+        ],
+        [[null, null, null]],
+        [
+          [null, 'gado-gado', 'arum-manis'],
+          ['gado-gado', 'rendang', 'durian'],
+          ['kembang-api', 'rendang', 'durian'],
+        ],
+      ],
+      stacks: [
+        [['bianglala', 'arum-manis'], [], ['cabai', 'kembang-api'], [], []],
+        [[], ['gado-gado', 'bianglala'], [], [], ['cabai', 'kembang-api']],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['topeng', null, null],
+          ['mie-goreng', 'mie-goreng', 'cabai'],
+          ['cabai', 'rendang', 'lampion'],
+        ],
+        [
+          [null, 'durian', null],
+          ['balon', 'arum-manis', 'kembang-api'],
+          ['arum-manis', 'durian', 'bianglala'],
+        ],
+        [[null, 'kembang-api', 'topeng'], ['topeng', 'balon', 'durian'], ['manggis', null, null]],
+        [[null, null, null]],
+        [
+          [null, 'gado-gado', 'mie-goreng'],
+          ['manggis', 'arum-manis', 'bianglala'],
+          ['bianglala', 'cabai', 'balon'],
+        ],
+      ],
+      stacks: [
+        [['gado-gado', 'rendang'], [], ['manggis', 'lampion'], [], []],
+        [[], ['lampion', 'kembang-api'], [], [], ['gado-gado', 'rendang']],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['balon', null, null],
+          ['lampion', 'cabai', 'rendang'],
+          ['kembang-api', 'topeng', 'mie-goreng'],
+        ],
+        [
+          [null, 'manggis', null],
+          ['manggis', 'bianglala', 'lampion'],
+          ['mie-goreng', 'cabai', 'durian'],
+        ],
+        [[null, 'manggis', 'lampion'], ['cabai', 'rendang', 'topeng'], ['balon', null, null]],
+        [[null, null, null]],
+        [
+          [null, 'mie-goreng', 'balon'],
+          ['rendang', 'durian', 'arum-manis'],
+          ['gado-gado', 'topeng', 'durian'],
+        ],
+      ],
+      stacks: [
+        [['arum-manis', 'kembang-api'], [], ['bianglala', 'arum-manis'], [], []],
+        [[], ['gado-gado', 'gado-gado'], [], [], ['kembang-api', 'bianglala']],
       ],
     },
   ],

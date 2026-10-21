@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 36`, or try another seed with `npm run levelgen -- 36 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 77%, out of space 23%,
- * out of time 1%, space pressure 5%. Expert: wins 83%.
+ * Simulated players, 200 games each. Casual: wins 77%, out of space 22%,
+ * out of time 1%, space pressure 4%. Expert: wins 81%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 66% to 84%, the expert 40% to 98%; pressure 3% to 15%.
+ * Across them the casual player wins 65% to 81%, the expert 27% to 97%; pressure 4% to 10%.
  * Stars (formula in src/core/stars.ts): two from 3880 points, three from 5840.
  */
 export const nusa036: LevelDefinition = {
@@ -51,6 +51,16 @@ export const nusa036: LevelDefinition = {
       ['es-kelapa-muda', 'rambutan', 'es-teh-manis'],
       ['lampion', 'onde-onde', null],
     ],
+  ],
+  mechanics: [
+    {
+      kind: 'fresh',
+      foods: [
+        { type: 'manggis', moves: 37 },
+        { type: 'tempe', moves: 56 },
+        { type: 'ikan-bakar', moves: 75 },
+      ],
+    },
   ],
   layout: {
     columns: [
@@ -99,42 +109,6 @@ export const nusa036: LevelDefinition = {
     {
       shelves: [
         [[null, null, null]],
-        [[null, 'raket', 'kok'], ['ikan-bakar', 'arum-manis', 'kerupuk-udang']],
-        [
-          ['arum-manis', 'jaring', 'kerupuk-udang'],
-          ['manggis', 'lampion', 'lampion'],
-          ['onde-onde', 'kayu-manis', 'bianglala'],
-        ],
-        [['rambutan', 'bianglala', 'pinisi'], ['pinisi', 'balon', 'sepak-takraw']],
-        [
-          ['balon', 'tempe', 'es-teh-manis'],
-          ['raket', 'terompet', 'pala'],
-          ['jaring', 'arum-manis', 'martabak-manis'],
-        ],
-        [['balon', 'pala', null], ['es-kelapa-muda', 'bintang-laut', 'kok']],
-        [['manggis', null, 'jaring'], [null, 'tempe', 'martabak-manis']],
-        [
-          ['cengkeh', 'martabak-manis', 'bianglala'],
-          ['es-teh-manis', 'ikan-bakar', 'raket'],
-          ['tempe', 'es-teh-manis', null],
-        ],
-        [['lampion', 'ikan-bakar', 'kerupuk-udang'], [null, 'es-kelapa-muda', 'pinisi']],
-        [
-          ['onde-onde', 'cengkeh', 'pala'],
-          ['kok', 'kerang', 'kerang'],
-          ['terompet', 'kerang', 'manggis'],
-        ],
-        [[null, 'bintang-laut', 'sepak-takraw'], ['kayu-manis', 'sepak-takraw', null]],
-        [
-          ['es-kelapa-muda', 'bintang-laut', 'rambutan'],
-          ['onde-onde', 'cengkeh', 'kayu-manis'],
-          ['rambutan', 'terompet', null],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
         [[null, 'pinisi', 'lampion'], ['ikan-bakar', 'bianglala', 'kok']],
         [
           ['kerang', 'ikan-bakar', 'cengkeh'],
@@ -171,114 +145,6 @@ export const nusa036: LevelDefinition = {
     {
       shelves: [
         [[null, null, null]],
-        [[null, 'bintang-laut', 'sepak-takraw'], ['bianglala', 'manggis', 'lampion']],
-        [
-          ['onde-onde', 'arum-manis', 'raket'],
-          ['es-teh-manis', 'ikan-bakar', 'es-kelapa-muda'],
-          ['es-teh-manis', 'kok', 'bintang-laut'],
-        ],
-        [['kok', 'terompet', 'kerupuk-udang'], ['kok', 'onde-onde', 'kerupuk-udang']],
-        [
-          ['arum-manis', 'martabak-manis', 'sepak-takraw'],
-          ['rambutan', 'pinisi', 'es-kelapa-muda'],
-          ['terompet', 'lampion', 'manggis'],
-        ],
-        [['bianglala', 'pinisi', null], ['arum-manis', 'sepak-takraw', 'kerupuk-udang']],
-        [['kerang', null, 'jaring'], [null, 'ikan-bakar', 'martabak-manis']],
-        [
-          ['cengkeh', 'es-teh-manis', 'pala'],
-          ['terompet', 'raket', 'tempe'],
-          ['balon', 'tempe', null],
-        ],
-        [['es-kelapa-muda', 'cengkeh', 'kayu-manis'], [null, 'onde-onde', 'jaring']],
-        [
-          ['jaring', 'pala', 'martabak-manis'],
-          ['lampion', 'rambutan', 'manggis'],
-          ['tempe', 'raket', 'pinisi'],
-        ],
-        [[null, 'kerang', 'bintang-laut'], ['kayu-manis', 'balon', null]],
-        [
-          ['bianglala', 'balon', 'kerang'],
-          ['ikan-bakar', 'rambutan', 'cengkeh'],
-          ['kayu-manis', 'pala', null],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
-        [[null, 'kerupuk-udang', 'rambutan'], ['kok', 'pala', 'tempe']],
-        [
-          ['balon', 'pinisi', 'lampion'],
-          ['es-teh-manis', 'bianglala', 'arum-manis'],
-          ['kerupuk-udang', 'onde-onde', 'manggis'],
-        ],
-        [['pala', 'terompet', 'manggis'], ['jaring', 'ikan-bakar', 'ikan-bakar']],
-        [
-          ['kayu-manis', 'raket', 'kayu-manis'],
-          ['bianglala', 'es-kelapa-muda', 'cengkeh'],
-          ['tempe', 'kok', 'sepak-takraw'],
-        ],
-        [['manggis', 'kerang', null], ['bintang-laut', 'es-kelapa-muda', 'terompet']],
-        [['martabak-manis', null, 'cengkeh'], [null, 'onde-onde', 'raket']],
-        [
-          ['es-teh-manis', 'martabak-manis', 'rambutan'],
-          ['ikan-bakar', 'bintang-laut', 'es-teh-manis'],
-          ['balon', 'kok', null],
-        ],
-        [['kayu-manis', 'jaring', 'pinisi'], [null, 'kerupuk-udang', 'rambutan']],
-        [
-          ['tempe', 'bianglala', 'sepak-takraw'],
-          ['pala', 'lampion', 'terompet'],
-          ['pinisi', 'raket', 'bintang-laut'],
-        ],
-        [[null, 'arum-manis', 'kerang'], ['jaring', 'lampion', null]],
-        [
-          ['es-kelapa-muda', 'martabak-manis', 'kerang'],
-          ['sepak-takraw', 'balon', 'arum-manis'],
-          ['cengkeh', 'onde-onde', null],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
-        [[null, 'kok', 'lampion'], ['cengkeh', 'ikan-bakar', 'bianglala']],
-        [
-          ['balon', 'cengkeh', 'tempe'],
-          ['martabak-manis', 'kerupuk-udang', 'rambutan'],
-          ['jaring', 'onde-onde', 'ikan-bakar'],
-        ],
-        [['kerupuk-udang', 'sepak-takraw', 'manggis'], ['es-teh-manis', 'sepak-takraw', 'manggis']],
-        [
-          ['kayu-manis', 'pinisi', 'kerang'],
-          ['raket', 'martabak-manis', 'onde-onde'],
-          ['tempe', 'rambutan', 'terompet'],
-        ],
-        [['lampion', 'arum-manis', null], ['raket', 'kok', 'bintang-laut']],
-        [['kerang', null, 'lampion'], [null, 'ikan-bakar', 'onde-onde']],
-        [
-          ['es-kelapa-muda', 'cengkeh', 'raket'],
-          ['balon', 'es-teh-manis', 'kerang'],
-          ['bintang-laut', 'terompet', null],
-        ],
-        [['balon', 'bintang-laut', 'kayu-manis'], [null, 'kayu-manis', 'kerupuk-udang']],
-        [
-          ['pala', 'jaring', 'pinisi'],
-          ['rambutan', 'es-teh-manis', 'martabak-manis'],
-          ['kok', 'terompet', 'tempe'],
-        ],
-        [[null, 'pala', 'bianglala'], ['pala', 'es-kelapa-muda', null]],
-        [
-          ['sepak-takraw', 'arum-manis', 'pinisi'],
-          ['jaring', 'bianglala', 'arum-manis'],
-          ['es-kelapa-muda', 'manggis', null],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
         [[null, 'es-kelapa-muda', 'kayu-manis'], ['kerupuk-udang', 'bianglala', 'onde-onde']],
         [
           ['cengkeh', 'lampion', 'es-teh-manis'],
@@ -309,6 +175,150 @@ export const nusa036: LevelDefinition = {
           ['kok', 'terompet', 'cengkeh'],
           ['lampion', 'sepak-takraw', 'ikan-bakar'],
           ['terompet', 'manggis', null],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [[null, 'jaring', 'kerang'], ['kerang', 'kerupuk-udang', 'jaring']],
+        [
+          ['martabak-manis', 'balon', 'cengkeh'],
+          ['tempe', 'ikan-bakar', 'martabak-manis'],
+          ['lampion', 'arum-manis', 'martabak-manis'],
+        ],
+        [['kok', 'rambutan', 'cengkeh'], ['cengkeh', 'bintang-laut', 'pinisi']],
+        [
+          ['onde-onde', 'bianglala', 'lampion'],
+          ['balon', 'kok', 'es-kelapa-muda'],
+          ['sepak-takraw', 'rambutan', 'kayu-manis'],
+        ],
+        [['arum-manis', 'pinisi', null], ['kerupuk-udang', 'manggis', 'manggis']],
+        [['raket', null, 'arum-manis'], [null, 'pala', 'sepak-takraw']],
+        [
+          ['es-teh-manis', 'rambutan', 'terompet'],
+          ['kerang', 'pala', 'kerupuk-udang'],
+          ['manggis', 'es-kelapa-muda', null],
+        ],
+        [['es-teh-manis', 'tempe', 'terompet'], [null, 'es-teh-manis', 'jaring']],
+        [
+          ['onde-onde', 'onde-onde', 'tempe'],
+          ['raket', 'balon', 'bintang-laut'],
+          ['kok', 'ikan-bakar', 'bintang-laut'],
+        ],
+        [[null, 'terompet', 'ikan-bakar'], ['pinisi', 'bianglala', null]],
+        [
+          ['pala', 'es-kelapa-muda', 'kayu-manis'],
+          ['bianglala', 'lampion', 'raket'],
+          ['sepak-takraw', 'kayu-manis', null],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [[null, 'kok', 'cengkeh'], ['bianglala', 'terompet', 'balon']],
+        [
+          ['arum-manis', 'tempe', 'terompet'],
+          ['cengkeh', 'manggis', 'pinisi'],
+          ['tempe', 'pala', 'sepak-takraw'],
+        ],
+        [['kayu-manis', 'jaring', 'jaring'], ['kayu-manis', 'raket', 'pala']],
+        [
+          ['rambutan', 'bianglala', 'balon'],
+          ['kerupuk-udang', 'kok', 'pala'],
+          ['rambutan', 'tempe', 'martabak-manis'],
+        ],
+        [['bianglala', 'bintang-laut', null], ['es-teh-manis', 'lampion', 'arum-manis']],
+        [['jaring', null, 'raket'], [null, 'kerang', 'martabak-manis']],
+        [
+          ['ikan-bakar', 'pinisi', 'ikan-bakar'],
+          ['onde-onde', 'arum-manis', 'bintang-laut'],
+          ['cengkeh', 'terompet', null],
+        ],
+        [['kerupuk-udang', 'sepak-takraw', 'lampion'], [null, 'onde-onde', 'lampion']],
+        [
+          ['bintang-laut', 'es-kelapa-muda', 'ikan-bakar'],
+          ['es-kelapa-muda', 'pinisi', 'sepak-takraw'],
+          ['raket', 'es-teh-manis', 'es-kelapa-muda'],
+        ],
+        [[null, 'kerang', 'onde-onde'], ['kerupuk-udang', 'es-teh-manis', null]],
+        [
+          ['manggis', 'manggis', 'balon'],
+          ['rambutan', 'kayu-manis', 'martabak-manis'],
+          ['kerang', 'kok', null],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [[null, 'arum-manis', 'bintang-laut'], ['rambutan', 'terompet', 'balon']],
+        [
+          ['cengkeh', 'kayu-manis', 'es-kelapa-muda'],
+          ['kayu-manis', 'bianglala', 'onde-onde'],
+          ['cengkeh', 'martabak-manis', 'manggis'],
+        ],
+        [['balon', 'manggis', 'jaring'], ['kerupuk-udang', 'raket', 'jaring']],
+        [
+          ['rambutan', 'pinisi', 'ikan-bakar'],
+          ['kok', 'es-teh-manis', 'kerang'],
+          ['es-teh-manis', 'kok', 'martabak-manis'],
+        ],
+        [['raket', 'kok', null], ['arum-manis', 'kayu-manis', 'pinisi']],
+        [['tempe', null, 'pala'], [null, 'es-teh-manis', 'bianglala']],
+        [
+          ['ikan-bakar', 'es-kelapa-muda', 'bintang-laut'],
+          ['raket', 'sepak-takraw', 'tempe'],
+          ['pala', 'kerang', null],
+        ],
+        [['tempe', 'onde-onde', 'manggis'], [null, 'martabak-manis', 'kerupuk-udang']],
+        [
+          ['bintang-laut', 'kerang', 'lampion'],
+          ['lampion', 'pala', 'balon'],
+          ['rambutan', 'pinisi', 'kerupuk-udang'],
+        ],
+        [[null, 'ikan-bakar', 'es-kelapa-muda'], ['sepak-takraw', 'cengkeh', null]],
+        [
+          ['terompet', 'arum-manis', 'jaring'],
+          ['bianglala', 'terompet', 'lampion'],
+          ['onde-onde', 'sepak-takraw', null],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [[null, 'kerupuk-udang', 'pala'], ['terompet', 'kerang', 'balon']],
+        [
+          ['raket', 'ikan-bakar', 'bianglala'],
+          ['manggis', 'pala', 'tempe'],
+          ['es-kelapa-muda', 'lampion', 'rambutan'],
+        ],
+        [['ikan-bakar', 'jaring', 'kerupuk-udang'], ['manggis', 'es-teh-manis', 'cengkeh']],
+        [
+          ['pinisi', 'es-teh-manis', 'martabak-manis'],
+          ['bianglala', 'sepak-takraw', 'manggis'],
+          ['es-kelapa-muda', 'sepak-takraw', 'rambutan'],
+        ],
+        [['kerang', 'kok', null], ['pala', 'pinisi', 'balon']],
+        [['ikan-bakar', null, 'lampion'], [null, 'kayu-manis', 'sepak-takraw']],
+        [
+          ['onde-onde', 'es-teh-manis', 'arum-manis'],
+          ['onde-onde', 'arum-manis', 'es-kelapa-muda'],
+          ['terompet', 'martabak-manis', null],
+        ],
+        [['bianglala', 'arum-manis', 'lampion'], [null, 'jaring', 'cengkeh']],
+        [
+          ['kok', 'raket', 'bintang-laut'],
+          ['cengkeh', 'kok', 'bintang-laut'],
+          ['bintang-laut', 'jaring', 'martabak-manis'],
+        ],
+        [[null, 'kayu-manis', 'raket'], ['rambutan', 'balon', null]],
+        [
+          ['tempe', 'terompet', 'pinisi'],
+          ['kerang', 'tempe', 'kayu-manis'],
+          ['onde-onde', 'kerupuk-udang', null],
         ],
       ],
     },

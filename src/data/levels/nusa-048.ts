@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 48`, or try another seed with `npm run levelgen -- 48 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 40%, out of space 60%,
- * out of time 1%, space pressure 18%. Expert: wins 79%.
+ * Simulated players, 200 games each. Casual: wins 42%, out of space 57%,
+ * out of time 1%, space pressure 21%. Expert: wins 76%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 26% to 40%, the expert 14% to 79%; pressure 9% to 24%.
+ * Across them the casual player wins 27% to 42%, the expert 10% to 76%; pressure 11% to 28%.
  * Stars (formula in src/core/stars.ts): two from 3440 points, three from 5280.
  */
 export const nusa048: LevelDefinition = {
@@ -67,6 +67,7 @@ export const nusa048: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'ayam-goreng', moves: 24 }, { type: 'durian', moves: 36 }] },
   ],
   layout: {
     columns: [
@@ -76,36 +77,6 @@ export const nusa048: LevelDefinition = {
     ],
   },
   arrangements: [
-    {
-      shelves: [
-        [[null, null, 'rendang'], ['ayam-goreng', 'rangkong', 'pinisi']],
-        [['es-kelapa-muda', 'komodo', 'jaring'], ['pinisi', 'arum-manis', 'terompet']],
-        [[null, null, 'bintang-laut'], ['rangkong', 'jaring', 'mie-goreng']],
-        [['lampion', 'balon', null], ['kerbau', 'komodo', 'orangutan'], ['bakul', 'bakul', 'balon']],
-        [
-          ['kerbau', 'gado-gado', 'bianglala'],
-          ['kerang', 'kerang', 'durian'],
-          ['bianglala', 'komodo', 'bintang-laut'],
-        ],
-        [
-          ['gado-gado', 'bianglala', 'terompet'],
-          ['arum-manis', 'pinisi', 'durian'],
-          ['durian', 'lampion', 'bakul'],
-        ],
-        [
-          ['kerbau', null, 'ayam-goreng'],
-          ['terompet', 'ayam-goreng', 'es-kelapa-muda'],
-          ['gado-gado', 'mie-goreng', 'orangutan'],
-        ],
-        [
-          [null, 'rangkong', 'lampion'],
-          ['es-kelapa-muda', 'arum-manis', 'jaring'],
-          ['bintang-laut', 'kerang', 'orangutan'],
-        ],
-        [[null, null, null]],
-      ],
-      stacks: [null, [['mie-goreng'], [], ['balon'], ['rendang'], ['rendang']]],
-    },
     {
       shelves: [
         [[null, null, 'bakul'], ['mie-goreng', 'ayam-goreng', 'mie-goreng']],
@@ -142,173 +113,207 @@ export const nusa048: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, null, 'kerang'], ['mie-goreng', 'rangkong', 'kerbau']],
-        [['rendang', 'arum-manis', 'orangutan'], ['rangkong', 'jaring', 'rendang']],
-        [[null, null, 'bakul'], ['kerang', 'bintang-laut', 'bakul']],
+        [[null, null, 'bakul'], ['mie-goreng', 'lampion', 'balon']],
+        [['bakul', 'durian', 'pinisi'], ['kerbau', 'es-kelapa-muda', 'komodo']],
+        [[null, null, 'terompet'], ['kerbau', 'rendang', 'es-kelapa-muda']],
         [
-          ['pinisi', 'mie-goreng', null],
-          ['es-kelapa-muda', 'kerang', 'balon'],
-          ['es-kelapa-muda', 'bianglala', 'durian'],
+          ['kerbau', 'gado-gado', null],
+          ['gado-gado', 'bintang-laut', 'mie-goreng'],
+          ['bakul', 'rangkong', 'ayam-goreng'],
         ],
         [
-          ['terompet', 'orangutan', 'mie-goreng'],
-          ['durian', 'terompet', 'komodo'],
-          ['gado-gado', 'bakul', 'lampion'],
+          ['orangutan', 'komodo', 'kerang'],
+          ['gado-gado', 'terompet', 'terompet'],
+          ['mie-goreng', 'arum-manis', 'bintang-laut'],
         ],
         [
-          ['kerbau', 'jaring', 'pinisi'],
-          ['ayam-goreng', 'pinisi', 'gado-gado'],
-          ['bianglala', 'arum-manis', 'bintang-laut'],
-        ],
-        [
-          ['bianglala', null, 'lampion'],
-          ['bintang-laut', 'jaring', 'rangkong'],
-          ['durian', 'gado-gado', 'terompet'],
-        ],
-        [
-          [null, 'komodo', 'balon'],
-          ['ayam-goreng', 'ayam-goreng', 'lampion'],
-          ['es-kelapa-muda', 'komodo', 'rendang'],
-        ],
-        [[null, null, null]],
-      ],
-      stacks: [null, [['orangutan'], [], ['kerbau'], ['balon'], ['arum-manis']]],
-    },
-    {
-      shelves: [
-        [[null, null, 'pinisi'], ['ayam-goreng', 'mie-goreng', 'kerbau']],
-        [['arum-manis', 'bianglala', 'durian'], ['ayam-goreng', 'komodo', 'gado-gado']],
-        [[null, null, 'kerang'], ['gado-gado', 'orangutan', 'durian']],
-        [
-          ['orangutan', 'bianglala', null],
-          ['rangkong', 'kerbau', 'kerang'],
-          ['bakul', 'balon', 'bintang-laut'],
-        ],
-        [
-          ['komodo', 'pinisi', 'balon'],
-          ['lampion', 'terompet', 'es-kelapa-muda'],
-          ['arum-manis', 'komodo', 'rendang'],
-        ],
-        [
-          ['kerang', 'es-kelapa-muda', 'pinisi'],
-          ['arum-manis', 'rendang', 'gado-gado'],
-          ['rangkong', 'jaring', 'jaring'],
+          ['rangkong', 'rendang', 'balon'],
+          ['orangutan', 'orangutan', 'rangkong'],
+          ['bintang-laut', 'jaring', 'jaring'],
         ],
         [
           ['balon', null, 'ayam-goreng'],
-          ['mie-goreng', 'kerbau', 'rangkong'],
-          ['bianglala', 'lampion', 'rendang'],
+          ['durian', 'bianglala', 'bianglala'],
+          ['durian', 'es-kelapa-muda', 'ayam-goreng'],
         ],
         [
-          [null, 'bintang-laut', 'mie-goreng'],
-          ['jaring', 'terompet', 'durian'],
-          ['lampion', 'bakul', 'es-kelapa-muda'],
+          [null, 'rendang', 'arum-manis'],
+          ['kerang', 'jaring', 'pinisi'],
+          ['kerang', 'pinisi', 'lampion'],
         ],
         [[null, null, null]],
       ],
-      stacks: [null, [['bintang-laut'], [], ['bakul'], ['terompet'], ['orangutan']]],
+      stacks: [null, [['bianglala'], [], ['arum-manis'], ['lampion'], ['komodo']]],
     },
     {
       shelves: [
-        [[null, null, 'gado-gado'], ['kerbau', 'mie-goreng', 'durian']],
-        [['bakul', 'arum-manis', 'komodo'], ['bintang-laut', 'terompet', 'komodo']],
-        [[null, null, 'balon'], ['orangutan', 'komodo', 'es-kelapa-muda']],
+        [[null, null, 'es-kelapa-muda'], ['pinisi', 'durian', 'lampion']],
+        [['arum-manis', 'arum-manis', 'kerang'], ['gado-gado', 'ayam-goreng', 'orangutan']],
+        [[null, null, 'balon'], ['rangkong', 'gado-gado', 'kerang']],
         [
-          ['orangutan', 'bianglala', null],
-          ['balon', 'ayam-goreng', 'bintang-laut'],
-          ['kerang', 'mie-goreng', 'jaring'],
+          ['lampion', 'es-kelapa-muda', null],
+          ['kerbau', 'rendang', 'gado-gado'],
+          ['komodo', 'pinisi', 'bianglala'],
         ],
         [
-          ['rendang', 'ayam-goreng', 'kerang'],
-          ['rangkong', 'gado-gado', 'gado-gado'],
-          ['terompet', 'bintang-laut', 'terompet'],
+          ['durian', 'durian', 'bintang-laut'],
+          ['arum-manis', 'jaring', 'kerbau'],
+          ['bakul', 'jaring', 'mie-goreng'],
         ],
         [
-          ['kerang', 'pinisi', 'kerbau'],
-          ['arum-manis', 'rendang', 'durian'],
-          ['es-kelapa-muda', 'bianglala', 'rendang'],
+          ['rangkong', 'komodo', 'terompet'],
+          ['mie-goreng', 'bintang-laut', 'bintang-laut'],
+          ['mie-goreng', 'komodo', 'rendang'],
         ],
         [
-          ['jaring', null, 'lampion'],
-          ['bianglala', 'orangutan', 'ayam-goreng'],
-          ['bakul', 'jaring', 'rangkong'],
+          ['ayam-goreng', null, 'balon'],
+          ['bianglala', 'bianglala', 'kerang'],
+          ['es-kelapa-muda', 'balon', 'lampion'],
         ],
         [
-          [null, 'lampion', 'arum-manis'],
-          ['balon', 'durian', 'pinisi'],
-          ['rangkong', 'mie-goreng', 'pinisi'],
+          [null, 'bakul', 'pinisi'],
+          ['orangutan', 'jaring', 'rendang'],
+          ['terompet', 'orangutan', 'terompet'],
         ],
         [[null, null, null]],
       ],
-      stacks: [null, [['bakul'], [], ['es-kelapa-muda'], ['kerbau'], ['lampion']]],
+      stacks: [null, [['bakul'], [], ['ayam-goreng'], ['kerbau'], ['rangkong']]],
     },
     {
       shelves: [
-        [[null, null, 'jaring'], ['rendang', 'jaring', 'orangutan']],
-        [['mie-goreng', 'gado-gado', 'lampion'], ['ayam-goreng', 'terompet', 'kerbau']],
-        [[null, null, 'bianglala'], ['komodo', 'pinisi', 'komodo']],
+        [[null, null, 'bintang-laut'], ['kerang', 'kerang', 'es-kelapa-muda']],
+        [['rangkong', 'gado-gado', 'gado-gado'], ['bakul', 'kerbau', 'pinisi']],
+        [[null, null, 'durian'], ['ayam-goreng', 'orangutan', 'orangutan']],
         [
-          ['pinisi', 'bianglala', null],
-          ['rangkong', 'bakul', 'rendang'],
-          ['rangkong', 'orangutan', 'durian'],
+          ['balon', 'bianglala', null],
+          ['es-kelapa-muda', 'bintang-laut', 'komodo'],
+          ['arum-manis', 'jaring', 'kerang'],
         ],
         [
-          ['es-kelapa-muda', 'arum-manis', 'kerang'],
-          ['durian', 'bianglala', 'bintang-laut'],
-          ['bintang-laut', 'bakul', 'jaring'],
+          ['jaring', 'ayam-goreng', 'pinisi'],
+          ['balon', 'bakul', 'mie-goreng'],
+          ['arum-manis', 'komodo', 'terompet'],
         ],
         [
-          ['orangutan', 'gado-gado', 'kerbau'],
-          ['durian', 'mie-goreng', 'rangkong'],
-          ['es-kelapa-muda', 'es-kelapa-muda', 'lampion'],
+          ['bintang-laut', 'arum-manis', 'kerbau'],
+          ['pinisi', 'lampion', 'rangkong'],
+          ['balon', 'orangutan', 'rendang'],
         ],
         [
-          ['balon', null, 'balon'],
-          ['arum-manis', 'terompet', 'kerang'],
-          ['ayam-goreng', 'terompet', 'gado-gado'],
+          ['jaring', null, 'rendang'],
+          ['mie-goreng', 'rendang', 'durian'],
+          ['gado-gado', 'ayam-goreng', 'terompet'],
         ],
         [
-          [null, 'rendang', 'balon'],
-          ['kerang', 'mie-goreng', 'arum-manis'],
-          ['bakul', 'komodo', 'lampion'],
+          [null, 'bianglala', 'rangkong'],
+          ['komodo', 'lampion', 'terompet'],
+          ['mie-goreng', 'bakul', 'lampion'],
         ],
         [[null, null, null]],
       ],
-      stacks: [null, [['pinisi'], [], ['bintang-laut'], ['ayam-goreng'], ['kerbau']]],
+      stacks: [null, [['durian'], [], ['kerbau'], ['es-kelapa-muda'], ['bianglala']]],
     },
     {
       shelves: [
-        [[null, null, 'ayam-goreng'], ['rangkong', 'rendang', 'pinisi']],
-        [['arum-manis', 'bakul', 'lampion'], ['es-kelapa-muda', 'balon', 'es-kelapa-muda']],
-        [[null, null, 'durian'], ['kerbau', 'bintang-laut', 'balon']],
+        [[null, null, 'balon'], ['bintang-laut', 'komodo', 'gado-gado']],
+        [['durian', 'jaring', 'rendang'], ['balon', 'komodo', 'pinisi']],
+        [[null, null, 'bakul'], ['kerbau', 'durian', 'kerang']],
         [
-          ['bintang-laut', 'ayam-goreng', null],
-          ['durian', 'rendang', 'durian'],
-          ['jaring', 'gado-gado', 'kerbau'],
+          ['kerang', 'orangutan', null],
+          ['orangutan', 'ayam-goreng', 'ayam-goreng'],
+          ['bakul', 'bianglala', 'gado-gado'],
         ],
         [
-          ['arum-manis', 'bianglala', 'rangkong'],
-          ['bakul', 'terompet', 'rendang'],
-          ['pinisi', 'bianglala', 'es-kelapa-muda'],
+          ['kerang', 'kerbau', 'ayam-goreng'],
+          ['mie-goreng', 'arum-manis', 'pinisi'],
+          ['es-kelapa-muda', 'bakul', 'komodo'],
         ],
         [
-          ['bakul', 'arum-manis', 'komodo'],
-          ['jaring', 'gado-gado', 'mie-goreng'],
-          ['lampion', 'orangutan', 'jaring'],
+          ['arum-manis', 'orangutan', 'terompet'],
+          ['mie-goreng', 'bintang-laut', 'mie-goreng'],
+          ['lampion', 'terompet', 'rendang'],
         ],
         [
-          ['komodo', null, 'kerbau'],
-          ['mie-goreng', 'kerang', 'bianglala'],
-          ['kerang', 'mie-goreng', 'rangkong'],
+          ['jaring', null, 'durian'],
+          ['kerbau', 'rangkong', 'jaring'],
+          ['arum-manis', 'rendang', 'balon'],
         ],
         [
-          [null, 'orangutan', 'komodo'],
-          ['orangutan', 'kerang', 'gado-gado'],
-          ['terompet', 'bintang-laut', 'lampion'],
+          [null, 'es-kelapa-muda', 'lampion'],
+          ['es-kelapa-muda', 'rangkong', 'pinisi'],
+          ['bianglala', 'terompet', 'bintang-laut'],
         ],
         [[null, null, null]],
       ],
-      stacks: [null, [['pinisi'], [], ['ayam-goreng'], ['balon'], ['terompet']]],
+      stacks: [null, [['rangkong'], [], ['lampion'], ['gado-gado'], ['bianglala']]],
+    },
+    {
+      shelves: [
+        [[null, null, 'kerbau'], ['pinisi', 'lampion', 'komodo']],
+        [['jaring', 'es-kelapa-muda', 'arum-manis'], ['kerbau', 'es-kelapa-muda', 'rendang']],
+        [[null, null, 'rangkong'], ['durian', 'kerang', 'terompet']],
+        [
+          ['bakul', 'jaring', null],
+          ['durian', 'rendang', 'bakul'],
+          ['bianglala', 'orangutan', 'gado-gado'],
+        ],
+        [
+          ['kerbau', 'bintang-laut', 'ayam-goreng'],
+          ['orangutan', 'rangkong', 'arum-manis'],
+          ['pinisi', 'rendang', 'pinisi'],
+        ],
+        [
+          ['lampion', 'kerang', 'ayam-goreng'],
+          ['rangkong', 'balon', 'es-kelapa-muda'],
+          ['mie-goreng', 'bianglala', 'terompet'],
+        ],
+        [
+          ['bakul', null, 'bintang-laut'],
+          ['arum-manis', 'durian', 'balon'],
+          ['gado-gado', 'bintang-laut', 'mie-goreng'],
+        ],
+        [
+          [null, 'jaring', 'bianglala'],
+          ['balon', 'orangutan', 'lampion'],
+          ['komodo', 'terompet', 'gado-gado'],
+        ],
+        [[null, null, null]],
+      ],
+      stacks: [null, [['mie-goreng'], [], ['ayam-goreng'], ['kerang'], ['komodo']]],
+    },
+    {
+      shelves: [
+        [[null, null, 'arum-manis'], ['ayam-goreng', 'rangkong', 'orangutan']],
+        [['ayam-goreng', 'balon', 'kerang'], ['lampion', 'es-kelapa-muda', 'kerang']],
+        [[null, null, 'es-kelapa-muda'], ['durian', 'terompet', 'arum-manis']],
+        [
+          ['komodo', 'bintang-laut', null],
+          ['jaring', 'kerbau', 'bakul'],
+          ['jaring', 'gado-gado', 'balon'],
+        ],
+        [
+          ['mie-goreng', 'pinisi', 'rendang'],
+          ['rangkong', 'bintang-laut', 'kerang'],
+          ['lampion', 'bintang-laut', 'bakul'],
+        ],
+        [
+          ['orangutan', 'durian', 'pinisi'],
+          ['kerbau', 'mie-goreng', 'pinisi'],
+          ['rendang', 'es-kelapa-muda', 'terompet'],
+        ],
+        [
+          ['rangkong', null, 'mie-goreng'],
+          ['komodo', 'kerbau', 'komodo'],
+          ['bianglala', 'gado-gado', 'bakul'],
+        ],
+        [
+          [null, 'lampion', 'orangutan'],
+          ['rendang', 'jaring', 'bianglala'],
+          ['gado-gado', 'bianglala', 'arum-manis'],
+        ],
+        [[null, null, null]],
+      ],
+      stacks: [null, [['ayam-goreng'], [], ['balon'], ['durian'], ['terompet']]],
     },
   ],
 };

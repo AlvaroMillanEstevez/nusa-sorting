@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 14`, or try another seed with `npm run levelgen -- 14 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 54%, out of space 46%,
- * out of time 1%, space pressure 16%. Expert: wins 9%.
+ * Simulated players, 200 games each. Casual: wins 53%, out of space 47%,
+ * out of time 1%, space pressure 15%. Expert: wins 6%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 26% to 55%, the expert 9% to 82%; pressure 14% to 44%.
+ * Across them the casual player wins 25% to 55%, the expert 6% to 83%; pressure 15% to 45%.
  * Stars (formula in src/core/stars.ts): two from 1640 points, three from 2390.
  */
 export const nusa014: LevelDefinition = {
@@ -45,6 +45,7 @@ export const nusa014: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'sate', moves: 34 }] },
   ],
   layout: {
     columns: [
@@ -54,6 +55,21 @@ export const nusa014: LevelDefinition = {
     ],
   },
   arrangements: [
+    {
+      shelves: [
+        [[null, 'jamu', null], ['jamu', 'tahu-goreng', 'tahu-goreng']],
+        [[null, null, null]],
+        [['ketupat', 'kipas', 'terompet'], ['sate', 'kipas', 'peci']],
+        [[null, 'tahu-goreng', null], ['klepon', 'panjat-pinang', 'salak']],
+        [
+          ['nasi-goreng', null, 'klepon'],
+          ['peci', 'klepon', 'nasi-goreng'],
+          ['panjat-pinang', 'ketupat', 'jamu'],
+        ],
+        [['panjat-pinang', 'salak', 'salak'], ['kipas', 'nasi-goreng', 'terompet']],
+      ],
+      stacks: [[['sate'], ['ketupat'], ['peci'], ['sate'], ['terompet']]],
+    },
     {
       shelves: [
         [[null, 'kipas', null], ['panjat-pinang', 'tahu-goreng', 'ketupat']],
@@ -68,6 +84,21 @@ export const nusa014: LevelDefinition = {
         [['terompet', 'kipas', 'terompet'], ['peci', 'salak', 'jamu']],
       ],
       stacks: [[['panjat-pinang'], ['ketupat'], ['nasi-goreng'], ['peci'], ['jamu']]],
+    },
+    {
+      shelves: [
+        [[null, 'tahu-goreng', null], ['kipas', 'klepon', 'salak']],
+        [[null, null, null]],
+        [['terompet', 'sate', 'sate'], ['tahu-goreng', 'terompet', 'nasi-goreng']],
+        [[null, 'ketupat', null], ['salak', 'panjat-pinang', 'ketupat']],
+        [
+          ['klepon', null, 'panjat-pinang'],
+          ['ketupat', 'peci', 'klepon'],
+          ['kipas', 'salak', 'nasi-goreng'],
+        ],
+        [['sate', 'peci', 'jamu'], ['peci', 'jamu', 'kipas']],
+      ],
+      stacks: [[['terompet'], ['jamu'], ['nasi-goreng'], ['panjat-pinang'], ['tahu-goreng']]],
     },
     {
       shelves: [
@@ -128,32 +159,6 @@ export const nusa014: LevelDefinition = {
         [['nasi-goreng', 'peci', 'panjat-pinang'], ['tahu-goreng', 'jamu', 'tahu-goreng']],
       ],
       stacks: [[['tahu-goreng'], ['ketupat'], ['terompet'], ['jamu'], ['klepon']]],
-    },
-    {
-      shelves: [
-        [[null, 'sate', null], ['klepon', 'sate', 'jamu']],
-        [[null, null, null]],
-        [['nasi-goreng', 'peci', 'kipas'], ['tahu-goreng', 'tahu-goreng', 'terompet']],
-        [[null, 'ketupat', null], ['ketupat', 'panjat-pinang', 'kipas']],
-        [
-          ['panjat-pinang', null, 'jamu'],
-          ['salak', 'nasi-goreng', 'ketupat'],
-          ['klepon', 'peci', 'salak'],
-        ],
-        [['klepon', 'kipas', 'terompet'], ['terompet', 'tahu-goreng', 'panjat-pinang']],
-      ],
-      stacks: [[['salak'], ['sate'], ['jamu'], ['nasi-goreng'], ['peci']]],
-    },
-    {
-      shelves: [
-        [[null, 'terompet', null], ['salak', 'tahu-goreng', 'kipas']],
-        [[null, null, null]],
-        [['jamu', 'tahu-goreng', 'nasi-goreng'], ['sate', 'sate', 'jamu']],
-        [[null, 'panjat-pinang', null], ['kipas', 'salak', 'terompet']],
-        [['terompet', null, 'salak'], ['panjat-pinang', 'peci', 'sate'], ['kipas', 'jamu', 'peci']],
-        [['nasi-goreng', 'panjat-pinang', 'klepon'], ['ketupat', 'nasi-goreng', 'peci']],
-      ],
-      stacks: [[['ketupat'], ['klepon'], ['ketupat'], ['klepon'], ['tahu-goreng']]],
     },
   ],
 };

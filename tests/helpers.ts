@@ -63,7 +63,7 @@ export function asRecorded(events: readonly GameEvent[], level: LevelDefinition)
 
 /**
  * Checks a level's simulated results against its recipe's bands, as the generator does (see bandedStats): the
- * casual player's wins, time-ups and space pressure, and the expert's wins.
+ * casual player's wins, time-ups, space pressure and fresh triples spoiled, and the expert's wins.
  */
 export function expectInBands(stats: LevelStats, recipe: LevelRecipe, label: string): void {
   const within = (value: number, [min, max]: readonly [number, number], what: string) => {
@@ -73,5 +73,6 @@ export function expectInBands(stats: LevelStats, recipe: LevelRecipe, label: str
   within(stats.casual.winRate, recipe.winBand, 'casual wins');
   within(stats.casual.timeUpRate, recipe.time.timeUp, 'casual time-ups');
   if (recipe.pressure) within(stats.casual.pressure, recipe.pressure, 'space pressure');
+  if (recipe.spoiled) within(stats.casual.spoiledShare, recipe.spoiled, 'fresh triples spoiled');
   if (recipe.expertBand) within(stats.expert.winRate, recipe.expertBand, 'expert wins');
 }

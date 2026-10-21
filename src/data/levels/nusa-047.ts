@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 47`, or try another seed with `npm run levelgen -- 47 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 40%, out of space 60%,
- * out of time 0%, space pressure 21%. Expert: wins 28%.
+ * Simulated players, 200 games each. Casual: wins 34%, out of space 66%,
+ * out of time 0%, space pressure 21%. Expert: wins 33%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 25% to 40%, the expert 13% to 73%; pressure 16% to 25%.
+ * Across them the casual player wins 27% to 44%, the expert 19% to 75%; pressure 17% to 30%.
  * Stars (formula in src/core/stars.ts): two from 3410 points, three from 5130.
  */
 export const nusa047: LevelDefinition = {
@@ -60,6 +60,7 @@ export const nusa047: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'manggis', moves: 25 }, { type: 'tempe', moves: 38 }] },
   ],
   layout: {
     columns: [
@@ -69,174 +70,6 @@ export const nusa047: LevelDefinition = {
     ],
   },
   arrangements: [
-    {
-      shelves: [
-        [
-          ['tarsius', null, 'cobek'],
-          ['peci', 'caping', 'bendera'],
-          ['martabak-manis', 'panjat-pinang', 'tempe'],
-        ],
-        [['ikan-bakar', null, null], ['lada', 'cangkul', 'kelereng']],
-        [
-          ['orang-orangan', 'sate', 'sate'],
-          ['ikan-bakar', 'ikan-bakar', 'rambutan'],
-          ['kelereng', null, 'kelereng'],
-        ],
-        [[null, 'padi', null], ['tempe', null, 'panjat-pinang']],
-        [
-          ['rambutan', null, 'orang-orangan'],
-          ['lada', 'karung', 'manggis'],
-          ['lada', 'karung', 'kembang-api'],
-        ],
-        [
-          ['cangkul', 'manggis', 'tarsius'],
-          ['karung', 'tempe', 'cendrawasih'],
-          ['penyu', 'cobek', 'bendera'],
-        ],
-        [
-          ['bendera', 'tarsius', null],
-          ['sate', 'penyu', 'peci'],
-          ['martabak-manis', 'kembang-api', 'caping'],
-        ],
-        [[null, null, null]],
-      ],
-      stacks: [
-        [
-          ['cangkul', 'caping'],
-          ['rambutan', 'orang-orangan', 'cendrawasih'],
-          ['kembang-api', 'cendrawasih'],
-          ['manggis', 'peci'],
-          ['penyu', 'cobek', 'padi'],
-          ['panjat-pinang', 'martabak-manis', 'padi'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['padi', null, 'bendera'],
-          ['peci', 'peci', 'padi'],
-          ['karung', 'manggis', 'martabak-manis'],
-        ],
-        [['martabak-manis', null, null], ['martabak-manis', 'kelereng', 'cangkul']],
-        [
-          ['orang-orangan', 'panjat-pinang', 'orang-orangan'],
-          ['rambutan', 'cobek', 'ikan-bakar'],
-          ['ikan-bakar', null, 'lada'],
-        ],
-        [[null, 'peci', null], ['tarsius', null, 'sate']],
-        [
-          ['bendera', null, 'padi'],
-          ['orang-orangan', 'kembang-api', 'penyu'],
-          ['cobek', 'bendera', 'caping'],
-        ],
-        [
-          ['tarsius', 'tempe', 'panjat-pinang'],
-          ['tempe', 'cobek', 'tarsius'],
-          ['penyu', 'penyu', 'manggis'],
-        ],
-        [
-          ['panjat-pinang', 'kembang-api', null],
-          ['cendrawasih', 'rambutan', 'kembang-api'],
-          ['cendrawasih', 'cendrawasih', 'cangkul'],
-        ],
-        [[null, null, null]],
-      ],
-      stacks: [
-        [
-          ['caping', 'kelereng'],
-          ['karung', 'sate', 'tempe'],
-          ['sate', 'lada'],
-          ['karung', 'caping'],
-          ['lada', 'cangkul', 'manggis'],
-          ['ikan-bakar', 'kelereng', 'rambutan'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['caping', null, 'bendera'],
-          ['padi', 'martabak-manis', 'kembang-api'],
-          ['tempe', 'cangkul', 'lada'],
-        ],
-        [['sate', null, null], ['lada', 'martabak-manis', 'tarsius']],
-        [
-          ['ikan-bakar', 'cobek', 'kelereng'],
-          ['cendrawasih', 'kembang-api', 'panjat-pinang'],
-          ['rambutan', null, 'tempe'],
-        ],
-        [[null, 'manggis', null], ['manggis', null, 'panjat-pinang']],
-        [
-          ['kelereng', null, 'rambutan'],
-          ['tarsius', 'ikan-bakar', 'penyu'],
-          ['peci', 'rambutan', 'peci'],
-        ],
-        [
-          ['tarsius', 'manggis', 'orang-orangan'],
-          ['cendrawasih', 'karung', 'panjat-pinang'],
-          ['karung', 'cangkul', 'peci'],
-        ],
-        [
-          ['penyu', 'ikan-bakar', null],
-          ['padi', 'caping', 'bendera'],
-          ['karung', 'padi', 'cendrawasih'],
-        ],
-        [[null, null, null]],
-      ],
-      stacks: [
-        [
-          ['tempe', 'caping'],
-          ['orang-orangan', 'cangkul', 'cobek'],
-          ['sate', 'martabak-manis'],
-          ['penyu', 'bendera'],
-          ['sate', 'lada', 'kembang-api'],
-          ['orang-orangan', 'cobek', 'kelereng'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['lada', null, 'tarsius'],
-          ['caping', 'kembang-api', 'penyu'],
-          ['rambutan', 'rambutan', 'cobek'],
-        ],
-        [['panjat-pinang', null, null], ['manggis', 'ikan-bakar', 'kembang-api']],
-        [
-          ['rambutan', 'cangkul', 'martabak-manis'],
-          ['tempe', 'sate', 'cendrawasih'],
-          ['orang-orangan', null, 'karung'],
-        ],
-        [[null, 'padi', null], ['lada', null, 'orang-orangan']],
-        [
-          ['peci', null, 'karung'],
-          ['karung', 'kelereng', 'cobek'],
-          ['ikan-bakar', 'cangkul', 'tempe'],
-        ],
-        [
-          ['padi', 'martabak-manis', 'manggis'],
-          ['cendrawasih', 'bendera', 'peci'],
-          ['sate', 'caping', 'panjat-pinang'],
-        ],
-        [
-          ['manggis', 'martabak-manis', null],
-          ['lada', 'bendera', 'penyu'],
-          ['orang-orangan', 'kembang-api', 'tarsius'],
-        ],
-        [[null, null, null]],
-      ],
-      stacks: [
-        [
-          ['sate', 'kelereng'],
-          ['bendera', 'panjat-pinang', 'cangkul'],
-          ['kelereng', 'padi'],
-          ['penyu', 'tarsius'],
-          ['cobek', 'cendrawasih', 'caping'],
-          ['peci', 'tempe', 'ikan-bakar'],
-        ],
-      ],
-    },
     {
       shelves: [
         [
@@ -352,6 +185,162 @@ export const nusa047: LevelDefinition = {
           ['penyu', 'caping'],
           ['rambutan', 'bendera', 'karung'],
           ['tempe', 'padi', 'tempe'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['karung', null, 'tempe'],
+          ['penyu', 'panjat-pinang', 'cangkul'],
+          ['kembang-api', 'kembang-api', 'tarsius'],
+        ],
+        [['peci', null, null], ['karung', 'martabak-manis', 'sate']],
+        [
+          ['panjat-pinang', 'ikan-bakar', 'padi'],
+          ['cobek', 'bendera', 'sate'],
+          ['kelereng', null, 'caping'],
+        ],
+        [[null, 'orang-orangan', null], ['padi', null, 'martabak-manis']],
+        [
+          ['lada', null, 'rambutan'],
+          ['panjat-pinang', 'tempe', 'bendera'],
+          ['tarsius', 'cangkul', 'kelereng'],
+        ],
+        [
+          ['penyu', 'tempe', 'kembang-api'],
+          ['kelereng', 'martabak-manis', 'cendrawasih'],
+          ['tarsius', 'caping', 'cobek'],
+        ],
+        [['rambutan', 'padi', null], ['karung', 'lada', 'manggis'], ['peci', 'cendrawasih', 'lada']],
+        [[null, null, null]],
+      ],
+      stacks: [
+        [
+          ['ikan-bakar', 'cangkul'],
+          ['manggis', 'peci', 'cobek'],
+          ['bendera', 'sate'],
+          ['rambutan', 'cendrawasih'],
+          ['manggis', 'penyu', 'ikan-bakar'],
+          ['orang-orangan', 'orang-orangan', 'caping'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['kembang-api', null, 'penyu'], ['manggis', 'peci', 'tempe'], ['lada', 'cangkul', 'cobek']],
+        [['penyu', null, null], ['lada', 'cendrawasih', 'orang-orangan']],
+        [
+          ['bendera', 'tempe', 'cobek'],
+          ['manggis', 'peci', 'ikan-bakar'],
+          ['lada', null, 'cendrawasih'],
+        ],
+        [[null, 'sate', null], ['kembang-api', null, 'rambutan']],
+        [
+          ['karung', null, 'caping'],
+          ['orang-orangan', 'orang-orangan', 'tempe'],
+          ['cangkul', 'sate', 'kelereng'],
+        ],
+        [
+          ['bendera', 'martabak-manis', 'ikan-bakar'],
+          ['panjat-pinang', 'sate', 'caping'],
+          ['kelereng', 'karung', 'tarsius'],
+        ],
+        [
+          ['rambutan', 'manggis', null],
+          ['padi', 'bendera', 'caping'],
+          ['martabak-manis', 'tarsius', 'panjat-pinang'],
+        ],
+        [[null, null, null]],
+      ],
+      stacks: [
+        [
+          ['penyu', 'cendrawasih'],
+          ['kembang-api', 'rambutan', 'ikan-bakar'],
+          ['karung', 'kelereng'],
+          ['cobek', 'padi'],
+          ['peci', 'tarsius', 'panjat-pinang'],
+          ['martabak-manis', 'padi', 'cangkul'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['bendera', null, 'cangkul'],
+          ['panjat-pinang', 'manggis', 'tempe'],
+          ['caping', 'manggis', 'rambutan'],
+        ],
+        [['martabak-manis', null, null], ['cendrawasih', 'cendrawasih', 'ikan-bakar']],
+        [
+          ['lada', 'orang-orangan', 'panjat-pinang'],
+          ['ikan-bakar', 'peci', 'cendrawasih'],
+          ['karung', null, 'peci'],
+        ],
+        [[null, 'kembang-api', null], ['rambutan', null, 'cangkul']],
+        [
+          ['sate', null, 'orang-orangan'],
+          ['sate', 'lada', 'sate'],
+          ['kembang-api', 'martabak-manis', 'karung'],
+        ],
+        [
+          ['padi', 'padi', 'bendera'],
+          ['orang-orangan', 'kelereng', 'rambutan'],
+          ['cobek', 'caping', 'cangkul'],
+        ],
+        [['tempe', 'tarsius', null], ['penyu', 'padi', 'penyu'], ['karung', 'kelereng', 'kelereng']],
+        [[null, null, null]],
+      ],
+      stacks: [
+        [
+          ['tarsius', 'ikan-bakar'],
+          ['martabak-manis', 'bendera', 'caping'],
+          ['tempe', 'panjat-pinang'],
+          ['manggis', 'kembang-api'],
+          ['cobek', 'peci', 'cobek'],
+          ['penyu', 'lada', 'tarsius'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['kembang-api', null, 'lada'],
+          ['tempe', 'cangkul', 'ikan-bakar'],
+          ['panjat-pinang', 'karung', 'bendera'],
+        ],
+        [['bendera', null, null], ['bendera', 'kelereng', 'caping']],
+        [
+          ['kelereng', 'caping', 'caping'],
+          ['martabak-manis', 'martabak-manis', 'panjat-pinang'],
+          ['padi', null, 'tarsius'],
+        ],
+        [[null, 'karung', null], ['manggis', null, 'penyu']],
+        [
+          ['lada', null, 'kelereng'],
+          ['ikan-bakar', 'tempe', 'sate'],
+          ['cangkul', 'rambutan', 'tarsius'],
+        ],
+        [
+          ['padi', 'orang-orangan', 'rambutan'],
+          ['tarsius', 'manggis', 'sate'],
+          ['martabak-manis', 'peci', 'ikan-bakar'],
+        ],
+        [
+          ['cobek', 'cendrawasih', null],
+          ['kembang-api', 'manggis', 'orang-orangan'],
+          ['rambutan', 'orang-orangan', 'cobek'],
+        ],
+        [[null, null, null]],
+      ],
+      stacks: [
+        [
+          ['peci', 'sate'],
+          ['tempe', 'karung', 'cangkul'],
+          ['panjat-pinang', 'peci'],
+          ['cendrawasih', 'cobek'],
+          ['kembang-api', 'penyu', 'padi'],
+          ['lada', 'penyu', 'cendrawasih'],
         ],
       ],
     },

@@ -1,6 +1,6 @@
 import { starThresholds } from '../../src/core';
 import { CHECKED_SCREENS } from '../../src/ui/levelLayout';
-import { generateArrangements, generateLevel, isPinned, MIN_NEW_ARRANGEMENTS, statRange, type WithArrangements } from './generate';
+import { generateArrangements, generateLevel, isPinned, MIN_ARRANGEMENTS, MIN_NEW_ARRANGEMENTS, statRange, type WithArrangements } from './generate';
 import { constName, levelSource } from './format';
 import { RECIPES, recipeFor } from './recipes';
 import { spaceReport } from './report';
@@ -43,6 +43,12 @@ export function main(args: readonly string[]): RunResult {
       result = generateLevel(recipe, levelSeed, 4000, result.attempt + 1);
       arrangements = generateArrangements(result.level, recipe, result.seed, true);
     }
+    // Fresh foods can leave a pinned board with too few arrangements in its bands: the next pick of them, then.
+    while (!searching && recipe.fresh?.pick === undefined && result.freshPick !== undefined && arrangements.length + 1 < MIN_ARRANGEMENTS) {
+      console.log(`  ${recipe.id}: fresh pick ${result.freshPick} leaves only ${arrangements.length + 1} arrangements, trying the next`);
+      result = generateLevel(recipe, levelSeed, 4000, 0, result.freshPick + 1);
+      arrangements = generateArrangements(result.level, recipe, result.seed);
+    }
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     console.log(`${recipe.id}: candidate ${result.attempt}, ${arrangements.length + 1} arrangements, in ${seconds} s`);
     return { ...result, level: { ...result.level, arrangements: arrangements.map((a) => a.arrangement) }, arrangements };
@@ -70,6 +76,7 @@ export function summaryTable(levels: readonly WithArrangements[]): string {
         `${level.timeLimitSeconds}s`,
         `casual win ${pct(casual.winRate)} space ${pct(casual.blockedRate + casual.stuckRate)} timeUp ${pct(casual.timeUpRate)} pressure ${pct(casual.pressure)}`,
         `expert win ${pct(expert.winRate)}`,
+        `fresh ${(level.mechanics ?? []).flatMap((m) => (m.kind === 'fresh' ? m.foods.map((f) => f.moves) : [])).join('/') || '-'}${generated.freshPick === undefined ? '' : ` (pick ${generated.freshPick})`} spoiled ${pct(casual.spoiledShare)}/${pct(expert.spoiledShare)}`,
         `stars ${starThresholds(level).two}/${starThresholds(level).three}`,
         `${generated.arrangements.length + 1} arrangements: casual ${range((s) => s.casual.winRate)}, expert ${range((s) => s.expert.winRate)}, pressure ${range((s) => s.casual.pressure)}`,
         `items ${itemPx.join('/')}px (${CHECKED_SCREENS.map((s) => `${s.width}x${s.height}`).join('/')})`,

@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 24`, or try another seed with `npm run levelgen -- 24 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 20%, out of space 80%,
- * out of time 1%, space pressure 18%. Expert: wins 57%.
+ * Simulated players, 200 games each. Casual: wins 21%, out of space 80%,
+ * out of time 0%, space pressure 17%. Expert: wins 56%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 20% to 35%, the expert 12% to 65%; pressure 15% to 28%.
+ * Across them the casual player wins 21% to 35%, the expert 10% to 62%; pressure 9% to 32%.
  * Stars (formula in src/core/stars.ts): two from 2300 points, three from 3390.
  */
 export const nusa024: LevelDefinition = {
@@ -52,6 +52,7 @@ export const nusa024: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'cabai', moves: 27 }] },
   ],
   layout: {
     columns: [
@@ -84,23 +85,6 @@ export const nusa024: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, 'sate', null], ['klepon', null, 'panjat-pinang']],
-        [[null, null, 'terompet'], ['ayam-goreng', 'klepon', 'rendang']],
-        [[null, 'peci', null], [null, 'sate', 'panjat-pinang']],
-        [['layangan', 'panjat-pinang', 'rendang'], ['gado-gado', 'kelereng', 'kelereng']],
-        [
-          ['sate', 'cabai', 'peci'],
-          ['kipas', 'kipas', 'terompet'],
-          ['gado-gado', 'ayam-goreng', 'layangan'],
-        ],
-        [[null, 'jaring', null], ['salak', 'layangan', 'salak']],
-        [['terompet', 'gado-gado', 'jaring']],
-        [[null, 'jaring', 'kelereng'], ['rendang', 'klepon', 'kelapa'], ['kipas', 'salak', 'peci']],
-      ],
-      stacks: [[['cabai'], ['kelapa'], ['ayam-goreng'], ['kelapa'], [], ['cabai']]],
-    },
-    {
-      shelves: [
         [[null, 'jaring', null], ['kelereng', null, 'ayam-goreng']],
         [[null, null, 'cabai'], ['layangan', 'cabai', 'sate']],
         [[null, 'cabai', null], [null, 'kipas', 'peci']],
@@ -122,41 +106,24 @@ export const nusa024: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, 'layangan', null], ['terompet', null, 'kelereng']],
-        [[null, null, 'gado-gado'], ['jaring', 'ayam-goreng', 'rendang']],
-        [[null, 'sate', null], [null, 'kelereng', 'klepon']],
-        [['kelapa', 'kipas', 'rendang'], ['kipas', 'salak', 'klepon']],
+        [[null, 'cabai', null], ['kelereng', null, 'cabai']],
+        [[null, null, 'panjat-pinang'], ['panjat-pinang', 'layangan', 'peci']],
+        [[null, 'salak', null], [null, 'cabai', 'terompet']],
+        [['rendang', 'kipas', 'gado-gado'], ['peci', 'layangan', 'ayam-goreng']],
         [
-          ['panjat-pinang', 'jaring', 'kelapa'],
-          ['ayam-goreng', 'klepon', 'kelapa'],
-          ['rendang', 'layangan', 'panjat-pinang'],
+          ['sate', 'klepon', 'panjat-pinang'],
+          ['peci', 'rendang', 'ayam-goreng'],
+          ['salak', 'rendang', 'jaring'],
         ],
-        [[null, 'cabai', null], ['gado-gado', 'gado-gado', 'layangan']],
-        [['panjat-pinang', 'cabai', 'kelereng']],
-        [[null, 'sate', 'terompet'], ['peci', 'cabai', 'ayam-goreng'], ['salak', 'peci', 'salak']],
-      ],
-      stacks: [[['jaring'], ['peci'], ['sate'], ['kipas'], [], ['terompet']]],
-    },
-    {
-      shelves: [
-        [[null, 'panjat-pinang', null], ['salak', null, 'klepon']],
-        [[null, null, 'gado-gado'], ['rendang', 'kipas', 'kelereng']],
-        [[null, 'sate', null], [null, 'ayam-goreng', 'kelapa']],
-        [['peci', 'klepon', 'layangan'], ['terompet', 'cabai', 'jaring']],
+        [[null, 'terompet', null], ['kipas', 'sate', 'kelereng']],
+        [['gado-gado', 'ayam-goreng', 'kelereng']],
         [
-          ['kelapa', 'kipas', 'cabai'],
-          ['ayam-goreng', 'kipas', 'gado-gado'],
-          ['jaring', 'kelapa', 'cabai'],
-        ],
-        [[null, 'rendang', null], ['panjat-pinang', 'layangan', 'terompet']],
-        [['peci', 'kelereng', 'panjat-pinang']],
-        [
-          [null, 'rendang', 'sate'],
-          ['salak', 'ayam-goreng', 'jaring'],
-          ['terompet', 'kelereng', 'peci'],
+          [null, 'terompet', 'kelapa'],
+          ['layangan', 'klepon', 'klepon'],
+          ['kelapa', 'jaring', 'sate'],
         ],
       ],
-      stacks: [[['salak'], ['sate'], ['gado-gado'], ['klepon'], [], ['layangan']]],
+      stacks: [[['gado-gado'], ['jaring'], ['kipas'], ['salak'], [], ['kelapa']]],
     },
     {
       shelves: [
@@ -195,6 +162,48 @@ export const nusa024: LevelDefinition = {
         ],
       ],
       stacks: [[['peci'], ['rendang'], ['gado-gado'], ['cabai'], [], ['ayam-goreng']]],
+    },
+    {
+      shelves: [
+        [[null, 'layangan', null], ['ayam-goreng', null, 'sate']],
+        [[null, null, 'ayam-goreng'], ['kelereng', 'panjat-pinang', 'cabai']],
+        [[null, 'peci', null], [null, 'kipas', 'jaring']],
+        [['panjat-pinang', 'kelapa', 'salak'], ['klepon', 'kelapa', 'salak']],
+        [
+          ['cabai', 'ayam-goreng', 'klepon'],
+          ['terompet', 'sate', 'cabai'],
+          ['rendang', 'layangan', 'gado-gado'],
+        ],
+        [[null, 'peci', null], ['kipas', 'terompet', 'jaring']],
+        [['kelapa', 'rendang', 'kipas']],
+        [
+          [null, 'sate', 'gado-gado'],
+          ['kelereng', 'kelereng', 'panjat-pinang'],
+          ['gado-gado', 'layangan', 'peci'],
+        ],
+      ],
+      stacks: [[['salak'], ['jaring'], ['klepon'], ['rendang'], [], ['terompet']]],
+    },
+    {
+      shelves: [
+        [[null, 'salak', null], ['jaring', null, 'gado-gado']],
+        [[null, null, 'klepon'], ['cabai', 'klepon', 'layangan']],
+        [[null, 'kelereng', null], [null, 'terompet', 'terompet']],
+        [['kelapa', 'sate', 'kipas'], ['jaring', 'ayam-goreng', 'sate']],
+        [
+          ['peci', 'kelereng', 'panjat-pinang'],
+          ['rendang', 'peci', 'kipas'],
+          ['ayam-goreng', 'layangan', 'ayam-goreng'],
+        ],
+        [[null, 'kipas', null], ['kelereng', 'terompet', 'kelapa']],
+        [['panjat-pinang', 'kelapa', 'gado-gado']],
+        [
+          [null, 'salak', 'layangan'],
+          ['cabai', 'cabai', 'panjat-pinang'],
+          ['sate', 'gado-gado', 'klepon'],
+        ],
+      ],
+      stacks: [[['peci'], ['salak'], ['jaring'], ['rendang'], [], ['rendang']]],
     },
   ],
 };

@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 30`, or try another seed with `npm run levelgen -- 30 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 51%, out of space 49%,
- * out of time 0%, space pressure 18%. Expert: wins 64%.
+ * Simulated players, 200 games each. Casual: wins 51%, out of space 50%,
+ * out of time 0%, space pressure 17%. Expert: wins 68%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 43% to 65%, the expert 59% to 89%; pressure 13% to 26%.
+ * Across them the casual player wins 45% to 66%, the expert 68% to 92%; pressure 14% to 25%.
  * Stars (formula in src/core/stars.ts): two from 3040 points, three from 4550.
  */
 export const nusa030: LevelDefinition = {
@@ -51,6 +51,7 @@ export const nusa030: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'rambutan', moves: 41 }, { type: 'dadar-gulung', moves: 59 }] },
   ],
   layout: {
     columns: [
@@ -140,32 +141,6 @@ export const nusa030: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, 'kendang', 'blangkon'], ['dadar-gulung', 'manggis', 'wayang-kulit']],
-        [['egrang', null, null], ['dadar-gulung', 'yoyo', 'ketupat']],
-        [
-          ['lompat-tali', 'manggis', 'kendang'],
-          [null, 'tempe', 'blangkon'],
-          ['kelapa', 'wayang-kulit', 'ketupat'],
-        ],
-        [[null, null, 'kembang-api'], ['egrang', 'topeng', 'manggis']],
-        [['yoyo', 'kendang', 'congklak'], ['gasing', 'batik', 'bekel']],
-        [['gasing', 'egrang', null], [null, 'dadar-gulung', 'congklak']],
-        [[null, 'pisang-goreng', 'gasing'], ['congklak', 'batik', 'bekel']],
-        [['blangkon', null, 'rambutan'], ['batik', 'pisang-goreng', 'topeng']],
-      ],
-      stacks: [
-        [
-          ['kembang-api', 'rambutan'],
-          ['bekel', 'lompat-tali', 'rambutan'],
-          ['wayang-kulit', 'tempe', 'lompat-tali', 'ketupat'],
-          ['topeng', 'kelapa', 'kelapa'],
-          ['tempe', 'kembang-api'],
-          ['pisang-goreng', 'yoyo'],
-        ],
-      ],
-    },
-    {
-      shelves: [
         [[null, 'tempe', 'gasing'], ['gasing', 'egrang', 'wayang-kulit']],
         [['bekel', null, null], ['lompat-tali', 'dadar-gulung', 'blangkon']],
         [
@@ -239,6 +214,32 @@ export const nusa030: LevelDefinition = {
           ['pisang-goreng', 'kendang', 'kembang-api'],
           ['wayang-kulit', 'rambutan'],
           ['topeng', 'gasing'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [[null, 'congklak', 'ketupat'], ['manggis', 'egrang', 'tempe']],
+        [['wayang-kulit', null, null], ['ketupat', 'yoyo', 'pisang-goreng']],
+        [
+          ['wayang-kulit', 'topeng', 'batik'],
+          [null, 'dadar-gulung', 'pisang-goreng'],
+          ['manggis', 'dadar-gulung', 'dadar-gulung'],
+        ],
+        [[null, null, 'bekel'], ['topeng', 'kelapa', 'bekel']],
+        [['kembang-api', 'gasing', 'tempe'], ['rambutan', 'congklak', 'lompat-tali']],
+        [['gasing', 'kembang-api', null], [null, 'lompat-tali', 'gasing']],
+        [[null, 'tempe', 'kendang'], ['wayang-kulit', 'topeng', 'egrang']],
+        [['kendang', null, 'manggis'], ['lompat-tali', 'egrang', 'blangkon']],
+      ],
+      stacks: [
+        [
+          ['pisang-goreng', 'congklak'],
+          ['rambutan', 'kelapa', 'bekel'],
+          ['batik', 'kembang-api', 'ketupat', 'kelapa'],
+          ['yoyo', 'blangkon', 'batik'],
+          ['yoyo', 'kendang'],
+          ['rambutan', 'blangkon'],
         ],
       ],
     },

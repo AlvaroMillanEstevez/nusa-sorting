@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 33`, or try another seed with `npm run levelgen -- 33 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 45%, out of space 55%,
- * out of time 0%, space pressure 13%. Expert: wins 89%.
+ * Simulated players, 200 games each. Casual: wins 44%, out of space 56%,
+ * out of time 1%, space pressure 15%. Expert: wins 88%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 42% to 64%, the expert 21% to 94%; pressure 8% to 19%.
+ * Across them the casual player wins 37% to 61%, the expert 20% to 93%; pressure 8% to 22%.
  * Stars (formula in src/core/stars.ts): two from 2770 points, three from 4170.
  */
 export const nusa033: LevelDefinition = {
@@ -56,6 +56,7 @@ export const nusa033: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'es-kelapa-muda', moves: 26 }, { type: 'tempe', moves: 38 }] },
   ],
   layout: {
     columns: [
@@ -150,35 +151,6 @@ export const nusa033: LevelDefinition = {
     },
     {
       shelves: [
-        [[null, null, 'jaring'], ['gasing', 'egrang', 'manggis']],
-        [
-          ['bintang-laut', 'piala', 'layangan'],
-          ['sepatu', 'gasing', 'balon'],
-          ['arum-manis', 'tempe', 'bintang-laut'],
-        ],
-        [
-          ['piala', 'arum-manis', 'lampion'],
-          ['layangan', 'es-kelapa-muda', 'martabak-manis'],
-          ['lampion', 'layangan', 'rambutan'],
-        ],
-        [[null, null, null]],
-        [[null, null, 'manggis'], ['piala', 'rambutan', 'bintang-laut']],
-        [[null, null, 'sepatu'], ['martabak-manis', 'tempe', 'martabak-manis']],
-        [
-          ['congklak', null, 'congklak'],
-          ['egrang', 'egrang', 'jaring'],
-          ['jaring', 'peluit', 'balon'],
-        ],
-        [
-          ['manggis', 'tempe', 'peluit'],
-          ['lampion', 'es-kelapa-muda', 'es-kelapa-muda'],
-          ['sepatu', 'rambutan', 'balon'],
-        ],
-      ],
-      stacks: [[[], ['peluit'], ['gasing'], ['arum-manis'], ['congklak']]],
-    },
-    {
-      shelves: [
         [[null, null, 'rambutan'], ['es-kelapa-muda', 'peluit', 'peluit']],
         [
           ['arum-manis', 'manggis', 'gasing'],
@@ -205,6 +177,35 @@ export const nusa033: LevelDefinition = {
         ],
       ],
       stacks: [[[], ['rambutan'], ['tempe'], ['egrang'], ['lampion']]],
+    },
+    {
+      shelves: [
+        [[null, null, 'balon'], ['arum-manis', 'arum-manis', 'es-kelapa-muda']],
+        [
+          ['gasing', 'piala', 'balon'],
+          ['martabak-manis', 'jaring', 'congklak'],
+          ['bintang-laut', 'egrang', 'jaring'],
+        ],
+        [
+          ['manggis', 'balon', 'sepatu'],
+          ['sepatu', 'martabak-manis', 'lampion'],
+          ['congklak', 'gasing', 'bintang-laut'],
+        ],
+        [[null, null, null]],
+        [[null, null, 'es-kelapa-muda'], ['tempe', 'piala', 'manggis']],
+        [[null, null, 'rambutan'], ['piala', 'sepatu', 'es-kelapa-muda']],
+        [
+          ['rambutan', null, 'layangan'],
+          ['lampion', 'gasing', 'peluit'],
+          ['martabak-manis', 'egrang', 'congklak'],
+        ],
+        [
+          ['rambutan', 'tempe', 'layangan'],
+          ['egrang', 'arum-manis', 'tempe'],
+          ['layangan', 'bintang-laut', 'peluit'],
+        ],
+      ],
+      stacks: [[[], ['peluit'], ['jaring'], ['manggis'], ['lampion']]],
     },
     {
       shelves: [

@@ -8,11 +8,11 @@ import type { LevelDefinition } from '../../core';
  * Change the recipe rather than this file.
  *
  * Simulated players, 200 games each. Casual: wins 60%, out of space 40%,
- * out of time 1%, space pressure 4%. Expert: wins 82%.
+ * out of time 1%, space pressure 4%. Expert: wins 79%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 47% to 73%, the expert 35% to 95%; pressure 4% to 22%.
+ * Across them the casual player wins 59% to 74%, the expert 79% to 93%; pressure 4% to 29%.
  * Stars (formula in src/core/stars.ts): two from 1780 points, three from 2600.
  */
 export const nusa004: LevelDefinition = {
@@ -33,6 +33,7 @@ export const nusa004: LevelDefinition = {
       kind: 'lockedShelves',
       shelves: [{ shelf: 1, triplesRequired: 2 }, { shelf: 3, triplesRequired: 4 }],
     },
+    { kind: 'fresh', foods: [{ type: 'onde-onde', moves: 29 }] },
   ],
   layout: {
     columns: [
@@ -44,86 +45,92 @@ export const nusa004: LevelDefinition = {
   arrangements: [
     {
       shelves: [
-        [['onde-onde', 'mie-goreng', 'dadar-gulung'], ['kerupuk-udang', 'dadar-gulung', 'durian']],
-        [['es-teh-manis', 'rendang', 'manggis']],
-        [['ikan-bakar', 'ayam-goreng', 'rendang'], ['gado-gado', 'manggis', 'mie-goreng']],
-        [['ikan-bakar', 'onde-onde', 'manggis']],
-        [['es-teh-manis', 'ikan-bakar', null], ['onde-onde', 'dadar-gulung', null]],
-        [['rendang', null, null], ['durian', 'kerupuk-udang', 'durian']],
-        [['ayam-goreng', 'ayam-goreng', 'rambutan'], ['gado-gado', 'kerupuk-udang', 'gado-gado']],
-        [['es-teh-manis', null, null], ['rambutan', 'mie-goreng', 'rambutan']],
+        [['ayam-goreng', 'onde-onde', 'gado-gado'], ['rendang', 'dadar-gulung', 'gado-gado']],
+        [['durian', 'mie-goreng', 'ayam-goreng']],
+        [['ayam-goreng', 'gado-gado', 'ikan-bakar'], ['rambutan', 'manggis', 'dadar-gulung']],
+        [['onde-onde', 'onde-onde', 'kerupuk-udang']],
+        [['durian', 'ikan-bakar', null], ['kerupuk-udang', 'es-teh-manis', null]],
+        [['ikan-bakar', null, null], ['rendang', 'manggis', 'es-teh-manis']],
+        [['rambutan', 'dadar-gulung', 'es-teh-manis'], ['rambutan', 'durian', 'manggis']],
+        [['mie-goreng', null, null], ['mie-goreng', 'rendang', 'kerupuk-udang']],
       ],
     },
     {
       shelves: [
-        [['dadar-gulung', 'gado-gado', 'durian'], ['manggis', 'gado-gado', 'ikan-bakar']],
-        [['es-teh-manis', 'onde-onde', 'rendang']],
-        [['onde-onde', 'onde-onde', 'dadar-gulung'], ['manggis', 'dadar-gulung', 'es-teh-manis']],
-        [['kerupuk-udang', 'es-teh-manis', 'ayam-goreng']],
-        [['gado-gado', 'rendang', null], ['mie-goreng', 'mie-goreng', null]],
-        [['manggis', null, null], ['ayam-goreng', 'rambutan', 'rambutan']],
-        [['rambutan', 'durian', 'durian'], ['ikan-bakar', 'kerupuk-udang', 'ayam-goreng']],
-        [['kerupuk-udang', null, null], ['ikan-bakar', 'mie-goreng', 'rendang']],
+        [['manggis', 'onde-onde', 'gado-gado'], ['es-teh-manis', 'manggis', 'dadar-gulung']],
+        [['ayam-goreng', 'rambutan', 'ayam-goreng']],
+        [['rendang', 'kerupuk-udang', 'durian'], ['es-teh-manis', 'kerupuk-udang', 'dadar-gulung']],
+        [['onde-onde', 'onde-onde', 'ikan-bakar']],
+        [['ayam-goreng', 'gado-gado', null], ['durian', 'ikan-bakar', null]],
+        [['mie-goreng', null, null], ['mie-goreng', 'rendang', 'dadar-gulung']],
+        [['ikan-bakar', 'mie-goreng', 'kerupuk-udang'], ['es-teh-manis', 'manggis', 'rambutan']],
+        [['gado-gado', null, null], ['rendang', 'durian', 'rambutan']],
       ],
     },
     {
       shelves: [
-        [['kerupuk-udang', 'gado-gado', 'durian'], ['durian', 'ayam-goreng', 'onde-onde']],
-        [['ikan-bakar', 'rendang', 'onde-onde']],
-        [['durian', 'dadar-gulung', 'rambutan'], ['kerupuk-udang', 'mie-goreng', 'rendang']],
-        [['mie-goreng', 'es-teh-manis', 'kerupuk-udang']],
-        [['ayam-goreng', 'gado-gado', null], ['ikan-bakar', 'rambutan', null]],
-        [['es-teh-manis', null, null], ['dadar-gulung', 'mie-goreng', 'manggis']],
-        [['gado-gado', 'onde-onde', 'manggis'], ['rambutan', 'rendang', 'ikan-bakar']],
-        [['es-teh-manis', null, null], ['manggis', 'dadar-gulung', 'ayam-goreng']],
+        [['rendang', 'onde-onde', 'mie-goreng'], ['ayam-goreng', 'gado-gado', 'es-teh-manis']],
+        [['rambutan', 'ayam-goreng', 'manggis']],
+        [
+          ['dadar-gulung', 'dadar-gulung', 'ikan-bakar'],
+          ['es-teh-manis', 'ikan-bakar', 'dadar-gulung'],
+        ],
+        [['onde-onde', 'onde-onde', 'manggis']],
+        [['ikan-bakar', 'rendang', null], ['mie-goreng', 'manggis', null]],
+        [['rambutan', null, null], ['rendang', 'ayam-goreng', 'es-teh-manis']],
+        [['rambutan', 'kerupuk-udang', 'mie-goreng'], ['durian', 'gado-gado', 'gado-gado']],
+        [['kerupuk-udang', null, null], ['durian', 'kerupuk-udang', 'durian']],
       ],
     },
     {
       shelves: [
-        [['rambutan', 'ayam-goreng', 'es-teh-manis'], ['durian', 'kerupuk-udang', 'dadar-gulung']],
-        [['rendang', 'dadar-gulung', 'mie-goreng']],
-        [['onde-onde', 'ayam-goreng', 'kerupuk-udang'], ['gado-gado', 'rendang', 'ikan-bakar']],
-        [['onde-onde', 'kerupuk-udang', 'mie-goreng']],
-        [['ayam-goreng', 'rendang', null], ['durian', 'manggis', null]],
-        [['durian', null, null], ['es-teh-manis', 'gado-gado', 'ikan-bakar']],
-        [['gado-gado', 'es-teh-manis', 'rambutan'], ['rambutan', 'dadar-gulung', 'onde-onde']],
-        [['ikan-bakar', null, null], ['manggis', 'mie-goreng', 'manggis']],
+        [['manggis', 'onde-onde', 'kerupuk-udang'], ['rendang', 'rambutan', 'rendang']],
+        [['gado-gado', 'gado-gado', 'dadar-gulung']],
+        [['mie-goreng', 'ikan-bakar', 'ayam-goreng'], ['dadar-gulung', 'es-teh-manis', 'rendang']],
+        [['onde-onde', 'onde-onde', 'durian']],
+        [['es-teh-manis', 'ikan-bakar', null], ['durian', 'mie-goreng', null]],
+        [['rambutan', null, null], ['mie-goreng', 'gado-gado', 'ayam-goreng']],
+        [['kerupuk-udang', 'durian', 'ikan-bakar'], ['manggis', 'ayam-goreng', 'rambutan']],
+        [['es-teh-manis', null, null], ['kerupuk-udang', 'dadar-gulung', 'manggis']],
       ],
     },
     {
       shelves: [
-        [['gado-gado', 'ikan-bakar', 'rambutan'], ['rambutan', 'kerupuk-udang', 'es-teh-manis']],
-        [['mie-goreng', 'kerupuk-udang', 'es-teh-manis']],
-        [['onde-onde', 'ayam-goreng', 'ikan-bakar'], ['onde-onde', 'durian', 'rambutan']],
-        [['durian', 'mie-goreng', 'es-teh-manis']],
-        [['dadar-gulung', 'manggis', null], ['manggis', 'gado-gado', null]],
-        [['durian', null, null], ['onde-onde', 'dadar-gulung', 'rendang']],
-        [['gado-gado', 'rendang', 'dadar-gulung'], ['ayam-goreng', 'mie-goreng', 'ayam-goreng']],
-        [['kerupuk-udang', null, null], ['ikan-bakar', 'manggis', 'rendang']],
+        [['ayam-goreng', 'onde-onde', 'mie-goreng'], ['rendang', 'gado-gado', 'manggis']],
+        [['durian', 'rambutan', 'rambutan']],
+        [
+          ['mie-goreng', 'gado-gado', 'kerupuk-udang'],
+          ['ayam-goreng', 'dadar-gulung', 'dadar-gulung'],
+        ],
+        [['onde-onde', 'onde-onde', 'gado-gado']],
+        [['rendang', 'ikan-bakar', null], ['rendang', 'kerupuk-udang', null]],
+        [['kerupuk-udang', null, null], ['ikan-bakar', 'ayam-goreng', 'durian']],
+        [['manggis', 'rambutan', 'ikan-bakar'], ['es-teh-manis', 'manggis', 'durian']],
+        [['es-teh-manis', null, null], ['dadar-gulung', 'mie-goreng', 'es-teh-manis']],
       ],
     },
     {
       shelves: [
-        [['durian', 'onde-onde', 'kerupuk-udang'], ['manggis', 'es-teh-manis', 'ayam-goreng']],
-        [['rendang', 'durian', 'dadar-gulung']],
-        [['mie-goreng', 'manggis', 'ikan-bakar'], ['es-teh-manis', 'dadar-gulung', 'rendang']],
-        [['rambutan', 'ayam-goreng', 'ikan-bakar']],
-        [['dadar-gulung', 'mie-goreng', null], ['ayam-goreng', 'ikan-bakar', null]],
-        [['kerupuk-udang', null, null], ['rambutan', 'durian', 'rendang']],
-        [['kerupuk-udang', 'onde-onde', 'gado-gado'], ['gado-gado', 'mie-goreng', 'gado-gado']],
-        [['es-teh-manis', null, null], ['manggis', 'onde-onde', 'rambutan']],
+        [['ayam-goreng', 'onde-onde', 'kerupuk-udang'], ['es-teh-manis', 'durian', 'rambutan']],
+        [['dadar-gulung', 'manggis', 'manggis']],
+        [['rambutan', 'durian', 'es-teh-manis'], ['mie-goreng', 'ikan-bakar', 'manggis']],
+        [['onde-onde', 'onde-onde', 'gado-gado']],
+        [['dadar-gulung', 'ikan-bakar', null], ['gado-gado', 'dadar-gulung', null]],
+        [['rendang', null, null], ['rendang', 'ayam-goreng', 'gado-gado']],
+        [['kerupuk-udang', 'kerupuk-udang', 'rendang'], ['durian', 'ayam-goreng', 'es-teh-manis']],
+        [['ikan-bakar', null, null], ['mie-goreng', 'rambutan', 'mie-goreng']],
       ],
     },
     {
       shelves: [
-        [['kerupuk-udang', 'manggis', 'gado-gado'], ['ayam-goreng', 'onde-onde', 'manggis']],
-        [['rendang', 'kerupuk-udang', 'durian']],
-        [['mie-goreng', 'durian', 'gado-gado'], ['onde-onde', 'mie-goreng', 'durian']],
-        [['kerupuk-udang', 'dadar-gulung', 'es-teh-manis']],
-        [['rambutan', 'ayam-goreng', null], ['rendang', 'onde-onde', null]],
-        [['es-teh-manis', null, null], ['rendang', 'ikan-bakar', 'ikan-bakar']],
-        [['ikan-bakar', 'rambutan', 'mie-goreng'], ['manggis', 'dadar-gulung', 'rambutan']],
-        [['es-teh-manis', null, null], ['dadar-gulung', 'gado-gado', 'ayam-goreng']],
+        [['ayam-goreng', 'onde-onde', 'gado-gado'], ['rambutan', 'kerupuk-udang', 'dadar-gulung']],
+        [['ikan-bakar', 'gado-gado', 'ikan-bakar']],
+        [['es-teh-manis', 'ikan-bakar', 'durian'], ['ayam-goreng', 'mie-goreng', 'mie-goreng']],
+        [['onde-onde', 'onde-onde', 'kerupuk-udang']],
+        [['ayam-goreng', 'dadar-gulung', null], ['es-teh-manis', 'gado-gado', null]],
+        [['rendang', null, null], ['mie-goreng', 'kerupuk-udang', 'dadar-gulung']],
+        [['durian', 'rendang', 'durian'], ['manggis', 'manggis', 'rambutan']],
+        [['rambutan', null, null], ['rendang', 'es-teh-manis', 'manggis']],
       ],
     },
   ],

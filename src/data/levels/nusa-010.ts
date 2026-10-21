@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 10`, or try another seed with `npm run levelgen -- 10 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 48%, out of space 21%,
- * out of time 32%, space pressure 0%. Expert: wins 92%.
+ * Simulated players, 200 games each. Casual: wins 44%, out of space 26%,
+ * out of time 31%, space pressure 0%. Expert: wins 91%.
  * A guide only: real players may find it easier or harder.
  *
- * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 33% to 53%, the expert 85% to 93%; pressure 0% to 0%.
+ * 7 arrangements of the items (the level as written is the first; each attempt plays the next one).
+ * Across them the casual player wins 31% to 51%, the expert 79% to 91%; pressure 0% to 0%.
  * Stars (formula in src/core/stars.ts): two from 3190 points, three from 4460.
  */
 export const nusa010: LevelDefinition = {
@@ -39,7 +39,10 @@ export const nusa010: LevelDefinition = {
     [['bendera', null, 'martabak-manis'], ['dadar-gulung', 'ayam-goreng', 'karung']],
     [[null, 'terompet', null], ['kelereng', 'karung', 'bendera']],
   ],
-  mechanics: [{ kind: 'combo', windowSeconds: 5, multipliers: [2, 3, 4, 5, 6, 8, 10] }],
+  mechanics: [
+    { kind: 'combo', windowSeconds: 5, multipliers: [2, 3, 4, 5, 6, 8, 10] },
+    { kind: 'fresh', foods: [{ type: 'martabak-manis', moves: 40 }] },
+  ],
   layout: {
     columns: [
       { kind: 'shelves', shelves: [0, 1] },
@@ -52,154 +55,132 @@ export const nusa010: LevelDefinition = {
       shelves: [
         [[null, null, null]],
         [
-          ['tempe', 'peci', 'ayam-goreng'],
-          ['peci', 'pisang-goreng', 'pisang-goreng'],
-          ['martabak-manis', 'ikan-bakar', 'ayam-goreng'],
+          ['pisang-goreng', 'martabak-manis', 'peci'],
+          ['ayam-goreng', 'ikan-bakar', 'ayam-goreng'],
+          ['kelereng', 'kelereng', 'bendera'],
         ],
         [
-          ['ikan-bakar', 'kelereng', 'tempe'],
-          ['karung', 'karung', 'panjat-pinang'],
-          ['bendera', 'panjat-pinang', 'dadar-gulung'],
+          ['pisang-goreng', 'bendera', 'terompet'],
+          ['tempe', 'terompet', 'ayam-goreng'],
+          ['tempe', 'dadar-gulung', 'martabak-manis'],
         ],
         [
-          ['dadar-gulung', 'karung', 'panjat-pinang'],
-          ['bendera', 'kelereng', 'ikan-bakar'],
-          ['pisang-goreng', 'bendera', 'martabak-manis'],
+          ['karung', 'pisang-goreng', 'panjat-pinang'],
+          ['panjat-pinang', 'ikan-bakar', 'tempe'],
+          ['dadar-gulung', 'ikan-bakar', 'terompet'],
         ],
-        [['kelereng', null, 'peci'], ['terompet', 'terompet', 'ayam-goreng']],
-        [[null, 'martabak-manis', null], ['tempe', 'terompet', 'dadar-gulung']],
+        [['kelereng', null, 'martabak-manis'], ['peci', 'dadar-gulung', 'peci']],
+        [[null, 'bendera', null], ['panjat-pinang', 'karung', 'karung']],
       ],
     },
     {
       shelves: [
         [[null, null, null]],
         [
-          ['ayam-goreng', 'tempe', 'ikan-bakar'],
-          ['martabak-manis', 'dadar-gulung', 'pisang-goreng'],
-          ['kelereng', 'peci', 'bendera'],
+          ['pisang-goreng', 'martabak-manis', 'ayam-goreng'],
+          ['terompet', 'bendera', 'tempe'],
+          ['bendera', 'peci', 'karung'],
         ],
         [
-          ['karung', 'ayam-goreng', 'karung'],
-          ['kelereng', 'karung', 'kelereng'],
-          ['ikan-bakar', 'ikan-bakar', 'terompet'],
+          ['ikan-bakar', 'dadar-gulung', 'panjat-pinang'],
+          ['tempe', 'dadar-gulung', 'tempe'],
+          ['peci', 'pisang-goreng', 'martabak-manis'],
         ],
         [
-          ['martabak-manis', 'terompet', 'bendera'],
-          ['panjat-pinang', 'panjat-pinang', 'tempe'],
-          ['pisang-goreng', 'panjat-pinang', 'terompet'],
+          ['ayam-goreng', 'ikan-bakar', 'karung'],
+          ['kelereng', 'bendera', 'panjat-pinang'],
+          ['kelereng', 'pisang-goreng', 'peci'],
         ],
-        [['peci', null, 'tempe'], ['pisang-goreng', 'peci', 'martabak-manis']],
-        [[null, 'bendera', null], ['dadar-gulung', 'ayam-goreng', 'dadar-gulung']],
+        [['dadar-gulung', null, 'martabak-manis'], ['ayam-goreng', 'kelereng', 'panjat-pinang']],
+        [[null, 'ikan-bakar', null], ['terompet', 'karung', 'terompet']],
       ],
     },
     {
       shelves: [
         [[null, null, null]],
         [
-          ['tempe', 'karung', 'martabak-manis'],
-          ['peci', 'ayam-goreng', 'karung'],
-          ['dadar-gulung', 'terompet', 'karung'],
+          ['pisang-goreng', 'martabak-manis', 'peci'],
+          ['ikan-bakar', 'pisang-goreng', 'panjat-pinang'],
+          ['kelereng', 'panjat-pinang', 'terompet'],
         ],
         [
-          ['ikan-bakar', 'kelereng', 'kelereng'],
-          ['ayam-goreng', 'ikan-bakar', 'panjat-pinang'],
-          ['bendera', 'pisang-goreng', 'pisang-goreng'],
-        ],
-        [
-          ['martabak-manis', 'peci', 'ayam-goreng'],
-          ['tempe', 'panjat-pinang', 'tempe'],
-          ['bendera', 'terompet', 'dadar-gulung'],
-        ],
-        [['terompet', null, 'bendera'], ['dadar-gulung', 'peci', 'ikan-bakar']],
-        [[null, 'pisang-goreng', null], ['kelereng', 'panjat-pinang', 'martabak-manis']],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
-        [
-          ['bendera', 'tempe', 'martabak-manis'],
-          ['karung', 'karung', 'panjat-pinang'],
-          ['peci', 'ikan-bakar', 'kelereng'],
-        ],
-        [
-          ['dadar-gulung', 'pisang-goreng', 'panjat-pinang'],
-          ['kelereng', 'ayam-goreng', 'panjat-pinang'],
-          ['pisang-goreng', 'ayam-goreng', 'karung'],
-        ],
-        [
-          ['kelereng', 'tempe', 'dadar-gulung'],
-          ['pisang-goreng', 'terompet', 'martabak-manis'],
-          ['ayam-goreng', 'martabak-manis', 'ikan-bakar'],
-        ],
-        [['peci', null, 'ikan-bakar'], ['terompet', 'terompet', 'peci']],
-        [[null, 'dadar-gulung', null], ['tempe', 'bendera', 'bendera']],
-      ],
-    },
-    {
-      shelves: [
-        [[null, null, null]],
-        [
-          ['martabak-manis', 'kelereng', 'ayam-goreng'],
-          ['peci', 'bendera', 'dadar-gulung'],
-          ['pisang-goreng', 'peci', 'ikan-bakar'],
-        ],
-        [
-          ['panjat-pinang', 'martabak-manis', 'kelereng'],
+          ['ikan-bakar', 'tempe', 'tempe'],
           ['bendera', 'peci', 'ayam-goreng'],
-          ['karung', 'ayam-goreng', 'pisang-goreng'],
+          ['dadar-gulung', 'terompet', 'martabak-manis'],
         ],
         [
-          ['tempe', 'terompet', 'kelereng'],
-          ['terompet', 'tempe', 'pisang-goreng'],
-          ['dadar-gulung', 'ikan-bakar', 'ikan-bakar'],
+          ['peci', 'dadar-gulung', 'tempe'],
+          ['pisang-goreng', 'ikan-bakar', 'bendera'],
+          ['panjat-pinang', 'ayam-goreng', 'karung'],
         ],
-        [['panjat-pinang', null, 'karung'], ['karung', 'martabak-manis', 'dadar-gulung']],
-        [[null, 'panjat-pinang', null], ['terompet', 'bendera', 'tempe']],
+        [['terompet', null, 'martabak-manis'], ['dadar-gulung', 'karung', 'kelereng']],
+        [[null, 'karung', null], ['ayam-goreng', 'kelereng', 'bendera']],
       ],
     },
     {
       shelves: [
         [[null, null, null]],
         [
-          ['pisang-goreng', 'bendera', 'martabak-manis'],
-          ['bendera', 'terompet', 'tempe'],
-          ['ayam-goreng', 'terompet', 'karung'],
+          ['ayam-goreng', 'martabak-manis', 'tempe'],
+          ['pisang-goreng', 'kelereng', 'kelereng'],
+          ['peci', 'pisang-goreng', 'dadar-gulung'],
         ],
         [
-          ['kelereng', 'tempe', 'terompet'],
-          ['pisang-goreng', 'pisang-goreng', 'dadar-gulung'],
-          ['ikan-bakar', 'karung', 'panjat-pinang'],
+          ['bendera', 'pisang-goreng', 'ikan-bakar'],
+          ['tempe', 'terompet', 'karung'],
+          ['panjat-pinang', 'terompet', 'martabak-manis'],
         ],
         [
-          ['bendera', 'kelereng', 'ikan-bakar'],
-          ['kelereng', 'panjat-pinang', 'tempe'],
-          ['panjat-pinang', 'karung', 'ayam-goreng'],
+          ['bendera', 'dadar-gulung', 'tempe'],
+          ['karung', 'dadar-gulung', 'ikan-bakar'],
+          ['peci', 'terompet', 'panjat-pinang'],
         ],
-        [['dadar-gulung', null, 'ikan-bakar'], ['dadar-gulung', 'martabak-manis', 'martabak-manis']],
-        [[null, 'peci', null], ['peci', 'ayam-goreng', 'peci']],
+        [['ayam-goreng', null, 'martabak-manis'], ['peci', 'ayam-goreng', 'panjat-pinang']],
+        [[null, 'kelereng', null], ['bendera', 'karung', 'ikan-bakar']],
       ],
     },
     {
       shelves: [
         [[null, null, null]],
         [
-          ['dadar-gulung', 'tempe', 'martabak-manis'],
-          ['tempe', 'karung', 'bendera'],
-          ['terompet', 'terompet', 'panjat-pinang'],
+          ['kelereng', 'martabak-manis', 'ikan-bakar'],
+          ['pisang-goreng', 'dadar-gulung', 'bendera'],
+          ['kelereng', 'pisang-goreng', 'bendera'],
         ],
         [
-          ['pisang-goreng', 'dadar-gulung', 'martabak-manis'],
-          ['ayam-goreng', 'bendera', 'ayam-goreng'],
-          ['karung', 'peci', 'dadar-gulung'],
+          ['tempe', 'karung', 'karung'],
+          ['terompet', 'panjat-pinang', 'terompet'],
+          ['ayam-goreng', 'peci', 'martabak-manis'],
         ],
         [
-          ['kelereng', 'ayam-goreng', 'karung'],
-          ['martabak-manis', 'peci', 'panjat-pinang'],
-          ['pisang-goreng', 'peci', 'panjat-pinang'],
+          ['dadar-gulung', 'panjat-pinang', 'tempe'],
+          ['dadar-gulung', 'pisang-goreng', 'ayam-goreng'],
+          ['panjat-pinang', 'kelereng', 'peci'],
         ],
-        [['kelereng', null, 'kelereng'], ['ikan-bakar', 'bendera', 'pisang-goreng']],
-        [[null, 'tempe', null], ['ikan-bakar', 'terompet', 'ikan-bakar']],
+        [['ikan-bakar', null, 'martabak-manis'], ['ayam-goreng', 'terompet', 'bendera']],
+        [[null, 'ikan-bakar', null], ['karung', 'tempe', 'peci']],
+      ],
+    },
+    {
+      shelves: [
+        [[null, null, null]],
+        [
+          ['ikan-bakar', 'martabak-manis', 'dadar-gulung'],
+          ['kelereng', 'terompet', 'bendera'],
+          ['dadar-gulung', 'ikan-bakar', 'pisang-goreng'],
+        ],
+        [
+          ['panjat-pinang', 'ayam-goreng', 'tempe'],
+          ['tempe', 'panjat-pinang', 'panjat-pinang'],
+          ['dadar-gulung', 'kelereng', 'martabak-manis'],
+        ],
+        [
+          ['bendera', 'kelereng', 'pisang-goreng'],
+          ['terompet', 'tempe', 'ikan-bakar'],
+          ['peci', 'terompet', 'peci'],
+        ],
+        [['karung', null, 'martabak-manis'], ['karung', 'karung', 'bendera']],
+        [[null, 'peci', null], ['pisang-goreng', 'ayam-goreng', 'ayam-goreng']],
       ],
     },
   ],

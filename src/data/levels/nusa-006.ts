@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 6`, or try another seed with `npm run levelgen -- 6 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 80%, out of space 20%,
- * out of time 1%, space pressure 5%. Expert: wins 95%.
+ * Simulated players, 200 games each. Casual: wins 81%, out of space 18%,
+ * out of time 2%, space pressure 6%. Expert: wins 97%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 80% to 89%, the expert 95% to 98%; pressure 3% to 7%.
+ * Across them the casual player wins 74% to 86%, the expert 90% to 97%; pressure 4% to 7%.
  * Stars (formula in src/core/stars.ts): two from 2110 points, three from 3100.
  */
 export const nusa006: LevelDefinition = {
@@ -29,7 +29,10 @@ export const nusa006: LevelDefinition = {
     [['onde-onde', 'rambutan', null], ['es-teh-manis', 'tahu-goreng', 'wayang-kulit']],
     [['blangkon', 'klepon', 'es-teh-manis']],
   ],
-  mechanics: [{ kind: 'lockedShelves', shelves: [{ shelf: 8, triplesRequired: 1 }] }],
+  mechanics: [
+    { kind: 'lockedShelves', shelves: [{ shelf: 8, triplesRequired: 1 }] },
+    { kind: 'fresh', foods: [{ type: 'salak', moves: 29 }, { type: 'rambutan', moves: 42 }] },
+  ],
   layout: {
     columns: [
       { kind: 'shelves', shelves: [0, 1, 2] },
@@ -40,96 +43,96 @@ export const nusa006: LevelDefinition = {
   arrangements: [
     {
       shelves: [
-        [['cabai', 'klepon', 'blangkon'], ['onde-onde', 'tahu-goreng', 'wayang-kulit']],
-        [['jamu', 'jamu', 'rambutan'], ['wayang-kulit', 'salak', 'es-cendol']],
+        [['es-teh-manis', 'jamu', 'onde-onde'], ['klepon', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'wayang-kulit'], ['kerupuk-udang', 'batik', 'jamu']],
         [[null, null, null]],
-        [['wayang-kulit', 'blangkon', 'batik'], ['blangkon', 'klepon', 'es-teh-manis']],
-        [['es-teh-manis', 'batik', 'kerupuk-udang'], ['es-kelapa-muda', 'tahu-goreng', 'cabai']],
-        [['rambutan', null, 'klepon'], ['es-kelapa-muda', null, 'batik']],
-        [['salak', 'es-teh-manis', 'salak'], ['jamu', 'tahu-goreng', 'kerupuk-udang']],
-        [['onde-onde', 'cabai', null], ['rambutan', 'es-cendol', 'kerupuk-udang']],
-        [['es-kelapa-muda', 'es-cendol', 'onde-onde']],
+        [['tahu-goreng', 'salak', 'batik'], ['es-kelapa-muda', 'es-cendol', 'blangkon']],
+        [['es-teh-manis', 'klepon', 'kerupuk-udang'], ['cabai', 'es-cendol', 'klepon']],
+        [['onde-onde', null, 'jamu'], ['onde-onde', null, 'es-teh-manis']],
+        [['kerupuk-udang', 'wayang-kulit', 'blangkon'], ['es-cendol', 'cabai', 'tahu-goreng']],
+        [['tahu-goreng', 'rambutan', null], ['es-kelapa-muda', 'wayang-kulit', 'batik']],
+        [['es-kelapa-muda', 'cabai', 'blangkon']],
       ],
     },
     {
       shelves: [
-        [['cabai', 'es-kelapa-muda', 'jamu'], ['kerupuk-udang', 'rambutan', 'salak']],
-        [['wayang-kulit', 'cabai', 'es-cendol'], ['tahu-goreng', 'onde-onde', 'es-cendol']],
+        [['blangkon', 'tahu-goreng', 'onde-onde'], ['kerupuk-udang', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'es-teh-manis'], ['blangkon', 'es-cendol', 'wayang-kulit']],
         [[null, null, null]],
-        [['klepon', 'onde-onde', 'tahu-goreng'], ['blangkon', 'jamu', 'salak']],
-        [['es-cendol', 'kerupuk-udang', 'wayang-kulit'], ['es-teh-manis', 'rambutan', 'jamu']],
-        [['es-teh-manis', null, 'onde-onde'], ['wayang-kulit', null, 'es-teh-manis']],
-        [['batik', 'tahu-goreng', 'kerupuk-udang'], ['salak', 'klepon', 'rambutan']],
-        [['klepon', 'blangkon', null], ['es-kelapa-muda', 'batik', 'es-kelapa-muda']],
-        [['blangkon', 'batik', 'cabai']],
+        [['klepon', 'salak', 'jamu'], ['tahu-goreng', 'blangkon', 'jamu']],
+        [['tahu-goreng', 'cabai', 'onde-onde'], ['es-cendol', 'cabai', 'klepon']],
+        [['batik', null, 'batik'], ['es-teh-manis', null, 'klepon']],
+        [['wayang-kulit', 'es-cendol', 'cabai'], ['onde-onde', 'kerupuk-udang', 'wayang-kulit']],
+        [['es-teh-manis', 'rambutan', null], ['es-kelapa-muda', 'batik', 'kerupuk-udang']],
+        [['es-kelapa-muda', 'jamu', 'es-kelapa-muda']],
       ],
     },
     {
       shelves: [
-        [['cabai', 'cabai', 'es-teh-manis'], ['onde-onde', 'klepon', 'es-kelapa-muda']],
-        [['onde-onde', 'wayang-kulit', 'es-cendol'], ['kerupuk-udang', 'es-cendol', 'salak']],
+        [['es-teh-manis', 'batik', 'wayang-kulit'], ['es-cendol', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'cabai'], ['onde-onde', 'es-kelapa-muda', 'klepon']],
         [[null, null, null]],
-        [['wayang-kulit', 'es-cendol', 'kerupuk-udang'], ['salak', 'es-teh-manis', 'cabai']],
-        [['blangkon', 'kerupuk-udang', 'blangkon'], ['onde-onde', 'jamu', 'jamu']],
-        [['batik', null, 'tahu-goreng'], ['batik', null, 'klepon']],
-        [['jamu', 'batik', 'rambutan'], ['es-kelapa-muda', 'wayang-kulit', 'es-kelapa-muda']],
-        [['klepon', 'salak', null], ['tahu-goreng', 'rambutan', 'rambutan']],
-        [['tahu-goreng', 'es-teh-manis', 'blangkon']],
-      ],
-    },
-    {
-      shelves: [
-        [['es-teh-manis', 'onde-onde', 'klepon'], ['tahu-goreng', 'es-teh-manis', 'salak']],
-        [['batik', 'jamu', 'klepon'], ['tahu-goreng', 'cabai', 'wayang-kulit']],
-        [[null, null, null]],
-        [['batik', 'blangkon', 'kerupuk-udang'], ['kerupuk-udang', 'blangkon', 'onde-onde']],
-        [['klepon', 'tahu-goreng', 'es-teh-manis'], ['jamu', 'blangkon', 'rambutan']],
-        [['onde-onde', null, 'salak'], ['es-kelapa-muda', null, 'cabai']],
-        [['cabai', 'rambutan', 'es-cendol'], ['es-kelapa-muda', 'jamu', 'batik']],
-        [['es-cendol', 'kerupuk-udang', null], ['rambutan', 'salak', 'es-cendol']],
-        [['es-kelapa-muda', 'wayang-kulit', 'wayang-kulit']],
-      ],
-    },
-    {
-      shelves: [
-        [['es-cendol', 'tahu-goreng', 'salak'], ['jamu', 'rambutan', 'blangkon']],
-        [['es-kelapa-muda', 'kerupuk-udang', 'es-teh-manis'], ['onde-onde', 'batik', 'jamu']],
-        [[null, null, null]],
+        [['jamu', 'salak', 'kerupuk-udang'], ['tahu-goreng', 'cabai', 'jamu']],
         [
-          ['rambutan', 'es-kelapa-muda', 'wayang-kulit'],
-          ['es-kelapa-muda', 'es-cendol', 'wayang-kulit'],
+          ['es-kelapa-muda', 'es-cendol', 'batik'],
+          ['wayang-kulit', 'es-teh-manis', 'es-kelapa-muda'],
         ],
-        [['tahu-goreng', 'kerupuk-udang', 'es-cendol'], ['tahu-goreng', 'jamu', 'onde-onde']],
-        [['cabai', null, 'onde-onde'], ['kerupuk-udang', null, 'es-teh-manis']],
-        [['batik', 'klepon', 'salak'], ['blangkon', 'es-teh-manis', 'cabai']],
-        [['rambutan', 'wayang-kulit', null], ['klepon', 'batik', 'klepon']],
-        [['blangkon', 'cabai', 'salak']],
+        [['cabai', null, 'es-cendol'], ['onde-onde', null, 'batik']],
+        [['es-teh-manis', 'tahu-goreng', 'blangkon'], ['blangkon', 'onde-onde', 'tahu-goreng']],
+        [['kerupuk-udang', 'rambutan', null], ['jamu', 'kerupuk-udang', 'wayang-kulit']],
+        [['klepon', 'blangkon', 'klepon']],
       ],
     },
     {
       shelves: [
-        [['onde-onde', 'jamu', 'blangkon'], ['onde-onde', 'wayang-kulit', 'cabai']],
-        [['salak', 'kerupuk-udang', 'klepon'], ['kerupuk-udang', 'jamu', 'es-teh-manis']],
+        [['tahu-goreng', 'kerupuk-udang', 'es-cendol'], ['es-kelapa-muda', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'es-kelapa-muda'], ['kerupuk-udang', 'wayang-kulit', 'onde-onde']],
         [[null, null, null]],
-        [['salak', 'es-kelapa-muda', 'batik'], ['tahu-goreng', 'blangkon', 'es-cendol']],
-        [['es-cendol', 'onde-onde', 'cabai'], ['wayang-kulit', 'rambutan', 'cabai']],
-        [['es-kelapa-muda', null, 'tahu-goreng'], ['batik', null, 'wayang-kulit']],
-        [['tahu-goreng', 'rambutan', 'blangkon'], ['es-cendol', 'es-teh-manis', 'es-kelapa-muda']],
-        [['batik', 'klepon', null], ['klepon', 'kerupuk-udang', 'jamu']],
-        [['es-teh-manis', 'salak', 'rambutan']],
+        [['jamu', 'salak', 'wayang-kulit'], ['onde-onde', 'tahu-goreng', 'klepon']],
+        [['cabai', 'es-cendol', 'tahu-goreng'], ['klepon', 'jamu', 'batik']],
+        [['onde-onde', null, 'blangkon'], ['jamu', null, 'blangkon']],
+        [['kerupuk-udang', 'batik', 'cabai'], ['wayang-kulit', 'es-teh-manis', 'batik']],
+        [['blangkon', 'rambutan', null], ['es-kelapa-muda', 'es-teh-manis', 'es-cendol']],
+        [['klepon', 'es-teh-manis', 'cabai']],
       ],
     },
     {
       shelves: [
-        [['cabai', 'rambutan', 'onde-onde'], ['wayang-kulit', 'blangkon', 'salak']],
-        [['kerupuk-udang', 'es-cendol', 'blangkon'], ['jamu', 'jamu', 'es-teh-manis']],
+        [['klepon', 'tahu-goreng', 'cabai'], ['kerupuk-udang', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'kerupuk-udang'], ['blangkon', 'kerupuk-udang', 'klepon']],
         [[null, null, null]],
-        [['es-kelapa-muda', 'onde-onde', 'salak'], ['blangkon', 'es-cendol', 'batik']],
-        [['klepon', 'cabai', 'wayang-kulit'], ['es-teh-manis', 'onde-onde', 'rambutan']],
-        [['tahu-goreng', null, 'wayang-kulit'], ['cabai', null, 'jamu']],
-        [['klepon', 'es-kelapa-muda', 'kerupuk-udang'], ['tahu-goreng', 'kerupuk-udang', 'klepon']],
-        [['es-teh-manis', 'es-cendol', null], ['tahu-goreng', 'batik', 'es-kelapa-muda']],
-        [['rambutan', 'salak', 'batik']],
+        [['es-teh-manis', 'salak', 'jamu'], ['tahu-goreng', 'es-kelapa-muda', 'es-kelapa-muda']],
+        [['klepon', 'wayang-kulit', 'jamu'], ['es-teh-manis', 'es-teh-manis', 'onde-onde']],
+        [['cabai', null, 'es-cendol'], ['cabai', null, 'blangkon']],
+        [['es-cendol', 'blangkon', 'onde-onde'], ['wayang-kulit', 'es-kelapa-muda', 'onde-onde']],
+        [['batik', 'rambutan', null], ['batik', 'batik', 'jamu']],
+        [['wayang-kulit', 'es-cendol', 'tahu-goreng']],
+      ],
+    },
+    {
+      shelves: [
+        [['wayang-kulit', 'kerupuk-udang', 'batik'], ['jamu', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'klepon'], ['jamu', 'blangkon', 'wayang-kulit']],
+        [[null, null, null]],
+        [['cabai', 'salak', 'kerupuk-udang'], ['es-cendol', 'onde-onde', 'batik']],
+        [['es-cendol', 'tahu-goreng', 'es-teh-manis'], ['es-kelapa-muda', 'cabai', 'es-cendol']],
+        [['klepon', null, 'tahu-goreng'], ['jamu', null, 'klepon']],
+        [['wayang-kulit', 'onde-onde', 'batik'], ['es-teh-manis', 'cabai', 'blangkon']],
+        [['es-kelapa-muda', 'rambutan', null], ['tahu-goreng', 'kerupuk-udang', 'onde-onde']],
+        [['es-teh-manis', 'blangkon', 'es-kelapa-muda']],
+      ],
+    },
+    {
+      shelves: [
+        [['onde-onde', 'blangkon', 'tahu-goreng'], ['kerupuk-udang', 'salak', 'rambutan']],
+        [['salak', 'rambutan', 'batik'], ['es-kelapa-muda', 'blangkon', 'es-teh-manis']],
+        [[null, null, null]],
+        [['kerupuk-udang', 'salak', 'es-kelapa-muda'], ['cabai', 'es-teh-manis', 'es-kelapa-muda']],
+        [['jamu', 'onde-onde', 'es-teh-manis'], ['es-cendol', 'jamu', 'klepon']],
+        [['cabai', null, 'es-cendol'], ['onde-onde', null, 'kerupuk-udang']],
+        [['klepon', 'es-cendol', 'wayang-kulit'], ['blangkon', 'cabai', 'batik']],
+        [['tahu-goreng', 'rambutan', null], ['tahu-goreng', 'wayang-kulit', 'wayang-kulit']],
+        [['batik', 'jamu', 'klepon']],
       ],
     },
   ],

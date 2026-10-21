@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 26`, or try another seed with `npm run levelgen -- 26 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 65%, out of space 34%,
- * out of time 2%, space pressure 24%. Expert: wins 30%.
+ * Simulated players, 200 games each. Casual: wins 66%, out of space 34%,
+ * out of time 1%, space pressure 23%. Expert: wins 35%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 60% to 88%, the expert 30% to 96%; pressure 11% to 36%.
+ * Across them the casual player wins 66% to 85%, the expert 35% to 95%; pressure 11% to 27%.
  * Stars (formula in src/core/stars.ts): two from 2890 points, three from 4340.
  */
 export const nusa026: LevelDefinition = {
@@ -40,6 +40,16 @@ export const nusa026: LevelDefinition = {
       ['kendang', 'kembang-api', null],
     ],
     [[null, null, null]],
+  ],
+  mechanics: [
+    {
+      kind: 'fresh',
+      foods: [
+        { type: 'pisang-goreng', moves: 39 },
+        { type: 'tempe', moves: 56 },
+        { type: 'onde-onde', moves: 78 },
+      ],
+    },
   ],
   layout: {
     columns: [
@@ -102,59 +112,6 @@ export const nusa026: LevelDefinition = {
     {
       shelves: [
         [
-          ['kembang-api', 'kok', 'ikan-bakar'],
-          ['wayang-kulit', 'kembang-api', 'batik'],
-          ['pisang-goreng', 'martabak-manis', 'kerupuk-udang'],
-        ],
-        [['blangkon', null, 'topeng'], ['pisang-goreng', 'kok', 'martabak-manis']],
-        [
-          ['kendang', 'es-teh-manis', 'kembang-api'],
-          ['wayang-kulit', 'batik', 'kendang'],
-          ['topeng', 'raket', 'onde-onde'],
-        ],
-        [['sepak-takraw', 'ikan-bakar', null], ['ketupat', 'kendang', 'pisang-goreng']],
-        [['batik', 'ketupat', 'sepak-takraw'], ['wayang-kulit', 'blangkon', 'es-teh-manis']],
-        [['onde-onde', 'tempe', 'topeng'], ['tempe', 'kerupuk-udang', 'dadar-gulung']],
-        [['onde-onde', 'sepak-takraw', 'kok'], ['tempe', 'kerupuk-udang', 'dadar-gulung']],
-        [
-          ['ketupat', 'dadar-gulung', 'es-teh-manis'],
-          ['martabak-manis', 'blangkon', 'ikan-bakar'],
-          ['raket', 'raket', null],
-        ],
-        [[null, null, null]],
-      ],
-    },
-    {
-      shelves: [
-        [
-          ['kerupuk-udang', 'kembang-api', 'ikan-bakar'],
-          ['tempe', 'dadar-gulung', 'tempe'],
-          ['es-teh-manis', 'martabak-manis', 'ikan-bakar'],
-        ],
-        [['topeng', null, 'topeng'], ['batik', 'onde-onde', 'raket']],
-        [
-          ['wayang-kulit', 'kerupuk-udang', 'wayang-kulit'],
-          ['batik', 'raket', 'pisang-goreng'],
-          ['kendang', 'blangkon', 'kok'],
-        ],
-        [['sepak-takraw', 'wayang-kulit', null], ['onde-onde', 'pisang-goreng', 'kendang']],
-        [['dadar-gulung', 'ketupat', 'blangkon'], ['es-teh-manis', 'ketupat', 'sepak-takraw']],
-        [['kembang-api', 'pisang-goreng', 'ketupat'], ['onde-onde', 'kok', 'kok']],
-        [
-          ['kendang', 'es-teh-manis', 'ikan-bakar'],
-          ['kerupuk-udang', 'kembang-api', 'sepak-takraw'],
-        ],
-        [
-          ['tempe', 'dadar-gulung', 'raket'],
-          ['blangkon', 'martabak-manis', 'martabak-manis'],
-          ['topeng', 'batik', null],
-        ],
-        [[null, null, null]],
-      ],
-    },
-    {
-      shelves: [
-        [
           ['batik', 'blangkon', 'kerupuk-udang'],
           ['kembang-api', 'kembang-api', 'kok'],
           ['wayang-kulit', 'wayang-kulit', 'raket'],
@@ -180,37 +137,6 @@ export const nusa026: LevelDefinition = {
     {
       shelves: [
         [
-          ['dadar-gulung', 'batik', 'onde-onde'],
-          ['onde-onde', 'kerupuk-udang', 'ketupat'],
-          ['batik', 'tempe', 'kok'],
-        ],
-        [['sepak-takraw', null, 'batik'], ['wayang-kulit', 'kendang', 'raket']],
-        [
-          ['blangkon', 'wayang-kulit', 'topeng'],
-          ['raket', 'dadar-gulung', 'wayang-kulit'],
-          ['kerupuk-udang', 'tempe', 'topeng'],
-        ],
-        [['blangkon', 'martabak-manis', null], ['ketupat', 'topeng', 'sepak-takraw']],
-        [
-          ['kerupuk-udang', 'ketupat', 'kembang-api'],
-          ['pisang-goreng', 'martabak-manis', 'es-teh-manis'],
-        ],
-        [['martabak-manis', 'kok', 'kendang'], ['sepak-takraw', 'kembang-api', 'onde-onde']],
-        [
-          ['blangkon', 'ikan-bakar', 'ikan-bakar'],
-          ['pisang-goreng', 'dadar-gulung', 'es-teh-manis'],
-        ],
-        [
-          ['raket', 'kendang', 'ikan-bakar'],
-          ['tempe', 'es-teh-manis', 'kembang-api'],
-          ['pisang-goreng', 'kok', null],
-        ],
-        [[null, null, null]],
-      ],
-    },
-    {
-      shelves: [
-        [
           ['martabak-manis', 'tempe', 'dadar-gulung'],
           ['dadar-gulung', 'ikan-bakar', 'ketupat'],
           ['ketupat', 'kerupuk-udang', 'es-teh-manis'],
@@ -229,6 +155,84 @@ export const nusa026: LevelDefinition = {
           ['raket', 'topeng', 'pisang-goreng'],
           ['kendang', 'kok', 'ikan-bakar'],
           ['sepak-takraw', 'kerupuk-udang', null],
+        ],
+        [[null, null, null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['kendang', 'kerupuk-udang', 'batik'],
+          ['dadar-gulung', 'batik', 'pisang-goreng'],
+          ['ketupat', 'raket', 'pisang-goreng'],
+        ],
+        [['onde-onde', null, 'onde-onde'], ['raket', 'kerupuk-udang', 'kerupuk-udang']],
+        [
+          ['topeng', 'wayang-kulit', 'blangkon'],
+          ['kembang-api', 'tempe', 'ketupat'],
+          ['tempe', 'sepak-takraw', 'ikan-bakar'],
+        ],
+        [['es-teh-manis', 'onde-onde', null], ['ikan-bakar', 'raket', 'kok']],
+        [['ketupat', 'martabak-manis', 'kembang-api'], ['es-teh-manis', 'dadar-gulung', 'topeng']],
+        [['blangkon', 'batik', 'tempe'], ['ikan-bakar', 'es-teh-manis', 'pisang-goreng']],
+        [['blangkon', 'kembang-api', 'kendang'], ['dadar-gulung', 'wayang-kulit', 'kok']],
+        [
+          ['sepak-takraw', 'sepak-takraw', 'martabak-manis'],
+          ['topeng', 'martabak-manis', 'kok'],
+          ['kendang', 'wayang-kulit', null],
+        ],
+        [[null, null, null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['kendang', 'blangkon', 'dadar-gulung'],
+          ['kerupuk-udang', 'ikan-bakar', 'topeng'],
+          ['tempe', 'topeng', 'kembang-api'],
+        ],
+        [['pisang-goreng', null, 'dadar-gulung'], ['martabak-manis', 'ikan-bakar', 'wayang-kulit']],
+        [
+          ['sepak-takraw', 'kendang', 'blangkon'],
+          ['tempe', 'kok', 'kok'],
+          ['onde-onde', 'es-teh-manis', 'kerupuk-udang'],
+        ],
+        [['kendang', 'ketupat', null], ['batik', 'es-teh-manis', 'raket']],
+        [['pisang-goreng', 'batik', 'kerupuk-udang'], ['batik', 'onde-onde', 'ketupat']],
+        [
+          ['martabak-manis', 'onde-onde', 'sepak-takraw'],
+          ['wayang-kulit', 'blangkon', 'kembang-api'],
+        ],
+        [['wayang-kulit', 'raket', 'raket'], ['kembang-api', 'ketupat', 'kok']],
+        [
+          ['pisang-goreng', 'dadar-gulung', 'tempe'],
+          ['topeng', 'es-teh-manis', 'ikan-bakar'],
+          ['martabak-manis', 'sepak-takraw', null],
+        ],
+        [[null, null, null]],
+      ],
+    },
+    {
+      shelves: [
+        [
+          ['ketupat', 'kembang-api', 'es-teh-manis'],
+          ['kok', 'dadar-gulung', 'kendang'],
+          ['onde-onde', 'tempe', 'dadar-gulung'],
+        ],
+        [['kerupuk-udang', null, 'kendang'], ['pisang-goreng', 'blangkon', 'batik']],
+        [
+          ['batik', 'dadar-gulung', 'pisang-goreng'],
+          ['pisang-goreng', 'ikan-bakar', 'ikan-bakar'],
+          ['blangkon', 'raket', 'topeng'],
+        ],
+        [['tempe', 'topeng', null], ['tempe', 'martabak-manis', 'es-teh-manis']],
+        [['wayang-kulit', 'blangkon', 'kendang'], ['es-teh-manis', 'wayang-kulit', 'kerupuk-udang']],
+        [['wayang-kulit', 'ketupat', 'kembang-api'], ['raket', 'sepak-takraw', 'raket']],
+        [['batik', 'onde-onde', 'ikan-bakar'], ['martabak-manis', 'onde-onde', 'sepak-takraw']],
+        [
+          ['ketupat', 'kok', 'kerupuk-udang'],
+          ['sepak-takraw', 'topeng', 'kok'],
+          ['martabak-manis', 'kembang-api', null],
         ],
         [[null, null, null]],
       ],

@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 28`, or try another seed with `npm run levelgen -- 28 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 37%, out of space 63%,
- * out of time 0%, space pressure 24%. Expert: wins 18%.
+ * Simulated players, 200 games each. Casual: wins 36%, out of space 64%,
+ * out of time 1%, space pressure 22%. Expert: wins 14%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 37% to 63%, the expert 18% to 86%; pressure 7% to 24%.
+ * Across them the casual player wins 36% to 60%, the expert 14% to 95%; pressure 7% to 22%.
  * Stars (formula in src/core/stars.ts): two from 2830 points, three from 4220.
  */
 export const nusa028: LevelDefinition = {
@@ -53,6 +53,7 @@ export const nusa028: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'rendang', moves: 27 }, { type: 'salak', moves: 41 }] },
   ],
   layout: {
     columns: [
@@ -62,98 +63,6 @@ export const nusa028: LevelDefinition = {
     ],
   },
   arrangements: [
-    {
-      shelves: [
-        [['kok', 'klepon', 'kerang'], ['terompet', 'terompet', 'salak']],
-        [[null, null, 'rendang'], ['gado-gado', 'raket', null]],
-        [[null, 'sepak-takraw', null], ['bianglala', 'panjat-pinang', 'pinisi']],
-        [[null, null, 'kipas'], ['kelereng', 'gado-gado', 'pinisi']],
-        [['panjat-pinang', 'sate', 'bianglala'], [null, 'kerang', 'panjat-pinang']],
-        [['raket', 'ayam-goreng', null], ['terompet', 'sate', 'peci']],
-        [['klepon', 'peci', 'peci'], ['pinisi', 'sate', null], ['klepon', 'cabai', 'rendang']],
-        [['kelereng', null, null], ['kerang', 'raket', 'kipas']],
-      ],
-      stacks: [
-        [
-          ['kok', 'kipas', 'salak'],
-          ['salak', 'cabai', 'sepak-takraw'],
-          ['gado-gado', 'kok', 'bianglala', 'cabai'],
-          ['rendang', 'sepak-takraw'],
-          ['ayam-goreng', 'ayam-goreng', 'kelereng'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [['gado-gado', 'klepon', 'kelereng'], ['kerang', 'cabai', 'bianglala']],
-        [[null, null, 'bianglala'], ['gado-gado', 'sate', null]],
-        [[null, 'peci', null], ['bianglala', 'rendang', 'kipas']],
-        [[null, null, 'salak'], ['klepon', 'ayam-goreng', 'pinisi']],
-        [['panjat-pinang', 'peci', 'rendang'], [null, 'raket', 'sepak-takraw']],
-        [['ayam-goreng', 'cabai', null], ['kerang', 'panjat-pinang', 'panjat-pinang']],
-        [['terompet', 'kok', 'salak'], ['gado-gado', 'cabai', null], ['kok', 'kok', 'raket']],
-        [['rendang', null, null], ['salak', 'sate', 'terompet']],
-      ],
-      stacks: [
-        [
-          ['kelereng', 'kipas', 'pinisi'],
-          ['sepak-takraw', 'kerang', 'raket'],
-          ['kelereng', 'ayam-goreng', 'kipas', 'sate'],
-          ['peci', 'klepon'],
-          ['terompet', 'pinisi', 'sepak-takraw'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [['kipas', 'sate', 'raket'], ['bianglala', 'salak', 'sate']],
-        [[null, null, 'kelereng'], ['peci', 'bianglala', null]],
-        [[null, 'gado-gado', null], ['kok', 'sepak-takraw', 'peci']],
-        [[null, null, 'sepak-takraw'], ['gado-gado', 'terompet', 'kipas']],
-        [['pinisi', 'klepon', 'cabai'], [null, 'ayam-goreng', 'raket']],
-        [['pinisi', 'rendang', null], ['terompet', 'pinisi', 'kelereng']],
-        [
-          ['rendang', 'kelereng', 'gado-gado'],
-          ['bianglala', 'sate', null],
-          ['ayam-goreng', 'kipas', 'salak'],
-        ],
-        [['kok', null, null], ['raket', 'klepon', 'rendang']],
-      ],
-      stacks: [
-        [
-          ['cabai', 'panjat-pinang', 'kerang'],
-          ['peci', 'panjat-pinang', 'kerang'],
-          ['panjat-pinang', 'kerang', 'salak', 'ayam-goreng'],
-          ['cabai', 'terompet'],
-          ['sepak-takraw', 'kok', 'klepon'],
-        ],
-      ],
-    },
-    {
-      shelves: [
-        [['sepak-takraw', 'panjat-pinang', 'raket'], ['peci', 'gado-gado', 'terompet']],
-        [[null, null, 'kelereng'], ['kok', 'sate', null]],
-        [[null, 'panjat-pinang', null], ['raket', 'raket', 'bianglala']],
-        [[null, null, 'klepon'], ['pinisi', 'kipas', 'pinisi']],
-        [['kelereng', 'rendang', 'ayam-goreng'], [null, 'klepon', 'rendang']],
-        [['rendang', 'sate', null], ['cabai', 'cabai', 'sate']],
-        [
-          ['sepak-takraw', 'gado-gado', 'ayam-goreng'],
-          ['kerang', 'gado-gado', null],
-          ['kerang', 'panjat-pinang', 'bianglala'],
-        ],
-        [['kok', null, null], ['pinisi', 'salak', 'cabai']],
-      ],
-      stacks: [
-        [
-          ['terompet', 'kelereng', 'kerang'],
-          ['kipas', 'kipas', 'bianglala'],
-          ['peci', 'terompet', 'salak', 'salak'],
-          ['kok', 'sepak-takraw'],
-          ['ayam-goreng', 'peci', 'klepon'],
-        ],
-      ],
-    },
     {
       shelves: [
         [['gado-gado', 'sepak-takraw', 'kerang'], ['ayam-goreng', 'terompet', 'bianglala']],
@@ -177,51 +86,151 @@ export const nusa028: LevelDefinition = {
     },
     {
       shelves: [
-        [['bianglala', 'klepon', 'ayam-goreng'], ['klepon', 'pinisi', 'peci']],
-        [[null, null, 'pinisi'], ['peci', 'panjat-pinang', null]],
-        [[null, 'kelereng', null], ['sate', 'sepak-takraw', 'panjat-pinang']],
-        [[null, null, 'raket'], ['klepon', 'rendang', 'raket']],
-        [['cabai', 'ayam-goreng', 'kok'], [null, 'sepak-takraw', 'kok']],
-        [['raket', 'cabai', null], ['kelereng', 'rendang', 'terompet']],
+        [['salak', 'gado-gado', 'salak'], ['klepon', 'sepak-takraw', 'rendang']],
+        [[null, null, 'raket'], ['cabai', 'raket', null]],
+        [[null, 'ayam-goreng', null], ['pinisi', 'kerang', 'pinisi']],
+        [[null, null, 'kipas'], ['peci', 'bianglala', 'kok']],
+        [['kelereng', 'kelereng', 'kok'], [null, 'rendang', 'kipas']],
+        [['cabai', 'sate', null], ['pinisi', 'terompet', 'sate']],
         [
-          ['kipas', 'kerang', 'terompet'],
-          ['salak', 'salak', null],
-          ['ayam-goreng', 'sate', 'sepak-takraw'],
+          ['bianglala', 'sate', 'ayam-goreng'],
+          ['klepon', 'kipas', null],
+          ['cabai', 'sepak-takraw', 'panjat-pinang'],
         ],
-        [['panjat-pinang', null, null], ['gado-gado', 'bianglala', 'kerang']],
+        [['kerang', null, null], ['gado-gado', 'terompet', 'ayam-goreng']],
       ],
       stacks: [
         [
-          ['kipas', 'gado-gado', 'rendang'],
-          ['kipas', 'peci', 'sate'],
-          ['terompet', 'pinisi', 'bianglala', 'salak'],
-          ['gado-gado', 'kok'],
-          ['kelereng', 'kerang', 'cabai'],
+          ['gado-gado', 'rendang', 'terompet'],
+          ['salak', 'kok', 'sepak-takraw'],
+          ['klepon', 'peci', 'kerang', 'panjat-pinang'],
+          ['bianglala', 'peci'],
+          ['kelereng', 'raket', 'panjat-pinang'],
         ],
       ],
     },
     {
       shelves: [
-        [['panjat-pinang', 'ayam-goreng', 'kerang'], ['kipas', 'pinisi', 'salak']],
-        [[null, null, 'klepon'], ['kok', 'raket', null]],
-        [[null, 'cabai', null], ['gado-gado', 'rendang', 'kelereng']],
-        [[null, null, 'kerang'], ['terompet', 'kok', 'sepak-takraw']],
-        [['ayam-goreng', 'kelereng', 'sate'], [null, 'rendang', 'kipas']],
-        [['cabai', 'peci', null], ['peci', 'rendang', 'gado-gado']],
+        [['kerang', 'kok', 'sepak-takraw'], ['cabai', 'bianglala', 'peci']],
+        [[null, null, 'panjat-pinang'], ['rendang', 'ayam-goreng', null]],
+        [[null, 'gado-gado', null], ['bianglala', 'peci', 'terompet']],
+        [[null, null, 'bianglala'], ['kipas', 'cabai', 'ayam-goreng']],
+        [['kok', 'kerang', 'raket'], [null, 'salak', 'salak']],
+        [['sate', 'rendang', null], ['gado-gado', 'klepon', 'sate']],
         [
-          ['sate', 'cabai', 'sate'],
-          ['bianglala', 'pinisi', null],
-          ['sepak-takraw', 'klepon', 'terompet'],
+          ['cabai', 'ayam-goreng', 'rendang'],
+          ['terompet', 'pinisi', null],
+          ['panjat-pinang', 'salak', 'kelereng'],
         ],
-        [['panjat-pinang', null, null], ['bianglala', 'kerang', 'pinisi']],
+        [['klepon', null, null], ['raket', 'pinisi', 'kok']],
       ],
       stacks: [
         [
-          ['gado-gado', 'sepak-takraw', 'kelereng'],
-          ['raket', 'klepon', 'salak'],
-          ['bianglala', 'panjat-pinang', 'kipas', 'salak'],
-          ['raket', 'terompet'],
-          ['peci', 'kok', 'ayam-goreng'],
+          ['peci', 'panjat-pinang', 'kipas'],
+          ['sate', 'kipas', 'gado-gado'],
+          ['kerang', 'sepak-takraw', 'terompet', 'pinisi'],
+          ['raket', 'kelereng'],
+          ['klepon', 'sepak-takraw', 'kelereng'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['kipas', 'bianglala', 'pinisi'], ['peci', 'peci', 'kerang']],
+        [[null, null, 'cabai'], ['rendang', 'sate', null]],
+        [[null, 'panjat-pinang', null], ['ayam-goreng', 'kelereng', 'sepak-takraw']],
+        [[null, null, 'terompet'], ['terompet', 'gado-gado', 'salak']],
+        [['sepak-takraw', 'salak', 'klepon'], [null, 'pinisi', 'kerang']],
+        [['klepon', 'kelereng', null], ['sate', 'rendang', 'rendang']],
+        [
+          ['kok', 'kerang', 'sepak-takraw'],
+          ['ayam-goreng', 'bianglala', null],
+          ['kok', 'ayam-goreng', 'klepon'],
+        ],
+        [['sate', null, null], ['terompet', 'panjat-pinang', 'kelereng']],
+      ],
+      stacks: [
+        [
+          ['gado-gado', 'raket', 'raket'],
+          ['salak', 'kipas', 'kipas'],
+          ['cabai', 'raket', 'bianglala', 'pinisi'],
+          ['kok', 'peci'],
+          ['cabai', 'gado-gado', 'panjat-pinang'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['cabai', 'sepak-takraw', 'panjat-pinang'], ['gado-gado', 'peci', 'ayam-goreng']],
+        [[null, null, 'rendang'], ['cabai', 'klepon', null]],
+        [[null, 'kok', null], ['panjat-pinang', 'ayam-goreng', 'bianglala']],
+        [[null, null, 'salak'], ['gado-gado', 'raket', 'bianglala']],
+        [['pinisi', 'salak', 'peci'], [null, 'kelereng', 'raket']],
+        [['rendang', 'kipas', null], ['klepon', 'kelereng', 'terompet']],
+        [
+          ['sate', 'gado-gado', 'kerang'],
+          ['kipas', 'ayam-goreng', null],
+          ['kok', 'kerang', 'cabai'],
+        ],
+        [['bianglala', null, null], ['sate', 'sate', 'kelereng']],
+      ],
+      stacks: [
+        [
+          ['rendang', 'terompet', 'salak'],
+          ['panjat-pinang', 'kok', 'sepak-takraw'],
+          ['pinisi', 'kerang', 'sepak-takraw', 'klepon'],
+          ['terompet', 'peci'],
+          ['pinisi', 'raket', 'kipas'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['kok', 'terompet', 'peci'], ['panjat-pinang', 'pinisi', 'ayam-goreng']],
+        [[null, null, 'kerang'], ['terompet', 'rendang', null]],
+        [[null, 'kipas', null], ['panjat-pinang', 'gado-gado', 'sepak-takraw']],
+        [[null, null, 'kipas'], ['ayam-goreng', 'sate', 'rendang']],
+        [['kok', 'kok', 'salak'], [null, 'klepon', 'bianglala']],
+        [['peci', 'kelereng', null], ['kerang', 'bianglala', 'sepak-takraw']],
+        [
+          ['sepak-takraw', 'kelereng', 'rendang'],
+          ['sate', 'klepon', null],
+          ['raket', 'salak', 'peci'],
+        ],
+        [['sate', null, null], ['pinisi', 'cabai', 'terompet']],
+      ],
+      stacks: [
+        [
+          ['raket', 'gado-gado', 'pinisi'],
+          ['salak', 'cabai', 'gado-gado'],
+          ['cabai', 'kelereng', 'panjat-pinang', 'bianglala'],
+          ['kipas', 'kerang'],
+          ['raket', 'ayam-goreng', 'klepon'],
+        ],
+      ],
+    },
+    {
+      shelves: [
+        [['panjat-pinang', 'pinisi', 'sepak-takraw'], ['klepon', 'kelereng', 'raket']],
+        [[null, null, 'salak'], ['salak', 'kelereng', null]],
+        [[null, 'raket', null], ['sate', 'cabai', 'gado-gado']],
+        [[null, null, 'cabai'], ['sate', 'pinisi', 'panjat-pinang']],
+        [['raket', 'peci', 'kerang'], [null, 'peci', 'terompet']],
+        [['bianglala', 'sate', null], ['kelereng', 'klepon', 'kipas']],
+        [
+          ['bianglala', 'cabai', 'kerang'],
+          ['gado-gado', 'bianglala', null],
+          ['sepak-takraw', 'rendang', 'kipas'],
+        ],
+        [['salak', null, null], ['peci', 'gado-gado', 'ayam-goreng']],
+      ],
+      stacks: [
+        [
+          ['kerang', 'kipas', 'pinisi'],
+          ['kok', 'terompet', 'ayam-goreng'],
+          ['rendang', 'rendang', 'kok', 'ayam-goreng'],
+          ['terompet', 'sepak-takraw'],
+          ['klepon', 'kok', 'panjat-pinang'],
         ],
       ],
     },

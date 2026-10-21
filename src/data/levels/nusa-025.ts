@@ -7,12 +7,12 @@ import type { LevelDefinition } from '../../core';
  * `npm run levelgen -- 25`, or try another seed with `npm run levelgen -- 25 --seed N`.
  * Change the recipe rather than this file.
  *
- * Simulated players, 200 games each. Casual: wins 35%, out of space 65%,
- * out of time 0%, space pressure 34%. Expert: wins 66%.
+ * Simulated players, 200 games each. Casual: wins 33%, out of space 67%,
+ * out of time 1%, space pressure 31%. Expert: wins 70%.
  * A guide only: real players may find it easier or harder.
  *
  * 8 arrangements of the items (the level as written is the first; each attempt plays the next one).
- * Across them the casual player wins 30% to 49%, the expert 64% to 85%; pressure 16% to 35%.
+ * Across them the casual player wins 31% to 56%, the expert 36% to 89%; pressure 19% to 38%.
  * Stars (formula in src/core/stars.ts): two from 3340 points, three from 4760.
  */
 export const nusa025: LevelDefinition = {
@@ -51,6 +51,7 @@ export const nusa025: LevelDefinition = {
         },
       ],
     },
+    { kind: 'fresh', foods: [{ type: 'es-kelapa-muda', moves: 28 }, { type: 'bakso', moves: 40 }] },
   ],
   layout: {
     columns: [
@@ -89,25 +90,25 @@ export const nusa025: LevelDefinition = {
       shelves: [
         [[null, null, null]],
         [
-          ['sepatu', 'arum-manis', null],
-          ['kok', 'peluit', 'sepatu'],
-          [null, 'sepak-takraw', 'lampion'],
+          ['sepak-takraw', 'lampion', null],
+          ['es-kelapa-muda', 'bakso', 'piala'],
+          [null, 'nasi-goreng', 'raket'],
+        ],
+        [[null, 'piala', null], ['raket', 'sepatu', 'arum-manis'], ['piala', 'peluit', 'balon']],
+        [
+          [null, null, 'arum-manis'],
+          ['lampion', 'sepak-takraw', 'lampion'],
+          ['sepatu', 'es-kelapa-muda', 'bakso'],
         ],
         [
-          [null, 'lampion', null],
-          ['es-kelapa-muda', 'raket', 'peluit'],
-          ['es-kelapa-muda', 'sepak-takraw', 'nasi-goreng'],
-        ],
-        [[null, null, 'kok'], ['kok', 'balon', 'balon'], ['piala', 'raket', 'lampion']],
-        [
-          ['piala', 'arum-manis', null],
-          ['peluit', 'nasi-goreng', null],
-          ['bakso', 'piala', 'raket'],
+          ['nasi-goreng', 'nasi-goreng', null],
+          ['peluit', 'es-kelapa-muda', null],
+          ['bakso', 'kok', 'peluit'],
         ],
       ],
       stacks: [
-        [['sepatu', 'balon'], ['bakso', 'bakso'], [], [], []],
-        [[], ['nasi-goreng', 'sepak-takraw'], [], [], ['arum-manis', 'es-kelapa-muda']],
+        [['arum-manis', 'sepak-takraw'], ['kok', 'balon'], [], [], []],
+        [[], ['kok', 'raket'], [], [], ['balon', 'sepatu']],
       ],
     },
     {
@@ -192,47 +193,51 @@ export const nusa025: LevelDefinition = {
     {
       shelves: [
         [[null, null, null]],
-        [['sepatu', 'kok', null], ['peluit', 'lampion', 'piala'], [null, 'es-kelapa-muda', 'piala']],
         [
-          [null, 'raket', null],
-          ['sepatu', 'sepak-takraw', 'raket'],
-          ['lampion', 'sepak-takraw', 'peluit'],
+          ['es-kelapa-muda', 'sepatu', null],
+          ['kok', 'lampion', 'lampion'],
+          [null, 'nasi-goreng', 'es-kelapa-muda'],
         ],
         [
-          [null, null, 'balon'],
-          ['raket', 'sepatu', 'es-kelapa-muda'],
-          ['arum-manis', 'bakso', 'kok'],
+          [null, 'nasi-goreng', null],
+          ['peluit', 'arum-manis', 'raket'],
+          ['arum-manis', 'piala', 'bakso'],
         ],
         [
-          ['balon', 'arum-manis', null],
-          ['bakso', 'kok', null],
-          ['piala', 'nasi-goreng', 'sepak-takraw'],
+          [null, null, 'nasi-goreng'],
+          ['balon', 'kok', 'sepak-takraw'],
+          ['peluit', 'sepak-takraw', 'balon'],
         ],
+        [['arum-manis', 'balon', null], ['sepatu', 'bakso', null], ['bakso', 'piala', 'sepatu']],
       ],
       stacks: [
-        [['nasi-goreng', 'bakso'], ['balon', 'es-kelapa-muda'], [], [], []],
-        [[], ['peluit', 'nasi-goreng'], [], [], ['lampion', 'arum-manis']],
+        [['lampion', 'peluit'], ['es-kelapa-muda', 'raket'], [], [], []],
+        [[], ['raket', 'kok'], [], [], ['sepak-takraw', 'piala']],
       ],
     },
     {
       shelves: [
         [[null, null, null]],
         [
-          ['raket', 'sepatu', null],
-          ['sepak-takraw', 'kok', 'es-kelapa-muda'],
-          [null, 'nasi-goreng', 'bakso'],
+          ['lampion', 'sepatu', null],
+          ['es-kelapa-muda', 'bakso', 'bakso'],
+          [null, 'sepatu', 'arum-manis'],
         ],
         [
-          [null, 'arum-manis', null],
-          ['nasi-goreng', 'balon', 'es-kelapa-muda'],
-          ['balon', 'peluit', 'peluit'],
+          [null, 'raket', null],
+          ['sepak-takraw', 'arum-manis', 'sepak-takraw'],
+          ['raket', 'sepatu', 'lampion'],
         ],
-        [[null, null, 'lampion'], ['piala', 'arum-manis', 'raket'], ['peluit', 'bakso', 'lampion']],
-        [['bakso', 'arum-manis', null], ['piala', 'piala', null], ['raket', 'balon', 'lampion']],
+        [
+          [null, null, 'lampion'],
+          ['kok', 'sepak-takraw', 'balon'],
+          ['piala', 'nasi-goreng', 'es-kelapa-muda'],
+        ],
+        [['kok', 'balon', null], ['kok', 'es-kelapa-muda', null], ['peluit', 'peluit', 'balon']],
       ],
       stacks: [
-        [['sepak-takraw', 'sepatu'], ['kok', 'kok'], [], [], []],
-        [[], ['nasi-goreng', 'es-kelapa-muda'], [], [], ['sepatu', 'sepak-takraw']],
+        [['bakso', 'raket'], ['nasi-goreng', 'piala'], [], [], []],
+        [[], ['peluit', 'nasi-goreng'], [], [], ['arum-manis', 'piala']],
       ],
     },
   ],

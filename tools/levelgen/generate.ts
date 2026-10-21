@@ -1,5 +1,6 @@
 import {
   COMBO_DEFAULTS,
+  FRESH_LIMITS,
   type Arrangement,
   createGame,
   LevelError,
@@ -35,6 +36,8 @@ export interface GeneratedLevel {
   readonly seed: number;
   /** Which candidate of the seed's sequence passed. */
   readonly attempt: number;
+  /** With fresh foods: which pick of them (see withFresh), to pin in the recipe's `fresh.pick`. */
+  readonly freshPick?: number | undefined;
   readonly stats: LevelStats;
   /** Item size in px on each of the CHECKED_SCREENS. */
   readonly itemPx: readonly number[];
@@ -49,13 +52,15 @@ export interface LevelStats {
 }
 
 /**
- * Whether a timed level meets its recipe's bands: the casual player's wins, time-ups and space pressure, then
- * (only worth simulating if those pass) the expert's wins. Returns the results when it does, null otherwise.
+ * Whether a timed level meets its recipe's bands: the casual player's wins, time-ups, space pressure and fresh
+ * triples spoiled, then (only worth simulating if those pass) the expert's wins. Returns the results when it does,
+ * null otherwise.
  */
 export function bandedStats(level: LevelDefinition, recipe: LevelRecipe): LevelStats | null {
   const casual = simulate(createGame(level), REPORT_RUNS, 1, CASUAL);
   if (!inRange(casual.winRate, recipe.winBand) || !inRange(casual.timeUpRate, recipe.time.timeUp)) return null;
   if (recipe.pressure && !inRange(casual.pressure, recipe.pressure)) return null;
+  if (recipe.spoiled && !inRange(casual.spoiledShare, recipe.spoiled)) return null;
   const expert = simulate(createGame(level), REPORT_RUNS, 1, EXPERT);
   if (recipe.expertBand && !inRange(expert.winRate, recipe.expertBand)) return null;
   return { casual, expert };
@@ -247,13 +252,6 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
     if (eligible.length < recipe.closing) return null;
     mechanics.push({ kind: 'closingShelves', shelves: choose(random, eligible.length, recipe.closing).map((i) => eligible[i]!).sort((a, b) => a - b) });
   }
-  if (recipe.fresh) {
-    // Foods only: cultural objects never spoil.
-    const foods = [...new Set(items)].filter((type) => parseItemType(type)?.kind.category !== 'cultural');
-    if (foods.length < recipe.fresh.moves.length) return null;
-    const picked = choose(random, foods.length, recipe.fresh.moves.length).map((i) => foods[i]!);
-    mechanics.push({ kind: 'fresh', foods: picked.map((type, i) => ({ type, moves: recipe.fresh!.moves[i]! })) });
-  }
   if (tracks.length > 0) {
     mechanics.push({
       kind: 'tracks',
@@ -276,12 +274,95 @@ export function buildCandidate(recipe: LevelRecipe, random: Random): LevelDefini
 }
 
 /**
+ * Moves of a typical game per item: the expert finishes in about one move per item (0.6-1.1 across levels 1-49;
+ * the casual player takes about 1.35). Fresh foods' countdowns are shares of it.
+ */
+export const TYPICAL_MOVES_PER_ITEM = 1;
+
+/** Countdown stretches a fresh pick tries, FRESH_TRIES picks each: the curve's shares first, then more generous. */
+const FRESH_STRETCH = [1, 1.3, 1.6, 2];
+const FRESH_TRIES = 6;
+const FRESH_SALT = 0xf7e5;
+/**
+ * Most each simulated player's wins may move once fresh foods are added (the expert's figure is noisier): they
+ * change the stars, not who wins.
+ */
+export const FRESH_WIN_DRIFT = { casual: 0.06, expert: 0.08 } as const;
+
+/**
+ * The level with its recipe's fresh foods (see LevelRecipe.fresh), pick number `pick`: foods of the level, each
+ * with its share of a typical game's moves (stretched for later picks) as countdown. With `inFront`, they are foods
+ * with at least that many copies already in a front (at random among them); otherwise any foods at random. The
+ * board itself never changes: moving even one item can turn a level that sits at the low end of its win band into
+ * one nobody loses. Null when the level has too few such foods.
+ */
+export function withFresh(level: LevelDefinition, recipe: LevelRecipe, seed: number, pick: number): LevelDefinition | null {
+  const fresh = recipe.fresh!;
+  const random = rng((Math.imul(seed ^ FRESH_SALT, 1_000_003) + pick * 7_919) >>> 0);
+  const stretch = FRESH_STRETCH[Math.min(FRESH_STRETCH.length - 1, Math.floor(pick / FRESH_TRIES))]!;
+  const stacks = (level.mechanics ?? []).flatMap((m) => (m.kind === 'tracks' ? m.tracks.flatMap((t) => t.carriers.filter((c): c is readonly string[] => !('shelf' in c))) : []));
+  const items = [...level.shelves.flat(2), ...stacks.flat()].filter((t): t is string => t !== null);
+  const foods = [...new Set(items)].filter((type) => parseItemType(type)?.kind.category !== 'cultural');
+  const count = fresh.shares.length;
+  if (foods.length < count) return null;
+  let picked: string[];
+  if (fresh.inFront === undefined) picked = choose(random, foods.length, count).map((i) => foods[i]!);
+  else {
+    // Any food with enough copies in a front will do as well as one with more.
+    const inFront = frontCounts(level);
+    const enough = (type: string) => Math.min(fresh.inFront!, inFront.get(type) ?? 0);
+    picked = shuffle(random, [...foods])
+      .sort((a, b) => enough(b) - enough(a))
+      .slice(0, count);
+    if (picked.some((type) => (inFront.get(type) ?? 0) < fresh.inFront!)) return null;
+  }
+  const typical = items.length * TYPICAL_MOVES_PER_ITEM;
+  const foodsLeft = picked.map((type, i) => ({ type, moves: Math.min(FRESH_LIMITS.maxMoves, Math.max(FRESH_LIMITS.minMoves, Math.round(fresh.shares[i]! * stretch * typical))) }));
+  return { ...level, mechanics: [...(level.mechanics ?? []), { kind: 'fresh', foods: foodsLeft }] };
+}
+
+/** Copies of each type in the shelves' fronts. */
+function frontCounts(level: LevelDefinition): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const layers of level.shelves) for (const type of layers[0] ?? []) if (type !== null) counts.set(type, (counts.get(type) ?? 0) + 1);
+  return counts;
+}
+
+/** The fresh foods a recipe keeps in the fronts (see LevelRecipe.fresh): none when they may start anywhere. */
+export function freshInView(level: LevelDefinition, recipe: Pick<LevelRecipe, 'fresh'>): ReadonlySet<string> {
+  if (recipe.fresh?.inFront === undefined) return new Set();
+  return new Set((level.mechanics ?? []).flatMap((m) => (m.kind === 'fresh' ? m.foods.map((f) => f.type) : [])));
+}
+
+/**
+ * Adds the recipe's fresh foods to a timed level that meets its bands without them: the recipe's pinned pick, or
+ * the first pick that meets every rule and band (fresh triples spoiled included) and leaves both players' wins
+ * within FRESH_WIN_DRIFT of `base`, the level without fresh foods, trying picks from `from` on. Null when no pick
+ * does.
+ */
+function addFresh(level: LevelDefinition, recipe: LevelRecipe, seed: number, pinned: boolean, base: LevelStats | null, from = 0): { level: LevelDefinition; pick: number } | null {
+  const fresh = recipe.fresh!;
+  if (pinned && fresh.pick !== undefined) {
+    const kept = withFresh(level, recipe, seed, fresh.pick);
+    return kept ? { level: kept, pick: fresh.pick } : null;
+  }
+  for (let pick = from; pick < FRESH_STRETCH.length * FRESH_TRIES; pick++) {
+    const candidate = withFresh(level, recipe, seed, pick);
+    if (!candidate || ruleFailures(candidate, recipe).length > 0) continue;
+    const stats = bandedStats(candidate, recipe);
+    const steady = (player: keyof LevelStats) => Math.abs(stats![player].winRate - base![player].winRate) <= FRESH_WIN_DRIFT[player];
+    if (stats && steady('casual') && steady('expert')) return { level: candidate, pick };
+  }
+  return null;
+}
+
+/**
  * The rules every generated level must meet, as a list of failures (empty when it passes): a valid level whose
  * items are big enough on a phone; exactly one triple of each type; no layer that starts as a triple; no defeat within the first two moves; no
  * triple buried deeper than the recipe allows; enough triples in reach at the start; a move completing a triple
  * for a level with the tutorial; solvable even without combos.
  */
-export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, 'maxDepth' | 'minStartTriples' | 'tutorial'>): string[] {
+export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, 'maxDepth' | 'minStartTriples' | 'tutorial' | 'fresh'>): string[] {
   let state: GameState;
   try {
     state = createGame(level);
@@ -304,6 +385,13 @@ export function ruleFailures(level: LevelDefinition, recipe: Pick<LevelRecipe, '
   const reachable = startTriples(state);
   if (reachable < recipe.minStartTriples) failures.push(`only ${reachable} triple(s) in reach at the start`);
   if (recipe.tutorial && tripleMoves(state).length === 0) failures.push('no single move completes a triple for the tutorial');
+  // Its second step points at a fresh food: the first one's triple must be of another.
+  const freshTypes = new Set(state.fresh.map((f) => f.type));
+  if (recipe.tutorial && freshTypes.size > 0 && !tripleMoves(state).some((m) => !freshTypes.has(state.shelves[m.from.shelf]!.layers[0]![m.from.slot]!.type)))
+    failures.push('the tutorial’s first triple would be the fresh food');
+  const inFront = frontCounts(level);
+  const hidden = [...freshInView(level, recipe)].filter((type) => (inFront.get(type) ?? 0) < recipe.fresh!.inFront!);
+  if (hidden.length > 0) failures.push(`fresh foods with too few copies in a front: ${hidden.join(', ')}`);
   if (failures.length === 0 && !isSolvable(state)) failures.push('no solution found');
   return failures;
 }
@@ -378,7 +466,7 @@ function chooseTypicalTime(level: LevelDefinition, recipe: LevelRecipe, seed: nu
   const random = rng(seed);
   const boards = [level];
   for (let i = 0; i < TYPICAL_RESHUFFLES * 3 && boards.length <= TYPICAL_RESHUFFLES; i++) {
-    const other = rearrange(level, random);
+    const other = rearrange(level, random, freshInView(level, recipe));
     if (ruleFailures(other, recipe).length === 0) boards.push(other);
   }
   if (boards.length <= TYPICAL_RESHUFFLES) return null;
@@ -415,21 +503,29 @@ const candidateSeed = (seed: number, attempt: number) => (Math.imul(seed, 1_000_
 
 /**
  * Generates the recipe's level: tries candidate boards in a fixed order (from the seed) until one meets every
- * rule and lands in the win band with a fitting time limit. Same recipe and seed, same level.
+ * rule and lands in the win band with a fitting time limit, then adds its fresh foods (see addFresh: candidate
+ * boards come without them; `freshFrom` skips the first picks of them). Same recipe and seed, same level.
  */
-export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttempts = 4000, from = 0): GeneratedLevel {
+export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttempts = 4000, from = 0, freshFrom = 0): GeneratedLevel {
   // A recipe that names its candidate (with its own seed) keeps that board: only the time is worked out.
-  if (isPinned(recipe, seed)) return retime(recipe, seed, recipe.candidate!);
+  if (isPinned(recipe, seed)) return retime(recipe, seed, recipe.candidate!, freshFrom);
   for (let attempt = from; attempt < maxAttempts; attempt++) {
     if (attempt > 0 && attempt % 250 === 0) console.log(`  ${recipe.id}: ${attempt} candidates tried`);
     const board = buildCandidate(recipe, rng(candidateSeed(seed, attempt)));
     if (!board || ruleFailures(board, recipe).length > 0) continue;
     const timed = chooseTime(board, recipe, candidateSeed(seed, attempt) ^ TYPICAL_SALT);
     if (!timed) continue;
-    const level = { ...board, timeLimitSeconds: timed.seconds };
-    const stats = bandedStats(level, recipe);
+    let level: LevelDefinition = { ...board, timeLimitSeconds: timed.seconds };
+    let stats = bandedStats(level, recipe);
     if (!stats) continue;
-    return { level, recipe, seed, attempt, stats, itemPx: itemPx(level) };
+    let freshPick: number | undefined;
+    if (recipe.fresh) {
+      const fresh = addFresh(level, recipe, candidateSeed(seed, attempt), false, stats, attempt === from ? freshFrom : 0);
+      if (!fresh) continue;
+      ({ level, pick: freshPick } = fresh);
+      stats = levelStats(level);
+    }
+    return { level, recipe, seed, attempt, freshPick, stats, itemPx: itemPx(level) };
   }
   throw new Error(`${recipe.id}: no level found in ${maxAttempts} attempts with seed ${seed}`);
 }
@@ -437,15 +533,22 @@ export function generateLevel(recipe: LevelRecipe, seed = recipe.seed, maxAttemp
 /** Whether the recipe names the board to use for this seed, rather than searching for one. */
 export const isPinned = (recipe: LevelRecipe, seed: number) => recipe.candidate !== undefined && seed === recipe.seed;
 
-function retime(recipe: LevelRecipe, seed: number, attempt: number): GeneratedLevel {
+function retime(recipe: LevelRecipe, seed: number, attempt: number, freshFrom = 0): GeneratedLevel {
   const board = buildCandidate(recipe, rng(candidateSeed(seed, attempt)));
   if (!board) throw new Error(`${recipe.id}: candidate ${attempt} no longer fits the recipe`);
   const failures = ruleFailures(board, recipe);
   if (failures.length > 0) throw new Error(`${recipe.id}: candidate ${attempt} breaks the rules: ${failures.join('; ')}`);
   const timed = chooseTime(board, recipe, candidateSeed(seed, attempt) ^ TYPICAL_SALT);
   if (!timed) throw new Error(`${recipe.id}: no time limit puts candidate ${attempt} in the win band`);
-  const level = { ...board, timeLimitSeconds: timed.seconds };
-  return { level, recipe, seed, attempt, stats: levelStats(level), itemPx: itemPx(level) };
+  let level: LevelDefinition = { ...board, timeLimitSeconds: timed.seconds };
+  let freshPick: number | undefined;
+  if (recipe.fresh) {
+    const base = recipe.fresh.pick === undefined ? levelStats(level) : null;
+    const fresh = addFresh(level, recipe, candidateSeed(seed, attempt), true, base, freshFrom);
+    if (!fresh) throw new Error(`${recipe.id}: no fresh foods keep candidate ${attempt} in its bands`);
+    ({ level, pick: freshPick } = fresh);
+  }
+  return { level, recipe, seed, attempt, freshPick, stats: levelStats(level), itemPx: itemPx(level) };
 }
 
 export function itemPx(level: LevelDefinition): readonly number[] {
@@ -456,6 +559,11 @@ export function itemPx(level: LevelDefinition): readonly number[] {
 
 /** Arrangements per level, the level as written included (see Arrangement in src/core). */
 export const ARRANGEMENTS = 8;
+/**
+ * Fewest arrangements a level may ship with, the level as written included: reshuffles outside the band are
+ * discarded, so some have fewer than ARRANGEMENTS.
+ */
+export const MIN_ARRANGEMENTS = 4;
 /**
  * Arrangements a newly searched board needs, the board itself included: a board most of whose reshuffles leave
  * the band is a lucky exception of its recipe, so the search moves on to the next candidate.
@@ -473,22 +581,25 @@ export interface GeneratedArrangement {
 
 /**
  * The same board with its items in other places: every occupied shelf slot and stack position keeps being
- * occupied (so empty slots, layers, stack depths and a roaming blocker's start stay put) and gets a random item.
+ * occupied (so empty slots, layers, stack depths and a roaming blocker's start stay put) and gets a random item;
+ * items of the `fixed` types (fresh foods kept in view) keep their places.
  */
-export function rearrange(level: LevelDefinition, random: Random): LevelDefinition {
+export function rearrange(level: LevelDefinition, random: Random, fixed: ReadonlySet<string> = new Set()): LevelDefinition {
   const items: string[] = [];
-  level.shelves.forEach((layers) => layers.forEach((slots) => slots.forEach((t) => t !== null && items.push(t))));
+  const take = (t: string) => !fixed.has(t) && items.push(t);
+  level.shelves.forEach((layers) => layers.forEach((slots) => slots.forEach((t) => t !== null && take(t))));
   for (const m of level.mechanics ?? []) {
-    if (m.kind === 'tracks') for (const track of m.tracks) for (const c of track.carriers) if (!('shelf' in c)) items.push(...c);
+    if (m.kind === 'tracks') for (const track of m.tracks) for (const c of track.carriers) if (!('shelf' in c)) c.forEach(take);
   }
   shuffle(random, items);
   let next = 0;
-  const shelves = level.shelves.map((layers) => layers.map((slots) => slots.map((t) => (t === null ? null : items[next++]!))));
+  const place = (t: string) => (fixed.has(t) ? t : items[next++]!);
+  const shelves = level.shelves.map((layers) => layers.map((slots) => slots.map((t) => (t === null ? null : place(t)))));
   const mechanics = level.mechanics?.map((m): MechanicDefinition => {
     if (m.kind !== 'tracks') return m;
     const tracks = m.tracks.map((track) => ({
       ...track,
-      carriers: track.carriers.map((c) => ('shelf' in c ? c : c.map(() => items[next++]!))),
+      carriers: track.carriers.map((c) => ('shelf' in c ? c : c.map(place))),
     }));
     return { ...m, tracks };
   });
@@ -518,7 +629,7 @@ export function generateArrangements(level: LevelDefinition, recipe: LevelRecipe
   const random = rng(candidateSeed(seed, 1_000_000));
   for (let attempt = 0; attempt < ARRANGEMENT_ATTEMPTS && found.length < ARRANGEMENTS - 1; attempt++) {
     if (quickReject && attempt === QUICK_REJECT_AFTER && found.length < 2) return found;
-    const candidate = rearrange(level, random);
+    const candidate = rearrange(level, random, freshInView(level, recipe));
     const key = JSON.stringify(arrangementOf(candidate));
     if (seen.has(key)) continue;
     seen.add(key);
