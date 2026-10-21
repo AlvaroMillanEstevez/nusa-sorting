@@ -1,3 +1,4 @@
+import { PASARAN_DAYS, type Pasaran } from '../data/pasaran';
 import { themeById } from '../data/themes';
 
 /** Development only: `?uikit` opens the interface kit and its two visual directions instead of the game. */
@@ -113,4 +114,10 @@ export function parseThemeParam(search: string): string | null {
 export function parseChestStarsParam(search: string): number | null {
   const raw = new URLSearchParams(search).get('chestStars');
   return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
+}
+
+/** Development only: `?pasaran=legi|pahing|pon|wage|kliwon` plays as if today were that market day. */
+export function parsePasaranParam(search: string): Pasaran | null {
+  const day = new URLSearchParams(search).get('pasaran');
+  return PASARAN_DAYS.find((d) => d === day) ?? null;
 }

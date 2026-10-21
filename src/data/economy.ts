@@ -24,6 +24,12 @@ export const ECONOMY = {
     perStar: 5,
   },
 
+  /**
+   * Market day (pasaran): each triple of the day's food (see src/data/pasaran.ts) pays these coins on top of a win,
+   * up to `maxPerWin`. Coins, not points, so stars are the same whatever the day.
+   */
+  pasaran: { perTriple: 2, maxPerWin: 10 },
+
   boosters: {
     freeze: {
       /** Coins for one in the shop. */

@@ -172,6 +172,17 @@ export const FRESH = {
   pulseMs: 420,
 } as const;
 
+/**
+ * The market day's mark on its food (see MarketLooks): a small brass kepeng, the old Javanese coin with a square
+ * hole, in the bottom-left corner. Light rim and dark outline so it reads on light and dark items alike.
+ */
+export const MARKET = {
+  coin: '#d9a93a',
+  coinLight: '#f4d27a',
+  outline: '#3b2611',
+  hole: '#3b2611',
+} as const;
+
 /** How components react when pressed. */
 export const PRESS = {
   /** Scale while held. */

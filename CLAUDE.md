@@ -43,6 +43,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?uikit` — abre el kit de interfaz (componentes en todos sus estados, iconos y formas de hueco). Página directa con `?uikit=components|icons|slots` y `&vision=deuteranopia|protanopia|grayscale`.
 - `?show=pause|confirm|won|lost|blocked|autoplay|buy|continue|stuck` — abre ese panel al empezar el nivel, para revisarlo sin jugar (`won` usa una puntuación de 3 estrellas; `blocked` muestra el aviso de tablero lleno y su derrota; `autoplay` juega el nivel solo con el jugador experto simulado y sigue hasta el mapa, para ver efectos y coreografía; `buy` ofrece comprar el primer potenciador del nivel `continue` ofrece continuar tras perder y `stuck` tras quedarse sin movimientos posibles, todos dando antes en silencio las presentaciones de potenciadores).
 - `?theme=<id>` — viste el nivel abierto con el tema indicado (fondo, acentos y su presentación, que sale siempre y no se guarda como vista); por ejemplo `?level=3&theme=sawah`.
+- `?pasaran=legi|pahing|pon|wage|kliwon` — juega como si hoy fuera ese día de mercado (cartel del mapa, objetos marcados y monedas extra).
 - `?coins=N` — pone las monedas del jugador a N (para probar la tienda y las ofertas).
 - `?boosters=N` — pone a N las unidades de cada potenciador al abrir un nivel (tras dar en silencio sus presentaciones), para probar la barra y el modal de continuar con y sin unidades.
 - `?shop` — abre la tienda sobre el mapa (con `?home`).

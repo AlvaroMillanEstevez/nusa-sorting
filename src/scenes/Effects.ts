@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import type { Rect } from '../ui/boardLayout';
 import { WOOD } from '../ui/art/wood';
 import { DURATION, EASE, hexNumber, SKIN } from '../ui/design/tokens';
-import { kitText, reducedMotion } from './kit';
+import { kitText, reducedMotion, uiIcon } from './kit';
 
 /**
  * Screen shakes: short and small (a bigger shake was fun but could make people feel unwell). Intensity is a share
@@ -127,6 +127,28 @@ export class Effects {
           },
         },
       ],
+    });
+  }
+
+  /**
+   * The market day's coins for a triple: a coin and "+N" that rise a little from where it was made and fade (they
+   * are paid with the win, so nothing flies to a counter). Smaller and quieter than the points.
+   */
+  marketCoins(text: string, at: { x: number; y: number }, delay: number): void {
+    const label = kitText(this.scene, 'number', text, SKIN.text.accent, 18).setStroke(SKIN.surface.border, 4).setOrigin(0, 0.5);
+    const coin = uiIcon(this.scene, 'coin', SKIN.text.accent, 22);
+    const width = 22 + 4 + label.width;
+    coin.setX(-width / 2 + 11);
+    label.setX(-width / 2 + 26);
+    const chip = this.scene.add.container(at.x, at.y, [coin, label]).setDepth(this.depth + 2).setAlpha(0);
+    const still = reducedMotion();
+    this.scene.tweens.chain({
+      targets: chip,
+      tweens: [
+        { alpha: 1, y: at.y - (still ? 0 : 18), delay, duration: DURATION.base, ease: EASE.enter },
+        { alpha: 0, y: at.y - (still ? 0 : 34), delay: 520, duration: DURATION.base, ease: EASE.exit },
+      ],
+      onComplete: () => chip.destroy(),
     });
   }
 

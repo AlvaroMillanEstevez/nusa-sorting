@@ -10,7 +10,7 @@ import type { UiIconName } from '../ui/design/uiIcons';
 import { DURATION, EASE, FONTS, hexNumber, SKIN, SPACE, TILE } from '../ui/design/tokens';
 import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
-import { KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
+import { kitFeedback, KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
 import { wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
@@ -23,6 +23,8 @@ import { playList } from './playList';
 import { settingsRowCount, settingsRows, SETTINGS_ROW } from './SettingsRows';
 import { fadeIn, fadeToScene } from './transitions';
 import { fitCamera, pixelRatio, pointerAt, screenRect, viewSize } from './view';
+import { MarketSign } from './map/MarketSign';
+import { todaysPasaran } from './marketDay';
 
 /** What the home screen is opened with. */
 export interface HomeData {
@@ -31,6 +33,10 @@ export interface HomeData {
 }
 
 const TAP_SLOP = 10;
+/** Tutorial id: the market day's sign has explained pasaran once (it explains again when tapped). */
+export const PASARAN_INTRO = 'pasaran-intro';
+/** Where the top bar's content ends (the title), and the market day's sign starts. */
+const BAR_CONTENT = 112;
 const DEPTH_BAR = 50;
 const DEPTH_MODAL = 300;
 /** The shop and chest buttons beside the play button. */
@@ -100,6 +106,9 @@ export class HomeScene extends Phaser.Scene {
   private toastLabel: KitPill | null = null;
   private sequence: ArrivalSequence | null = null;
   private current = 0;
+  private sign!: MarketSign;
+  /** The market sign shows what pasaran is: the first time, and while the player keeps it open with a tap. */
+  private explainMarket = false;
 
   constructor(
     private readonly sfx: SoundService,
@@ -118,6 +127,8 @@ export class HomeScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(MAP.seaBottom);
+    this.explainMarket = !this.store.isTutorialDone(PASARAN_INTRO);
+    this.store.markTutorialDone(PASARAN_INTRO);
     // Music plays on the home screen and map, never in a level (it fades back in on return).
     this.sfx.wantMusic(true);
     // The items, wood and background of the level the player is heading for, while they look at the map.
@@ -221,6 +232,10 @@ export class HomeScene extends Phaser.Scene {
     this.map.highlight(this.current);
     this.map.placeMarker(this.data_.arrival?.level ?? this.current);
 
+    // The market day, under the title.
+    this.sign = new MarketSign(this, width / 2, 0, Math.min(width - SPACE.s * 2, 380), todaysPasaran(), this.explainMarket, () => this.pressSign()).setDepth(DEPTH_BAR);
+    this.sign.setY(BAR_CONTENT + this.sign.signHeight / 2);
+
     // The map scrolls between the clouds at its top and its bottom edge, keeping clear of the bar and button.
     const barH = this.barHeight();
     const footer = 64 + SPACE.l + FOOTER_ROW + SPACE.s;
@@ -238,8 +253,17 @@ export class HomeScene extends Phaser.Scene {
     return playList[this.nextLevel()]!.number;
   }
 
+  /** The top bar with the market sign under it: the map scrolls up to its foot. */
   private barHeight(): number {
-    return 112;
+    return BAR_CONTENT + this.sign.signHeight + SPACE.xs;
+  }
+
+  /** A tap on the market sign shows or hides what pasaran is. */
+  private pressSign(): void {
+    if (this.modal || this.sequence?.running) return;
+    kitFeedback().press();
+    this.explainMarket = !this.explainMarket;
+    this.build();
   }
 
   /** Scroll that brings a level's plaque a little below the middle of the screen. */
@@ -518,7 +542,7 @@ export class HomeScene extends Phaser.Scene {
     const screen = screenRect(this);
     const safe = viewSize(this);
     const w = Math.min(safe.width - SPACE.s * 2, 360);
-    const h = Math.min(safe.height - SPACE.s * 2, 456);
+    const h = Math.min(safe.height - SPACE.s * 2, 520);
     const modal = new KitModal(this, screen.width, screen.height, { skin: SKIN, width: w, height: h, title: t('coinsHelp.title') });
     modal.setPosition(screen.x, screen.y).setDepth(DEPTH_MODAL);
     const panel = modal.panel;
@@ -531,6 +555,7 @@ export class HomeScene extends Phaser.Scene {
       { icon: 'starFilled', color: SKIN.star.filled, title: t('coinsHelp.stars'), note: t('coinsHelp.starsNote') },
       { icon: 'trophy', color: SKIN.text.accent, title: t('coinsHelp.levelUp'), note: t('coinsHelp.levelUpNote') },
       { icon: 'chest', color: SKIN.text.accent, title: t('coinsHelp.chests'), note: t('coinsHelp.chestsNote', { n: ECONOMY.chests.everyStars }) },
+      { icon: 'shop', color: SKIN.text.accent, title: t('coinsHelp.market'), note: t('coinsHelp.marketNote') },
     ];
     const buttonY = h / 2 - SPACE.m - 28;
     const top = panel.contentTop + SPACE.xs;

@@ -5,6 +5,8 @@ import {
   extraTimePrice,
   EMPTY_WALLET,
   introduceBooster,
+  marketCategory,
+  marketTriples,
   openChest,
   playerLevel,
   rewardWin,
@@ -14,6 +16,7 @@ import {
 } from '../../src/core';
 import { BOOSTER_IDS, ECONOMY, type BoosterId, type Reward } from '../../src/data/economy';
 import { levels } from '../../src/data/levels';
+import { PASARAN_DAYS } from '../../src/data/pasaran';
 
 /**
  * A balance check of the economy over the game's levels (outside the game build). The player wins every level with
@@ -22,7 +25,8 @@ import { levels } from '../../src/data/levels';
  * buys more time with coins (the first continue's price); out of space it uses a booster that fits, one of its own,
  * else the cheapest one bought at its shop price (once one is unlocked). Two runs:
  * one keeps every other coin (what could be afforded), one buys the cheapest booster whenever it has its price
- * plus a reserve (what a spender would hold).
+ * plus a reserve (what a spender would hold). Each win falls on the next market day (pasaran), round the five,
+ * and earns that day's coins for the level's triples of its food.
  */
 
 /** Stars of each first win, in turn: averages 2. */
@@ -61,6 +65,8 @@ function run(spender: boolean): Row[] {
   let continueCoins = 0;
   let timeContinues = 0;
   let timeCoins = 0;
+  let wins = 0;
+  let market = 0;
   const rows: Row[] = [];
   const win = (index: number, stars: number) => {
     const level = levels[index]!;
@@ -74,7 +80,9 @@ function run(spender: boolean): Row[] {
       score: scoreFor(level, stars),
       totalStarsBefore: totalStars,
       totalStarsAfter: totalStars - before + after,
+      marketTriples: marketTriples(level, marketCategory(PASARAN_DAYS[wins++ % PASARAN_DAYS.length]!)),
     });
+    market += rewards.marketCoins;
     totalStars += after - before;
     best[index] = after;
     wallet = rewards.wallet;
@@ -143,11 +151,11 @@ function run(spender: boolean): Row[] {
       held: totalBoosters(wallet),
     });
   }
-  continueTotals = { continues, coins: continueCoins, timeContinues, timeCoins };
+  continueTotals = { continues, coins: continueCoins, timeContinues, timeCoins, market, wins };
   return rows;
 }
 
-let continueTotals = { continues: 0, coins: 0, timeContinues: 0, timeCoins: 0 };
+let continueTotals = { continues: 0, coins: 0, timeContinues: 0, timeCoins: 0, market: 0, wins: 0 };
 
 export function main(): string {
   const saver = run(false);
@@ -163,6 +171,7 @@ export function main(): string {
   const affordable = Math.floor(last.balance / avgPrice);
   const total = last.freeBoosters + affordable;
   lines.push('');
+  lines.push(`Market days paid ${continued.market} coins over ${continued.wins} wins (${(continued.market / continued.wins).toFixed(1)} a win).`);
   lines.push(`Out of time, the saver bought more time ${continued.timeContinues} times for ${continued.timeCoins} coins.`);
   lines.push(`Out of space, it continued ${continued.continues} times with a booster, buying the booster for ${continued.coins} coins when it had none.`);
   const count = levels.length;

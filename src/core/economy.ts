@@ -199,7 +199,10 @@ export function introduceBooster(wallet: Wallet, booster: BoosterId): Wallet {
  */
 export interface WinRewards {
   readonly wallet: Wallet;
+  /** Every coin the win paid, the market day's included. */
   readonly coins: number;
+  /** Of those, the market day's (see marketCoins). */
+  readonly marketCoins: number;
   readonly xp: number;
   readonly levelBefore: number;
   readonly levelUps: readonly { readonly level: number; readonly gift: Reward }[];
@@ -215,11 +218,23 @@ export interface WinFacts {
   readonly score: number;
   readonly totalStarsBefore: number;
   readonly totalStarsAfter: number;
+  /** Triples of the market day's food the level held (see marketTriples); none if missing. */
+  readonly marketTriples?: number;
 }
 
-/** Applies a win to the wallet: coins, experience and level-up gifts, and its new stars towards chests. */
+/** The market day's coins for a win with `triples` triples of the day's food (see ECONOMY.pasaran). */
+export function marketCoins(triples: number): number {
+  const { perTriple, maxPerWin } = ECONOMY.pasaran;
+  return Math.min(maxPerWin, Math.max(0, triples) * perTriple);
+}
+
+/**
+ * Applies a win to the wallet: coins (the market day's included), experience and level-up gifts, and its new stars
+ * towards chests.
+ */
 export function rewardWin(wallet: Wallet, win: WinFacts): WinRewards {
-  const coins = winCoins(win.firstClear, win.stars, win.bestStarsBefore);
+  const market = marketCoins(win.marketTriples ?? 0);
+  const coins = winCoins(win.firstClear, win.stars, win.bestStarsBefore) + market;
   const xp = xpForScore(win.score);
   const levelBefore = playerLevel(wallet.xp).level;
   let next: Wallet = { ...wallet, coins: wallet.coins + coins, xp: wallet.xp + xp };
@@ -232,5 +247,5 @@ export function rewardWin(wallet: Wallet, win: WinFacts): WinRewards {
   }
   const chestStars = Math.max(0, win.totalStarsAfter - win.totalStarsBefore);
   next = { ...next, chestStars: next.chestStars + chestStars };
-  return { wallet: next, coins, xp, levelBefore, levelUps, chestStars };
+  return { wallet: next, coins, marketCoins: market, xp, levelBefore, levelUps, chestStars };
 }

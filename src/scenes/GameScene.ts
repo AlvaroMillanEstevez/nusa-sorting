@@ -7,6 +7,10 @@ import {
   findItem,
   freeFrontSlots,
   freshOf,
+  isMarketType,
+  marketCategory,
+  marketCoins,
+  marketTriples,
   isShelfLocked,
   isSpecialLevel,
   isSlotBlocked,
@@ -73,6 +77,9 @@ import { Hud } from './Hud';
 import { ITEM_TEXTURE_SIZE, itemBackTextureKey, itemTextureKey } from './itemTextures';
 import { MovingShelves } from './MovingShelves';
 import { FreshLooks } from './FreshLooks';
+import { marketKey } from './MarketLooks';
+import { todaysPasaran } from './marketDay';
+import type { MarketCategory } from '../data/pasaran';
 
 /** Done once the player has read what fresh foods are (see introduceFreshFoods). */
 const FRESH_FOOD_INTRO = 'fresh-food';
@@ -212,6 +219,10 @@ export class GameScene extends Phaser.Scene {
   private movingShelves!: MovingShelves;
   /** How fresh foods look (their countdown badge, or spoiled), and the warning pulse's phase now. */
   private freshLooks!: FreshLooks;
+  /** The food of the market day the level started on (see src/data/pasaran.ts): it carries the kepeng mark. */
+  private market: MarketCategory = 'sweet';
+  /** Market-day triples shown paying coins this attempt (the popups stop at the cap, as the coins do). */
+  private marketShown = 0;
   private freshPulse: 0 | 1 = 0;
   /** Fresh foods whose last moves have been announced (once each per attempt). */
   private readonly freshWarned = new Set<string>();
@@ -701,6 +712,9 @@ export class GameScene extends Phaser.Scene {
     this.timeBonus = 0;
 
     this.levelIndex = index;
+    // The market day is the one the level starts on, even if midnight passes while playing.
+    this.market = marketCategory(todaysPasaran());
+    this.marketShown = 0;
     if (resume) {
       this.arrangement = resume.arrangement;
       this.level = resume.level;
@@ -1117,7 +1131,10 @@ export class GameScene extends Phaser.Scene {
   private setLook(sprite: Phaser.GameObjects.Image, front: boolean): void {
     const type = sprite.getData('type') as string;
     const marks = this.store.colorBlindMode;
-    const key = front ? (this.freshLooks.frontKey(this.state, type, marks, this.freshPulse) ?? itemTextureKey(type, marks)) : itemBackTextureKey(type);
+    const plain = itemTextureKey(type, marks);
+    // The market day's food wears its kepeng, under any countdown.
+    const base = isMarketType(type, this.market) ? (marketKey(this.textures, plain) ?? plain) : plain;
+    const key = front ? (this.freshLooks.frontKey(this.state, type, marks, this.freshPulse, base) ?? base) : itemBackTextureKey(type);
     // Called every frame for items on belts: nothing to do when the look is already right.
     if (sprite.texture.key === key) return;
     sprite.setTexture(key);
@@ -1163,6 +1180,7 @@ export class GameScene extends Phaser.Scene {
           score,
           totalStarsBefore: totalBefore,
           totalStarsAfter: this.store.totalStars,
+          marketTriples: marketTriples(this.level, this.market),
         })
       : null;
     this.setAiming(false);
@@ -1754,6 +1772,13 @@ export class GameScene extends Phaser.Scene {
           const chain = combo;
           this.time.delayedCall(popAt, () => this.effects.tripleBurst(at.x, at.y, rect.width, Math.max(1, chain + 1)));
           this.haptics.pulse('triple');
+          // The market day's food: the coins it adds to the win, while under the cap.
+          const paid = marketCoins(this.marketShown);
+          if (isMarketType(event.itemType, this.market) && paid < ECONOMY.pasaran.maxPerWin) {
+            this.marketShown++;
+            const coins = marketCoins(this.marketShown) - paid;
+            this.effects.marketCoins(t('popup.points', { points: coins }), { x: at.x, y: rect.y + rect.height * 0.75 }, popAt + 120);
+          }
           break;
         }
         case 'scoreChanged': {

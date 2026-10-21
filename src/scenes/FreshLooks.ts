@@ -122,12 +122,12 @@ export class FreshLooks {
 
   /**
    * The texture an item of `type` shows in front, or null when its usual one is right (not a fresh food, or one
-   * whose type is gone). `pulse` is the warning's phase (0 or 1).
+   * whose type is gone). `pulse` is the warning's phase (0 or 1); `base` the texture the countdown goes on (the
+   * market day's, with its mark, see MarketLooks).
    */
-  frontKey(state: GameState, type: string, marks: boolean, pulse: 0 | 1): string | null {
+  frontKey(state: GameState, type: string, marks: boolean, pulse: 0 | 1, base = itemTextureKey(type, marks)): string | null {
     const fresh = freshOf(state, type);
     if (!fresh) return null;
-    const base = itemTextureKey(type, marks);
     if (!this.textures.exists(base)) return null;
     const source = () => this.textures.get(base).getSourceImage() as CanvasImageSource;
     if (fresh.spoiled) return this.ensure(`${base}:spoiled`, type, () => freshCanvas(source(), ITEM_TEXTURE_SIZE, { spoiled: true }));
