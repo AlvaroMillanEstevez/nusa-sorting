@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { winCoins } from '../src/core';
+import { EMPTY_ALBUM, kindsOfLevel, winCoins } from '../src/core';
+import { levels } from '../src/data/levels';
 import { browserStorage, LocalSaveService, SAVE_KEY, type StorageLike } from '../src/services/LocalSaveService';
 import { ProgressStore } from '../src/services/ProgressStore';
 import { MemorySaveService, type SaveData } from '../src/services/SaveService';
@@ -42,6 +43,7 @@ const sample: SaveData = {
   lastArrangements: { 'nusa-003': 2 },
   tutorialsDone: ['first-triple'],
   wallet: { coins: 340, xp: 5200, boosters: { freeze: 2, removeTriple: 0, shuffle: 1 }, chestsOpened: 1, chestStars: 4, introduced: ['freeze'] },
+  album: { found: ['sate', 'gong', 'rambutan'], claimed: ['dish'], news: ['rambutan'] },
   snapshot: { format: 1, levelId: 'nusa-003', arrangement: 2 },
 };
 
@@ -91,6 +93,7 @@ describe('save format', () => {
       lastArrangements: { 'nusa-001': 3 },
       tutorialsDone: [],
       wallet: { coins: 0, xp: 0, boosters: { freeze: 3, removeTriple: 0, shuffle: 0 }, chestsOpened: 2, chestStars: 0, introduced: ['freeze'] },
+      album: EMPTY_ALBUM,
       snapshot: null,
     });
   });
@@ -248,6 +251,28 @@ describe('ProgressStore', () => {
     expect(save.wallet).toEqual({ coins: 120, xp: 900, boosters: { freeze: 1, removeTriple: 0, shuffle: 0 }, chestsOpened: 1, chestStars: 27 - every, introduced: ['freeze'] });
     // A version 2 save that somehow opened more chests than its stars allow keeps 0, never less.
     expect(parseSave(JSON.stringify({ ...JSON.parse(v2), wallet: { chestsOpened: 5 } })).wallet.chestStars).toBe(0);
+  });
+
+  it('migrates a version 3 save to Buku Nenek with every kind of the levels already won found', () => {
+    const won = [levels[0]!, levels[4]!];
+    const v3 = JSON.stringify({ version: 3, progress: { completed: won.map((l) => l.id), bestScores: {}, bestStars: {} }, settings: {}, wallet: { coins: 50 } });
+    const save = parseSave(v3);
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.wallet.coins).toBe(50);
+    const kinds = new Set(won.flatMap(kindsOfLevel));
+    expect(new Set(save.album.found)).toEqual(kinds);
+    // Level 5 (Budaya Jawa) brings its objects: they are in the book now. No news and nothing collected yet.
+    expect(save.album.found).toContain('gong');
+    expect(save.album.news).toEqual([]);
+    expect(save.album.claimed).toEqual([]);
+    // Nothing won, nothing found.
+    expect(parseSave(JSON.stringify({ version: 3, progress: { completed: [] } })).album).toEqual(EMPTY_ALBUM);
+  });
+
+  it('drops unknown kinds and pages from the album, and news of kinds not found', () => {
+    const raw = JSON.stringify({ ...sample, album: { found: ['sate', 'pizza', 7, 'sate'], claimed: ['dish', 'desserts'], news: ['sate', 'gong'] } });
+    expect(parseSave(raw).album).toEqual({ found: ['sate'], claimed: ['dish'], news: ['sate'] });
+    expect(parseSave(JSON.stringify({ ...sample, album: 'full' })).album).toEqual(EMPTY_ALBUM);
   });
 
   it('remembers completed tutorials, saving only the first time, and reads older saves as none done', () => {

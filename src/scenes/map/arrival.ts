@@ -15,6 +15,8 @@ export interface Arrival {
   readonly next: number;
   /** What the win paid: coins, experience, level-ups with their gifts, and stars towards the next chest. */
   readonly rewards?: WinRewards;
+  /** Buku Nenek: kinds found since the map last announced any (the home screen adds them as the sequence starts). */
+  readonly albumNews?: readonly string[];
 }
 
 /** What the steps of the arrival sequence can act on. */
@@ -50,12 +52,10 @@ export interface ArrivalStage {
   play(effect: 'starCollect' | 'mapStep' | 'unlock' | 'star3'): void;
 }
 
-/** A moment of reward after a win: the player reaching a new level, with its gift. */
-export interface RewardCard {
-  readonly kind: 'levelUp';
-  readonly level: number;
-  readonly rewards: readonly Reward[];
-}
+/** A moment of reward after a win: the player reaching a new level, with its gift; or new entries in Buku Nenek. */
+export type RewardCard =
+  | { readonly kind: 'levelUp'; readonly level: number; readonly rewards: readonly Reward[] }
+  | { readonly kind: 'album'; readonly kinds: readonly string[]; readonly rewards: readonly Reward[] };
 
 const coinsIn = (rewards: readonly Reward[]) => rewards.reduce((sum, reward) => sum + (reward.kind === 'coins' ? reward.amount : 0), 0);
 
@@ -65,10 +65,11 @@ export function coinsBefore(rewards: WinRewards): number {
   return rewards.wallet.coins - rewards.coins - coinsIn(gifts);
 }
 
-/** The reward cards a win brings: one per new player level. */
-export function rewardCards(rewards: WinRewards): RewardCard[] {
+/** The reward cards a win brings: one per new player level, then one for new entries in Buku Nenek. */
+export function rewardCards(rewards: WinRewards, albumNews: readonly string[] = []): RewardCard[] {
   return [
     ...rewards.levelUps.map((up): RewardCard => ({ kind: 'levelUp', level: up.level, rewards: [up.gift] })),
+    ...(albumNews.length > 0 ? [{ kind: 'album', kinds: albumNews, rewards: [] } as const] : []),
   ];
 }
 
@@ -177,7 +178,7 @@ export const rewardsShow: ArrivalStep = {
     const xpBefore = rewards.wallet.xp - rewards.xp;
     if (rewards.xp > 0) await stage.showXp(rewards.wallet.xp, false);
     else void stage.showXp(xpBefore, true);
-    for (const card of rewardCards(rewards)) {
+    for (const card of rewardCards(rewards, stage.arrival.albumNews)) {
       stage.play('star3');
       await stage.showCard(card);
       coins += coinsIn(card.rewards);

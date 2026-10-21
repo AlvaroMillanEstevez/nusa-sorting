@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { chestProgress, playerLevel, playerTitle } from '../core/economy';
+import { ALBUM_SIZE, pagesToClaim } from '../core/album';
 import { ECONOMY, type Reward } from '../data/economy';
 import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
@@ -12,11 +13,12 @@ import { formatScore } from '../ui/format';
 import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '../ui/mapLayout';
 import { kitFeedback, KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
-import { wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
+import { wantsBook, wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
 import { boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
-import { prepareAheadInBackground } from './itemTextures';
+import { openBukuNenek } from './BukuNenek';
+import { itemTextureKey, prepareAheadInBackground, prepareTypes } from './itemTextures';
 import { prepareBoard } from './art/prepareBoard';
 import { MapView, type MapLevelState } from './map/MapView';
 import { playList } from './playList';
@@ -179,7 +181,10 @@ export class HomeScene extends Phaser.Scene {
     const arrival = this.data_.arrival;
     if (arrival) {
       this.data_ = {};
-      void this.runArrival(arrival);
+      // Buku Nenek's news (this level's finds, or a lost level's before it) are announced in the sequence.
+      void this.runArrival({ ...arrival, albumNews: this.store.takeAlbumNews() });
+    } else if (import.meta.env.DEV && wantsBook(window.location.search)) {
+      this.openBook();
     } else if (import.meta.env.DEV && wantsShop(window.location.search)) {
       this.openShop();
     } else if (import.meta.env.DEV && wantsChest(window.location.search)) {
@@ -368,6 +373,37 @@ export class HomeScene extends Phaser.Scene {
     const chestW = 76;
     this.chestPill = new KitPill(this, chestX, rowY, { skin: SKIN, icon: 'starFilled', value: '', tint: SKIN.star.filled, height: FOOTER_ROW, width: chestW }).setDepth(DEPTH_BAR);
     this.showChestStars(this.store.wallet.chestStars);
+
+    // Buku Nenek, over the shop: entries found of all. A page waiting for its reward lights it up and it breathes.
+    const waiting = pagesToClaim(this.store.album).length > 0;
+    const bookW = 92;
+    const book = new KitPill(this, width / 2 - side, rowY, {
+      skin: SKIN,
+      icon: 'book',
+      value: `${this.store.album.found.length}/${ALBUM_SIZE}`,
+      tint: waiting ? SKIN.text.accent : SKIN.text.primary,
+      height: FOOTER_ROW,
+      width: bookW,
+    }).setDepth(DEPTH_BAR);
+    book.setSize(bookW, 44).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openBook());
+    if (waiting && !reducedMotion()) this.tweens.add({ targets: book, scale: 1.08, duration: 700, yoyo: true, repeat: -1, ease: EASE.loop });
+  }
+
+  /** Buku Nenek, Grandma's book. */
+  private openBook(): void {
+    if (this.modal || this.sequence?.running) return;
+    kitFeedback().press();
+    this.modal = openBukuNenek(
+      this,
+      this.store,
+      this.sfx,
+      () => this.showCoins(this.store.wallet.coins),
+      () => {
+        this.modal = null;
+        // The counts over the shop, and the coins.
+        this.build();
+      },
+    );
   }
 
   private openShop(): void {
@@ -724,10 +760,11 @@ export class HomeScene extends Phaser.Scene {
   }
 
   /**
-   * A reward card over the map for a moment: a new player level and its gift, or a star chest that shakes and
-   * opens to show what it held.
+   * A reward card over the map for a moment: a new player level and its gift, or new entries in Buku Nenek (their
+   * pictures, and a line if a page is waiting for its reward to be collected).
    */
   private showCard(card: RewardCard): Promise<void> {
+    if (card.kind === 'album') return this.showAlbumCard(card.kinds);
     const { width, height } = viewSize(this);
     const w = Math.min(300, width - SPACE.l * 2);
     // A new title comes with this level: said under it.
@@ -740,7 +777,6 @@ export class HomeScene extends Phaser.Scene {
       height: h,
       title: t('levelUp.title'),
     }).setDepth(DEPTH_MODAL + 5);
-    this.card = panel;
     const top = panel.contentTop;
     const subtitle = t('levelUp.reached', { n: card.level });
     panel.add(kitText(this, 'body', subtitle, SKIN.text.secondary).setY(top + 12));
@@ -757,20 +793,61 @@ export class HomeScene extends Phaser.Scene {
     const total = items.reduce((sum, item) => sum + item.width, 0) + gap * (items.length - 1);
     let x = -total / 2;
     for (const item of items) {
-      item.container.setPosition(x + item.width / 2, top + 112 + extra).setAlpha(0);
+      item.container.setPosition(x + item.width / 2, top + 112 + extra);
       x += item.width + gap;
       panel.add(item.container);
     }
+    return this.presentCard(panel, items.map((item) => item.container));
+  }
+
+  /** New entries in Buku Nenek: "New page in Grandma's book" with the pictures of what was found. */
+  private async showAlbumCard(kinds: readonly string[]): Promise<void> {
+    const shown = kinds.slice(0, 4);
+    await prepareTypes(this, shown);
+    if (!this.scene.isActive()) return;
+    const { width, height } = viewSize(this);
+    const w = Math.min(320, width - SPACE.l * 2);
+    const inner = w - SPACE.l * 2;
+    // Laid out from the top first, so the card is made as tall as its content.
+    const title = kitText(this, 'button', t('album.news.title'), SKIN.text.primary, 22).setOrigin(0.5, 0).setAlign('center').setWordWrapWidth(inner);
+    const size = 56;
+    const gap = SPACE.xs;
+    let y = SPACE.m + title.height + SPACE.s;
+    const pictures = shown.map((kind, i) => this.add.image((i - (shown.length - 1) / 2) * (size + gap), y + size / 2, itemTextureKey(kind, false)).setDisplaySize(size, size));
+    const content: Phaser.GameObjects.GameObject[] = [...pictures];
+    if (kinds.length > shown.length) content.push(kitText(this, 'number', `+${kinds.length - shown.length}`, SKIN.text.accent, 20).setPosition(((shown.length + 1) / 2) * (size + gap), y + size / 2));
+    y += size + SPACE.s;
+    if (pagesToClaim(this.store.album).length > 0) {
+      const line = kitText(this, 'body', t('album.news.claim'), SKIN.text.accent, 14).setOrigin(0.5, 0).setAlign('center').setWordWrapWidth(inner).setY(y);
+      content.push(line);
+      y += line.height + SPACE.s;
+    }
+    const h = y + SPACE.xs;
+    const panel = new KitPanel(this, width / 2, height * 0.45, { skin: SKIN, width: w, height: h });
+    title.setY(-h / 2 + SPACE.m);
+    for (const part of content) (part as unknown as Phaser.GameObjects.Components.Transform).y -= h / 2;
+    panel.add([title, ...content]);
+    return this.presentCard(panel, content);
+  }
+
+  /**
+   * Shows a reward card: it pops in, then its content fades in, and after a moment it fades away. Resolves once it
+   * has gone (or when a skip took it away).
+   */
+  private presentCard(panel: KitPanel, content: readonly Phaser.GameObjects.GameObject[]): Promise<void> {
+    panel.setDepth(DEPTH_MODAL + 5);
+    this.card = panel;
     const still = reducedMotion();
+    for (const part of content) (part as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(0);
     panel.setScale(still ? 1 : 0.86).setAlpha(0);
-    // Separate steps rather than one chain of tweens: the gift is always shown, whatever happens to the pop.
+    // Separate steps rather than one chain of tweens: the content is always shown, whatever happens to the pop.
     return new Promise((resolve) => {
       this.tweens.add({ targets: panel, alpha: 1, scale: 1, duration: DURATION.slow, ease: EASE.pop });
       // A skip (closeCards) may have taken the card away meanwhile.
       this.time.delayedCall(DURATION.slow, () => {
         if (!panel.scene) return;
-        for (const item of items) item.container.setAlpha(still ? 1 : 0);
-        if (!still) this.tweens.add({ targets: items.map((item) => item.container), alpha: 1, duration: DURATION.base, ease: EASE.enter });
+        for (const part of content) (part as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(still ? 1 : 0);
+        if (!still) this.tweens.add({ targets: content, alpha: 1, duration: DURATION.base, ease: EASE.enter });
       });
       this.time.delayedCall(DURATION.slow + 1500, () => {
         if (!panel.scene) return resolve();

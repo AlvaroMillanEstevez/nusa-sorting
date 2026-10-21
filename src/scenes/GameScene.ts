@@ -1618,6 +1618,8 @@ export class GameScene extends Phaser.Scene {
    * Nothing here blocks input: the next move already works on the new state.
    */
   private play(events: readonly GameEvent[]): void {
+    // Each triple made finds its kind's entry in Buku Nenek (saved at once, won or lost).
+    this.store.findKinds(events.flatMap((e) => (e.kind === 'tripleCleared' ? [e.itemType] : [])));
     let moved: { itemId: number; to: Position } | undefined;
     const advancedShelves = new Set<number>();
     const cleared: number[] = [];

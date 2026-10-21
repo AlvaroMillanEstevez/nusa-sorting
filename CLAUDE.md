@@ -20,6 +20,7 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `node tools/check/stuck-hunt.mjs [partidas por distribución] [límite de búsqueda] [nivel] [--explain]` — juega partidas simuladas en todos los niveles y distribuciones (con potenciadores y continuaciones) y compara en cada estado el veredicto de atasco de las reglas (`canProgress`) con una búsqueda independiente; con `--explain` muestra los atascos con 3 o más huecos libres y por qué. En desarrollo, cada atasco declarado se escribe en la consola (`[stuck]`) como instantánea para reproducirlo.
 - `node tools/check/fresh.mjs [partidas]` — las demos de comida fresca (18-20) con los jugadores simulados: victorias, puntos de los tríos, estrellas (con la fórmula actual y con una que cuenta el bonus de lo fresco) y porcentaje de tríos estropeados, con la mecánica y sin ella.
 - `node tools/check/fresh-curve.mjs [partidas] [index.ts de los niveles de otra copia]` — la curva de comida fresca de los niveles: cuentas de cada fresco, victoria y estrellas de los dos jugadores simulados (con las de otra versión de los niveles entre paréntesis, si se indica) y porcentaje de tríos estropeados, en una tabla markdown.
+- `node tools/docs/buku-nenek.mjs` — regenera `docs/buku-nenek.md` (las 81 entradas del libro de la abuela en una tabla, para revisar) desde `src/data/bukuNenek.ts`; un test falla si no está al día.
 - `npm run package` — build de producción comprobado (sin código de desarrollo, rutas relativas, tamaño y número de archivos) y `.zip` para el portal de CrazyGames en `release/`. Lista de comprobación del envío: `docs/launch-checklist.md`.
 - `node tools/preview/record.mjs [landscape|portrait|both]` — graba los vídeos de vista previa (con `npm run dev` en marcha) en `docs/launch/videos`; `tools/covers/render.sh` hace lo mismo con las portadas.
 
@@ -47,12 +48,13 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - `?coins=N` — pone las monedas del jugador a N (para probar la tienda y las ofertas).
 - `?boosters=N` — pone a N las unidades de cada potenciador al abrir un nivel (tras dar en silencio sus presentaciones), para probar la barra y el modal de continuar con y sin unidades.
 - `?shop` — abre la tienda sobre el mapa (con `?home`).
+- `?book` — abre Buku Nenek, el libro de la abuela, sobre el mapa (con `?home`; con `?progress=N` trae ya los objetos de esos niveles).
 - `?coinsHelp` — abre «Cómo conseguir monedas» sobre el mapa (con `?home`).
 - `?chestStars=N` — pone a N las estrellas acumuladas hacia el cofre (con `?home`; por ejemplo `?home&chestStars=35` para abrir dos cofres seguidos y ver qué da cada uno).
 - `?chest` — toca el cofre de estrellas al abrir el mapa (con `?home`): lo abre si hay estrellas para uno, o muestra el aviso si faltan.
 - `?headless` — bucle del juego por temporizador y sin suavizado del paso de tiempo, para que un navegador headless con tiempo virtual haga avanzar las animaciones en capturas.
 - `?home` — abre la pantalla de inicio (el mapa) aunque sea la primera visita.
-- `?progress=N` — marca como completados los N primeros niveles (con 3, 2 y 1 estrellas alternas) antes de empezar, para ver el mapa más adelante; sus estrellas nuevas suman al contador del cofre, como al ganarlas.
+- `?progress=N` — marca como completados los N primeros niveles (con 3, 2 y 1 estrellas alternas) antes de empezar, para ver el mapa más adelante; sus estrellas nuevas suman al contador del cofre, como al ganarlas, y sus objetos quedan encontrados en Buku Nenek.
 - `?arrival=N` — abre el mapa como si se acabara de ganar el nivel N con 3 estrellas, para ver la secuencia de llegada (combínalo con `?progress=N`).
 - `?slotAspect=X` — otra proporción de hueco (de 1 a 1,6) en cualquier nivel; el juego usa 1,2.
 - `?safeArea=arriba,dcha,abajo,izda` — simula las zonas seguras de un móvil con muesca, en px (por ejemplo `47,0,34,0` en vertical).

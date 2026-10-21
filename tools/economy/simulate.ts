@@ -5,6 +5,12 @@ import {
   extraTimePrice,
   EMPTY_WALLET,
   introduceBooster,
+  claimPage,
+  EMPTY_ALBUM,
+  findKinds,
+  kindsOfLevel,
+  pagesToClaim,
+  type Album,
   marketCategory,
   marketTriples,
   openChest,
@@ -26,7 +32,8 @@ import { PASARAN_DAYS } from '../../src/data/pasaran';
  * else the cheapest one bought at its shop price (once one is unlocked). Two runs:
  * one keeps every other coin (what could be afforded), one buys the cheapest booster whenever it has its price
  * plus a reserve (what a spender would hold). Each win falls on the next market day (pasaran), round the five,
- * and earns that day's coins for the level's triples of its food.
+ * and earns that day's coins for the level's triples of its food. Every win finds the level's kinds in Buku Nenek,
+ * and the player collects each page's reward as soon as it is complete.
  */
 
 /** Stars of each first win, in turn: averages 2. */
@@ -67,6 +74,8 @@ function run(spender: boolean): Row[] {
   let timeCoins = 0;
   let wins = 0;
   let market = 0;
+  let album: Album = EMPTY_ALBUM;
+  const pages: string[] = [];
   const rows: Row[] = [];
   const win = (index: number, stars: number) => {
     const level = levels[index]!;
@@ -88,6 +97,16 @@ function run(spender: boolean): Row[] {
     wallet = rewards.wallet;
     freeBoosters += rewards.levelUps.reduce((n, l) => n + boosterUnits([l.gift]), 0);
     let coins = rewards.coins + rewards.levelUps.reduce((n, l) => n + coinsOf([l.gift]), 0);
+    // Buku Nenek: the level's kinds are found, and each page completed is collected at once.
+    album = findKinds(album, kindsOfLevel(level));
+    for (const page of pagesToClaim(album)) {
+      const claimed = claimPage(album, wallet, page.id)!;
+      album = claimed.album;
+      wallet = claimed.wallet;
+      pages.push(`${page.id} (L${index + 1}): ${claimed.reward.kind === 'coins' ? `${claimed.reward.amount} coins` : `${claimed.reward.amount} ${claimed.reward.booster}`}`);
+      freeBoosters += boosterUnits([claimed.reward]);
+      coins += coinsOf([claimed.reward]);
+    }
     // Chests are opened by hand: this player opens each one as soon as it can.
     for (let chest = openChest(wallet, index + 1); chest; chest = openChest(wallet, index + 1)) {
       wallet = chest.wallet;
@@ -151,11 +170,19 @@ function run(spender: boolean): Row[] {
       held: totalBoosters(wallet),
     });
   }
-  continueTotals = { continues, coins: continueCoins, timeContinues, timeCoins, market, wins };
+  continueTotals = { continues, coins: continueCoins, timeContinues, timeCoins, market, wins, pages };
   return rows;
 }
 
-let continueTotals = { continues: 0, coins: 0, timeContinues: 0, timeCoins: 0, market: 0, wins: 0 };
+let continueTotals: { continues: number; coins: number; timeContinues: number; timeCoins: number; market: number; wins: number; pages: string[] } = {
+  continues: 0,
+  coins: 0,
+  timeContinues: 0,
+  timeCoins: 0,
+  market: 0,
+  wins: 0,
+  pages: [],
+};
 
 export function main(): string {
   const saver = run(false);
@@ -171,6 +198,7 @@ export function main(): string {
   const affordable = Math.floor(last.balance / avgPrice);
   const total = last.freeBoosters + affordable;
   lines.push('');
+  lines.push(`Buku Nenek pages collected (${continued.pages.length}): ${continued.pages.join(', ')}.`);
   lines.push(`Market days paid ${continued.market} coins over ${continued.wins} wins (${(continued.market / continued.wins).toFixed(1)} a win).`);
   lines.push(`Out of time, the saver bought more time ${continued.timeContinues} times for ${continued.timeCoins} coins.`);
   lines.push(`Out of space, it continued ${continued.continues} times with a booster, buying the booster for ${continued.coins} coins when it had none.`);

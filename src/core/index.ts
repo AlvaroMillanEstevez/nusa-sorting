@@ -12,3 +12,4 @@ export * from './economy';
 export * from './snapshot';
 export * from './stuck';
 export * from './pasaran';
+export * from './album';

@@ -3,6 +3,7 @@ import { firstIncomplete, isUnlocked, recordWin, totalStars, type Progress, type
 import type { Stars } from '../core/stars';
 import { buyBooster, introduceBooster, openChest, rewardWin, spend, useBooster, useOrBuyBooster, type Wallet, type WinFacts, type WinRewards } from '../core/economy';
 import type { GameSnapshot } from '../core/snapshot';
+import { claimPage, findKinds, takeNews, type Album, type AlbumPageId } from '../core/album';
 import type { BoosterId, Reward } from '../data/economy';
 import type { SaveData, SaveService, Settings } from './SaveService';
 
@@ -80,6 +81,39 @@ export class ProgressStore {
 
   bestScore(levelId: string): number | null {
     return this.data.progress.bestScores[levelId] ?? null;
+  }
+
+  // ---------------------------------------------------------------- Buku Nenek
+
+  get album(): Album {
+    return this.data.album;
+  }
+
+  /** Records the kinds of triples just made (item types) in the book; saves only when one is new. */
+  findKinds(types: Iterable<string>): void {
+    const album = findKinds(this.data.album, types);
+    if (album === this.data.album) return;
+    this.data = { ...this.data, album };
+    this.saves.save(this.data);
+  }
+
+  /** Collects a complete page's reward (see claimPage) and saves; null if it cannot be collected. */
+  claimPage(id: AlbumPageId): Reward | null {
+    const claimed = claimPage(this.data.album, this.data.wallet, id);
+    if (!claimed) return null;
+    this.data = { ...this.data, album: claimed.album, wallet: claimed.wallet };
+    this.saves.save(this.data);
+    return claimed.reward;
+  }
+
+  /** The kinds found since the map last announced them; they are not news any more. */
+  takeAlbumNews(): readonly string[] {
+    const { album, news } = takeNews(this.data.album);
+    if (news.length > 0) {
+      this.data = { ...this.data, album };
+      this.saves.save(this.data);
+    }
+    return news;
   }
 
   // ---------------------------------------------------------------- wallet

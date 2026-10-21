@@ -1,15 +1,18 @@
 import { BOOSTER_IDS, ECONOMY, type BoosterId } from '../data/economy';
 import { EMPTY_WALLET, winCoins, xpForScore, type Wallet } from '../core/economy';
+import { ALBUM_PAGES, EMPTY_ALBUM, kindsOfLevel, type Album, type AlbumPageId } from '../core/album';
+import { ITEM_KINDS } from '../data/itemCatalog';
+import { levels } from '../data/levels';
 import { EMPTY_PROGRESS, totalStars, type Progress } from '../core/progress';
 import type { Stars } from '../core/stars';
 import type { SaveData, Settings } from './SaveService';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 const DEFAULT_SETTINGS: Settings = { muted: false, colorBlindMode: false, vibration: true, reduceMotion: null, music: true };
 
 export function emptySave(): SaveData {
-  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {}, tutorialsDone: [], wallet: EMPTY_WALLET, snapshot: null };
+  return { version: SAVE_VERSION, progress: EMPTY_PROGRESS, settings: DEFAULT_SETTINGS, themesSeen: [], lastArrangements: {}, tutorialsDone: [], wallet: EMPTY_WALLET, album: EMPTY_ALBUM, snapshot: null };
 }
 
 /**
@@ -24,7 +27,17 @@ const migrations: Record<number, (old: Record<string, unknown>) => Record<string
   // Version 3 made chests open by hand: the stars not yet turned into a chest (version 2 opened one every
   // `everyStars` stars by itself) start the count towards the next, so no star and no pending chest is lost.
   2: (old) => ({ ...old, wallet: isRecord(old.wallet) ? { ...old.wallet, chestStars: pendingChestStars(parseProgress(old.progress), count(old.wallet.chestsOpened)) } : old.wallet }),
+  // Version 4 added Buku Nenek. Every kind in a level already won counts as found (its triple was made to win
+  // it), without news for the map; the pages it completes wait in the book for their rewards.
+  3: (old) => ({ ...old, album: retroAlbum(parseProgress(old.progress)) }),
 };
+
+/** The album a version-3 save's progress would have filled: the kinds of every level won. */
+export function retroAlbum(progress: Progress): Album {
+  const found = new Set<string>();
+  for (const level of levels) if (progress.completed.includes(level.id)) for (const kind of kindsOfLevel(level)) found.add(kind);
+  return { ...EMPTY_ALBUM, found: ITEM_KINDS.map((k) => k.id).filter((id) => found.has(id)) };
+}
 
 /** Stars a version-2 save had collected beyond the chests it opened. */
 export function pendingChestStars(progress: Progress, chestsOpened: number): number {
@@ -73,12 +86,26 @@ export function parseSave(raw: string | null): SaveData {
     lastArrangements: parseArrangements(data.lastArrangements),
     tutorialsDone: parseIdList(data.tutorialsDone),
     wallet: parseWallet(data.wallet),
+    album: parseAlbum(data.album),
     // Missing in older saves: no level in progress.
     snapshot: isRecord(data.snapshot) ? data.snapshot : null,
   };
 }
 
 const count = (value: unknown): number => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : 0);
+
+/** The album; unknown kinds and pages are dropped, one by one. */
+function parseAlbum(value: unknown): Album {
+  if (!isRecord(value)) return EMPTY_ALBUM;
+  const kinds = new Set(ITEM_KINDS.map((k) => k.id));
+  const pages = new Set<string>(ALBUM_PAGES.map((p) => p.id));
+  const found = parseIdList(value.found).filter((id) => kinds.has(id));
+  return {
+    found,
+    claimed: parseIdList(value.claimed).filter((id): id is AlbumPageId => pages.has(id)),
+    news: parseIdList(value.news).filter((id) => found.includes(id)),
+  };
+}
 
 /** The wallet; bad fields fall back to zero or empty, one by one. */
 function parseWallet(value: unknown): Wallet {

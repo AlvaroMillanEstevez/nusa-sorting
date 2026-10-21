@@ -60,6 +60,8 @@ export const UI_ICONS = {
   settings: gear,
   close: (c) => `<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"${stroke(c)}/>`,
   back: (c) => `<path d="M14.5 5.5L8 12l6.5 6.5"${stroke(c)}/>`,
+  /** The other way from back: turning a page forwards. */
+  forward: (c) => `<path d="M9.5 5.5L16 12l-6.5 6.5"${stroke(c)}/>`,
   next: (c) => `<path d="M5 12h13M12.5 6l6 6-6 6"${stroke(c)}/>`,
   play: (c) => `<path d="M8 5.5v13l10.5-6.5z"${body(c)}/><path d="M8 5.5v13l10.5-6.5z"${stroke(c)}/>`,
   pause: (c) => `<rect x="6.5" y="5.5" width="3.6" height="13" rx="1.4"${solid(c)}/><rect x="13.9" y="5.5" width="3.6" height="13" rx="1.4"${solid(c)}/>`,
@@ -115,6 +117,10 @@ export const UI_ICONS = {
   /** For the coming shop: a shopping bag. */
   shop: (c) =>
     `<path d="M5.5 8.5h13l-1 11h-11z"${body(c)}/><path d="M5.5 8.5h13l-1 11h-11zM9 8.5V7a3 3 0 0 1 6 0v1.5"${stroke(c)}/>`,
+  /** Buku Nenek: an open book. */
+  book: (c) =>
+    `<path d="M12 7c-2.2-1.6-5.2-2-8-1.5v12.5c2.8-.5 5.8-.1 8 1.5 2.2-1.6 5.2-2 8-1.5V5.5c-2.8-.5-5.8-.1-8 1.5z"${body(c)}/>` +
+    `<path d="M12 7c-2.2-1.6-5.2-2-8-1.5v12.5c2.8-.5 5.8-.1 8 1.5 2.2-1.6 5.2-2 8-1.5V5.5c-2.8-.5-5.8-.1-8 1.5zM12 7v12.5"${stroke(c)}/>`,
   /** For the coming power-ups: a lightning bolt. */
   bolt: (c) => `<path d="M13 3L5.5 13.5H12L11 21l7.5-10.5H12z"${body(c)}/><path d="M13 3L5.5 13.5H12L11 21l7.5-10.5H12z"${stroke(c)}/>`,
 } as const satisfies Record<string, Draw>;

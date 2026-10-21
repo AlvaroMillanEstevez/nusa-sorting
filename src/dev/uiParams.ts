@@ -88,6 +88,11 @@ export function wantsShop(search: string): boolean {
   return new URLSearchParams(search).has('shop');
 }
 
+/** Development only: `?book` opens Buku Nenek, Grandma's book, over the home screen (with `?home`). */
+export function wantsBook(search: string): boolean {
+  return new URLSearchParams(search).has('book');
+}
+
 /** Development only: `?coinsHelp` opens "How to get coins" on the home screen (with `?home`). */
 export function wantsCoinsHelp(search: string): boolean {
   return new URLSearchParams(search).has('coinsHelp');

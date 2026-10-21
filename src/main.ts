@@ -18,6 +18,7 @@ import { SKIN } from './ui/design/tokens';
 import { setSlotAspect } from './ui/boardLayout';
 import { forceSafeArea, RENDER_RATIO, updateUiScale } from './scenes/view';
 import { useCuts } from './scenes/transitions';
+import { kindsOfLevel } from './core/album';
 
 setLocale((import.meta.env.DEV ? parseLang(window.location.search) : null) ?? resolveLocale(navigator.languages));
 document.title = t('game.title');
@@ -38,6 +39,9 @@ if (import.meta.env.DEV) {
     const before = store.totalStars;
     playList.slice(0, progress).forEach(({ level }, i) => store.recordWin(level.id, 1000, ([3, 2, 1] as const)[i % 3]));
     store.addChestStars(store.totalStars - before);
+    // Their items are in Buku Nenek, as after playing them (not news for the map).
+    store.findKinds(playList.slice(0, progress).flatMap(({ level }) => kindsOfLevel(level)));
+    store.takeAlbumNews();
   }
   const coins = parseCoinsParam(window.location.search);
   if (coins !== null) store.setCoins(coins);

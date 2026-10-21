@@ -30,6 +30,26 @@ export const ECONOMY = {
    */
   pasaran: { perTriple: 2, maxPerWin: 10 },
 
+  /**
+   * Buku Nenek, Grandma's book: a page completed (every entry on it found) gives this, collected in the book. Food
+   * pages (one per market category, all complete within the first levels) give a few coins; theme pages give coins,
+   * and every third one a booster instead (each already unlocked by the theme's level).
+   */
+  album: {
+    foodPage: { kind: 'coins', amount: 30 },
+    themePages: {
+      'budaya-jawa': { kind: 'coins', amount: 50 },
+      '17-agustus': { kind: 'coins', amount: 50 },
+      'pasar-malam': { kind: 'booster', booster: 'removeTriple', amount: 1 },
+      'laut-nusantara': { kind: 'coins', amount: 50 },
+      olahraga: { kind: 'coins', amount: 50 },
+      'permainan-tradisional': { kind: 'booster', booster: 'shuffle', amount: 1 },
+      'rempah-maluku': { kind: 'coins', amount: 50 },
+      sawah: { kind: 'coins', amount: 50 },
+      'fauna-nusantara': { kind: 'booster', booster: 'freeze', amount: 1 },
+    },
+  } satisfies { foodPage: Reward; themePages: Readonly<Record<string, Reward>> },
+
   boosters: {
     freeze: {
       /** Coins for one in the shop. */
