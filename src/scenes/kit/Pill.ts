@@ -12,6 +12,8 @@ export type PillState = 'normal' | 'low' | 'critical';
 export interface PillOptions {
   readonly skin: Skin;
   readonly icon?: UiIconName;
+  /** A colour picture (texture key) in the icon's place, at the icon's size (the market day's kepeng). */
+  readonly image?: string;
   /** A small capital label before the value ("LEVEL"), or none. */
   readonly label?: string;
   readonly value: string;
@@ -47,7 +49,12 @@ export class KitPill extends Phaser.GameObjects.Container {
     this.face = scene.add.graphics();
     this.bar = scene.add.graphics();
     const parts: Phaser.GameObjects.GameObject[] = [this.face, this.bar];
-    if (options.icon) {
+    if (options.image) {
+      // A picture has no stroke to carry it: a little larger than a glyph, so its detail reads.
+      const px = Math.round(this.ph * 0.62);
+      this.icon = scene.add.image(0, 0, options.image).setDisplaySize(px, px);
+      parts.push(this.icon);
+    } else if (options.icon) {
       this.icon = uiIcon(scene, options.icon, color, iconPx);
       parts.push(this.icon);
     }

@@ -75,6 +75,10 @@ describe('market days', () => {
     expect(market.marketCoins).toBe(2 * perTriple);
     expect(market.coins).toBe(plain.coins + 2 * perTriple);
     expect(market.wallet.coins).toBe(plain.wallet.coins + 2 * perTriple);
+    // The panel's breakdown adds up to the total.
+    expect(market.coinParts).toEqual({ level: ECONOMY.win.firstClear, stars: 2 * ECONOMY.win.perStar, market: 2 * perTriple });
+    const { level, stars, market: day } = market.coinParts;
+    expect(level + stars + day).toBe(market.coins);
     // Experience (from the score) and stars are the same.
     expect(market.xp).toBe(plain.xp);
     expect(market.chestStars).toBe(plain.chestStars);

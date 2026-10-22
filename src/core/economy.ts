@@ -36,8 +36,14 @@ const round = (value: number, step: number) => Math.round(value / step) * step;
  * plus a bonus per star: all of them the first time, only those beyond the best so far on a replay.
  */
 export function winCoins(firstClear: boolean, stars: number, bestBefore: number): number {
+  const parts = winCoinParts(firstClear, stars, bestBefore);
+  return parts.level + parts.stars;
+}
+
+/** The two parts of winCoins: for completing the level (more the first time) and for its stars. */
+export function winCoinParts(firstClear: boolean, stars: number, bestBefore: number): { level: number; stars: number } {
   const { firstClear: first, replay, perStar } = ECONOMY.win;
-  return firstClear ? first + perStar * stars : replay + perStar * Math.max(0, stars - bestBefore);
+  return firstClear ? { level: first, stars: perStar * stars } : { level: replay, stars: perStar * Math.max(0, stars - bestBefore) };
 }
 
 // ---------------------------------------------------------------- the player's level
@@ -203,6 +209,8 @@ export interface WinRewards {
   readonly coins: number;
   /** Of those, the market day's (see marketCoins). */
   readonly marketCoins: number;
+  /** Where the coins came from: completing the level, its stars and the market day (they add up to `coins`). */
+  readonly coinParts: { readonly level: number; readonly stars: number; readonly market: number };
   readonly xp: number;
   readonly levelBefore: number;
   readonly levelUps: readonly { readonly level: number; readonly gift: Reward }[];
@@ -234,7 +242,8 @@ export function marketCoins(triples: number): number {
  */
 export function rewardWin(wallet: Wallet, win: WinFacts): WinRewards {
   const market = marketCoins(win.marketTriples ?? 0);
-  const coins = winCoins(win.firstClear, win.stars, win.bestStarsBefore) + market;
+  const parts = winCoinParts(win.firstClear, win.stars, win.bestStarsBefore);
+  const coins = parts.level + parts.stars + market;
   const xp = xpForScore(win.score);
   const levelBefore = playerLevel(wallet.xp).level;
   let next: Wallet = { ...wallet, coins: wallet.coins + coins, xp: wallet.xp + xp };
@@ -247,5 +256,5 @@ export function rewardWin(wallet: Wallet, win: WinFacts): WinRewards {
   }
   const chestStars = Math.max(0, win.totalStarsAfter - win.totalStarsBefore);
   next = { ...next, chestStars: next.chestStars + chestStars };
-  return { wallet: next, coins, marketCoins: market, xp, levelBefore, levelUps, chestStars };
+  return { wallet: next, coins, marketCoins: market, coinParts: { ...parts, market }, xp, levelBefore, levelUps, chestStars };
 }

@@ -27,7 +27,7 @@ import {
   freezeClock,
   removeTriple,
   shuffleBoard,
-  winCoins,
+  winCoinParts,
   starsFor,
   starThresholds,
   tick,
@@ -480,7 +480,7 @@ export class GameScene extends Phaser.Scene {
         timeLeftMs,
         bestLine: t('result.newBest'),
         newBest: true,
-        coins: winCoins(true, starsFor(score, starThresholds(this.level)), 0),
+        coins: { ...winCoinParts(true, starsFor(score, starThresholds(this.level)), 0), market: marketCoins(marketTriples(this.level, this.market)) },
         next: () => this.goHome(),
         replay: () => this.transitionTo(this.levelIndex),
       });
@@ -1214,7 +1214,7 @@ export class GameScene extends Phaser.Scene {
           timeLeftMs,
           bestLine,
           newBest: record.newBest,
-          coins: rewards?.coins ?? 0,
+          coins: rewards?.coinParts ?? { level: 0, stars: 0, market: 0 },
           next: () => this.goHome(arrival),
           replay: retry,
         });
