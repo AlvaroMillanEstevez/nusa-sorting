@@ -14,7 +14,7 @@ import { computeMapLayout, revealedLevels, revealedTop, type MapLayout } from '.
 import { kitFeedback, KitBoosterButton, KitButton, KitIconButton, KitModal, KitPanel, KitPill, kitText, reducedMotion, setReducedMotion, uiIcon, uiIconKey } from './kit';
 import { ArrivalSequence, chestStarsBefore, coinsBefore, type Arrival, type ArrivalStage, type RewardCard } from './map/arrival';
 import { wantsBook, wantsChest, wantsCoinsHelp, wantsShop } from '../dev/uiParams';
-import { boosterTextureKey } from './boosterTextures';
+import { BOOK_TEXTURE, boosterTextureKey } from './boosterTextures';
 import { Effects } from './Effects';
 import { openShop } from './Shop';
 import { openBukuNenek } from './BukuNenek';
@@ -45,6 +45,8 @@ const DEPTH_MODAL = 300;
 const SIDE_BUTTON = 56;
 /** The row over the play button: the stars towards the next chest, over its button. */
 const FOOTER_ROW = 30;
+/** The tab at the foot of Buku Nenek's button: found of all. */
+const BOOK_TAB = 22;
 /** The glints around a chest ready to open: offsets as shares of the button's size, and radius in px. */
 const CHEST_GLINTS: readonly (readonly [number, number, number])[] = [
   [-0.56, -0.48, 9],
@@ -71,6 +73,38 @@ function glint(scene: Phaser.Scene, r: number): Phaser.GameObjects.Graphics {
   g.lineStyle(1.5, hexNumber(TILE.rim), 1).strokePoints(points, true);
   return g;
 }
+
+/** A warm glow behind a button and golden glints round it: a gift waiting (the chest, a page in the book). */
+interface GiftLight {
+  readonly glow: Phaser.GameObjects.Graphics;
+  readonly glints: Phaser.GameObjects.Graphics[];
+}
+
+function giftLight(scene: Phaser.Scene, x: number, y: number): GiftLight {
+  const glow = scene.add.graphics().setPosition(x, y).setDepth(DEPTH_BAR - 1).setVisible(false);
+  for (let i = 10; i >= 1; i--) glow.fillStyle(hexNumber(TILE.glow), 0.08).fillCircle(0, 0, SIDE_BUTTON * (0.5 + i * 0.05));
+  const glints = CHEST_GLINTS.map(([dx, dy, r]) => glint(scene, r).setPosition(x + dx * SIDE_BUTTON, y + dy * SIDE_BUTTON).setDepth(DEPTH_BAR + 1).setVisible(false));
+  return { glow, glints };
+}
+
+/** Lights a gift up or puts it out: the glow breathes and the glints twinkle in turn; still with reduce motion. */
+function lightGift(scene: Phaser.Scene, light: GiftLight, lit: boolean): void {
+  if (lit === light.glow.visible) return;
+  light.glow.setVisible(lit).setAlpha(1).setScale(1);
+  scene.tweens.killTweensOf([light.glow, ...light.glints]);
+  light.glints.forEach((g) => g.setVisible(lit).setAlpha(1).setScale(1));
+  if (!lit || reducedMotion()) return;
+  scene.tweens.add({ targets: light.glow, scale: 1.12, alpha: 0.7, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
+  light.glints.forEach((g, i) =>
+    scene.tweens.add({ targets: g, scale: 0.35, alpha: 0.3, angle: 45, duration: 520, delay: i * 330, yoyo: true, repeat: -1, repeatDelay: 380, ease: EASE.loop }),
+  );
+}
+
+/** The footer's rows, from the screen's height: the play row, and Buku Nenek's button over the shop. */
+const footerRows = (height: number) => {
+  const play = height - SPACE.m - 34;
+  return { play, book: play - SIDE_BUTTON - SPACE.s - 6 };
+};
 
 /**
  * The home screen: the level map with a top bar (the player's level and its bar, coins, the total of stars and
@@ -103,8 +137,8 @@ export class HomeScene extends Phaser.Scene {
   private shownXp = 0;
   private card: KitPanel | null = null;
   private chestPill!: KitPill;
-  private chestGlow!: Phaser.GameObjects.Graphics;
-  private chestGlints: Phaser.GameObjects.Graphics[] = [];
+  private chestLight!: GiftLight;
+  private shopButton!: KitIconButton;
   private toastLabel: KitPill | null = null;
   private sequence: ArrivalSequence | null = null;
   private current = 0;
@@ -243,7 +277,8 @@ export class HomeScene extends Phaser.Scene {
 
     // The map scrolls between the clouds at its top and its bottom edge, keeping clear of the bar and button.
     const barH = this.barHeight();
-    const footer = 64 + SPACE.l + FOOTER_ROW + SPACE.s;
+    // From the top of Buku Nenek's button (over the shop) down.
+    const footer = height - (footerRows(height).book - SIDE_BUTTON / 2 - SPACE.s);
     this.maxScroll = this.layout.height - (height - footer);
     this.minScroll = Math.min(this.maxScroll, revealedTop(this.layout, revealed) - barH);
     this.scroll = this.scrollToShow(this.data_.arrival?.level ?? this.current);
@@ -348,7 +383,7 @@ export class HomeScene extends Phaser.Scene {
    */
   private buildFooter(width: number, height: number): void {
     const number = playList[this.current]!.number;
-    const y = height - SPACE.m - 34;
+    const { play: y, book: bookY } = footerRows(height);
     const playW = Math.min(280, width - (SPACE.s * 2 + SIDE_BUTTON) * 2);
     this.play = new KitButton(this, width / 2, y, {
       skin: SKIN,
@@ -360,13 +395,12 @@ export class HomeScene extends Phaser.Scene {
       onPress: () => this.chooseLevel(this.current),
     }).setDepth(DEPTH_BAR);
     const side = playW / 2 + SPACE.s + SIDE_BUTTON / 2;
-    new KitIconButton(this, width / 2 - side, y, { skin: SKIN, icon: 'shop', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openShop() }).setDepth(DEPTH_BAR);
+    const shopX = width / 2 - side;
+    this.shopButton = new KitIconButton(this, shopX, y, { skin: SKIN, icon: 'shop', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openShop() }).setDepth(DEPTH_BAR);
     const chestX = width / 2 + side;
     // Once it can be opened the chest glows warmly and golden glints twinkle around it, like a gift waiting.
-    this.chestGlow = this.add.graphics().setPosition(chestX, y).setDepth(DEPTH_BAR - 1).setVisible(false);
-    for (let i = 10; i >= 1; i--) this.chestGlow.fillStyle(hexNumber(TILE.glow), 0.08).fillCircle(0, 0, SIDE_BUTTON * (0.5 + i * 0.05));
+    this.chestLight = giftLight(this, chestX, y);
     new KitIconButton(this, chestX, y, { skin: SKIN, icon: 'chest', look: 'secondary', size: SIDE_BUTTON, onPress: () => this.pressChest() }).setDepth(DEPTH_BAR);
-    this.chestGlints = CHEST_GLINTS.map(([dx, dy, r]) => glint(this, r).setPosition(chestX + dx * SIDE_BUTTON, y + dy * SIDE_BUTTON).setDepth(DEPTH_BAR + 1).setVisible(false));
 
     const rowY = y - 32 - SPACE.s - FOOTER_ROW / 2;
     // Stars towards the next chest, over its button (it can pass the target: 17/15).
@@ -374,36 +408,104 @@ export class HomeScene extends Phaser.Scene {
     this.chestPill = new KitPill(this, chestX, rowY, { skin: SKIN, icon: 'starFilled', value: '', tint: SKIN.star.filled, height: FOOTER_ROW, width: chestW }).setDepth(DEPTH_BAR);
     this.showChestStars(this.store.wallet.chestStars);
 
-    // Buku Nenek, over the shop: entries found of all. A page waiting for its reward lights it up and it breathes.
+    // Buku Nenek, over the shop: the illustrated book on a button like the shop's and the chest's, with what has
+    // been found (and its bar) on a tab at its foot. A page waiting for its reward lights it up like the chest.
     const waiting = pagesToClaim(this.store.album).length > 0;
-    const bookW = 92;
-    const book = new KitPill(this, width / 2 - side, rowY, {
-      skin: SKIN,
-      icon: 'book',
-      value: `${this.store.album.found.length}/${ALBUM_SIZE}`,
-      tint: waiting ? SKIN.text.accent : SKIN.text.primary,
-      height: FOOTER_ROW,
-      width: bookW,
-    }).setDepth(DEPTH_BAR);
-    book.setSize(bookW, 44).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openBook());
-    if (waiting && !reducedMotion()) this.tweens.add({ targets: book, scale: 1.08, duration: 700, yoyo: true, repeat: -1, ease: EASE.loop });
+    const bookLight = giftLight(this, shopX, bookY);
+    new KitIconButton(this, shopX, bookY, { skin: SKIN, icon: 'book', texture: BOOK_TEXTURE, look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openBook() }).setDepth(DEPTH_BAR);
+    const found = this.store.album.found.length;
+    new KitPill(this, shopX, bookY + SIDE_BUTTON / 2 + 4, { skin: SKIN, value: `${found}/${ALBUM_SIZE}`, tint: waiting ? SKIN.text.accent : SKIN.text.primary, height: BOOK_TAB, width: 62 })
+      .setProgress(found / ALBUM_SIZE)
+      .setDepth(DEPTH_BAR + 1);
+    lightGift(this, bookLight, waiting);
   }
 
   /** Buku Nenek, Grandma's book. */
   private openBook(): void {
     if (this.modal || this.sequence?.running) return;
-    kitFeedback().press();
     this.modal = openBukuNenek(
       this,
       this.store,
       this.sfx,
-      () => this.showCoins(this.store.wallet.coins),
+      (reward, from) => this.flyReward(reward, from),
       () => {
         this.modal = null;
-        // The counts over the shop, and the coins.
+        // The book's button (and its light), the coins.
         this.build();
       },
     );
+  }
+
+  /**
+   * A reward collected in the book flies, over the open book, to where it counts: coins to the coins counter, which
+   * counts up as they land (as after a win); a booster to the shop, which holds them. With reduce motion the
+   * counter just changes, with its bump.
+   */
+  private flyReward(reward: Reward, from: { x: number; y: number }): void {
+    const above = DEPTH_MODAL + 10;
+    if (reward.kind === 'coins') {
+      const total = this.store.wallet.coins;
+      const base = total - reward.amount;
+      // The coins counter, raised over the book's dimmed backdrop while they land: a twin in the same place (the
+      // real one is in the top bar, under the backdrop with the title), gone once it has counted up.
+      const pill = this.coinsPill;
+      const twin = new KitPill(this, pill.x, pill.y, { skin: SKIN, icon: 'coin', value: formatScore(base, getLocale()), tint: SKIN.text.accent, height: 40, width: pill.pillWidth }).setDepth(above);
+      const show = (coins: number) => {
+        twin.setValue(formatScore(coins, getLocale()));
+        this.bump(twin);
+      };
+      const done = () => {
+        show(total);
+        this.showCoins(total);
+        this.tweens.add({ targets: twin, alpha: 0, delay: DURATION.slow * 2, duration: DURATION.base, ease: EASE.exit, onComplete: () => twin.destroy() });
+      };
+      if (reducedMotion()) return done();
+      const to = { x: this.coinsPill.x - 30, y: this.coinsPill.y };
+      const flights = Math.min(6, Math.max(2, Math.round(reward.amount / 10)));
+      for (let i = 0; i < flights; i++) {
+        const coin = this.add.image(from.x, from.y, uiIconKey('coin', SKIN.text.accent)).setDisplaySize(24, 24).setDepth(above + 1);
+        const progress = { k: 0 };
+        this.tweens.add({
+          targets: progress,
+          k: 1,
+          delay: i * 90,
+          duration: 520,
+          ease: 'Cubic.easeIn',
+          onUpdate: () => coin.setPosition(from.x + (to.x - from.x) * progress.k, from.y + (to.y - from.y) * progress.k - Math.sin(Math.PI * progress.k) * 60),
+          onComplete: () => {
+            coin.destroy();
+            this.sfx.play('starCollect');
+            if (i === flights - 1) return done();
+            show(base + Math.round((reward.amount * (i + 1)) / flights));
+          },
+        });
+      }
+      return;
+    }
+    const shop = this.shopButton;
+    shop.setDepth(above);
+    const done = () => {
+      this.sfx.play('unlock');
+      this.bump(shop);
+      this.time.delayedCall(DURATION.slow, () => shop.setDepth(DEPTH_BAR));
+    };
+    if (reducedMotion()) return done();
+    const tile = this.add.image(from.x, from.y, boosterTextureKey(reward.booster)).setDisplaySize(52, 52).setDepth(above + 1);
+    const progress = { k: 0 };
+    this.tweens.add({
+      targets: progress,
+      k: 1,
+      duration: 640,
+      ease: 'Cubic.easeIn',
+      onUpdate: () => {
+        const k = progress.k;
+        tile.setPosition(from.x + (shop.x - from.x) * k, from.y + (shop.y - from.y) * k - Math.sin(Math.PI * k) * 80).setDisplaySize(52 - 16 * k, 52 - 16 * k);
+      },
+      onComplete: () => {
+        tile.destroy();
+        done();
+      },
+    });
   }
 
   private openShop(): void {
@@ -428,17 +530,8 @@ export class HomeScene extends Phaser.Scene {
   private showChestStars(stars: number): void {
     const { every } = chestProgress(this.store.wallet);
     this.chestPill.setValue(`${stars}/${every}`).setProgress(Math.min(1, stars / every));
-    const ready = stars >= every;
-    if (ready === this.chestGlow.visible) return;
-    this.chestGlow.setVisible(ready).setAlpha(1).setScale(1);
-    this.tweens.killTweensOf([this.chestGlow, ...this.chestGlints]);
-    this.chestGlints.forEach((g) => g.setVisible(ready).setAlpha(1).setScale(1));
     // The glow breathes and the glints twinkle in turn, asking to be tapped; with reduce motion they stay still.
-    if (!ready || reducedMotion()) return;
-    this.tweens.add({ targets: this.chestGlow, scale: 1.12, alpha: 0.7, duration: 900, yoyo: true, repeat: -1, ease: EASE.loop });
-    this.chestGlints.forEach((g, i) =>
-      this.tweens.add({ targets: g, scale: 0.35, alpha: 0.3, angle: 45, duration: 520, delay: i * 330, yoyo: true, repeat: -1, repeatDelay: 380, ease: EASE.loop }),
-    );
+    lightGift(this, this.chestLight, stars >= every);
   }
 
   /** The chest: opens when it has the stars for it, else says more are needed. */

@@ -1,13 +1,19 @@
 import type * as Phaser from 'phaser';
 import { BOOSTER_IDS, type BoosterId } from '../data/economy';
-import { renderBoosterSvg } from '../ui/icons/icons';
+import { renderBookSvg, renderBoosterSvg } from '../ui/icons/icons';
 import { ITEM_TEXTURE_SIZE } from './itemTextures';
 import { addSvgTexture } from './svgTexture';
 
 /** Texture of a booster's colour icon (the same everywhere: the game's bar, the shop, offers and gifts). */
 export const boosterTextureKey = (booster: BoosterId) => `booster:${booster}`;
 
-/** Rasterizes the boosters' icons once, before the game starts, at the item icons' size. */
+/** Texture of Buku Nenek's book, the map's button to it. */
+export const BOOK_TEXTURE = 'icon:buku-nenek';
+
+/** Rasterizes the boosters' icons (and the book's) once, before the game starts, at the item icons' size. */
 export async function prepareBoosterTextures(scene: Phaser.Scene): Promise<void> {
-  await Promise.all(BOOSTER_IDS.map((id) => addSvgTexture(scene.textures, boosterTextureKey(id), renderBoosterSvg(id), ITEM_TEXTURE_SIZE)));
+  await Promise.all([
+    ...BOOSTER_IDS.map((id) => addSvgTexture(scene.textures, boosterTextureKey(id), renderBoosterSvg(id), ITEM_TEXTURE_SIZE)),
+    addSvgTexture(scene.textures, BOOK_TEXTURE, renderBookSvg(), ITEM_TEXTURE_SIZE),
+  ]);
 }

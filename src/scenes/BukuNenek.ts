@@ -44,9 +44,16 @@ function startPage(store: ProgressStore): number {
  * beside its title. Its entries sit in a grid: found ones show their picture and name, the others their dark
  * silhouette. Tapping one found opens its page: the picture, its name in both languages, where it comes from and a
  * short fact. At the foot, what completing the page gives, and the button to collect it once complete. The total
- * found is in the corner (23/81). `onChange` runs after a reward is collected; `onClose` when the book closes.
+ * found is under the title (23/81). `onCollect` gets a collected reward and where its button was (world point), for
+ * the home screen to fly it to its counter; `onClose` runs when the book closes.
  */
-export function openBukuNenek(scene: Phaser.Scene, store: ProgressStore, sfx: SoundService, onChange: () => void, onClose: () => void): KitModal {
+export function openBukuNenek(
+  scene: Phaser.Scene,
+  store: ProgressStore,
+  sfx: SoundService,
+  onCollect: (reward: Reward, from: { x: number; y: number }) => void,
+  onClose: () => void,
+): KitModal {
   const screen = screenRect(scene);
   const safe = viewSize(scene);
   // Wide screens put the page's title, arrows and reward in a column beside the entries.
@@ -196,7 +203,7 @@ export function openBukuNenek(scene: Phaser.Scene, store: ProgressStore, sfx: So
     const reward = pageReward(page);
     if (progress.complete && !progress.claimed) {
       const chip = rewardChip(reward);
-      put(
+      const collect = put(
         new KitButton(scene, sideX, footerY, {
           skin: SKIN,
           variant: 'primary',
@@ -205,12 +212,15 @@ export function openBukuNenek(scene: Phaser.Scene, store: ProgressStore, sfx: So
           width: Math.min(side, 280),
           height: 52,
           onPress: () => {
-            if (!store.claimPage(page.id)) return;
+            const collected = store.claimPage(page.id);
+            if (!collected) return;
             sfx.play('star3');
+            const at = collect.getWorldTransformMatrix();
+            const from = { x: at.tx, y: at.ty };
             // After the press finishes: redrawing destroys this button.
             scene.time.delayedCall(0, () => {
               showPage();
-              onChange();
+              onCollect(collected, from);
             });
           },
         }),

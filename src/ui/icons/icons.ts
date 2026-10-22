@@ -1,3 +1,4 @@
+import { BOOK_TEMPLATE } from './bookIcon';
 import type { BoosterId } from '../../data/economy';
 import { darken, lighten } from './color';
 import { BOOSTER_TEMPLATES } from './boosterIcons';
@@ -64,6 +65,13 @@ function svgDocument(defs: string[], body: string): string {
     `<ellipse cx="50" cy="91" rx="34" ry="6" fill="url(#shadow)"/>` +
     `${body}</svg>`
   );
+}
+
+/** SVG for Buku Nenek's book on the map (see bookIcon.ts). */
+export function renderBookSvg(): string {
+  const defs: string[] = [];
+  const body = BOOK_TEMPLATE.draw(paintFor(BOOK_TEMPLATE.palette, defs)).replace(/\s*\n\s*/g, '');
+  return svgDocument(defs, body);
 }
 
 /** SVG for a booster's icon (see boosterIcons.ts). */

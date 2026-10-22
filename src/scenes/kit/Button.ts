@@ -93,6 +93,11 @@ export class KitButton extends Pressable {
 export interface IconButtonOptions {
   readonly skin: Skin;
   readonly icon: UiIconName;
+  /**
+   * A colour illustration (texture key) shown instead of the monochrome icon, larger, like a booster's tile (the
+   * book on the map); `icon` stays as its fallback name.
+   */
+  readonly texture?: string;
   /** 'chip': the quiet HUD look; a fill variant for an emphasised round button. */
   readonly look?: 'chip' | 'primary' | 'secondary';
   /** Visible size; the touch area is at least 44 px whatever this is. Default 44. */
@@ -112,7 +117,9 @@ export class KitIconButton extends Pressable {
     this.diameter = options.size ?? 44;
     this.shadow = scene.add.graphics();
     this.face = scene.add.graphics();
-    this.icon = uiIcon(scene, options.icon, this.iconColor(), Math.round(this.diameter * 0.5));
+    this.icon = options.texture
+      ? scene.add.image(0, 0, options.texture).setDisplaySize(Math.round(this.diameter * 0.78), Math.round(this.diameter * 0.78))
+      : uiIcon(scene, options.icon, this.iconColor(), Math.round(this.diameter * 0.5));
     this.inner.add([this.face, this.icon]);
     this.add([this.shadow, this.inner]);
     this.setTouchArea(this.diameter, this.diameter);
