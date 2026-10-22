@@ -1,22 +1,26 @@
 import * as Phaser from 'phaser';
+import { drawCounter } from '../scenes/FreshLooks';
 import { loadUiFonts } from '../scenes/kit';
+import { loadShelfArt, placeShelf, SHELF_TEXTURE } from '../scenes/art/shelfArt';
 import { fadeToScene } from '../scenes/transitions';
 import { fitCamera, RENDER_RATIO, viewSize } from '../scenes/view';
-import { shelfLayoutAt, type ShelfLayout } from '../ui/boardLayout';
+import { shelfLayoutAt } from '../ui/boardLayout';
 import { FONTS, SKIN } from '../ui/design/tokens';
-import { WOOD } from '../ui/art/wood';
-import { itemTextureKey, prepareTypes } from '../scenes/itemTextures';
-import { loadShelfArt, placeShelf, SHELF_TEXTURE } from '../scenes/art/shelfArt';
 import { ITEM_FILL } from '../ui/levelLayout';
 
 /**
- * Development only (`?cover=landscape|portrait|square`): the store covers, drawn with the game's own art (the
- * wooden wall, the warung shelves, the food and object icons, the Fredoka title) rather than a screenshot. The
- * page is the cover: tools/covers/render.sh opens it in a headless browser at the exact size and saves the PNG.
- * Only the title as text, no borders, the same composition across the three shapes.
+ * Development only (`?cover=landscape|portrait|square&v=a|b`): the store covers, made from the game's illustrated
+ * art rather than a screenshot: the warung at dusk behind, the food and objects cut at 512 px from the original
+ * sheets (`python3 tools/art/build_game_art.py --hires art-source/hires-items`, outside git), the shelf, a fresh
+ * food's price tag and the Fredoka title. Only the title as text, no borders, nothing important in the top left
+ * corner (where the site puts its labels). Two compositions:
+ * - a: the counter. A shelf with a finished, glowing triple of satay in front of the stall, food heaped beside it.
+ * - b: the triple. Three alike come together in a burst of light under the title, food floating round it.
+ * tools/covers/render.mjs opens the page in a headless browser at the exact size and saves the PNG.
  */
 
 export type CoverShape = 'landscape' | 'portrait' | 'square';
+export type CoverVariant = 'a' | 'b';
 
 /** The CSS size a cover is laid out at; rendered at 2 device pixels per CSS pixel, so 1920×1080 and so on. */
 export const COVER_SIZES: Readonly<Record<CoverShape, { width: number; height: number }>> = {
@@ -30,56 +34,114 @@ export function parseCoverParam(search: string): CoverShape | null {
   return value === 'landscape' || value === 'portrait' || value === 'square' ? value : value === null ? null : 'landscape';
 }
 
-/** The shelves the covers draw from; every shape includes the finished triple (with sparkles). */
-const SHELVES: readonly (readonly string[])[] = [
-  ['rambutan', 'es-teh-manis', 'wayang-kulit'],
-  ['sate', 'sate', 'sate'],
-  ['layangan', 'nasi-goreng', 'ketupat'],
-  ['klepon', 'batik', 'es-kelapa-muda'],
-  ['durian', 'pinisi', 'rendang'],
-  ['topeng', 'manggis', 'kelapa'],
-];
-const TRIPLE = 1;
-/** Which shelves each shape shows, row by row. */
-const GRID: Readonly<Record<CoverShape, readonly (readonly number[])[]>> = {
-  landscape: [
-    [0, 1, 2],
-    [3, 4, 5],
-  ],
-  portrait: [[0], [1], [2]],
-  square: [
-    [0, 1],
-    [3, 5],
-  ],
+export const parseCoverVariant = (search: string): CoverVariant => (new URLSearchParams(search).get('v') === 'b' ? 'b' : 'a');
+
+const HIRES = (kind: string) => `/art-source/hires-items/${kind}.png`;
+const BACKDROP = { landscape: '/art-source/pilot/background-landscape.png', portrait: '/art-source/pilot/warung-sunset.png' } as const;
+
+/** An object on the cover: kind, centre (shares of width and height), size (share of the shorter side), angle. */
+interface Piece {
+  readonly kind: string;
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
+  readonly angle?: number;
+  /** A fresh food's price tag with this many moves left. */
+  readonly tag?: number;
+  /** Drawn a little blurred and darker, further back. */
+  readonly far?: boolean;
+}
+
+/** Composition a: the shelf (centre x, base y as shares; width as a share of the cover's width) and the heaps. */
+const COUNTER: Readonly<Record<CoverShape, { title: { y: number; size: number; lines: 1 | 2 }; shelf: { x: number; bottom: number; width: number }; pieces: readonly Piece[] }>> = {
+  landscape: {
+    title: { y: 0.19, size: 0.2, lines: 1 },
+    shelf: { x: 0.5, bottom: 0.97, width: 0.4 },
+    pieces: [
+      { kind: 'es-teh-manis', x: 0.2, y: 0.66, size: 0.34, angle: -4 },
+      { kind: 'nasi-goreng', x: 0.12, y: 0.84, size: 0.36 },
+      { kind: 'ketupat', x: 0.28, y: 0.87, size: 0.3, angle: 6 },
+      { kind: 'durian', x: 0.82, y: 0.66, size: 0.32 },
+      { kind: 'rambutan', x: 0.74, y: 0.86, size: 0.3, tag: 5 },
+      { kind: 'martabak-manis', x: 0.9, y: 0.86, size: 0.32 },
+    ],
+  },
+  portrait: {
+    title: { y: 0.15, size: 0.21, lines: 2 },
+    shelf: { x: 0.5, bottom: 0.74, width: 0.86 },
+    pieces: [
+      { kind: 'es-teh-manis', x: 0.17, y: 0.45, size: 0.3, angle: -6 },
+      { kind: 'durian', x: 0.83, y: 0.46, size: 0.28, angle: 6 },
+      { kind: 'nasi-goreng', x: 0.22, y: 0.87, size: 0.38 },
+      { kind: 'rambutan', x: 0.55, y: 0.89, size: 0.3, tag: 5 },
+      { kind: 'ketupat', x: 0.84, y: 0.86, size: 0.32, angle: 6 },
+    ],
+  },
+  square: {
+    title: { y: 0.18, size: 0.15, lines: 2 },
+    shelf: { x: 0.5, bottom: 0.8, width: 0.66 },
+    pieces: [
+      { kind: 'es-teh-manis', x: 0.1, y: 0.62, size: 0.24, angle: -6 },
+      { kind: 'nasi-goreng', x: 0.15, y: 0.88, size: 0.27 },
+      { kind: 'rambutan', x: 0.86, y: 0.86, size: 0.24, tag: 5 },
+      { kind: 'durian', x: 0.87, y: 0.58, size: 0.2 },
+    ],
+  },
 };
-/** The title on one line, or two on the narrower shapes. */
-const TITLE: Readonly<Record<CoverShape, string>> = { landscape: 'Nusa Sorting', portrait: 'Nusa\nSorting', square: 'Nusa\nSorting' };
-/** Objects floating beside the title, as if on their way to a shelf: [type, x, y, size, angle] in cover units. */
-type Floater = readonly [string, number, number, number, number];
-const FLOATERS: Readonly<Record<CoverShape, readonly Floater[]>> = {
-  landscape: [
-    ['lampion', 0.1, 0.26, 1.0, -10],
-    ['kembang-api', 0.9, 0.24, 1.0, 10],
-  ],
-  portrait: [
-    ['lampion', 0.12, 0.25, 0.95, -10],
-    ['kembang-api', 0.88, 0.25, 0.95, 10],
-  ],
-  square: [
-    ['lampion', 0.12, 0.29, 1.05, -10],
-    ['kembang-api', 0.88, 0.29, 1.05, 10],
-  ],
+
+/** Composition b: where the triple meets (shares), the size of each of its three, and what floats round it. */
+const TRIPLE_KIND = 'rambutan';
+const BURST: Readonly<Record<CoverShape, { title: { y: number; size: number; lines: 1 | 2 }; triple: { x: number; y: number; size: number }; pieces: readonly Piece[] }>> = {
+  landscape: {
+    title: { y: 0.2, size: 0.2, lines: 1 },
+    triple: { x: 0.5, y: 0.68, size: 0.3 },
+    pieces: [
+      { kind: 'sate', x: 0.12, y: 0.62, size: 0.3, angle: -18 },
+      { kind: 'nasi-goreng', x: 0.2, y: 0.88, size: 0.32, angle: 8 },
+      { kind: 'es-teh-manis', x: 0.9, y: 0.58, size: 0.3, angle: 12 },
+      { kind: 'ketupat', x: 0.82, y: 0.86, size: 0.28, tag: 2 },
+      { kind: 'klepon', x: 0.95, y: 0.2, size: 0.18, angle: 14, far: true },
+      { kind: 'onde-onde', x: 0.06, y: 0.36, size: 0.15, angle: -8, far: true },
+      { kind: 'es-kelapa-muda', x: 0.34, y: 0.94, size: 0.2, angle: -6, far: true },
+      { kind: 'kerupuk-udang', x: 0.66, y: 0.95, size: 0.2, angle: 10, far: true },
+    ],
+  },
+  portrait: {
+    title: { y: 0.15, size: 0.21, lines: 2 },
+    triple: { x: 0.5, y: 0.52, size: 0.27 },
+    pieces: [
+      { kind: 'sate', x: 0.2, y: 0.75, size: 0.36, angle: -16 },
+      { kind: 'es-teh-manis', x: 0.8, y: 0.74, size: 0.34, angle: 10 },
+      { kind: 'nasi-goreng', x: 0.5, y: 0.9, size: 0.38 },
+      { kind: 'ketupat', x: 0.86, y: 0.42, size: 0.22, angle: 8, tag: 2 },
+      { kind: 'klepon', x: 0.1, y: 0.4, size: 0.18, angle: -10, far: true },
+    ],
+  },
+  square: {
+    title: { y: 0.17, size: 0.15, lines: 2 },
+    triple: { x: 0.5, y: 0.56, size: 0.23 },
+    pieces: [
+      { kind: 'sate', x: 0.15, y: 0.84, size: 0.28, angle: -16 },
+      { kind: 'es-teh-manis', x: 0.85, y: 0.83, size: 0.27, angle: 10 },
+      { kind: 'ketupat', x: 0.88, y: 0.4, size: 0.18, angle: 8, tag: 2 },
+      { kind: 'nasi-goreng', x: 0.5, y: 0.93, size: 0.24, far: true },
+    ],
+  },
 };
-/** Bunting colours: the islands' accents (red and white, turquoise sea, turmeric, rice green, festival pink). */
-const BUNTING = ['#e8443a', '#fff4e0', '#2fb5a8', '#ffc95a', '#7cc44a', '#f06aa0'];
+
+/** The satay triple on the counter's shelf. */
+const SHELF_KINDS = ['sate', 'sate', 'sate'];
 
 export class CoverScene extends Phaser.Scene {
+  private readonly variant: CoverVariant;
+
   /** `then`: for the preview video, the scene the cover hands over to (with a fade) after `holdMs`. */
   constructor(
     private readonly shape: CoverShape,
     private readonly then?: { readonly next: string; readonly holdMs: number },
   ) {
     super('Cover');
+    this.variant = parseCoverVariant(window.location.search);
   }
 
   create(): void {
@@ -89,143 +151,157 @@ export class CoverScene extends Phaser.Scene {
 
   private async draw(): Promise<void> {
     const { width, height } = viewSize(this);
-    const unit = Math.min(width, height);
-    const layout = this.layout(width, height);
-    const types = new Set([...SHELVES.flat(), ...FLOATERS[this.shape].map(([type]) => type)]);
-    const itemPx = layout.s * ITEM_FILL;
-    await Promise.all([
+    const plan = this.variant === 'a' ? COUNTER[this.shape] : BURST[this.shape];
+    const kinds = new Set([...plan.pieces.map((p) => p.kind), ...(this.variant === 'a' ? SHELF_KINDS : [TRIPLE_KIND])]);
+    const [backdrop, ...pictures] = await Promise.all([
+      image(BACKDROP[this.shape === 'landscape' ? 'landscape' : 'portrait']),
+      ...[...kinds].map((kind) => image(HIRES(kind))),
       loadUiFonts(),
-      prepareTypes(this, types),
       loadShelfArt(this.textures),
     ]);
-
-    this.backdrop(width, height);
-    this.bunting(width, unit);
-
-    // The shelves, with the finished triple glowing.
-    for (const { index, shelf } of layout.shelves) {
-      if (index === TRIPLE) this.glow(shelf);
-      placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, layout.s);
-      SHELVES[index]!.forEach((type, slot) => {
-        const at = shelf.slots[slot]!;
-        this.add.image(at.x, at.y, itemTextureKey(type, false)).setDisplaySize(itemPx, itemPx);
-      });
-      if (index === TRIPLE) this.sparkles(shelf, layout.s);
-    }
-
-    for (const [type, fx, fy, size, angle] of FLOATERS[this.shape]) {
-      const px = itemPx * size;
-      this.add.image(fx * width + px * 0.06, fy * height + px * 0.1, itemTextureKey(type, false)).setDisplaySize(px, px).setAngle(angle).setTint(0x000000).setAlpha(0.28);
-      this.add.image(fx * width, fy * height, itemTextureKey(type, false)).setDisplaySize(px, px).setAngle(angle);
-    }
-
-    this.title(TITLE[this.shape], width / 2, layout.titleY, layout.titleSize, width);
+    const picture = new Map([...kinds].map((kind, i) => [kind, pictures[i] as HTMLImageElement]));
+    this.backdrop(backdrop as HTMLImageElement, width, height);
+    const unit = Math.min(width, height);
+    const pieces = [...plan.pieces].sort((a, b) => Number(Boolean(b.far)) - Number(Boolean(a.far)));
+    const behind = pieces.filter((p) => p.far);
+    const front = pieces.filter((p) => !p.far);
+    for (const piece of behind) this.piece(piece, picture.get(piece.kind)!, width, height, unit);
+    if (this.variant === 'a') this.counterShelf(picture.get('sate')!, width, height);
+    else this.burst(picture.get(TRIPLE_KIND)!, width, height, unit);
+    for (const piece of front) this.piece(piece, picture.get(piece.kind)!, width, height, unit);
+    this.title(plan.title.lines === 2 ? 'Nusa\nSorting' : 'Nusa Sorting', width / 2, plan.title.y * height, plan.title.size * (plan.title.lines === 2 ? width : height), width);
+    // For tools/covers/render.mjs: everything is drawn.
+    (window as unknown as { __coverReady?: boolean }).__coverReady = true;
     const then = this.then;
     if (then) this.time.delayedCall(then.holdMs, () => fadeToScene(this, then.next));
   }
 
-  /** Where the shelves and the title go for this shape, and the item cell size `s`. */
-  private layout(width: number, height: number): { s: number; shelves: { index: number; shelf: ShelfLayout }[]; titleY: number; titleSize: number } {
-    const unit = shelfLayoutAt(0, 0, 1).rect;
-    const grid = GRID[this.shape];
-    const columns = Math.max(...grid.map((row) => row.length));
-    const gapX = 0.4;
-    const gapY = 0.12;
-    // The shelves fill the lower part of the cover, as wide as they can.
-    const area = { landscape: { w: 0.9, top: 0.43, bottom: 0.98 }, portrait: { w: 0.9, top: 0.43, bottom: 0.97 }, square: { w: 0.94, top: 0.53, bottom: 0.98 } }[this.shape];
-    const s = Math.min(
-      (width * area.w) / (columns * unit.width + (columns - 1) * gapX),
-      ((area.bottom - area.top) * height) / (grid.length * unit.height + (grid.length - 1) * gapY),
-    );
-    const blockH = (grid.length * unit.height + (grid.length - 1) * gapY) * s;
-    const top = area.top * height + ((area.bottom - area.top) * height - blockH) / 2;
-    const shelves = grid.flatMap((row, r) => {
-      const rowW = (row.length * unit.width + (row.length - 1) * gapX) * s;
-      return row.map((index, c) => ({ index, shelf: shelfLayoutAt((width - rowW) / 2 + c * (unit.width + gapX) * s, top + r * (unit.height + gapY) * s, s) }));
-    });
-    const title = { landscape: { y: 0.24, size: height * 0.21 }, portrait: { y: 0.245, size: width * 0.2 }, square: { y: 0.285, size: width * 0.15 } }[this.shape];
-    return { s, shelves, titleY: title.y * height, titleSize: title.size };
-  }
-
-  /** The wooden wall of the stall, lit warmly from above the title, darker at the edges. */
-  private backdrop(width: number, height: number): void {
+  /** The warung at dusk, cover-cropped, softly out of focus, darker towards the foot so the objects stand out. */
+  private backdrop(picture: HTMLImageElement, width: number, height: number): void {
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(width * RENDER_RATIO);
     canvas.height = Math.round(height * RENDER_RATIO);
     const c = canvas.getContext('2d')!;
-    c.scale(RENDER_RATIO, RENDER_RATIO);
-    // Planks, each a little different.
-    const plank = Math.max(28, Math.min(width, height) / 9);
-    const tones = [WOOD.wall, WOOD.wallSlat, '#52331e', WOOD.wall, '#5a3a22'];
-    for (let x = 0, i = 0; x < width; x += plank, i++) {
-      c.fillStyle = tones[(i * 3) % tones.length]!;
-      c.fillRect(x, 0, plank, height);
-      c.fillStyle = WOOD.wallShade;
-      c.fillRect(x, 0, 2, height);
-      // Grain.
-      c.strokeStyle = 'rgba(30, 16, 6, 0.25)';
-      c.lineWidth = 1;
-      for (let k = 1; k < 4; k++) {
-        c.beginPath();
-        const gx = x + (plank * k) / 4 + ((i * 7 + k * 3) % 5) - 2;
-        c.moveTo(gx, 0);
-        c.bezierCurveTo(gx + 3, height * 0.3, gx - 3, height * 0.6, gx + 1, height);
-        c.stroke();
-      }
-    }
-    // Warm light from above the title, and a vignette.
-    const light = c.createRadialGradient(width / 2, height * 0.22, 0, width / 2, height * 0.22, Math.max(width, height) * 0.7);
-    light.addColorStop(0, 'rgba(255, 196, 110, 0.42)');
-    light.addColorStop(0.45, 'rgba(255, 170, 80, 0.12)');
-    light.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    const k = Math.max(canvas.width / picture.width, canvas.height / picture.height);
+    const w = picture.width * k;
+    const h = picture.height * k;
+    // The square shows the stall's upper part, its lights and awning; the others are centred.
+    const top = this.shape === 'square' ? 0 : (canvas.height - h) / 2;
+    c.filter = `blur(${Math.round(canvas.width * 0.0035)}px) saturate(1.1)`;
+    c.drawImage(picture, (canvas.width - w) / 2, top, w, h);
+    c.filter = 'none';
+    const foot = c.createLinearGradient(0, canvas.height * 0.35, 0, canvas.height);
+    foot.addColorStop(0, 'rgba(20, 8, 2, 0)');
+    foot.addColorStop(1, 'rgba(20, 8, 2, 0.55)');
+    c.fillStyle = foot;
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    // Warm light where the title is.
+    const light = c.createRadialGradient(canvas.width / 2, canvas.height * 0.2, 0, canvas.width / 2, canvas.height * 0.2, canvas.width * 0.55);
+    light.addColorStop(0, 'rgba(255, 190, 110, 0.28)');
+    light.addColorStop(1, 'rgba(255, 190, 110, 0)');
     c.fillStyle = light;
-    c.fillRect(0, 0, width, height);
-    const vignette = c.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.35, width / 2, height / 2, Math.hypot(width, height) * 0.6);
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    const vignette = c.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.4, canvas.width / 2, canvas.height / 2, Math.hypot(canvas.width, canvas.height) * 0.62);
     vignette.addColorStop(0, 'rgba(10, 4, 0, 0)');
-    vignette.addColorStop(1, 'rgba(10, 4, 0, 0.6)');
+    vignette.addColorStop(1, 'rgba(10, 4, 0, 0.5)');
     c.fillStyle = vignette;
-    c.fillRect(0, 0, width, height);
+    c.fillRect(0, 0, canvas.width, canvas.height);
     this.textures.addCanvas('cover:backdrop', canvas);
     this.add.image(0, 0, 'cover:backdrop').setOrigin(0).setDisplaySize(width, height);
   }
 
-  /** A string of festival flags sagging across the top. */
-  private bunting(width: number, unit: number): void {
-    const g = this.add.graphics();
-    const top = unit * 0.02;
-    const sag = unit * 0.06;
-    const at = (x: number) => top + sag * Math.sin((Math.PI * x) / width);
-    g.lineStyle(Math.max(1.5, unit * 0.005), 0x2e1b0d, 0.9);
-    g.beginPath();
-    g.moveTo(-4, at(-4));
-    for (let x = 0; x <= width + 4; x += 8) g.lineTo(x, at(x));
-    g.strokePath();
-    const flag = unit * 0.045;
-    const count = Math.round(width / (flag * 1.7));
-    for (let i = 0; i < count; i++) {
-      const x = ((i + 0.5) * width) / count;
-      const y = at(x);
-      g.fillStyle(Phaser.Display.Color.HexStringToColor(BUNTING[i % BUNTING.length]!).color, 1);
-      g.fillTriangle(x - flag * 0.5, y, x + flag * 0.5, y, x, y + flag * 1.15);
-      g.lineStyle(1, 0x2e1b0d, 0.5);
-      g.strokeTriangle(x - flag * 0.5, y, x + flag * 0.5, y, x, y + flag * 1.15);
+  /** An object with a soft shadow under it (and its price tag, if it is fresh), sharp at the cover's resolution. */
+  private piece(piece: Piece, picture: HTMLImageElement, width: number, height: number, unit: number): void {
+    const px = piece.size * unit;
+    const key = `cover:${piece.kind}:${piece.tag ?? 0}:${piece.far ? 'far' : 'near'}`;
+    if (!this.textures.exists(key)) {
+      const side = picture.width;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = side;
+      const c = canvas.getContext('2d')!;
+      if (piece.far) c.filter = `blur(${Math.round(side * 0.006)}px) brightness(0.8)`;
+      c.drawImage(picture, 0, 0);
+      c.filter = 'none';
+      if (piece.tag !== undefined) drawCounter(c, side, { moves: piece.tag, warn: piece.tag <= 3, big: false });
+      this.textures.addCanvas(key, canvas);
     }
+    const x = piece.x * width;
+    const y = piece.y * height;
+    this.add.image(x + px * 0.04, y + px * 0.06, key).setDisplaySize(px, px).setAngle(piece.angle ?? 0).setTint(0x000000).setAlpha(0.35);
+    this.add.image(x, y, key).setDisplaySize(px, px).setAngle(piece.angle ?? 0);
   }
 
-  /** A soft golden glow behind the finished triple. */
-  private glow(shelf: ShelfLayout): void {
-    const { x, y, width, height } = shelf.rect;
+  /** Composition a: the illustrated shelf with a finished triple of satay, glowing and sparkling. */
+  private counterShelf(sate: HTMLImageElement, width: number, height: number): void {
+    const plan = COUNTER[this.shape].shelf;
+    const unit = shelfLayoutAt(0, 0, 1).rect;
+    const s = (plan.width * width) / unit.width;
+    const shelf = shelfLayoutAt(plan.x * width - (unit.width * s) / 2, plan.bottom * height - unit.height * s, s);
+    this.glow(shelf.rect);
+    placeShelf(this.add.image(0, 0, SHELF_TEXTURE), shelf, s);
+    const key = 'cover:shelf-item';
+    if (!this.textures.exists(key)) this.textures.addImage(key, sate);
+    const px = s * ITEM_FILL * 1.05;
+    for (const at of shelf.slots) this.add.image(at.x, at.y + s * 0.04, key).setDisplaySize(px, px);
+    this.sparkles(shelf.rect, s);
+  }
+
+  /** Composition b: three alike come together in a burst of light, with sparkles and motion lines. */
+  private burst(picture: HTMLImageElement, width: number, height: number, unit: number): void {
+    const plan = BURST[this.shape].triple;
+    const cx = plan.x * width;
+    const cy = plan.y * height;
+    const px = plan.size * unit;
+    // The light: rays and a warm core.
+    const g = this.add.graphics();
+    const rays = 14;
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2;
+      const spread = Math.PI / rays / 1.6;
+      const r = px * (i % 2 === 0 ? 2.1 : 1.6);
+      g.fillStyle(0xffd27e, i % 2 === 0 ? 0.22 : 0.14);
+      g.fillTriangle(cx, cy, cx + Math.cos(a - spread) * r, cy + Math.sin(a - spread) * r, cx + Math.cos(a + spread) * r, cy + Math.sin(a + spread) * r);
+    }
+    for (let i = 8; i >= 1; i--) g.fillStyle(0xffc95a, 0.07).fillCircle(cx, cy, px * (0.35 + i * 0.12));
+    const key = 'cover:triple';
+    if (!this.textures.exists(key)) this.textures.addImage(key, picture);
+    // Motion lines behind the outer two, coming in from the sides.
+    const lines = this.add.graphics();
+    lines.lineStyle(Math.max(2, px * 0.03), 0xfff4e0, 0.55);
+    for (const side of [-1, 1]) {
+      for (const dy of [-0.18, 0, 0.18]) {
+        const x0 = cx + side * px * 1.55;
+        lines.lineBetween(x0, cy + dy * px, x0 + side * px * (0.45 - Math.abs(dy)), cy + dy * px);
+      }
+    }
+    const step = px * 0.86;
+    for (const [i, angle] of [
+      [-1, -12],
+      [1, 12],
+      [0, 0],
+    ] as const) {
+      const x = cx + i * step;
+      const y = cy + Math.abs(i) * px * 0.06;
+      this.add.image(x + px * 0.04, y + px * 0.06, key).setDisplaySize(px, px).setAngle(angle).setTint(0x000000).setAlpha(0.3);
+      this.add.image(x, y, key).setDisplaySize(px, px).setAngle(angle);
+    }
+    this.sparkles({ x: cx - px * 1.4, y: cy - px * 0.7, width: px * 2.8, height: px * 1.4 }, px * 0.9);
+  }
+
+  /** A soft golden glow behind something. */
+  private glow(rect: { x: number; y: number; width: number; height: number }): void {
+    const { x, y, width, height } = rect;
     const g = this.add.graphics();
     for (let i = 6; i >= 1; i--) {
       const pad = i * Math.max(3, width * 0.022);
-      g.fillStyle(0xffc95a, 0.06);
+      g.fillStyle(0xffc95a, 0.07);
       g.fillRoundedRect(x - pad, y - pad, width + pad * 2, height + pad * 2, pad + 6);
     }
   }
 
-  /** Four-pointed sparkles around the finished triple. */
-  private sparkles(shelf: ShelfLayout, s: number): void {
-    const { x, y, width, height } = shelf.rect;
+  /** Four-pointed sparkles round a rectangle. */
+  private sparkles(rect: { x: number; y: number; width: number; height: number }, s: number): void {
+    const { x, y, width, height } = rect;
     const spots: readonly [number, number, number][] = [
       [0.06, 0.08, 0.22],
       [0.95, 0.12, 0.28],
@@ -259,7 +335,7 @@ export class CoverScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setResolution(RENDER_RATIO)
       .setStroke(SKIN.surface.border, Math.round(size * 0.16))
-      .setShadow(0, Math.round(size * 0.08), '#000000', 0.45, true, true);
+      .setShadow(0, Math.round(size * 0.08), '#000000', 0.5, true, true);
     // Cream to turmeric down each line.
     const lines = value.split('\n').length;
     const gradient = text.context.createLinearGradient(0, 0, 0, text.height);
@@ -271,4 +347,11 @@ export class CoverScene extends Phaser.Scene {
     const room = width * 0.86;
     if (text.width > room) text.setScale(room / text.width);
   }
+}
+
+/** An image from the dev server, decoded. */
+function image(url: string): Promise<HTMLImageElement> {
+  const picture = new Image();
+  picture.src = url;
+  return picture.decode().then(() => picture);
 }

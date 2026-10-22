@@ -1,105 +1,121 @@
 # Nusa Sorting · Lista de comprobación para Basic Launch (CrazyGames)
 
-Envío sin SDK y sin anuncios. Requisitos leídos en docs.crazygames.com el 12 de octubre de 2026 ([técnicos](https://docs.crazygames.com/requirements/technical/), [jugabilidad](https://docs.crazygames.com/requirements/gameplay/), [portadas y vídeos](https://docs.crazygames.com/requirements/game-covers/), [guía de Basic Launch](https://docs.crazygames.com/resources/basic-launch-metrics/)). Volver a leerlos antes de enviar, por si cambian.
+Segundo envío, sin SDK y sin anuncios. El primero se rechazó por «overall quality», antes del arte ilustrado, el audio nuevo, la composición de escritorio, las islas, Basi, Pasaran y Buku Nenek. Requisitos releídos en docs.crazygames.com el 22 de octubre de 2026 ([técnicos](https://docs.crazygames.com/requirements/technical/), [jugabilidad](https://docs.crazygames.com/requirements/gameplay/), [calidad](https://docs.crazygames.com/requirements/quality/), [portadas y vídeos](https://docs.crazygames.com/requirements/game-covers/), [guía de Basic Launch](https://docs.crazygames.com/resources/basic-launch-metrics/)). Volver a leerlos antes de enviar, por si cambian.
+
+## Cambios en los requisitos desde el 12 de octubre
+
+Las páginas no tienen fecha. Comparadas con lo que recogía esta lista:
+
+- **Técnicos.**
+  - Aparece un tope de **250 MB** de tamaño total; lo que cuenta sin SDK sigue siendo el tamaño total, ≤ 50 MB (≤ 20 MB para la portada móvil).
+  - Juegos que no van fluidos en un Chromebook de 4 GB de RAM se desactivan en Chromium OS.
+  - Sitelock: si se usa, admitir todos los dominios de CrazyGames y sus apps. No usamos sitelock.
+- **Jugabilidad.**
+  - El idioma se lee del `locale` del SDK, con el inglés como respaldo. Sin SDK no hay `locale`: el juego sale en inglés salvo que el idioma principal del navegador sea el indonesio, y entonces en indonesio, que es una traducción revisada.
+  - Para la integración completa (no para Basic Launch), los jugadores nuevos deben entrar directamente a jugar o con un solo clic. Ya es así.
+- **Calidad.**
+  - Además de Escape, evitar **Ctrl/Cmd + W**. No lo usamos.
+  - Insiste en el onboarding visual y que se pueda saltar.
+- **Portadas y vídeos.** Sin cambios: tres portadas coherentes, solo el título como texto, sin bordes; vídeos de 15-20 s, sin sonido, 1080p en 16:9 y 2:3, empezando por la portada, ≤ 50 MB.
+- **Basic Launch.**
+  - Entre 7 y 21 días; termina con 7 días y 500 partidas.
+  - Mide la duración media de la sesión (los buenos, 10+ min), la retención al día siguiente (10-15 %) y la conversión (jugar al menos un minuto; los mejores, 80 %+, con carga en menos de 10 s y menos de 20 MB).
+  - Las actualizaciones durante Basic Launch se aprueban solas.
 
 ## Paquete
 
 - [x] `npm run package` genera el build y `release/nusa-sorting-AAAAMMDD-<commit>.zip`, con `index.html` en la raíz del zip.
-  - Comprueba: sin código de desarrollo, rutas relativas, número de archivos y tamaño.
-- [x] Rutas relativas: `base: './'` en `vite.config.ts`; `index.html` carga `./assets/…`.
-  - Probado servido desde un subdirectorio (`/sub/nusa/`) dentro de un iframe de otro origen.
-- [x] Tamaño: 5 archivos, 1,9 MB (0,5 MB comprimido).
-  - Límites: 1.500 archivos; 50 MB sin SDK; 20 MB para la portada móvil.
-- [x] Sin peticiones de red propias:
-  - fuentes incluidas en el build (WOFF2);
-  - nada de CDNs, analítica ni servicios externos.
+  - Falla si: aparece código de desarrollo, una ruta absoluta o falta algún prefijo de `user-select`; se pasan los 1.500 archivos o los 20 MB.
+- [x] Rutas relativas: `base: './'` en `vite.config.ts`. Probado servido desde un subdirectorio (`/sub/nusa/`) dentro de un iframe de otro origen.
+- [x] Tamaño: **155 archivos, 10,1 MB** (zip de 8,8 MB). Los fondos de los temas y las islas se descargan al necesitarlos.
+- [x] Sin peticiones de red propias: fuentes incluidas, sin CDNs, sin analítica, sin servicios externos.
 
 ## Técnicos
 
-- [x] **Tiempo hasta poder jugar.** Medido en un Chrome sin ventana con gráficos por software (más lento que un móvil con GPU):
-  - antes, el tablero aparecía a los 5,8 s; ahora a los **2,1 s**;
-  - con una red 4G simulada (9 Mb/s, 150 ms de latencia), a los **4,1 s**;
-  - CrazyGames recomienda menos de 10 s; para lo cargado de fuera exige 20 s.
-  - La marca `performance.mark('nusa:playable')` señala el momento.
-- [x] `user-select: none` (con prefijos `-webkit-`, `-moz-`, `-ms-`) y `-webkit-touch-callout: none` en `body`.
+- [x] **Tiempo hasta poder jugar** (marca `nusa:playable`).
+  - Medido en un Chrome sin ventana con gráficos por software, como un móvil de 390×844 en 4G (9 Mb/s, 60 ms):
+    - primera visita al nivel 1: **1,8 s**;
+    - retomar el nivel 45: **1,8 s**;
+    - abrir el mapa con 44 niveles hechos: **1,0 s**.
+  - CrazyGames recomienda menos de 10 s.
+- [x] `user-select: none` con `-webkit-`, `-moz-` y `-ms-` en `body` y `-webkit-touch-callout: none`.
+  - El minificador de CSS quitaba `-moz-` y `-ms-`: ahora también van en el atributo `style` de `body`, y el paquete lo comprueba.
+  - Menú contextual y gestos de la página desactivados.
 - [x] **Audio en iOS.**
-  - El `AudioContext` se crea y reanuda dentro de un gesto: `pointerdown` de las escenas, y también `touchend`, `click` y `keydown` en el documento.
-  - Se reanuda también si iOS lo deja `interrupted` (una llamada, cambiar de aplicación).
-- [x] **Funciona en un iframe sin acceso a la página padre:**
-  - no se usan `window.parent` ni `window.top`;
-  - el guardado sigue en memoria si el navegador bloquea `localStorage`.
-- [x] **Zonas seguras:** `viewport-fit=cover` y `env(safe-area-inset-*)`; HUD, paneles y tablero se colocan dentro de la zona segura.
-- [x] **Navegadores:**
-  - Chrome, probado sin ventana;
-  - Safari y Edge, por probar a mano (ver abajo).
+  - El `AudioContext` se crea y reanuda en un gesto (`touchend`, `click`, `keydown` y los toques de las escenas).
+  - También desde el estado `interrupted`.
+- [x] **Iframe.**
+  - Funciona dentro de un iframe de otro origen sin acceso a la página padre (Phaser intenta escuchar `window.top` dentro de un `try`).
+  - El guardado sigue en memoria si el navegador bloquea `localStorage`.
+- [x] **Zonas seguras:** `viewport-fit=cover`; HUD, paneles y tablero dentro de la zona segura.
+- [x] **Consola sin errores** en el build de producción dentro del iframe:
+  - en 800×450, 821×462, 907×510, 1077×606, 1280×720, 1920×1080 y 390×844;
+  - el registro capta también los errores de dentro del iframe (comprobado con una página que falla a propósito).
+- [ ] Safari y Edge, por probar a mano. Chromebook de 4 GB, si hay alguno a mano.
 
 ## Jugabilidad
 
-- [x] **Legible a DPR 1 en todas las ventanas que cita CrazyGames.** Tamaño mínimo de objeto, en el peor nivel de los 50:
+- [x] **Legible a DPR 1** en todas las ventanas que cita CrazyGames. Tamaño mínimo de objeto en el peor de los 50 niveles (el 15), con la escala de interfaz:
 
   | Ventana | Mínimo |
   |---|---|
-  | 800×450 (móvil) | 43 px |
-  | 821×462 | 44 px |
+  | 800×450 (móvil) | 44 px |
+  | 821×462 | 45 px |
   | 907×510 | 50 px |
   | 1077×606 y 1080×607 | 60 px |
-  | 1216×684 | 69 px |
-  | 1280×720 | 72 px |
-  | 1366×768 | 78 px |
-  | 1536×864 | 88 px |
-  | 1920×1080 | 105 px |
+  | 1216×684 | 68 px |
+  | 1280×720 | 71 px |
+  | 1366×768 | 76 px |
+  | 1536×864 | 85 px |
+  | 1920×1080 | 107 px |
+  | 390×844 y 844×390 (móvil) | 36 px |
 
-  - Los paneles caben y se leen a 800×450: mapa, tienda, pausa, victoria, derrota, continuar, cofre y "Cómo conseguir monedas".
-- [x] **Igual a 60, 144 y 165 Hz.**
-  - El reloj, las cintas y la ventana del combo avanzan por el tiempo transcurrido (`tick(state, delta)`); las animaciones son tweens por tiempo.
-  - Lo comprueba `tests/frameRate.test.ts`.
-- [x] **Idioma:** inglés por defecto e indonesio solo si el idioma principal del navegador es indonesio (`navigator.languages[0]`).
-  - Un móvil en español con el indonesio en segundo lugar sale en inglés.
-  - Sin SDK no hay `locale` de CrazyGames.
-- [x] Sin botón propio de pantalla completa, sin enlaces externos y sin promoción cruzada.
+  - Revisados a ojo a 800×450 y 821×462: mapa con el cartel del pasaran y el libro, Buku Nenek, nivel con su presentación de tema, panel de continuar, «Cómo conseguir monedas», presentaciones de potenciador y de comida fresca.
+- [x] **Igual a 60, 144 y 165 Hz:** reloj, cintas, combo y cuentas por tiempo transcurrido o por movimientos; animaciones por tiempo (`tests/frameRate.test.ts`).
+- [x] **Idioma:** inglés por defecto; indonesio si `navigator.languages[0]` es indonesio.
+- [x] Sin botón propio de pantalla completa (ni `requestFullscreen` en el build), sin enlaces externos, sin promoción cruzada.
 - [x] Sin anuncios ni botones de anuncio. Nada se compra con dinero real.
-- [x] **Teclas:** P pausa (y el botón de pausa). Escape no se usa: en el navegador cierra la pantalla completa, y las directrices de calidad de CrazyGames piden no usarlo.
+- [x] **Teclas:** P pausa. Ni Escape ni Ctrl/Cmd + W.
 - [x] **PEGI 12:** sin violencia, sin chat, sin contenido de usuarios.
-- [x] **Primera visita directa al nivel 1**, con el tutorial: no hay pantalla de título.
-- [x] **Ningún parámetro de desarrollo en producción:**
-  - los parámetros `?…`, la galería, el kit de interfaz, las portadas, el modo vídeo, las demos y el simulador van detrás de `import.meta.env.DEV`;
-  - `npm run package` falla si aparecen en el build;
-  - solo quedan los textos de la galería y del kit en los catálogos i18n (unos 2 KB, sin código que los use).
-- [x] **Consola sin errores** en el build de producción, dentro del iframe, en las cinco ventanas probadas. Se quitó el banner de Phaser.
+- [x] **Primera visita directa al nivel 1** con el tutorial (dos pasos: el primer trío y la comida fresca; «Saltar» los da por hechos).
+- [x] **Nada de desarrollo en producción:** parámetros `?…` (también `?pasaran` y `?book`), galería, kit, portadas, modo vídeo, demos y simulador quedan fuera del build; `npm run package` lo comprueba.
 
 ## Datos y privacidad
 
-- [x] El juego solo guarda en el navegador (`localStorage`, clave `nusa-sorting.save`).
-  - Guarda progreso, estrellas, monedas, potenciadores y ajustes.
-- [x] No recoge datos personales:
-  - sin cuentas;
-  - sin identificadores;
-  - sin analítica;
-  - sin peticiones de red.
-- [x] No hace falta aviso de privacidad ni de términos mientras siga así.
+- [x] Solo guarda en el navegador (`localStorage`, clave `nusa-sorting.save`): progreso, estrellas, monedas, potenciadores, Buku Nenek y ajustes.
+- [x] No recoge datos personales: sin cuentas, identificadores, analítica ni peticiones de red. No hace falta aviso de privacidad mientras siga así.
 
 ## Material del envío
 
-- [x] **Portadas** en `docs/launch/covers/`:
-  - `cover-landscape.png` (1920×1080), `cover-portrait.png` (800×1200) y `cover-square.png` (800×800);
-  - solo el título como texto, sin bordes, logotipos ni iconos de tiendas;
-  - se regeneran con `tools/covers/render.sh` y `npm run dev` en marcha.
+- [x] **Portadas** en `docs/launch/covers/`, dos composiciones para elegir:
+  - **A**, el mostrador: una estantería con un trío de sate brillando ante el warung, comida a los lados y un rambután con su etiqueta de Basi;
+  - **B**, el trío: tres rambutanes juntándose en un destello bajo el título, comida flotando alrededor y un ketupat con su etiqueta;
+  - cada una en 1920×1080, 800×1200 y 800×800, con el arte ilustrado (el warung al atardecer y los objetos recortados a 512 px de los originales);
+  - solo el título como texto, sin bordes, logotipos ni iconos; nada importante en la esquina superior izquierda;
+  - se regeneran con `node tools/covers/render.mjs [a|b|both]` (con `npm run dev` en marcha y los objetos a 512 px: `python3 tools/art/build_game_art.py --hires art-source/hires-items`).
+  - [ ] Koke elige A o B: se suben las tres de esa composición.
 - [x] **Vídeos** en `docs/launch/videos/`:
-  - `preview-landscape.mp4` (1920×1080) y `preview-portrait.mp4` (1080×1620, 2:3);
-  - 19 s cada uno, H.264 sin audio, unos 2,7 MB cada uno;
-  - empiezan con la portada; sin barras negras, sin cursor, sin transiciones en negro y sin acelerar.
-  - Se regeneran con `node tools/preview/record.mjs both`.
-- [ ] **Textos** en `docs/launch/store-texts.md`: borradores en inglés, pendientes de revisar por Koke y su mujer.
-  - Descripción corta y larga, controles, etiquetas y categoría.
+  - `preview-landscape.mp4` (1920×1080) y `preview-portrait.mp4` (1080×1620, 2:3), 19 s, H.264 sin audio;
+  - empiezan con la portada A; luego un tablero que se resuelve solo con el fondo ilustrado de Budaya Jawa (tríos con combo, un rambután fresco salvado a tiempo, un kerupuk que se estropea con sus moscas, la cinta y las estanterías que se cierran), la victoria con el desglose de monedas y la llegada al mapa de islas;
+  - sin barras negras, sin cursor, sin transiciones en negro y sin acelerar;
+  - se regeneran con `node tools/preview/record.mjs both` (`VARIANT=b` para empezar con la portada B).
+- [x] **Textos** en `docs/launch/store-texts.md`: descripciones corta y larga (con Basi, Pasaran y Buku Nenek), controles, etiquetas y una nota para el equipo de CrazyGames.
+  - [ ] Pendientes de revisar por Koke y su mujer.
 
 ## Antes de enviar (manual)
 
-- [ ] Revisar y aprobar los textos del envío.
-- [ ] Ver las portadas y los dos vídeos enteros.
+- [ ] Elegir portada (A o B) y, si es la B, volver a grabar los vídeos con `VARIANT=b`.
+- [ ] Revisar y aprobar los textos del envío y la nota para el equipo.
+- [ ] Ver los dos vídeos enteros.
 - [ ] Jugar el `.zip` en un móvil Android y en un iPhone:
-  - que el sonido vuelva tras bloquear el teléfono o cambiar de aplicación;
-  - que el tiempo hasta poder jugar sea corto;
-  - que se respete la muesca en pantalla completa.
-- [ ] Probar en Safari (macOS o iOS) y en Edge.
-- [ ] Subir el `.zip` al portal de desarrolladores y probarlo en su vista previa (iframe real de CrazyGames).
-- [ ] En el portal: orientación (horizontal y vertical), categoría Puzzle, etiquetas, controles, idiomas (inglés e indonesio).
+  - el sonido vuelve tras bloquear el teléfono;
+  - el tiempo hasta poder jugar es corto;
+  - se respeta la muesca en pantalla completa.
+- [ ] Probar en Safari y en Edge.
+- [ ] Subir el `.zip` al portal y probarlo en su vista previa (iframe real de CrazyGames).
+- [ ] En el portal:
+  - orientación: horizontal y vertical;
+  - categoría: Puzzle;
+  - etiquetas, controles e idiomas (inglés e indonesio);
+  - portadas y vídeos;
+  - la nota para el equipo, si hay campo; si no, por soporte.

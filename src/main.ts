@@ -5,9 +5,9 @@ import { wantsGallery } from './dev/galleryParam';
 import { wantsSaveReset } from './dev/saveParams';
 import { parseChestStarsParam, parseCoinsParam, parseLang, parseProgressParam, parseSafeArea, parseSlotAspect, wantsUikit } from './dev/uiParams';
 import { addDemoLevels, playList, replaceLevelForPreview } from './scenes/playList';
-import { GameScene } from './scenes/GameScene';
+import { FRESH_FOOD_INTRO, GameScene } from './scenes/GameScene';
 import { hideLoadingScreen } from './ui/loadingScreen';
-import { HomeScene } from './scenes/HomeScene';
+import { HomeScene, PASARAN_INTRO } from './scenes/HomeScene';
 import { setKitFeedback, setReducedMotion } from './scenes/kit';
 import { WebHapticsService } from './services/HapticsService';
 import { LocalSaveService } from './services/LocalSaveService';
@@ -143,6 +143,9 @@ if (import.meta.env.DEV && wantsGallery(window.location.search)) {
   void Promise.all([import('./dev/CoverScene'), import('./dev/previewLevel')]).then(([{ CoverScene }, { previewLevel, PREVIEW_LEVEL_NUMBER }]) => {
     replaceLevelForPreview(PREVIEW_LEVEL_NUMBER, previewLevel);
     useCuts(true);
+    // Nothing stops the video: the fresh food's intro and the market day's explanation count as seen.
+    store.markTutorialDone(FRESH_FOOD_INTRO);
+    store.markTutorialDone(PASARAN_INTRO);
     const shape = new URLSearchParams(window.location.search).get('preview') === 'portrait' ? 'portrait' : 'landscape';
     startGame([new CoverScene(shape, { next: 'Boot', holdMs: 2200 }), ...gameScenes()]);
   });

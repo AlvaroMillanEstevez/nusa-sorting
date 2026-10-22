@@ -82,7 +82,7 @@ import { todaysPasaran } from './marketDay';
 import type { MarketCategory } from '../data/pasaran';
 
 /** Done once the player has read what fresh foods are (see introduceFreshFoods). */
-const FRESH_FOOD_INTRO = 'fresh-food';
+export const FRESH_FOOD_INTRO = 'fresh-food';
 import { playList } from './playList';
 import { playedLevel, type ResumedLevel } from './playedLevel';
 import { ResultOverlay } from './ResultOverlay';
@@ -762,7 +762,9 @@ export class GameScene extends Phaser.Scene {
     this.setAiming(false);
     // Development only: a theme tried on with ?theme= always shows its intro, and is not remembered as seen.
     const tryingOn = import.meta.env.DEV && parseThemeParam(window.location.search) !== null;
-    const themed = look && themeId && themeById(themeId) && (tryingOn || !this.store.themesSeen.includes(themeId));
+    // The store video (?preview) wears a theme without stopping for its intro.
+    const recording = import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview');
+    const themed = look && themeId && themeById(themeId) && !recording && (tryingOn || !this.store.themesSeen.includes(themeId));
     if (themed) {
       this.themeIntro.show(themeId as ThemeId, look, this.store.colorBlindMode, () => {
         if (!tryingOn) this.store.markThemeSeen(themeId);

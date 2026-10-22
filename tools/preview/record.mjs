@@ -8,7 +8,9 @@
 //     → docs/launch/videos/preview-landscape.mp4 (1920×1080) and preview-portrait.mp4 (1080×1620)
 //
 // Environment: URL (default http://localhost:5180), CHROME (default: the Playwright headless shell),
-// SECONDS (default 19), OUT (default docs/launch/videos). Needs ffmpeg on the PATH.
+// SECONDS (default 19), OUT (default docs/launch/videos), VARIANT (the cover it opens on: a or b, default a).
+// Needs ffmpeg on the PATH; the covers need the 512 px objects (python3 tools/art/build_game_art.py --hires
+// art-source/hires-items).
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
@@ -17,6 +19,14 @@ import { join } from 'node:path';
 const URL = process.env.URL ?? 'http://localhost:5180';
 const OUT = process.env.OUT ?? 'docs/launch/videos';
 const SECONDS = Number(process.env.SECONDS ?? 19);
+/**
+ * How virtual time treats downloads. 'advance' (the default) lets it run while one is pending: a download cannot
+ * finish while time stands still, so pausing for it can wait for ever; each frame takes long enough to capture for
+ * downloads to land within one. 'pauseIfNetworkFetchesPending' is the stricter old way.
+ */
+const POLICY = process.env.POLICY ?? 'advance';
+/** The cover the video opens on: composition a or b (see src/dev/CoverScene.ts). */
+const VARIANT = process.env.VARIANT === 'b' ? 'b' : 'a';
 const FPS = 30;
 const SHAPES = {
   // CSS size and pixel ratio: 1080p in 16:9 (1920×1080) and in 2:3 (1080×1620), with the game drawn a little
@@ -116,15 +126,22 @@ async function record(shape) {
     await cdp.send('Runtime.enable');
     await cdp.send('Page.enable');
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: false });
-    const query = `preview=${shape}&level=33&show=autoplay&progress=32&boosters=1&resetSave&headless&lang=en`;
+    // The level wears Budaya Jawa's illustrated stall; Kliwon (fruit day) marks the rambutan with its kepeng.
+    const query = `preview=${shape}&level=33&show=autoplay&progress=32&boosters=1&resetSave&headless&lang=en&theme=budaya-jawa&pasaran=kliwon&v=${VARIANT}`;
     // The page loads in real time; then time stands still and only moves when advanced, one frame at a time.
     const loaded = cdp.once('Page.loadEventFired');
     await cdp.send('Page.navigate', { url: `${URL}/?${query}` });
     await loaded;
+    // The cover downloads its pictures in real time; time stands still only once it is drawn.
+    for (let i = 0; i < 150; i++) {
+      const ready = await cdp.send('Runtime.evaluate', { expression: 'window.__coverReady === true', returnByValue: true });
+      if (ready.result?.value === true) break;
+      await sleep(200);
+    }
     await cdp.send('Emulation.setVirtualTimePolicy', { policy: 'pause' });
     const advance = async (ms) => {
       const expired = cdp.once('Emulation.virtualTimeBudgetExpired');
-      await cdp.send('Emulation.setVirtualTimePolicy', { policy: 'pauseIfNetworkFetchesPending', budget: ms });
+      await cdp.send('Emulation.setVirtualTimePolicy', { policy: POLICY, budget: ms });
       await expired;
     };
     // A moment for the cover's textures and fonts, so the first frame is the finished cover.

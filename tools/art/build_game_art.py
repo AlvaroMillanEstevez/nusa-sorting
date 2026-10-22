@@ -4,6 +4,7 @@ Prepares the game's illustrated art from the originals in art-source/pilot/ (gen
 by Koke): an internal tool, run again whenever an original changes.
 
     python3 tools/art/build_game_art.py [--size 192]      (needs Pillow, numpy and scipy)
+    python3 tools/art/build_game_art.py --hires DIR        every object at 512 px, as PNG, for the covers and videos
 
 Writes src/assets/art/:
 - items/<kind>.webp: every catalogue kind, cut from the latest sheet that draws it (see SHEETS), trimmed, centred
@@ -367,10 +368,27 @@ def loading() -> dict:
     return {'size': list(image.size), 'bytes': path.stat().st_size}
 
 
+def hires(out: Path) -> None:
+    """Every catalogue object cut at 512 px, as PNG, for the store covers and preview videos (not the game)."""
+    global WORK, MARGIN
+    WORK, MARGIN = 512, 20
+    out.mkdir(parents=True, exist_ok=True)
+    squares = {}
+    for file, names in SHEETS.items():
+        squares.update(cut(file, names))
+    for kind in CATALOGUE:
+        squares[kind].save(out / f'{kind}.png')
+    print(f'{len(CATALOGUE)} objects at {WORK} px in {out}')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--size', type=int, default=192, help='side of the item pictures, in px')
+    parser.add_argument('--hires', metavar='DIR', help='only cut every object at 512 px as PNG into DIR (for the store covers and videos)')
     args = parser.parse_args()
+    if args.hires:
+        hires(Path(args.hires))
+        return
     for old in (OUT / 'items').glob('*.webp'):
         old.unlink()
     squares = {}
