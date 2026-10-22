@@ -26,9 +26,10 @@ export const ECONOMY = {
 
   /**
    * Market day (pasaran): each triple of the day's food (see src/data/pasaran.ts) pays these coins on top of a win,
-   * up to `maxPerWin`. Coins, not points, so stars are the same whatever the day.
+   * up to `maxPerWin`. Coins, not points, so stars are the same whatever the day. Not before level `fromLevel`: the
+   * first levels show only the triple and fresh food.
    */
-  pasaran: { perTriple: 2, maxPerWin: 10 },
+  pasaran: { perTriple: 2, maxPerWin: 10, fromLevel: 3 },
 
   /**
    * Buku Nenek, Grandma's book: a page completed (every entry on it found) gives this, collected in the book. Food

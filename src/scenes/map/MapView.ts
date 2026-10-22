@@ -320,17 +320,31 @@ export class MapView {
     }
   }
 
+  /**
+   * Where a themed island's sign hangs (its board's middle, in map coordinates). Drawn islands: beside the path, on
+   * the side away from the next island (the rope leaves the other way). Illustrated ones: in the clearing below the
+   * level, clear of the buildings that make the island.
+   */
+  private signAt(island: MapIsland): { x: number; y: number } {
+    const next = this.layout.islands[island.index + 1];
+    const side = next && next.cx > island.cx ? -1 : 1;
+    const picture = this.pictures.get(island.index);
+    return picture ? { x: island.cx, y: picture.y + picture.height * 0.86 } : { x: island.cx + side * island.rx * 0.38, y: island.cy - island.ry * 0.55 };
+  }
+
+  /** The themed islands' signs on the map, from the top of their flags to the foot of their board (map y). */
+  signSpans(): { top: number; bottom: number }[] {
+    return this.layout.islands.filter((island) => island.theme).map((island) => {
+      const { y } = this.signAt(island);
+      return { top: y - 30, bottom: y + 16 };
+    });
+  }
+
   /** A themed island's wooden sign with its name, under a string of flags in its colours. */
   private drawSign(island: MapIsland): void {
     const u = this.layout.unit;
     const look = themeLook(island.theme!);
-    // Drawn islands: beside the path, on the side away from the next island (the rope leaves the other way).
-    // Illustrated ones: in the clearing below the level, clear of the buildings that make the island.
-    const next = this.layout.islands[island.index + 1];
-    const side = next && next.cx > island.cx ? -1 : 1;
-    const picture = this.pictures.get(island.index);
-    const y = picture ? picture.y + picture.height * 0.86 : island.cy - island.ry * 0.55;
-    const sx = picture ? island.cx : island.cx + side * island.rx * 0.38;
+    const { x: sx, y } = this.signAt(island);
     const label = kitText(this.scene, 'label', t(`theme.${island.theme}` as Parameters<typeof t>[0]), SKIN.text.primary);
     const w = Math.min(label.width + 24, island.rx * 2.1);
     if (label.width > w - 16) label.setScale((w - 16) / label.width);

@@ -1,5 +1,6 @@
 import { parseItemType } from '../data/itemCatalog';
 import { MARKET_DAYS, marketCategoryOf, PASARAN_DAYS, type MarketCategory, type Pasaran } from '../data/pasaran';
+import { ECONOMY } from '../data/economy';
 import type { LevelDefinition } from './level';
 
 /**
@@ -25,6 +26,13 @@ export function pasaranOn(date: Date): Pasaran {
 
 /** The food the market favours on a day. */
 export const marketCategory = (day: Pasaran): MarketCategory => MARKET_DAYS[day];
+
+/**
+ * The market day's food in a level (by its number), or null in the first levels (before ECONOMY.pasaran.fromLevel),
+ * which show only the triple and fresh food: no marks, no extra coins.
+ */
+export const levelMarket = (levelNumber: number, day: Pasaran): MarketCategory | null =>
+  levelNumber >= ECONOMY.pasaran.fromLevel ? marketCategory(day) : null;
 
 /** Whether an item type is of a market category (any colour variant counts as its kind). */
 export function isMarketType(type: string, category: MarketCategory): boolean {

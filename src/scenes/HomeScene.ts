@@ -100,10 +100,25 @@ function lightGift(scene: Phaser.Scene, light: GiftLight, lit: boolean): void {
   );
 }
 
-/** The footer's rows, from the screen's height: the play row, and Buku Nenek's button over the shop. */
-const footerRows = (height: number) => {
+/**
+ * A short, wide screen (a desktop window, laid out at 960×540, or a phone in landscape): Buku Nenek's button goes beside the shop
+ * and the market sign up into the counters' row, so the map keeps room between the bar and the buttons.
+ */
+const isCompact = (width: number, height: number) => height < 600 && width >= 700;
+
+/** The footer's rows, from the screen's height: the play row, and Buku Nenek's button's (over the shop, or beside it). */
+const footerRows = (height: number, compact: boolean) => {
   const play = height - SPACE.m - 34;
-  return { play, book: play - SIDE_BUTTON - SPACE.s - 6 };
+  return { play, book: compact ? play : play - SIDE_BUTTON - SPACE.s - 6 };
+};
+
+/** The top bar's counters: their widths (narrower on a small phone) and where their row ends. */
+const topRow = (width: number) => {
+  // The three counters share the room left of the settings button.
+  const room = width - SPACE.s * 2 - 44 - SPACE.xs * 3;
+  const k = Math.min(1, room / (104 + 104 + 84));
+  const [lw, cw, sw] = [104, 104, 84].map((w) => Math.round(w * k)) as [number, number, number];
+  return { lw, cw, sw, end: SPACE.s + lw + cw + sw + SPACE.xs * 2 };
 };
 
 /**
@@ -143,6 +158,8 @@ export class HomeScene extends Phaser.Scene {
   private sequence: ArrivalSequence | null = null;
   private current = 0;
   private sign!: MarketSign;
+  /** The market sign is in the counters' row (a short, wide screen), not under the title. */
+  private signInBar = false;
   /** The market sign shows what pasaran is: the first time, and while the player keeps it open with a tap. */
   private explainMarket = false;
 
@@ -271,17 +288,24 @@ export class HomeScene extends Phaser.Scene {
     this.map.highlight(this.current);
     this.map.placeMarker(this.data_.arrival?.level ?? this.current);
 
-    // The market day, under the title.
-    this.sign = new MarketSign(this, width / 2, 0, Math.min(width - SPACE.s * 2, 380), todaysPasaran(), this.explainMarket, () => this.pressSign()).setDepth(DEPTH_BAR);
-    this.sign.setY(BAR_CONTENT + this.sign.signHeight / 2);
+    // The market day, under the title; on a short, wide screen in the counters' row (unless it is explaining).
+    this.signInBar = isCompact(width, height) && !this.explainMarket;
+    const row = topRow(width);
+    const gearLeft = width - SPACE.s - 44 - SPACE.xs;
+    const signRoom = this.signInBar ? gearLeft - row.end - SPACE.s : Math.min(width - SPACE.s * 2, 380);
+    this.sign = new MarketSign(this, this.signInBar ? (row.end + gearLeft) / 2 : width / 2, 0, signRoom, todaysPasaran(), this.explainMarket, () => this.pressSign()).setDepth(DEPTH_BAR);
+    this.sign.setY(this.signInBar ? 32 : BAR_CONTENT + this.sign.signHeight / 2);
 
     // The map scrolls between the clouds at its top and its bottom edge, keeping clear of the bar and button.
     const barH = this.barHeight();
     // From the top of Buku Nenek's button (over the shop) down.
-    const footer = height - (footerRows(height).book - SIDE_BUTTON / 2 - SPACE.s);
+    const footer = height - this.footerTop(width, height);
     this.maxScroll = this.layout.height - (height - footer);
     this.minScroll = Math.min(this.maxScroll, revealedTop(this.layout, revealed) - barH);
     this.scroll = this.scrollToShow(this.data_.arrival?.level ?? this.current);
+    // Keeping an island's sign out from under the bar may show a little more of the clouds or the sea's edge.
+    this.minScroll = Math.min(this.minScroll, this.scroll);
+    this.maxScroll = Math.max(this.maxScroll, this.scroll);
     this.setScroll(this.scroll);
 
     this.buildBar(width);
@@ -293,9 +317,16 @@ export class HomeScene extends Phaser.Scene {
     return playList[this.nextLevel()]!.number;
   }
 
+  /** Where the buttons at the foot start (map y on screen): the top of the book's button, or of the chest's stars. */
+  private footerTop(width: number, height: number): number {
+    const compact = isCompact(width, height);
+    const { play, book } = footerRows(height, compact);
+    return compact ? play - 32 - SPACE.s - FOOTER_ROW - SPACE.xs : book - SIDE_BUTTON / 2 - SPACE.s;
+  }
+
   /** The top bar with the market sign under it: the map scrolls up to its foot. */
   private barHeight(): number {
-    return BAR_CONTENT + this.sign.signHeight + SPACE.xs;
+    return BAR_CONTENT + (this.signInBar ? 0 : this.sign.signHeight + SPACE.xs);
   }
 
   /** A tap on the market sign shows or hides what pasaran is. */
@@ -306,10 +337,30 @@ export class HomeScene extends Phaser.Scene {
     this.build();
   }
 
-  /** Scroll that brings a level's plaque a little below the middle of the screen. */
+  /**
+   * Scroll that brings a level's plaque a little below the middle of the screen, nudged so that no island's sign
+   * sits under the top bar (the title would cover it): the sign comes out below the bar, or goes up behind it whole,
+   * whichever keeps the plaque further from the screen's edges.
+   */
   private scrollToShow(level: number): number {
     const { height } = viewSize(this);
-    return this.map.nodeAt(level).y - height * 0.55;
+    const node = this.map.nodeAt(level).y;
+    let scroll = node - height * 0.55;
+    const bar = this.barHeight();
+    const footerTop = this.footerTop(viewSize(this).width, height);
+    for (const sign of this.map.signSpans()) {
+      const top = sign.top - scroll;
+      const bottom = sign.bottom - scroll;
+      if (bottom <= 0 || top >= bar) continue;
+      // Below the bar (scroll up), or wholly above the screen's top (scroll down): the plaque must stay in view.
+      const below = sign.top - bar - SPACE.xs;
+      const above = sign.bottom;
+      // The plaque (its middle, plus its radius) between the bar and the buttons.
+      const fits = (s: number) => node - s > bar + SPACE.l && node - s < footerTop - SPACE.l + SPACE.xs;
+      if (fits(below)) scroll = below;
+      else if (fits(above)) scroll = above;
+    }
+    return scroll;
   }
 
   private setScroll(scroll: number): void {
@@ -332,9 +383,7 @@ export class HomeScene extends Phaser.Scene {
     this.bar.add(g);
     const row = 32;
     // The three counters share the room left of the settings button, narrower on a small phone.
-    const room = width - SPACE.s * 2 - 44 - SPACE.xs * 3;
-    const k = Math.min(1, room / (104 + 104 + 84));
-    const [lw, cw, sw] = [104, 104, 84].map((w) => Math.round(w * k)) as [number, number, number];
+    const { lw, cw, sw } = topRow(width);
     this.levelPill = new KitPill(this, SPACE.s + lw / 2, row, { skin: SKIN, icon: 'trophy', value: '', height: 40, width: lw });
     this.coinsPill = new KitPill(this, SPACE.s + lw + SPACE.xs + cw / 2, row, { skin: SKIN, icon: 'coin', value: '', tint: SKIN.text.accent, height: 40, width: cw });
     this.coinsPill.setSize(cw, 44).setInteractive().on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openCoinsHelp());
@@ -352,6 +401,10 @@ export class HomeScene extends Phaser.Scene {
       .setStroke(SKIN.surface.border, 7)
       .setShadow(0, 4, '#000000', 0.35, true, true);
     if (title.width > width - SPACE.l * 2) title.setScale((width - SPACE.l * 2) / title.width);
+    // On a screen too short to bring an island's sign out from under the bar (a phone in landscape), the title
+    // makes way rather than cover it.
+    const covered = this.map.signSpans().some((sign) => sign.bottom - this.scroll > 0 && sign.top - this.scroll < this.barHeight());
+    title.setVisible(!covered);
     this.bar.add([this.levelPill, this.titleCaption, this.coinsPill, this.starsPill, gear, title]);
   }
 
@@ -383,7 +436,8 @@ export class HomeScene extends Phaser.Scene {
    */
   private buildFooter(width: number, height: number): void {
     const number = playList[this.current]!.number;
-    const { play: y, book: bookY } = footerRows(height);
+    const compact = isCompact(width, height);
+    const { play: y, book: bookY } = footerRows(height, compact);
     const playW = Math.min(280, width - (SPACE.s * 2 + SIDE_BUTTON) * 2);
     this.play = new KitButton(this, width / 2, y, {
       skin: SKIN,
@@ -411,10 +465,11 @@ export class HomeScene extends Phaser.Scene {
     // Buku Nenek, over the shop: the illustrated book on a button like the shop's and the chest's, with what has
     // been found (and its bar) on a tab at its foot. A page waiting for its reward lights it up like the chest.
     const waiting = pagesToClaim(this.store.album).length > 0;
-    const bookLight = giftLight(this, shopX, bookY);
-    new KitIconButton(this, shopX, bookY, { skin: SKIN, icon: 'book', texture: BOOK_TEXTURE, look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openBook() }).setDepth(DEPTH_BAR);
+    const bookX = compact ? shopX - SIDE_BUTTON - SPACE.s : shopX;
+    const bookLight = giftLight(this, bookX, bookY);
+    new KitIconButton(this, bookX, bookY, { skin: SKIN, icon: 'book', texture: BOOK_TEXTURE, look: 'secondary', size: SIDE_BUTTON, onPress: () => this.openBook() }).setDepth(DEPTH_BAR);
     const found = this.store.album.found.length;
-    new KitPill(this, shopX, bookY + SIDE_BUTTON / 2 + 4, { skin: SKIN, value: `${found}/${ALBUM_SIZE}`, tint: waiting ? SKIN.text.accent : SKIN.text.primary, height: BOOK_TAB, width: 62 })
+    new KitPill(this, bookX, bookY + SIDE_BUTTON / 2 + 4, { skin: SKIN, value: `${found}/${ALBUM_SIZE}`, tint: waiting ? SKIN.text.accent : SKIN.text.primary, height: BOOK_TAB, width: 62 })
       .setProgress(found / ALBUM_SIZE)
       .setDepth(DEPTH_BAR + 1);
     lightGift(this, bookLight, waiting);

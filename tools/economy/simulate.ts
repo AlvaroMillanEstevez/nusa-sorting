@@ -11,7 +11,7 @@ import {
   kindsOfLevel,
   pagesToClaim,
   type Album,
-  marketCategory,
+  levelMarket,
   marketTriples,
   openChest,
   playerLevel,
@@ -89,7 +89,10 @@ function run(spender: boolean): Row[] {
       score: scoreFor(level, stars),
       totalStarsBefore: totalStars,
       totalStarsAfter: totalStars - before + after,
-      marketTriples: marketTriples(level, marketCategory(PASARAN_DAYS[wins++ % PASARAN_DAYS.length]!)),
+      marketTriples: (() => {
+        const market = levelMarket(index + 1, PASARAN_DAYS[wins++ % PASARAN_DAYS.length]!);
+        return market ? marketTriples(level, market) : 0;
+      })(),
     });
     market += rewards.marketCoins;
     totalStars += after - before;

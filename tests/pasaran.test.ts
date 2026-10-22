@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_WALLET, marketCategory, marketCoins, marketTriples, pasaranOf, pasaranOn, rewardWin, type LevelDefinition } from '../src/core';
+import { EMPTY_WALLET, levelMarket, marketCategory, marketCoins, marketTriples, pasaranOf, pasaranOn, rewardWin, type LevelDefinition } from '../src/core';
 import { ECONOMY } from '../src/data/economy';
 import { ITEM_KINDS } from '../src/data/itemCatalog';
 import { MARKET_DAYS, marketCategoryOf, PASARAN_DAYS } from '../src/data/pasaran';
@@ -62,6 +62,14 @@ describe('market days', () => {
     // rambutan, rambutan:alt1 and chili (sold with the fruit); never the gong.
     expect(marketTriples(level, 'fruit')).toBe(3);
     expect(marketTriples(level, 'drink')).toBe(0);
+  });
+
+  it('start at level 3: the first levels show only the triple and fresh food', () => {
+    expect(ECONOMY.pasaran.fromLevel).toBe(3);
+    expect(levelMarket(1, 'kliwon')).toBeNull();
+    expect(levelMarket(2, 'legi')).toBeNull();
+    expect(levelMarket(3, 'kliwon')).toBe('fruit');
+    expect(levelMarket(50, 'legi')).toBe('sweet');
   });
 
   it('pay coins on a win, never points, up to a cap', () => {
