@@ -15,6 +15,10 @@ done
 # Relative paths only (the portal serves the game from a subfolder in an iframe).
 if grep -Eq '(src|href)="/' dist/index.html; then echo "✗ dist/index.html has an absolute path" >&2; exit 1; fi
 
+# No text selection on body, with every prefix CrazyGames names (the CSS minifier drops -moz- and -ms-).
+for prop in -webkit-user-select -moz-user-select -ms-user-select ' user-select'; do
+  if ! grep -q -- "$prop: none" dist/index.html; then echo "✗ dist/index.html lacks '$prop: none'" >&2; exit 1; fi
+done
 files=$(find dist -type f | wc -l)
 bytes=$(du -sb dist | cut -f1)
 mb=$(awk "BEGIN { printf \"%.2f\", $bytes / 1048576 }")

@@ -684,7 +684,7 @@ export class HomeScene extends Phaser.Scene {
       { icon: 'starFilled', color: SKIN.star.filled, title: t('coinsHelp.stars'), note: t('coinsHelp.starsNote') },
       { icon: 'trophy', color: SKIN.text.accent, title: t('coinsHelp.levelUp'), note: t('coinsHelp.levelUpNote') },
       { icon: 'chest', color: SKIN.text.accent, title: t('coinsHelp.chests'), note: t('coinsHelp.chestsNote', { n: ECONOMY.chests.everyStars }) },
-      { icon: 'shop', color: SKIN.text.accent, title: t('coinsHelp.market'), note: t('coinsHelp.marketNote') },
+      { icon: 'coin', color: SKIN.text.accent, title: t('coinsHelp.market'), note: t('coinsHelp.marketNote') },
     ];
     const buttonY = h / 2 - SPACE.m - 28;
     const top = panel.contentTop + SPACE.xs;

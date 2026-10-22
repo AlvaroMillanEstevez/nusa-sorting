@@ -17,7 +17,11 @@
         overscroll-behavior: none;
         touch-action: none;
       }
-      /* No text selection, magnifier or long-press menu anywhere on the page (CrazyGames asks for it on body). */
+      /*
+       * No text selection, magnifier or long-press menu anywhere on the page (CrazyGames asks for it on body, with
+       * the -webkit-, -moz- and -ms- prefixes). The build's CSS minifier drops the -moz- and -ms- ones as obsolete,
+       * so the body's own style attribute repeats them all.
+       */
       body {
         -webkit-user-select: none;
         -moz-user-select: none;
@@ -50,7 +54,7 @@
       }
     </style>
   </head>
-  <body>
+  <body style="-webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none">
     <img id="loading" src="/src/assets/art/loading.webp" alt="" />
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>
