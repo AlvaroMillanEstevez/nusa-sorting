@@ -93,7 +93,7 @@ const COUNTER: Readonly<Record<CoverShape, { title: { y: number; size: number; l
 const TRIPLE_KIND = 'rambutan';
 const BURST: Readonly<Record<CoverShape, { title: { y: number; size: number; lines: 1 | 2 }; triple: { x: number; y: number; size: number }; pieces: readonly Piece[] }>> = {
   landscape: {
-    title: { y: 0.2, size: 0.2, lines: 1 },
+    title: { y: 0.23, size: 0.2, lines: 1 },
     triple: { x: 0.5, y: 0.68, size: 0.3 },
     pieces: [
       { kind: 'sate', x: 0.12, y: 0.62, size: 0.3, angle: -18 },
@@ -107,8 +107,8 @@ const BURST: Readonly<Record<CoverShape, { title: { y: number; size: number; lin
     ],
   },
   portrait: {
-    title: { y: 0.15, size: 0.21, lines: 2 },
-    triple: { x: 0.5, y: 0.52, size: 0.27 },
+    title: { y: 0.235, size: 0.2, lines: 2 },
+    triple: { x: 0.5, y: 0.54, size: 0.27 },
     pieces: [
       { kind: 'sate', x: 0.2, y: 0.75, size: 0.36, angle: -16 },
       // The fresh ketupat big in front, so its tag reads at a glance; the tea up beside the triple.
@@ -119,8 +119,8 @@ const BURST: Readonly<Record<CoverShape, { title: { y: number; size: number; lin
     ],
   },
   square: {
-    title: { y: 0.17, size: 0.15, lines: 2 },
-    triple: { x: 0.5, y: 0.56, size: 0.23 },
+    title: { y: 0.23, size: 0.15, lines: 2 },
+    triple: { x: 0.5, y: 0.58, size: 0.23 },
     pieces: [
       { kind: 'sate', x: 0.15, y: 0.84, size: 0.28, angle: -16 },
       { kind: 'es-teh-manis', x: 0.85, y: 0.83, size: 0.27, angle: 10 },
@@ -188,7 +188,7 @@ export class CoverScene extends Phaser.Scene {
     if (this.variant === 'a') this.counterShelf(picture.get('sate')!, width, height);
     else this.burst(picture.get(TRIPLE_KIND)!, width, height, unit);
     for (const piece of front) this.piece(piece, picture.get(piece.kind)!, width, height, unit);
-    this.title(plan.title.lines === 2 ? 'Nusa\nSorting' : 'Nusa Sorting', width / 2, plan.title.y * height, plan.title.size * (plan.title.lines === 2 ? width : height), width);
+    this.title(plan.title.lines === 2 ? 'Warung\nSort' : 'Warung Sort', width / 2, plan.title.y * height, plan.title.size * (plan.title.lines === 2 ? width : height), width);
     // For tools/covers/render.mjs: everything is drawn.
     (window as unknown as { __coverReady?: boolean }).__coverReady = true;
   }
@@ -345,8 +345,19 @@ export class CoverScene extends Phaser.Scene {
     }
   }
 
-  /** "Nusa Sorting" in Fredoka, cream to turmeric, with the dark wooden outline and a drop shadow. */
+  /**
+   * The title: "Warung Sort" in Fredoka, cream to turmeric, with the dark wooden outline and a drop shadow, centred
+   * on `y`; over it "Nusa", the brand, small and in turmeric, as on the map.
+   */
   private title(value: string, x: number, y: number, size: number, width: number): void {
+    const lines = value.split('\n').length;
+    const brandSize = size * 0.4;
+    const brand = this.add
+      .text(x, 0, 'Nusa', { fontFamily: FONTS.display, fontStyle: '600', fontSize: `${Math.round(brandSize)}px`, color: SKIN.text.accent, padding: { x: 8, y: 8 } })
+      .setOrigin(0.5)
+      .setResolution(RENDER_RATIO)
+      .setStroke(SKIN.surface.border, Math.round(brandSize * 0.22))
+      .setShadow(0, Math.round(brandSize * 0.1), '#000000', 0.5, true, true);
     const text = this.add
       .text(x, y, value, { fontFamily: FONTS.display, fontStyle: '600', fontSize: `${Math.round(size)}px`, color: SKIN.text.primary, align: 'center', lineSpacing: -size * 0.18, padding: { x: 16, y: 16 } })
       .setOrigin(0.5)
@@ -354,7 +365,6 @@ export class CoverScene extends Phaser.Scene {
       .setStroke(SKIN.surface.border, Math.round(size * 0.16))
       .setShadow(0, Math.round(size * 0.08), '#000000', 0.5, true, true);
     // Cream to turmeric down each line.
-    const lines = value.split('\n').length;
     const gradient = text.context.createLinearGradient(0, 0, 0, text.height);
     for (let i = 0; i < lines; i++) {
       gradient.addColorStop((i + 0.3) / lines, '#fff7e6');
@@ -362,7 +372,13 @@ export class CoverScene extends Phaser.Scene {
     }
     text.setFill(gradient);
     const room = width * 0.86;
-    if (text.width > room) text.setScale(room / text.width);
+    const k = text.width > room ? room / text.width : 1;
+    text.setScale(k);
+    brand.setScale(k);
+    // The brand sits on the name's first line (the text's top padding is 16 px, its glyphs start a little lower).
+    const top = text.y - (text.height * k) / 2 + 16 * k;
+    brand.setY(top - (brandSize * 0.45 - 8) * k);
+    void lines;
   }
 }
 

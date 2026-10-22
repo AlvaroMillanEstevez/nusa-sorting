@@ -25,10 +25,12 @@ describe('t', () => {
   afterEach(() => setLocale(DEFAULT_LOCALE));
 
   it('returns the game title in every locale', () => {
-    setLocale('en');
-    expect(t('game.title')).toBe('Nusa Sorting');
-    setLocale('id');
-    expect(t('game.title')).toBe('Nusa Sorting');
+    // The same name in both languages: Nusa, the brand, and the game's name.
+    for (const locale of ['en', 'id'] as const) {
+      setLocale(locale);
+      expect(t('game.title')).toBe('Nusa: Warung Sort');
+      expect(`${t('game.brand')}: ${t('game.name')}`).toBe(t('game.title'));
+    }
   });
 
   it('fills in parameters and leaves unknown placeholders alone', () => {

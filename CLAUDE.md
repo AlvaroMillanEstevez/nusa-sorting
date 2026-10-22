@@ -1,6 +1,6 @@
-# Nusa Sorting
+# Nusa: Warung Sort
 
-Juego web de puzzle tipo "goods sort": ordenar comida en estanterías y juntar tríos iguales.
+Juego web de puzzle tipo "goods sort" (antes «Nusa Sorting»; «Nusa» es la marca de los juegos de Koke, y el repositorio, las carpetas, los ids y la clave de guardado `nusa-sorting.save` conservan el nombre antiguo): ordenar comida en estanterías y juntar tríos iguales.
 
 Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: ante cualquier API dudosa, consultar la documentación oficial de Phaser 4 o los tipos en `node_modules/phaser/types/phaser.d.ts`.
 

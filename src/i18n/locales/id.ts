@@ -1,7 +1,9 @@
 import type { MessageKey } from './en';
 
 export const id: Record<MessageKey, string> = {
-  'game.title': 'Nusa Sorting',
+  'game.title': 'Nusa: Warung Sort',
+  'game.brand': 'Nusa',
+  'game.name': 'Warung Sort',
   'hud.tapToStart': 'Ketuk untuk mulai',
   'shelf.locked': '{n} lagi',
   'popup.combo': 'Kombo x{n}!',

@@ -1,6 +1,12 @@
-# Nusa Sorting · Lista de comprobación para Basic Launch (CrazyGames)
+# Nusa: Warung Sort · Lista de comprobación para Basic Launch (CrazyGames)
 
 Segundo envío, sin SDK y sin anuncios. El primero se rechazó por «overall quality», antes del arte ilustrado, el audio nuevo, la composición de escritorio, las islas, Basi, Pasaran y Buku Nenek. Requisitos releídos en docs.crazygames.com el 22 de octubre de 2026 ([técnicos](https://docs.crazygames.com/requirements/technical/), [jugabilidad](https://docs.crazygames.com/requirements/gameplay/), [calidad](https://docs.crazygames.com/requirements/quality/), [portadas y vídeos](https://docs.crazygames.com/requirements/game-covers/), [guía de Basic Launch](https://docs.crazygames.com/resources/basic-launch-metrics/)). Volver a leerlos antes de enviar, por si cambian.
+
+## Nombre
+
+- [x] El juego se llama **Nusa: Warung Sort** (antes «Nusa Sorting»; «Nusa» es la marca). Cambiado en el título de la página, la pantalla de carga, el mapa (en inglés e indonesio), las portadas, los vídeos y los textos.
+- [x] Sin cambios internos: la clave de guardado (`nusa-sorting.save`), los ids de niveles y del catálogo y el nombre del paquete siguen igual; un guardado de la versión anterior se conserva entero (comprobado).
+- [ ] En el portal: el nombre del juego, «Nusa: Warung Sort».
 
 ## Cambios en los requisitos desde el 12 de octubre
 
@@ -70,6 +76,7 @@ Las páginas no tienen fecha. Comparadas con lo que recogía esta lista:
   | 1920×1080 | 107 px |
   | 390×844 y 844×390 (móvil) | 36 px |
 
+  - En el mapa, las pantallas bajas y anchas (escritorio, 800×450, móvil en horizontal) llevan el cartel del pasaran en la fila de contadores y el libro junto a la tienda; ningún cartel de isla queda bajo el título.
   - Revisados a ojo a 800×450 y 821×462: mapa con el cartel del pasaran y el libro, Buku Nenek, nivel con su presentación de tema, panel de continuar, «Cómo conseguir monedas», presentaciones de potenciador y de comida fresca.
 - [x] **Igual a 60, 144 y 165 Hz:** reloj, cintas, combo y cuentas por tiempo transcurrido o por movimientos; animaciones por tiempo (`tests/frameRate.test.ts`).
 - [x] **Idioma:** inglés por defecto; indonesio si `navigator.languages[0]` es indonesio.
@@ -87,25 +94,24 @@ Las páginas no tienen fecha. Comparadas con lo que recogía esta lista:
 
 ## Material del envío
 
-- [x] **Portadas** en `docs/launch/covers/`, dos composiciones para elegir:
+- [x] **Portadas** en `docs/launch/covers/`. **Koke eligió la B** (22 de octubre): se suben `cover-landscape-b.png`, `cover-portrait-b.png` y `cover-square-b.png`. Las dos composiciones:
   - **A**, el mostrador: una estantería con un trío de sate brillando ante el warung, comida a los lados y un rambután con su etiqueta de Basi;
-  - **B**, el trío: tres rambutanes juntándose en un destello bajo el título, comida flotando alrededor y un ketupat con su etiqueta;
+  - **B**, el trío: tres rambutanes juntándose en un destello bajo el título, comida flotando alrededor y un ketupat con su etiqueta (en la vertical, grande y delante, para que la etiqueta se lea);
   - cada una en 1920×1080, 800×1200 y 800×800, con el arte ilustrado (el warung al atardecer y los objetos recortados a 512 px de los originales);
   - solo el título como texto, sin bordes, logotipos ni iconos; nada importante en la esquina superior izquierda;
   - se regeneran con `node tools/covers/render.mjs [a|b|both]` (con `npm run dev` en marcha y los objetos a 512 px: `python3 tools/art/build_game_art.py --hires art-source/hires-items`).
-  - [ ] Koke elige A o B: se suben las tres de esa composición.
 - [x] **Vídeos** en `docs/launch/videos/`:
   - `preview-landscape.mp4` (1920×1080) y `preview-portrait.mp4` (1080×1620, 2:3), 19 s, H.264 sin audio;
-  - empiezan con la portada A; luego un tablero que se resuelve solo con el fondo ilustrado de Budaya Jawa (tríos con combo, un rambután fresco salvado a tiempo, un kerupuk que se estropea con sus moscas, la cinta y las estanterías que se cierran), la victoria con el desglose de monedas y la llegada al mapa de islas;
+  - empiezan con la portada B; luego un tablero que se resuelve solo con el fondo ilustrado de Budaya Jawa (tríos con combo, un rambután fresco salvado a tiempo, un kerupuk que se estropea con sus moscas, la cinta y las estanterías que se cierran), la victoria con el desglose de monedas y la llegada al mapa de islas;
   - sin barras negras, sin cursor, sin transiciones en negro y sin acelerar;
-  - se regeneran con `node tools/preview/record.mjs both` (`VARIANT=b` para empezar con la portada B).
+  - se regeneran con `VARIANT=b node tools/preview/record.mjs both` (graba la partida y le pone delante el PNG de la portada).
 - [x] **Textos** en `docs/launch/store-texts.md`: descripciones corta y larga (con Basi, Pasaran y Buku Nenek), controles, etiquetas y una nota para el equipo de CrazyGames.
   - [ ] Pendientes de revisar por Koke y su mujer.
 
 ## Antes de enviar (manual)
 
-- [ ] Elegir portada (A o B) y, si es la B, volver a grabar los vídeos con `VARIANT=b`.
-- [ ] Revisar y aprobar los textos del envío y la nota para el equipo.
+- [x] Elegir portada: la B. Vídeos grabados de nuevo con ella.
+- [x] Textos y nota aprobados por la mujer de Koke.
 - [ ] Ver los dos vídeos enteros.
 - [ ] Jugar el `.zip` en un móvil Android y en un iPhone:
   - el sonido vuelve tras bloquear el teléfono;

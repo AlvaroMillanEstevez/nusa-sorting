@@ -394,13 +394,19 @@ export class HomeScene extends Phaser.Scene {
     this.showCoins(this.store.wallet.coins);
     this.showXp(this.store.wallet.xp);
     const gear = new KitIconButton(this, width - SPACE.s - 22, row, { skin: SKIN, icon: 'settings', onPress: () => this.openSettings() });
-    const title = this.add
-      .text(width / 2, 86, t('game.title'), { fontFamily: FONTS.display, fontStyle: '600', fontSize: '34px', color: SKIN.text.primary })
-      .setResolution(pixelRatio() * 1.5)
-      .setOrigin(0.5)
-      .setStroke(SKIN.surface.border, 7)
-      .setShadow(0, 4, '#000000', 0.35, true, true);
-    if (title.width > width - SPACE.l * 2) title.setScale((width - SPACE.l * 2) / title.width);
+    // The title: "Nusa", the brand, small over "Warung Sort", the game's name.
+    const title = this.add.container(width / 2, 82);
+    const word = (text: string, y: number, size: number, stroke: number) =>
+      this.add
+        .text(0, y, text, { fontFamily: FONTS.display, fontStyle: '600', fontSize: `${size}px`, color: SKIN.text.primary })
+        .setResolution(pixelRatio() * 1.5)
+        .setOrigin(0.5)
+        .setStroke(SKIN.surface.border, stroke)
+        .setShadow(0, size / 9, '#000000', 0.35, true, true);
+    const brand = word(t('game.brand'), -12, 17, 5).setColor(SKIN.text.accent);
+    const name = word(t('game.name'), 11, 32, 7);
+    title.add([brand, name]);
+    if (name.width > width - SPACE.l * 2) title.setScale((width - SPACE.l * 2) / name.width);
     // On a screen too short to bring an island's sign out from under the bar (a phone in landscape), the title
     // makes way rather than cover it.
     const covered = this.map.signSpans().some((sign) => sign.bottom - this.scroll > 0 && sign.top - this.scroll < this.barHeight());

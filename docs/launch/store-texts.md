@@ -1,6 +1,6 @@
-# Nusa Sorting · Submission texts
+# Nusa: Warung Sort · Submission texts
 
-Texts in English for the CrazyGames developer portal (second submission, October 2026), to be reviewed by Koke and
+Texts in English for the CrazyGames developer portal (second submission, October 2026, under the new name: **Nusa: Warung Sort**; Nusa is the brand of Koke's games), to be reviewed by Koke and
 his wife before submitting. Nothing here mentions ads, purchases with real money, other games or other platforms.
 
 ## Short description
@@ -50,7 +50,7 @@ For the portal's notes field, if there is one, or for support:
 
 > Hello CrazyGames team,
 >
-> Nusa Sorting was turned down earlier for overall quality, and we took that to heart. Since then we have reworked the whole game:
+> Nusa: Warung Sort was submitted earlier under the name Nusa Sorting and turned down for overall quality, and we took that to heart. Since then we have reworked the whole game:
 >
 > - **Art:** all 81 items, the shelves, the warung backgrounds and the ten themed levels' backdrops are now hand-finished illustrations, and the level map is a sea of 20 illustrated islands.
 > - **Desktop:** a proper desktop layout, with the interface scaled for large windows.

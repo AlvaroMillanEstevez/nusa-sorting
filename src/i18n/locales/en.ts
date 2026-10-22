@@ -1,5 +1,8 @@
 export const en = {
-  'game.title': 'Nusa Sorting',
+  'game.title': 'Nusa: Warung Sort',
+  /** The title in two parts: the brand, small, over the game's name. */
+  'game.brand': 'Nusa',
+  'game.name': 'Warung Sort',
   'hud.tapToStart': 'Tap to start',
   'shelf.locked': '{n} more',
   'popup.combo': 'Combo x{n}!',

@@ -1,4 +1,4 @@
-# Nusa Sorting · Audio y licencias
+# Nusa: Warung Sort · Audio y licencias
 
 Todo el audio del juego tiene licencia **Creative Commons CC0 1.0** (dominio público): uso comercial permitido y sin atribución obligatoria. Texto de la licencia: https://creativecommons.org/publicdomain/zero/1.0/
 
