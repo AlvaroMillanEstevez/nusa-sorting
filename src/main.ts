@@ -147,7 +147,9 @@ if (import.meta.env.DEV && wantsGallery(window.location.search)) {
     store.markTutorialDone(FRESH_FOOD_INTRO);
     store.markTutorialDone(PASARAN_INTRO);
     const shape = new URLSearchParams(window.location.search).get('preview') === 'portrait' ? 'portrait' : 'landscape';
-    startGame([new CoverScene(shape, { next: 'Boot', holdMs: 2200 }), ...gameScenes()]);
+    // tools/preview/record.mjs (?nocover) puts the cover's PNG in front of the recording itself.
+    const cover = new URLSearchParams(window.location.search).has('nocover') ? [] : [new CoverScene(shape, { next: 'Boot', holdMs: 2200 })];
+    startGame([...cover, ...gameScenes()]);
   });
 } else if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('cover')) {
   // Development only: ?cover=landscape|portrait|square draws a store cover (tools/covers/render.sh saves them).

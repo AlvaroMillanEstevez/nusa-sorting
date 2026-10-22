@@ -28,6 +28,8 @@ const POLICY = process.env.POLICY ?? 'advance';
 /** The cover the video opens on: composition a or b (see src/dev/CoverScene.ts). */
 const VARIANT = process.env.VARIANT === 'b' ? 'b' : 'a';
 const FPS = 30;
+/** How long the video holds its opening cover before the game (a cut, as the game's own video mode does). */
+const COVER_SECONDS = 2.2;
 const SHAPES = {
   // CSS size and pixel ratio: 1080p in 16:9 (1920×1080) and in 2:3 (1080×1620), with the game drawn a little
   // larger than on a desktop window so the board fills the frame.
@@ -127,26 +129,27 @@ async function record(shape) {
     await cdp.send('Page.enable');
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: false });
     // The level wears Budaya Jawa's illustrated stall; Kliwon (fruit day) marks the rambutan with its kepeng.
-    const query = `preview=${shape}&level=33&show=autoplay&progress=32&boosters=1&resetSave&headless&lang=en&theme=budaya-jawa&pasaran=kliwon&v=${VARIANT}`;
+    const query = process.env.QUERY ?? `preview=${shape}&level=33&show=autoplay&progress=32&boosters=1&resetSave&headless&lang=en&theme=budaya-jawa&pasaran=kliwon&nocover`;
     // The page loads in real time; then time stands still and only moves when advanced, one frame at a time.
     const loaded = cdp.once('Page.loadEventFired');
     await cdp.send('Page.navigate', { url: `${URL}/?${query}` });
     await loaded;
-    // The cover downloads its pictures in real time; time stands still only once it is drawn.
+    // The game starts in real time; time stands still once its first scene runs.
     for (let i = 0; i < 150; i++) {
-      const ready = await cdp.send('Runtime.evaluate', { expression: 'window.__coverReady === true', returnByValue: true });
+      const ready = await cdp.send('Runtime.evaluate', { expression: '(window.__nusa?.scenes().length ?? 0) > 0', returnByValue: true });
       if (ready.result?.value === true) break;
       await sleep(200);
     }
     await cdp.send('Emulation.setVirtualTimePolicy', { policy: 'pause' });
     const advance = async (ms) => {
       const expired = cdp.once('Emulation.virtualTimeBudgetExpired');
-      await cdp.send('Emulation.setVirtualTimePolicy', { policy: POLICY, budget: ms });
+      // The game's timer loop keeps tasks coming: without a starvation limit virtual time can stall between them.
+      await cdp.send('Emulation.setVirtualTimePolicy', { policy: POLICY, budget: ms, maxVirtualTimeTaskStarvationCount: 100 });
       await expired;
     };
-    // A moment for the cover's textures and fonts, so the first frame is the finished cover.
-    await advance(400);
-    const total = Math.round(SECONDS * FPS);
+    await advance(100);
+    // The cover is its rendered PNG (tools/covers/render.mjs), held first; the game is recorded after it.
+    const total = Math.round((SECONDS - COVER_SECONDS) * FPS);
     for (let frame = 0; frame < total; frame++) {
       await advance(1000 / FPS);
       const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
@@ -157,9 +160,18 @@ async function record(shape) {
     if (errors.length) console.log(`  ${shape}: console errors:\n    ${errors.join('\n    ')}`);
     mkdirSync(OUT, { recursive: true });
     const out = join(OUT, `preview-${shape}.mp4`);
+    const cover = join('docs/launch/covers', shape === 'portrait' ? `cover-portrait-${VARIANT}-1080.png` : `cover-landscape-${VARIANT}.png`);
+    if (!existsSync(cover)) throw new Error(`${cover} is missing: run node tools/covers/render.mjs first`);
+    const size = `${Math.round(width * scale)}:${Math.round(height * scale)}`;
     execFileSync(
       'ffmpeg',
-      ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', join(frames, 'f%04d.png'), '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', out],
+      [
+        '-y', '-loglevel', 'error',
+        '-loop', '1', '-framerate', String(FPS), '-t', String(COVER_SECONDS), '-i', cover,
+        '-framerate', String(FPS), '-i', join(frames, 'f%04d.png'),
+        '-filter_complex', `[0:v]scale=${size},setsar=1[c];[1:v]scale=${size},setsar=1[g];[c][g]concat=n=2:v=1[v]`,
+        '-map', '[v]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', out,
+      ],
       { stdio: 'inherit' },
     );
     console.log(`${out} (${Math.round(width * scale)}x${Math.round(height * scale)}, ${SECONDS} s)`);

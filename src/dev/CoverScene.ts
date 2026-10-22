@@ -144,9 +144,27 @@ export class CoverScene extends Phaser.Scene {
     this.variant = parseCoverVariant(window.location.search);
   }
 
+  /**
+   * The preview video opens on the cover as rendered by tools/covers/render.mjs (the 1080p file for its shape):
+   * exactly the static cover, and nothing to draw while the recorder holds time still.
+   */
+  preload(): void {
+    if (!this.then) return;
+    const file = this.shape === 'portrait' ? `cover-portrait-${this.variant}-1080.png` : `cover-landscape-${this.variant}.png`;
+    this.load.image('cover:video', `/docs/launch/covers/${file}`);
+  }
+
   create(): void {
     fitCamera(this);
-    void this.draw();
+    const then = this.then;
+    if (!then) {
+      void this.draw();
+      return;
+    }
+    const { width, height } = viewSize(this);
+    this.add.image(width / 2, height / 2, 'cover:video').setDisplaySize(width, height);
+    (window as unknown as { __coverReady?: boolean }).__coverReady = true;
+    this.time.delayedCall(then.holdMs, () => fadeToScene(this, then.next));
   }
 
   private async draw(): Promise<void> {
@@ -172,8 +190,6 @@ export class CoverScene extends Phaser.Scene {
     this.title(plan.title.lines === 2 ? 'Nusa\nSorting' : 'Nusa Sorting', width / 2, plan.title.y * height, plan.title.size * (plan.title.lines === 2 ? width : height), width);
     // For tools/covers/render.mjs: everything is drawn.
     (window as unknown as { __coverReady?: boolean }).__coverReady = true;
-    const then = this.then;
-    if (then) this.time.delayedCall(then.holdMs, () => fadeToScene(this, then.next));
   }
 
   /** The warung at dusk, cover-cropped, softly out of focus, darker towards the foot so the objects stand out. */
