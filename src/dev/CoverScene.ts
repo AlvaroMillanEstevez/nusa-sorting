@@ -111,9 +111,10 @@ const BURST: Readonly<Record<CoverShape, { title: { y: number; size: number; lin
     triple: { x: 0.5, y: 0.52, size: 0.27 },
     pieces: [
       { kind: 'sate', x: 0.2, y: 0.75, size: 0.36, angle: -16 },
-      { kind: 'es-teh-manis', x: 0.8, y: 0.74, size: 0.34, angle: 10 },
+      // The fresh ketupat big in front, so its tag reads at a glance; the tea up beside the triple.
+      { kind: 'ketupat', x: 0.8, y: 0.76, size: 0.36, tag: 2 },
       { kind: 'nasi-goreng', x: 0.5, y: 0.9, size: 0.38 },
-      { kind: 'ketupat', x: 0.86, y: 0.42, size: 0.22, angle: 8, tag: 2 },
+      { kind: 'es-teh-manis', x: 0.88, y: 0.38, size: 0.2, angle: 10, far: true },
       { kind: 'klepon', x: 0.1, y: 0.4, size: 0.18, angle: -10, far: true },
     ],
   },
