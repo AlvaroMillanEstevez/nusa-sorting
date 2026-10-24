@@ -117,6 +117,10 @@ export const UI_ICONS = {
   /** For the coming shop: a shopping bag. */
   shop: (c) =>
     `<path d="M5.5 8.5h13l-1 11h-11z"${body(c)}/><path d="M5.5 8.5h13l-1 11h-11zM9 8.5V7a3 3 0 0 1 6 0v1.5"${stroke(c)}/>`,
+  /** A rewarded ad (a clapperboard): what a button that plays one carries, as portals ask. */
+  clapper: (c) =>
+    `<path d="M4 10h16v8.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"${body(c)}/>` +
+    `<path d="M4 10h16v8.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5zM4 10l-.6-3.4 15.3-2.7.6 3.4zM8.2 5.8l2.4 3.1M13 5l2.4 3.1"${stroke(c)}/>`,
   /** Buku Nenek: an open book. */
   book: (c) =>
     `<path d="M12 7c-2.2-1.6-5.2-2-8-1.5v12.5c2.8-.5 5.8-.1 8 1.5 2.2-1.6 5.2-2 8-1.5V5.5c-2.8-.5-5.8-.1-8 1.5z"${body(c)}/>` +

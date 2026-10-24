@@ -4,6 +4,7 @@ import { ALBUM_SIZE, pagesToClaim } from '../core/album';
 import { ECONOMY, type Reward } from '../data/economy';
 import { getLocale, t } from '../i18n';
 import type { HapticsService } from '../services/HapticsService';
+import type { AdService } from '../services/AdService';
 import type { ProgressStore } from '../services/ProgressStore';
 import type { SoundService } from '../services/SoundService';
 import { MAP } from '../ui/art/map';
@@ -157,6 +158,8 @@ export class HomeScene extends Phaser.Scene {
   private toastLabel: KitPill | null = null;
   private sequence: ArrivalSequence | null = null;
   private current = 0;
+  /** A level is on its way (its items, maybe an ad between levels): further taps wait. */
+  private starting = false;
   private sign!: MarketSign;
   /** The market sign is in the counters' row (a short, wide screen), not under the title. */
   private signInBar = false;
@@ -167,6 +170,7 @@ export class HomeScene extends Phaser.Scene {
     private readonly sfx: SoundService,
     private readonly store: ProgressStore,
     private readonly haptics: HapticsService,
+    private readonly ads: AdService,
   ) {
     super('Home');
   }
@@ -176,6 +180,7 @@ export class HomeScene extends Phaser.Scene {
     this.press = null;
     this.modal = null;
     this.sequence = null;
+    this.starting = false;
   }
 
   create(): void {
@@ -709,15 +714,17 @@ export class HomeScene extends Phaser.Scene {
   }
 
   private chooseLevel(level: number): void {
-    if (this.sequence?.running) return;
+    if (this.sequence?.running || this.starting) return;
     if (!this.store.isUnlocked(this.ids(), level)) {
       this.sfx.play('invalid');
       this.map.shake(level);
       return;
     }
     this.sfx.play('pick');
+    this.starting = true;
     // Its items are usually ready (prepared in the background while the map was open); if not, a moment's wait.
-    void prepareBoard(this, level).then(() => {
+    // A portal build may play an ad meanwhile: between levels, never during one.
+    void Promise.all([prepareBoard(this, level), this.ads.showInterstitial('level')]).then(() => {
       fadeToScene(this, 'Game', { levelIndex: level });
       void prepareAheadInBackground(this, level + 1, this.store.colorBlindMode);
     });

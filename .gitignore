@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-poki/
 coverage/
 *.log
 .DS_Store

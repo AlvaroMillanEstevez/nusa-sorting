@@ -99,6 +99,8 @@ import { boosterBarRect } from '../ui/levelLayout';
 import type { Arrival } from './map/arrival';
 import { fadeIn, fadeToScene } from './transitions';
 import type { HapticsService } from '../services/HapticsService';
+import type { AdService } from '../services/AdService';
+import type { PlatformService } from '../services/PlatformService';
 import { PauseMenu } from './PauseMenu';
 import { kitText, reducedMotion, setReducedMotion } from './kit';
 import { fitCamera, pointerAt, RENDER_RATIO, screenRect, viewSize } from './view';
@@ -257,11 +259,15 @@ export class GameScene extends Phaser.Scene {
   private arrangement = 0;
   /** Boosters used in this attempt (kept in the level's snapshot). */
   private boostersUsed: Record<BoosterId, number> = { ...NO_BOOSTERS_USED };
+  /** Restarting (maybe through an ad between levels): further presses wait. */
+  private transitioning = false;
 
   constructor(
     private readonly sfx: SoundService,
     private readonly store: ProgressStore,
     private readonly haptics: HapticsService,
+    private readonly ads: AdService,
+    private readonly platform: PlatformService,
   ) {
     super('Game');
   }
@@ -538,6 +544,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    // The portal hears when the player is really playing: from the first touch of the board, not while paused,
+    // reading a panel or the tutorial's card, nor once the level has ended.
+    this.platform.setPlaying(this.state.status === 'playing' && this.state.clockStarted && !this.paused && !this.overlay.visible && !this.pauseMenu.visible && !this.themeIntro.visible);
     this.hud.setWaiting(this.state.status === 'playing' && !this.state.clockStarted);
     // The tutorial and the pause menu hold the clock (and everything timed: tracks, the combo window).
     if (this.state.status === 'playing' && !this.tutorialActive && !this.paused) {
@@ -680,7 +689,15 @@ export class GameScene extends Phaser.Scene {
   /** Fades out, loads the level, fades back in. Also used for restart and retry. */
   private transitionTo(index: number): void {
     const camera = this.cameras.main;
-    if (camera.fadeEffect.isRunning) return;
+    if (camera.fadeEffect.isRunning || this.transitioning) return;
+    this.transitioning = true;
+    // A portal build may play an ad first: the level has ended (or been left), the next attempt not begun.
+    void this.ads.showInterstitial('restart').then(() => this.fadeToLevel(index));
+  }
+
+  private fadeToLevel(index: number): void {
+    const camera = this.cameras.main;
+    this.transitioning = false;
     camera.fadeOut(FADE_MS, 27, 42, 58);
     camera.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.loadLevel(index);
@@ -721,6 +738,7 @@ export class GameScene extends Phaser.Scene {
       this.state = resume.state;
     } else {
       this.store.clearSnapshot();
+      this.platform.levelEvent(playList[index]!.number, 'start');
       // Each attempt plays another arrangement of the level's items (?arrangement=K picks one in development).
       const written = playList[index]!.level;
       const count = arrangementCount(written);
@@ -984,6 +1002,8 @@ export class GameScene extends Phaser.Scene {
       this.hud.setTime(this.state.timeLeftMs, this.totalTimeMs());
     };
     const choices: ContinueChoice[] = [];
+    // Each way on, paid for (coins, or a booster of the player's own or bought), or given by a rewarded ad.
+    const free: (() => void)[] = [];
     if (reason === 'timeUp') {
       const price = extraTimePrice(this.continuesUsed);
       const { seconds } = ECONOMY.continues.time;
@@ -992,17 +1012,19 @@ export class GameScene extends Phaser.Scene {
           kind: 'time',
           seconds,
           price,
-          onUse: () => {
-            const result = addTime(lost, seconds * 1000);
-            if (!result.ok || !this.store.spendCoins(price)) {
-              showLost();
-              return;
-            }
-            carryOn(result.state);
-            this.sfx.play('unlock');
-            this.saveSnapshot();
-          },
+          onUse: () => moreTime(true),
         });
+        const moreTime = (paid: boolean) => {
+          const result = addTime(lost, seconds * 1000);
+          if (!result.ok || (paid && !this.store.spendCoins(price))) {
+            showLost();
+            return;
+          }
+          carryOn(result.state);
+          this.sfx.play('unlock');
+          this.saveSnapshot();
+        };
+        free.push(() => moreTime(false));
       }
     } else {
       const runs: Partial<Record<BoosterId, () => MoveResult>> = { removeTriple: () => continueAfterBlocked(lost) };
@@ -1020,23 +1042,25 @@ export class GameScene extends Phaser.Scene {
           booster,
           have: wallet.boosters[booster],
           price: boosterPrice(booster),
-          onUse: () => {
-            const result = run();
-            if (!result.ok || !this.store.useOrBuyBooster(booster)) {
-              showLost();
-              return;
-            }
-            this.boostersUsed[booster]++;
-            carryOn(result.state);
-            if (booster === 'shuffle') {
-              this.sfx.play('advance');
-              this.sync(DURATION.slow);
-              this.saveSnapshot();
-            } else {
-              this.play(result.events);
-            }
-          },
+          onUse: () => useIt(true),
         });
+        const useIt = (paid: boolean) => {
+          const result = run();
+          if (!result.ok || (paid && !this.store.useOrBuyBooster(booster))) {
+            showLost();
+            return;
+          }
+          this.boostersUsed[booster]++;
+          carryOn(result.state);
+          if (booster === 'shuffle') {
+            this.sfx.play('advance');
+            this.sync(DURATION.slow);
+            this.saveSnapshot();
+          } else {
+            this.play(result.events);
+          }
+        };
+        free.push(() => useIt(false));
       }
     }
     if (choices.length === 0) {
@@ -1049,6 +1073,8 @@ export class GameScene extends Phaser.Scene {
       coins: wallet.coins,
       choices,
       onGiveUp: showLost,
+      // A portal build: an ad instead of paying, for the first way on.
+      ...(this.ads.rewardedAvailable ? { rewarded: { watch: () => this.ads.showRewarded('continue'), onGranted: free[0]! } } : {}),
     });
   }
 
@@ -1172,6 +1198,7 @@ export class GameScene extends Phaser.Scene {
     const totalBefore = this.store.totalStars;
     const starsBefore = this.store.bestStars(this.level.id) ?? 0;
     const record = status === 'won' ? this.store.recordWin(this.level.id, score, stars) : null;
+    if (record) this.platform.levelEvent(playList[this.levelIndex]!.number, 'complete');
     // The win's rewards: coins, experience (and any level-up gifts), and the chests the new stars reach.
     const rewards = record
       ? this.store.rewardWin({
@@ -1222,9 +1249,10 @@ export class GameScene extends Phaser.Scene {
         });
       } else {
         this.sfx.play('lose');
-        this.offerContinue(() =>
-          this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t(loseReason === 'stuck' ? this.stuckMessage() : 'result.lost.hint'), retry, home: () => this.goHome() }),
-        );
+        this.offerContinue(() => {
+          this.platform.levelEvent(playList[this.levelIndex]!.number, 'fail');
+          this.overlay.show({ kind: 'lost', title: t(LOSE_TITLES[loseReason ?? 'blocked']), hint: t(loseReason === 'stuck' ? this.stuckMessage() : 'result.lost.hint'), retry, home: () => this.goHome() });
+        });
       }
     });
   }

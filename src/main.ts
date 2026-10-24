@@ -19,6 +19,9 @@ import { setSlotAspect } from './ui/boardLayout';
 import { forceSafeArea, RENDER_RATIO, updateUiScale } from './scenes/view';
 import { useCuts } from './scenes/transitions';
 import { kindsOfLevel } from './core/album';
+import { NoopAdService } from './services/AdService';
+import { NoopPlatformService } from './services/PlatformService';
+import { PokiAdService, PokiPlatformService, startPokiSdk } from './services/PokiServices';
 
 setLocale((import.meta.env.DEV ? parseLang(window.location.search) : null) ?? resolveLocale(navigator.languages));
 document.title = t('game.title');
@@ -106,6 +109,7 @@ function startGame(scene: Phaser.Types.Scenes.SceneType[], loading = false): voi
     },
     scene,
   });
+  running = game;
   // Development only: what tools/check/flow.mjs follows the game by (the active scenes and the level open).
   if (import.meta.env.DEV) {
     (window as unknown as { __nusa: unknown }).__nusa = {
@@ -132,7 +136,37 @@ haptics.setEnabled(store.vibration);
 // Every kit button and panel answers with a sound.
 setKitFeedback({ press: () => sound.play('tap'), open: () => sound.play('open'), close: () => sound.play('close') });
 
-const gameScenes = () => [new BootScene(store), new HomeScene(sound, store, haptics), new GameScene(sound, store, haptics)];
+// The portal the build is for (vite build --mode poki: see .env.poki), with its SDK's events and ads; none for the
+// game's own build.
+let running: Phaser.Game | null = null;
+const { platform, ads } = (() => {
+  if (import.meta.env.VITE_PLATFORM !== 'poki') return { platform: new NoopPlatformService(), ads: new NoopAdService() };
+  // Arrow keys, space and the wheel never scroll the host page (Poki asks for it).
+  window.addEventListener('keydown', (e) => ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key) && e.preventDefault());
+  window.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+  const ready = startPokiSdk();
+  const poki = new PokiPlatformService(ready);
+  // While an ad plays: silent, still and deaf to input.
+  const pause = {
+    begin: () => {
+      sound.setSilenced(true);
+      if (running) {
+        running.input.enabled = false;
+        running.loop.sleep();
+      }
+    },
+    end: () => {
+      sound.setSilenced(false);
+      if (running) {
+        running.loop.wake();
+        running.input.enabled = true;
+      }
+    },
+  };
+  return { platform: poki, ads: new PokiAdService(ready, poki, pause) };
+})();
+
+const gameScenes = () => [new BootScene(store, platform), new HomeScene(sound, store, haptics, ads), new GameScene(sound, store, haptics, ads, platform)];
 
 // Development only: ?gallery opens the icon gallery. Production builds drop this branch and the gallery code.
 if (import.meta.env.DEV && wantsGallery(window.location.search)) {

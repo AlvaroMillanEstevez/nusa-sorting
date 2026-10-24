@@ -49,6 +49,8 @@ export interface SoundService {
   setMusic(on: boolean): void;
   /** Whether the screen wants music: the home screen and map do, levels do not (it fades in and out). */
   wantMusic(wanted: boolean): void;
+  /** Silence while an ad plays, whatever the player's setting (which it leaves as it was). */
+  setSilenced(silenced: boolean): void;
 }
 
 export class NoopSoundService implements SoundService {
@@ -67,4 +69,6 @@ export class NoopSoundService implements SoundService {
   setMusic(_on: boolean): void {}
 
   wantMusic(_wanted: boolean): void {}
+
+  setSilenced(_silenced: boolean): void {}
 }

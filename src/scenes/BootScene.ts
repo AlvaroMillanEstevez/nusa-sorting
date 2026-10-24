@@ -13,6 +13,7 @@ import { parseLevelParam } from '../dev/levelParam';
 import { parseArrivalParam, wantsHome } from '../dev/uiParams';
 import type { ProgressStore } from '../services/ProgressStore';
 import { hideLoadingScreen } from '../ui/loadingScreen';
+import type { PlatformService } from '../services/PlatformService';
 import { startScreen } from '../ui/startScreen';
 import type { GameData } from './GameScene';
 import type { HomeData } from './HomeScene';
@@ -40,7 +41,10 @@ const ICONS: readonly (readonly [UiIconName, string])[] = [
  * level 1 on a first visit, the home screen after that (see startScreen).
  */
 export class BootScene extends Phaser.Scene {
-  constructor(private readonly store: ProgressStore) {
+  constructor(
+    private readonly store: ProgressStore,
+    private readonly platform: PlatformService,
+  ) {
     super('Boot');
   }
 
@@ -98,6 +102,7 @@ export class BootScene extends Phaser.Scene {
     const data: HomeData = arrived === null ? {} : { arrival: this.sampleArrival(arrived) };
     performance.mark('nusa:playable');
     hideLoadingScreen();
+    this.platform.loadingFinished();
     this.scene.start('Home', data);
   }
 
@@ -108,6 +113,7 @@ export class BootScene extends Phaser.Scene {
       .then(() => {
         performance.mark('nusa:playable');
         hideLoadingScreen();
+        this.platform.loadingFinished();
         this.scene.start('Game', data);
         void prepareAheadInBackground(this, levelIndex + 1, this.store.colorBlindMode);
       });

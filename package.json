@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:poki": "tsc --noEmit && vite build --mode poki",
+    "dev:poki": "vite --mode poki",
+    "preview:poki": "vite preview --mode poki",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "levelgen": "node tools/levelgen/run.mjs",
     "economy": "node tools/economy/run.mjs",
     "package": "bash tools/launch/package.sh",
+    "package:poki": "bash tools/launch/package.sh poki",
     "check:flow": "node tools/check/flow.mjs"
   },
   "dependencies": {

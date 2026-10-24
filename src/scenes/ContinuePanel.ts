@@ -41,6 +41,12 @@ export interface ContinueOptions {
   readonly coins: number;
   readonly choices: readonly ContinueChoice[];
   readonly onGiveUp: () => void;
+  /**
+   * A portal build: an ad the player may choose to watch instead of paying, for the first way on for free.
+   * `watch` plays it and resolves to whether it was watched to the end; only then the panel closes and
+   * `onGranted` runs. Never alone: giving up stays beside it, as big.
+   */
+  readonly rewarded?: { readonly watch: () => Promise<boolean>; readonly onGranted: () => void };
 }
 
 /**
@@ -54,7 +60,8 @@ export function showContinue(scene: Phaser.Scene, options: ContinueOptions): Kit
   const safe = viewSize(scene);
   const w = Math.min(safe.width - SPACE.s * 2, 380);
   const inner = w - SPACE.l * 2;
-  const body = kitText(scene, 'body', options.body, SKIN.text.secondary).setWordWrapWidth(inner);
+  const text = options.rewarded ? `${options.body} ${t('continue.adNote')}` : options.body;
+  const body = kitText(scene, 'body', text, SKIN.text.secondary).setWordWrapWidth(inner);
   const bodyH = body.height + 12;
   const coinsH = 46;
   const core = 136 + options.choices.length * ROW + 56 + SPACE.xs;
@@ -128,16 +135,49 @@ export function showContinue(scene: Phaser.Scene, options: ContinueOptions): Kit
     panel.add([name, caption, action]);
   });
 
+  // Giving up, as big as anything else; with a rewarded ad, the two side by side and the same size (giving up
+  // first), so the way that costs no ad is always as easy to take.
+  const bottomY = h / 2 - SPACE.m - 28;
+  const rewarded = options.rewarded;
+  const half = (inner - SPACE.xs) / 2;
   panel.add(
-    new KitButton(scene, 0, h / 2 - SPACE.m - 28, {
+    new KitButton(scene, rewarded ? -inner / 2 + half / 2 : 0, bottomY, {
       skin: SKIN,
       variant: 'secondary',
       label: t('offer.giveUp'),
-      width: inner,
+      width: rewarded ? half : inner,
       height: 56,
       onPress: close(options.onGiveUp),
     }),
   );
+  if (rewarded) {
+    let notice: KitPill | null = null;
+    const watch: KitButton = new KitButton(scene, inner / 2 - half / 2, bottomY, {
+      skin: SKIN,
+      variant: 'primary',
+      label: t('continue.ad'),
+      icon: 'clapper',
+      width: half,
+      height: 56,
+      onPress: () => {
+        watch.setDisabled(true);
+        void rewarded.watch().then((watched) => {
+          if (!modal.scene) return;
+          if (watched) {
+            modal.destroy();
+            rewarded.onGranted();
+            return;
+          }
+          // No ad (none to show, or blocked): no reward, and the panel stays as it was.
+          watch.setDisabled(false);
+          notice?.destroy();
+          notice = new KitPill(scene, 0, bottomY - 56, { skin: SKIN, value: t('continue.adNone'), height: 32 });
+          panel.add(notice);
+        });
+      },
+    });
+    panel.add(watch);
+  }
   modal.popIn();
   return modal;
 }

@@ -100,6 +100,8 @@ export class WebAudioSoundService implements SoundService {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
   private _muted = false;
+  /** Silenced while an ad plays (see setSilenced); the player's own setting is `_muted`. */
+  private silenced = false;
   /** The recordings, fetched as soon as the game starts and decoded once audio is unlocked. */
   private readonly encoded = new Map<string, Promise<ArrayBuffer | null>>();
   private readonly buffers = new Map<string, AudioBuffer>();
@@ -136,7 +138,16 @@ export class WebAudioSoundService implements SoundService {
 
   setMuted(muted: boolean): void {
     this._muted = muted;
-    if (this.master && this.context) this.master.gain.setValueAtTime(muted ? 0 : 1, this.context.currentTime);
+    this.applyVolume();
+  }
+
+  setSilenced(silenced: boolean): void {
+    this.silenced = silenced;
+    this.applyVolume();
+  }
+
+  private applyVolume(): void {
+    if (this.master && this.context) this.master.gain.setValueAtTime(this._muted || this.silenced ? 0 : 1, this.context.currentTime);
   }
 
   setMusic(on: boolean): void {
@@ -155,7 +166,7 @@ export class WebAudioSoundService implements SoundService {
       if (!this.context) {
         this.context = new AudioContext();
         this.master = this.context.createGain();
-        this.master.gain.value = this._muted ? 0 : 1;
+        this.master.gain.value = this._muted || this.silenced ? 0 : 1;
         this.master.connect(this.context.destination);
         this.musicGain = this.context.createGain();
         this.musicGain.gain.value = 0;

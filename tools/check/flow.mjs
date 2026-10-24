@@ -154,10 +154,12 @@ if (!PROD) {
   await step('level 1 opens', () => until(inGame(1), 20000));
   await step('the simulated expert wins it and the map opens', () => until(onMap, 120000));
   // The first press may only skip the arrival sequence.
+  // The Poki build (npm run dev:poki): its SDK may play a test ad between levels, as long as half a minute.
+  const poki = await evaluate("typeof window.PokiSDK === 'object'");
   const toLevel2 = async () => {
     for (let i = 0; i < 6; i++) {
       await click(PLAY);
-      if (await until(inGame(2), 3000)) return true;
+      if (await until(inGame(2), poki ? 60000 : 3000)) return true;
     }
     return false;
   };
@@ -208,7 +210,7 @@ if (!PROD) {
 } else {
   // Production: a returning player (two levels done), so the game opens on the map.
   const save = JSON.stringify({ version: 3, progress: { completed: ['nusa-001', 'nusa-002'], bestStars: { 'nusa-001': 3, 'nusa-002': 2 }, bestScores: {} }, settings: {}, themesSeen: [], lastArrangements: {}, tutorialsDone: ['first-triple'], wallet: {}, snapshot: null });
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (!sessionStorage.getItem('seeded')) { localStorage.setItem('nusa-sorting.save', ${JSON.stringify(save)}); sessionStorage.setItem('seeded', '1'); }` });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: `try { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('nusa-sorting.save', ${JSON.stringify(save)}); sessionStorage.setItem('seeded', '1'); } } catch {}` });
   await send('Page.navigate', { url: `${URL}/` });
   await sleep(4000);
   await step('the map opens', async () => true);
