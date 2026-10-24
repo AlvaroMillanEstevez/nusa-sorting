@@ -188,7 +188,8 @@ export class CoverScene extends Phaser.Scene {
     if (this.variant === 'a') this.counterShelf(picture.get('sate')!, width, height);
     else this.burst(picture.get(TRIPLE_KIND)!, width, height, unit);
     for (const piece of front) this.piece(piece, picture.get(piece.kind)!, width, height, unit);
-    this.title(plan.title.lines === 2 ? 'Warung\nSort' : 'Warung Sort', width / 2, plan.title.y * height, plan.title.size * (plan.title.lines === 2 ? width : height), width);
+    // &notitle: the artwork alone (Poki's thumbnails do better without text).
+    if (!new URLSearchParams(window.location.search).has('notitle')) this.title(plan.title.lines === 2 ? 'Warung\nSort' : 'Warung Sort', width / 2, plan.title.y * height, plan.title.size * (plan.title.lines === 2 ? width : height), width);
     // For tools/covers/render.mjs: everything is drawn.
     (window as unknown as { __coverReady?: boolean }).__coverReady = true;
   }

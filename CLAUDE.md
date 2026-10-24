@@ -7,7 +7,8 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 ## Comandos
 
 - `npm run dev` — servidor de desarrollo en el puerto 5180 (`strictPort`: si está ocupado, falla en vez de cambiar de puerto), accesible desde la red local (host: true)
-- `npm run build` — typecheck + build de producción en `dist/`
+- `npm run build` — typecheck + build de producción en `dist/` (la versión propia: sin SDK ni anuncios)
+- `npm run build:poki` — el build para Poki en `dist-poki/`, con su SDK y sus anuncios (`vite build --mode poki`, ver `.env.poki`); `npm run dev:poki -- --port 5181` y `npm run preview:poki` lo sirven en desarrollo y producción (el SDK funciona fuera de poki.com en modo de pruebas, con anuncios de la casa y cada llamada en la consola)
 - `npm run preview` — sirve `dist/` (también en la red local)
 - `npm test` — tests con Vitest
 - `npm run typecheck` — `tsc --noEmit`
@@ -21,7 +22,7 @@ Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: 
 - `node tools/check/fresh.mjs [partidas]` — las demos de comida fresca (18-20) con los jugadores simulados: victorias, puntos de los tríos, estrellas (con la fórmula actual y con una que cuenta el bonus de lo fresco) y porcentaje de tríos estropeados, con la mecánica y sin ella.
 - `node tools/check/fresh-curve.mjs [partidas] [index.ts de los niveles de otra copia]` — la curva de comida fresca de los niveles: cuentas de cada fresco, victoria y estrellas de los dos jugadores simulados (con las de otra versión de los niveles entre paréntesis, si se indica) y porcentaje de tríos estropeados, en una tabla markdown.
 - `node tools/docs/buku-nenek.mjs` — regenera `docs/buku-nenek.md` (las 81 entradas del libro de la abuela en una tabla, para revisar) desde `src/data/bukuNenek.ts`; un test falla si no está al día.
-- `npm run package` — build de producción comprobado (sin código de desarrollo, rutas relativas, tamaño y número de archivos) y `.zip` para el portal de CrazyGames en `release/`. Lista de comprobación del envío: `docs/launch-checklist.md`.
+- `npm run package` — build de producción comprobado (sin código de desarrollo, rutas relativas, tamaño y número de archivos) y `.zip` en `release/` (fue el envío a CrazyGames, que lo rechazó dos veces: `docs/launch-checklist.md`). `npm run package:poki` hace lo mismo con el build de Poki (comprueba además que su SDK es la única petición externa); lista: `docs/launch/poki-checklist.md`.
 - `node tools/preview/record.mjs [landscape|portrait|both]` — graba los vídeos de vista previa (con `npm run dev` en marcha) en `docs/launch/videos` (`VARIANT=b` para empezar con la portada B; tarda unos 20-30 min por vídeo); `node tools/covers/render.mjs [a|b|both]` guarda las portadas en `docs/launch/covers`. Los dos necesitan los objetos a 512 px: `python3 tools/art/build_game_art.py --hires art-source/hires-items` (fuera de git).
 
 ## Probar en el móvil
@@ -79,7 +80,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - La lógica del juego vive en `src/core`, en TypeScript puro, sin dependencias de Phaser, y se cubre con tests.
 - Las escenas solo dibujan el estado y envían acciones al núcleo.
 - Sin backend, sin cuentas propias, sin APIs de IA en partida, sin dependencias nuevas sin justificarlas.
-- Guardado detrás de la interfaz `SaveService`; anuncios detrás de `AdService` (implementación vacía: `NoopAdService`); sonido detrás de `SoundService` (implementación `WebAudioSoundService`, con `NoopSoundService` para tests).
+- Guardado detrás de la interfaz `SaveService`; anuncios detrás de `AdService` (vacía en la versión propia, `NoopAdService`; la de Poki, `PokiAdService`) y los eventos del portal detrás de `PlatformService` (`src/services/PokiServices.ts`); sonido detrás de `SoundService` (implementación `WebAudioSoundService`, con `NoopSoundService` para tests).
 - Textos visibles siempre a través de i18n (`en`, `id`).
 - Toda pantalla de interfaz usa los tokens de `src/ui/design/tokens.ts` y los componentes de `src/scenes/kit`, según `docs/ui-style.md`: nada de colores, tamaños, tiempos ni iconos sueltos.
 - Cambios pequeños, un commit por paso coherente con mensaje claro.
@@ -91,7 +92,7 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - Una sola moneda (monedas). Nada de economías complejas.
 - Todo nivel se puede superar sin potenciadores: ayudan, nunca son obligatorios.
 - Todos los valores ajustables (precios, recompensas, curvas) viven en `src/data/economy.ts`; la lógica, en `src/core/economy.ts`.
-- Sin anuncios todavía: ningún botón de anuncio (CrazyGames rechaza botones de anuncio sin efecto en Basic Launch). `AdService` queda preparado para añadir después anuncios con recompensa como alternativa a las monedas.
+- Anuncios solo en el build de un portal (hoy Poki), nunca en la versión propia. Intermedios solo entre niveles (al empezar uno), nunca en mitad de la partida; con recompensa, siempre opcionales, como alternativa a pagar con monedas y junto al camino sin anuncio, igual de grande. El juego queda en silencio y quieto durante cualquier anuncio. Sin temporizadores propios de anuncios: la frecuencia la decide el portal.
 - Nada se compra con dinero real. Los cofres solo se ganan jugando; nunca se venden.
 
 ## Principio de dificultad
