@@ -9,7 +9,7 @@ import { FONTS, SKIN } from '../ui/design/tokens';
 import { ITEM_FILL } from '../ui/levelLayout';
 
 /**
- * Development only (`?cover=landscape|portrait|square&v=a|b`): the store covers, made from the game's illustrated
+ * Development only (`?cover=landscape|portrait|square|itch&v=a|b`): the store covers, made from the game's illustrated
  * art rather than a screenshot: the warung at dusk behind, the food and objects cut at 512 px from the original
  * sheets (`python3 tools/art/build_game_art.py --hires art-source/hires-items`, outside git), the shelf, a fresh
  * food's price tag and the Fredoka title. Only the title as text, no borders, nothing important in the top left
@@ -19,19 +19,21 @@ import { ITEM_FILL } from '../ui/levelLayout';
  * tools/covers/render.mjs opens the page in a headless browser at the exact size and saves the PNG.
  */
 
-export type CoverShape = 'landscape' | 'portrait' | 'square';
+export type CoverShape = 'landscape' | 'portrait' | 'square' | 'itch';
 export type CoverVariant = 'a' | 'b';
 
 /** The CSS size a cover is laid out at; rendered at 2 device pixels per CSS pixel, so 1920×1080 and so on. */
 export const COVER_SIZES: Readonly<Record<CoverShape, { width: number; height: number }>> = {
   landscape: { width: 960, height: 540 },
+  /** itch.io's cover, 630×500. */
+  itch: { width: 630, height: 500 },
   portrait: { width: 400, height: 600 },
   square: { width: 400, height: 400 },
 };
 
 export function parseCoverParam(search: string): CoverShape | null {
   const value = new URLSearchParams(search).get('cover');
-  return value === 'landscape' || value === 'portrait' || value === 'square' ? value : value === null ? null : 'landscape';
+  return value === 'landscape' || value === 'portrait' || value === 'square' || value === 'itch' ? value : value === null ? null : 'landscape';
 }
 
 export const parseCoverVariant = (search: string): CoverVariant => (new URLSearchParams(search).get('v') === 'b' ? 'b' : 'a');
@@ -64,6 +66,16 @@ const COUNTER: Readonly<Record<CoverShape, { title: { y: number; size: number; l
       { kind: 'durian', x: 0.82, y: 0.66, size: 0.32 },
       { kind: 'rambutan', x: 0.74, y: 0.86, size: 0.3, tag: 5 },
       { kind: 'martabak-manis', x: 0.9, y: 0.86, size: 0.32 },
+    ],
+  },
+  itch: {
+    title: { y: 0.2, size: 0.17, lines: 1 },
+    shelf: { x: 0.5, bottom: 0.96, width: 0.5 },
+    pieces: [
+      { kind: 'es-teh-manis', x: 0.13, y: 0.66, size: 0.28, angle: -4 },
+      { kind: 'nasi-goreng', x: 0.12, y: 0.87, size: 0.3 },
+      { kind: 'rambutan', x: 0.87, y: 0.86, size: 0.26, tag: 5 },
+      { kind: 'durian', x: 0.88, y: 0.64, size: 0.26 },
     ],
   },
   portrait: {
@@ -104,6 +116,17 @@ const BURST: Readonly<Record<CoverShape, { title: { y: number; size: number; lin
       { kind: 'onde-onde', x: 0.06, y: 0.36, size: 0.15, angle: -8, far: true },
       { kind: 'es-kelapa-muda', x: 0.34, y: 0.94, size: 0.2, angle: -6, far: true },
       { kind: 'kerupuk-udang', x: 0.66, y: 0.95, size: 0.2, angle: 10, far: true },
+    ],
+  },
+  itch: {
+    title: { y: 0.22, size: 0.17, lines: 1 },
+    triple: { x: 0.5, y: 0.6, size: 0.27 },
+    pieces: [
+      { kind: 'sate', x: 0.1, y: 0.64, size: 0.3, angle: -16 },
+      { kind: 'es-teh-manis', x: 0.9, y: 0.6, size: 0.28, angle: 10 },
+      { kind: 'ketupat', x: 0.8, y: 0.85, size: 0.28, tag: 2 },
+      { kind: 'nasi-goreng', x: 0.22, y: 0.86, size: 0.3, angle: 6 },
+      { kind: 'kerupuk-udang', x: 0.5, y: 0.95, size: 0.2, far: true },
     ],
   },
   portrait: {
@@ -173,7 +196,7 @@ export class CoverScene extends Phaser.Scene {
     const plan = this.variant === 'a' ? COUNTER[this.shape] : BURST[this.shape];
     const kinds = new Set([...plan.pieces.map((p) => p.kind), ...(this.variant === 'a' ? SHELF_KINDS : [TRIPLE_KIND])]);
     const [backdrop, ...pictures] = await Promise.all([
-      image(BACKDROP[this.shape === 'landscape' ? 'landscape' : 'portrait']),
+      image(BACKDROP[this.shape === 'landscape' || this.shape === 'itch' ? 'landscape' : 'portrait']),
       ...[...kinds].map((kind) => image(HIRES(kind))),
       loadUiFonts(),
       loadShelfArt(this.textures),
