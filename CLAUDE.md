@@ -1,6 +1,6 @@
 # Nusa: Warung Sort
 
-Juego web de puzzle tipo "goods sort" (antes «Nusa Sorting»; «Nusa» es la marca de los juegos de Koke, y el repositorio, las carpetas, los ids y la clave de guardado `nusa-sorting.save` conservan el nombre antiguo): ordenar comida en estanterías y juntar tríos iguales.
+Juego web de puzzle tipo "goods sort" (antes «Nusa Sorting»; «Nusa» es la marca de los juegos del autor, y el repositorio, las carpetas, los ids y la clave de guardado `nusa-sorting.save` conservan el nombre antiguo): ordenar comida en estanterías y juntar tríos iguales.
 
 Stack: Vite + TypeScript (strict) + Phaser 4 + Vitest. Phaser 4 no es Phaser 3: ante cualquier API dudosa, consultar la documentación oficial de Phaser 4 o los tipos en `node_modules/phaser/types/phaser.d.ts`.
 
@@ -84,8 +84,8 @@ Solo en `npm run dev`; el build de producción no los incluye.
 - Textos visibles siempre a través de i18n (`en`, `id`).
 - Toda pantalla de interfaz usa los tokens de `src/ui/design/tokens.ts` y los componentes de `src/scenes/kit`, según `docs/ui-style.md`: nada de colores, tamaños, tiempos ni iconos sueltos.
 - Cambios pequeños, un commit por paso coherente con mensaje claro.
-- Al terminar cada tarea, informar de: qué cambió, qué tests se ejecutaron, qué NO se ha probado, y una lista de pruebas manuales para Koke.
-- Nunca afirmar que algo funciona en móvil sin que Koke lo haya probado.
+- Al terminar cada tarea, informar de: qué cambió, qué tests se ejecutaron, qué NO se ha probado, y una lista de pruebas manuales para el autor.
+- Nunca afirmar que algo funciona en móvil sin que el autor lo haya probado.
 
 ## Principios de economía
 

@@ -87,7 +87,7 @@ const RECORDING: Partial<Record<SoundEffect, { file: string; rate: number }>> = 
   star3: { file: 'star', rate: 2 ** (7 / 12) },
 };
 /**
- * The triple and the combo are synthesized (Koke preferred them to recorded ones). A combo climbs a pentatonic
+ * The triple and the combo are synthesized (the author preferred them to recorded ones). A combo climbs a pentatonic
  * scale from its second step: each step a little higher, never a jump bigger than a minor third, up to an octave
  * and a third.
  */

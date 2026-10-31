@@ -31,7 +31,7 @@ Notas sueltas de metalófono cortadas de [*Gamelan — Generative Sound by Glorb
 
 En la grabación, cada nota empieza tras silencio digital, así que se cortan limpias. La victoria usa las cinco notas de su escala (151, 174, 198, 222 y 264 Hz), una octava más agudas.
 
-El trío y el combo usaron también notas de este gamelan entre el 12 y el 13 de octubre de 2026 (`clear.mp3` y `combo1.mp3`–`combo5.mp3`). Se retiraron porque a Koke no le convencían.
+El trío y el combo usaron también notas de este gamelan entre el 12 y el 13 de octubre de 2026 (`clear.mp3` y `combo1.mp3`–`combo5.mp3`). Se retiraron porque al autor no le convencían.
 
 | Archivo | Uso | Notas de la fuente |
 |---|---|---|

@@ -404,7 +404,7 @@ const BASE_RECIPES: readonly LevelRecipe[] = [
     expertBand: [0, 0.98],
     pressure: [0.03, 0.8],
     // Timed from its own board, not with reshuffles (typical): since stuck boards end at once, its reshuffles
-    // play easier and no typical time put board and reshuffles together in the band (Koke, October 2026).
+    // play easier and no typical time put board and reshuffles together in the band (the author, October 2026).
     time: { slack: 1.3, timeUp: [0, 0.15] },
   },
   {

@@ -23,7 +23,7 @@ Lo que sí funciona y se conserva: el tablero nunca espera a las animaciones, el
 
 ## 2. Dirección visual: A «warung cálido»
 
-Koke eligió la dirección A en octubre de 2026 (la B, «moderno limpio», se descartó y se borró). Madera y tonos tierra: paneles de tabla con veta y marco, botones color cúrcuma (primario) y bambú (secundario) con relieve y un **borde inferior marcado** de 5 px en el que se hunden al pulsar, y píldoras del HUD en madera oscura. Continúa directamente las estanterías aprobadas. Sus colores, profundidad y esquinas están en `SKIN` (`tokens.ts`).
+El autor eligió la dirección A en octubre de 2026 (la B, «moderno limpio», se descartó y se borró). Madera y tonos tierra: paneles de tabla con veta y marco, botones color cúrcuma (primario) y bambú (secundario) con relieve y un **borde inferior marcado** de 5 px en el que se hunden al pulsar, y píldoras del HUD en madera oscura. Continúa directamente las estanterías aprobadas. Sus colores, profundidad y esquinas están en `SKIN` (`tokens.ts`).
 
 ## 3. Tokens
 
@@ -205,7 +205,7 @@ El límite real de los próximos niveles es el móvil en horizontal: **5 estante
 
 ## 8. Arte ilustrado de los objetos y del tablero
 
-Desde octubre de 2026 los objetos son ilustraciones (generadas con ChatGPT a partir de hojas de 3 × 2 y revisadas por Koke objeto por objeto, también en gris y con daltonismo); los iconos SVG dibujados por código se retiraron y siguen en el historial de git. Los originales están en `art-source/pilot` y `python3 tools/art/build_game_art.py` los prepara en `src/assets/art`.
+Desde octubre de 2026 los objetos son ilustraciones (generadas con ChatGPT a partir de hojas de 3 × 2 y revisadas por el autor objeto por objeto, también en gris y con daltonismo); los iconos SVG dibujados por código se retiraron y siguen en el historial de git. Los originales están en `art-source/pilot` y `python3 tools/art/build_game_art.py` los prepara en `src/assets/art`.
 - **Objetos**: un WebP de 192 px por objeto (unos 11 KB). El juego los dibuja en texturas de 256 px (potencia de dos, con mipmaps) y solo descarga los del nivel que abre; los de los dos niveles siguientes se preparan en segundo plano, en el tiempo libre del navegador. A 390 × 844 con densidad 3 no hay diferencia visible frente a 256 px.
 - **Halo**: los objetos de contorno oscuro (CIE L* < 45, 18 de 81: peci, batik, komodo, cengkeh…) llevan una luz cálida y suave justo detrás del contorno, generada en el juego a partir de la imagen (`ui/art/itemPixels.ts`), para que no se pierdan en la pared oscura de la estantería sin aclarar la pared (que quitaría contraste a los demás).
 - **Capas traseras**: la silueta de cada objeto se genera de su imagen: su forma exacta en un tono oscuro plano con un borde fino más claro, sin colores, detalles ni sombra. Misma regla de visibilidad que antes (la capa de detrás se ve solo donde el hueco de delante está vacío).

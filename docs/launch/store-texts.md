@@ -1,7 +1,7 @@
 # Nusa: Warung Sort · Submission texts
 
-Texts in English for the CrazyGames developer portal (second submission, October 2026, under the new name: **Nusa: Warung Sort**; Nusa is the brand of Koke's games), to be reviewed by Koke and
-his wife before submitting. Nothing here mentions ads, purchases with real money, other games or other platforms.
+Texts in English for the CrazyGames developer portal (second submission, October 2026, under the new name: **Nusa: Warung Sort**; Nusa is the brand of the author's games), to be reviewed by the author and
+a native-speaker reviewer before submitting. Nothing here mentions ads, purchases with real money, other games or other platforms.
 
 ## Short description
 

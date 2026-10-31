@@ -1,7 +1,7 @@
 import type { LevelDefinition } from '../core';
 
 /**
- * Development only: `?timeScale=0.8` multiplies the time limit of every level, so Koke can try different
+ * Development only: `?timeScale=0.8` multiplies the time limit of every level, so the author can try different
  * paces while playing. Values from 0.1 to 10; anything else, or an untimed level, leaves the level as it is.
  * The result is rounded to whole seconds (at least one).
  */

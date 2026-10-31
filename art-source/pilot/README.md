@@ -1,6 +1,6 @@
 # Arte piloto (originales)
 
-Imágenes generadas con ChatGPT por Koke el 12 de octubre de 2026 para probar un arte ilustrado de objetos, estanterías y fondos. Son los originales: las versiones del juego se preparan con `tools/art/prepare_pilot.py`.
+Imágenes generadas con ChatGPT por el autor el 12 de octubre de 2026 para probar un arte ilustrado de objetos, estanterías y fondos. Son los originales: las versiones del juego se preparan con `tools/art/prepare_pilot.py`.
 
 | Archivo | Original | Qué es |
 |---|---|---|

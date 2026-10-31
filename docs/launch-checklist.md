@@ -94,7 +94,7 @@ Las páginas no tienen fecha. Comparadas con lo que recogía esta lista:
 
 ## Material del envío
 
-- [x] **Portadas** en `docs/launch/covers/`. **Koke eligió la B** (22 de octubre): se suben `cover-landscape-b.png`, `cover-portrait-b.png` y `cover-square-b.png`. Las dos composiciones:
+- [x] **Portadas** en `docs/launch/covers/`. **El autor eligió la B** (22 de octubre): se suben `cover-landscape-b.png`, `cover-portrait-b.png` y `cover-square-b.png`. Las dos composiciones:
   - **A**, el mostrador: una estantería con un trío de sate brillando ante el warung, comida a los lados y un rambután con su etiqueta de Basi;
   - **B**, el trío: tres rambutanes juntándose en un destello bajo el título, comida flotando alrededor y un ketupat con su etiqueta (en la vertical, grande y delante, para que la etiqueta se lea);
   - cada una en 1920×1080, 800×1200 y 800×800, con el arte ilustrado (el warung al atardecer y los objetos recortados a 512 px de los originales);
@@ -106,12 +106,12 @@ Las páginas no tienen fecha. Comparadas con lo que recogía esta lista:
   - sin barras negras, sin cursor, sin transiciones en negro y sin acelerar;
   - se regeneran con `VARIANT=b node tools/preview/record.mjs both` (graba la partida y le pone delante el PNG de la portada).
 - [x] **Textos** en `docs/launch/store-texts.md`: descripciones corta y larga (con Basi, Pasaran y Buku Nenek), controles, etiquetas y una nota para el equipo de CrazyGames.
-  - [ ] Pendientes de revisar por Koke y su mujer.
+  - [ ] Pendientes de revisar por el autor y una revisora nativa.
 
 ## Antes de enviar (manual)
 
 - [x] Elegir portada: la B. Vídeos grabados de nuevo con ella.
-- [x] Textos y nota aprobados por la mujer de Koke.
+- [x] Textos y nota aprobados por una revisora nativa.
 - [ ] Ver los dos vídeos enteros.
 - [ ] Jugar el `.zip` en un móvil Android y en un iPhone:
   - el sonido vuelve tras bloquear el teléfono;

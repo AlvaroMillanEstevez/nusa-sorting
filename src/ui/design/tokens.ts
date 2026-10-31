@@ -312,7 +312,7 @@ export const WARUNG: Skin = {
   elevation: { low: { offsetY: 3, blur: 4, alpha: 0.35 }, high: { offsetY: 8, blur: 14, alpha: 0.45 } },
 };
 
-/** The game's skin: direction A, chosen by Koke in October 2026. */
+/** The game's skin: direction A, chosen by the author in October 2026. */
 export const SKIN: Skin = WARUNG;
 
 /** A skin with every colour passed through `map` (for the colour-vision simulation). */

@@ -1,7 +1,7 @@
 /**
  * The player's titles: a cultural title for each stretch of player levels, from a street vendor to a merchant of
  * the whole archipelago. `from` is the player level that brings it. Names are in the i18n catalogues
- * (`playerTitle.<id>`); Koke and his wife review them.
+ * (`playerTitle.<id>`); the author and a native-speaker reviewer check them.
  */
 export const PLAYER_TITLES = [
   { id: 'kaki-lima', from: 1 },

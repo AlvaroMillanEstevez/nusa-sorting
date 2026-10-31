@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Prepares the game's illustrated art from the originals in art-source/pilot/ (generated with ChatGPT and reviewed
-by Koke): an internal tool, run again whenever an original changes.
+by the author): an internal tool, run again whenever an original changes.
 
     python3 tools/art/build_game_art.py [--size 192]      (needs Pillow, numpy and scipy)
     python3 tools/art/build_game_art.py --hires DIR        every object at 512 px, as PNG, for the covers and videos

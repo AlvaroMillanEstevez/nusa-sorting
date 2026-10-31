@@ -127,7 +127,7 @@ function wander(state: GameState, random: () => number, moves: number): GameStat
   return state;
 }
 
-/** Level 12 as Koke left it: two free slots and the blocker, every kind short of three in view. */
+/** Level 12 as the author left it: two free slots and the blocker, every kind short of three in view. */
 const level12Stuck: LevelDefinition = {
   id: 'nusa-012-stuck',
   timeLimitSeconds: 130,
@@ -274,7 +274,7 @@ describe('stuck boards', () => {
       expect(canProgress(state), level.id).toBe(false);
       return stuckCause(state);
     };
-    // Room everywhere, but every kind's third copy waits behind the crate (Koke's level 49): the last item beside
+    // Room everywhere, but every kind's third copy waits behind the crate (the author's level 49): the last item beside
     // it is moved away, and the layers behind wait for good.
     const crate = createGame({
       id: 'behind-crate',
@@ -300,7 +300,7 @@ describe('stuck boards', () => {
         mechanics: [{ kind: 'tracks', tracks: [{ orientation: 'horizontal', speed: 1, carriers: [['c', 'c', 'b', 'c', 'a']] }] }],
       }),
     ).toEqual({ kind: 'buried', tracks: [0] });
-    // Level 12 as Koke left it: layers behind and only two free slots (the blocker holds no layer there).
+    // Level 12 as the author left it: layers behind and only two free slots (the blocker holds no layer there).
     const level12 = stuckCause(createGame(level12Stuck));
     expect(level12.kind).toBe('space');
   });

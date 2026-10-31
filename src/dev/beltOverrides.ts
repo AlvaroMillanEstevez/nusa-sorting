@@ -1,7 +1,7 @@
 import type { LevelDefinition, MechanicDefinition } from '../core';
 
 /**
- * Development only: lets Koke tune the conveyor while playing, via the query string.
+ * Development only: lets the author tune the conveyor while playing, via the query string.
  * - `beltSpeed=1.5` replaces the belt speed (slots per second; negative moves left). With several tracks it
  *   sets how fast all of them run, each keeping its direction.
  * - `beltSlots=10` changes K of the single classic belt, keeping the same items spread evenly with empty

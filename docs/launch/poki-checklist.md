@@ -116,7 +116,7 @@ Volver a leerlos antes de subir.
   - animada para el lanzamiento global: valen los vídeos de `docs/launch/videos/`, pero falta comprobar el formato que pide Poki en su portal.
 - [x] Política de privacidad: no hace falta mientras no haya enlaces ni servicios externos (más allá del SDK de Poki).
 
-## Lo que tiene que hacer Koke
+## Lo que tiene que hacer el autor
 
 - [ ] Crear la cuenta en Poki for Developers y añadir el juego.
 - [ ] Subir el `.zip` de `npm run package:poki` y repasarlo en el Inspector, también en el móvil.
