@@ -7,3 +7,7 @@ coverage/
 release/
 src/assets/audio/**/*.wav
 art-source/hires-items/
+# Local environment files (never commit secrets). .env.poki is tracked on purpose: it only selects the Poki build mode.
+.env
+.env.local
+.env.*.local
